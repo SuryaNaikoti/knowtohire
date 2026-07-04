@@ -1,4 +1,4 @@
--- Refined Database Migration Schema v2 (Idempotent & Hardened)
+-- Hardened Database Migration Schema v3 (Idempotent & Audited)
 
 -- 1. Create Tables
 CREATE TABLE IF NOT EXISTS public.template_categories (
@@ -50,7 +50,16 @@ CREATE TABLE IF NOT EXISTS public.orders (
 CREATE TABLE IF NOT EXISTS public.order_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
-    item_type VARCHAR(50) NOT NULL CHECK (item_type IN ('template', 'subscription_plan')),
+    item_type VARCHAR(50) NOT NULL CHECK (
+        item_type IN (
+            'template',
+            'subscription_plan',
+            'featured_job',
+            'recruiter_seat',
+            'premium_candidate',
+            'employer_subscription'
+        )
+    ),
     item_id UUID NOT NULL,
     price_cents INT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
@@ -76,6 +85,14 @@ CREATE TABLE IF NOT EXISTS public.payments (
     transaction_reference VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.payment_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    payment_id UUID REFERENCES public.payments(id) ON DELETE CASCADE,
+    event_type VARCHAR(100) NOT NULL,
+    payload JSONB DEFAULT '{}'::jsonb NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS public.subscriptions (
@@ -107,14 +124,20 @@ CREATE TABLE IF NOT EXISTS public.invoices (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
--- 2. Indexes (Idempotent)
+-- 2. Indexes & Unique Constraints (Idempotent)
 CREATE INDEX IF NOT EXISTS idx_templates_category ON public.templates(category_id);
 CREATE INDEX IF NOT EXISTS idx_orders_user ON public.orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON public.order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_template_purchases_candidate ON public.template_purchases(candidate_id);
 CREATE INDEX IF NOT EXISTS idx_payments_order ON public.payments(order_id);
+CREATE INDEX IF NOT EXISTS idx_payment_events_payment ON public.payment_events(payment_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON public.subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_user ON public.invoices(user_id);
+
+-- Enforce single active plan per user
+CREATE UNIQUE INDEX IF NOT EXISTS idx_active_subscription
+ON public.subscriptions(user_id, plan_id)
+WHERE status = 'active';
 
 -- 3. Enable RLS
 ALTER TABLE public.template_categories ENABLE ROW LEVEL SECURITY;
@@ -124,13 +147,13 @@ ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.template_purchases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payment_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 
 -- 4. Recreate RLS Policies (Idempotency - Drop & Recreate)
 DO $$
 BEGIN
-    -- Drop existing if any
     DROP POLICY IF EXISTS "Public read for template_categories" ON public.template_categories;
     DROP POLICY IF EXISTS "Admin write for template_categories" ON public.template_categories;
     DROP POLICY IF EXISTS "Public read for active templates" ON public.templates;
@@ -147,6 +170,8 @@ BEGIN
     DROP POLICY IF EXISTS "Admin read all purchases" ON public.template_purchases;
     DROP POLICY IF EXISTS "Users read own payments" ON public.payments;
     DROP POLICY IF EXISTS "Admin read all payments" ON public.payments;
+    DROP POLICY IF EXISTS "Users read own payment_events" ON public.payment_events;
+    DROP POLICY IF EXISTS "Admin read all payment_events" ON public.payment_events;
     DROP POLICY IF EXISTS "Users read own subscriptions" ON public.subscriptions;
     DROP POLICY IF EXISTS "Admin read all subscriptions" ON public.subscriptions;
     DROP POLICY IF EXISTS "Users read own invoices" ON public.invoices;
@@ -159,15 +184,21 @@ END $$;
 CREATE POLICY "Public read for template_categories" ON public.template_categories FOR SELECT USING (true);
 CREATE POLICY "Admin write for template_categories" ON public.template_categories FOR ALL USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
+) WITH CHECK (
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
 );
 
 CREATE POLICY "Public read for active templates" ON public.templates FOR SELECT USING (is_active = true);
 CREATE POLICY "Admin write for templates" ON public.templates FOR ALL USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
+) WITH CHECK (
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
 );
 
 CREATE POLICY "Public read for active subscription_plans" ON public.subscription_plans FOR SELECT USING (is_active = true);
 CREATE POLICY "Admin write for subscription_plans" ON public.subscription_plans FOR ALL USING (
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
+) WITH CHECK (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
 );
 
@@ -197,6 +228,17 @@ CREATE POLICY "Admin read all payments" ON public.payments FOR ALL USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
 );
 
+CREATE POLICY "Users read own payment_events" ON public.payment_events FOR SELECT USING (
+    EXISTS (
+        SELECT 1 FROM public.payments p
+        JOIN public.orders o ON o.id = p.order_id
+        WHERE p.id = payment_events.payment_id AND o.user_id = auth.uid()
+    )
+);
+CREATE POLICY "Admin read all payment_events" ON public.payment_events FOR ALL USING (
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
+);
+
 CREATE POLICY "Users read own subscriptions" ON public.subscriptions FOR SELECT USING (user_id = auth.uid());
 CREATE POLICY "Admin read all subscriptions" ON public.subscriptions FOR ALL USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
@@ -207,7 +249,7 @@ CREATE POLICY "Admin read all invoices" ON public.invoices FOR ALL USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
 );
 
--- 5. Auto updated_at Trigger (Refactored)
+-- 5. Auto updated_at Trigger (Refactored for PostgreSQL compliance)
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -216,10 +258,57 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER trigger_update_templates_updated_at BEFORE UPDATE ON public.templates FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE OR REPLACE TRIGGER trigger_update_subscription_plans_updated_at BEFORE UPDATE ON public.subscription_plans FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE OR REPLACE TRIGGER trigger_update_orders_updated_at BEFORE UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE OR REPLACE TRIGGER trigger_update_template_purchases_updated_at BEFORE UPDATE ON public.template_purchases FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE OR REPLACE TRIGGER trigger_update_payments_updated_at BEFORE UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE OR REPLACE TRIGGER trigger_update_subscriptions_updated_at BEFORE UPDATE ON public.subscriptions FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE OR REPLACE TRIGGER trigger_update_invoices_updated_at BEFORE UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+-- Recreate triggers using drop-first approach
+DROP TRIGGER IF EXISTS trigger_update_templates_updated_at ON public.templates;
+CREATE TRIGGER trigger_update_templates_updated_at
+BEFORE UPDATE ON public.templates
+FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS trigger_update_subscription_plans_updated_at ON public.subscription_plans;
+CREATE TRIGGER trigger_update_subscription_plans_updated_at
+BEFORE UPDATE ON public.subscription_plans
+FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS trigger_update_orders_updated_at ON public.orders;
+CREATE TRIGGER trigger_update_orders_updated_at
+BEFORE UPDATE ON public.orders
+FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS trigger_update_template_purchases_updated_at ON public.template_purchases;
+CREATE TRIGGER trigger_update_template_purchases_updated_at
+BEFORE UPDATE ON public.template_purchases
+FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS trigger_update_payments_updated_at ON public.payments;
+CREATE TRIGGER trigger_update_payments_updated_at
+BEFORE UPDATE ON public.payments
+FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS trigger_update_subscriptions_updated_at ON public.subscriptions;
+CREATE TRIGGER trigger_update_subscriptions_updated_at
+BEFORE UPDATE ON public.subscriptions
+FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS trigger_update_invoices_updated_at ON public.invoices;
+CREATE TRIGGER trigger_update_invoices_updated_at
+BEFORE UPDATE ON public.invoices
+FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- 6. Schema Grants Block
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON ALL TABLES IN SCHEMA public
+TO anon, authenticated;
+
+GRANT USAGE, SELECT
+ON ALL SEQUENCES IN SCHEMA public
+TO anon, authenticated;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON TABLES TO anon, authenticated;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT USAGE, SELECT
+ON SEQUENCES TO anon, authenticated;
