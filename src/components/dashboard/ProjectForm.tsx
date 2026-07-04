@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import type { CandidateProject } from '../../../lib/services/projectsService';
-import { Button } from '../../../components/ui/Button';
-import { Input } from '../../../components/ui/Input';
-import { Alert } from '../../../components/ui/Alert';
+import type { CandidateProject } from '../../lib/services/projectsService';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import { Alert } from '../ui/Alert';
 
 interface ProjectFormProps {
   candidateId: string;
@@ -64,7 +64,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
         label="Project Title"
         required
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onChange={(e: any) => setTitle(e.target.value)}
         placeholder="e.g. AI Resume Parser, Carbon Tracker Dashboard"
       />
 
@@ -76,14 +76,14 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
           className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium text-gray-900 bg-white placeholder-gray-400 border-solid min-h-[100px] outline-none"
           placeholder="Describe what this project does and your role in it..."
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e: any) => setDescription(e.target.value)}
         />
       </div>
 
       <Input
         label="Tech Stack (comma-separated)"
         value={techStack}
-        onChange={(e) => setTechStack(e.target.value)}
+        onChange={(e: any) => setTechStack(e.target.value)}
         placeholder="e.g. React, TypeScript, Supabase, TailwindCSS"
       />
 
@@ -92,14 +92,14 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
           label="Live Demo URL"
           type="url"
           value={projectUrl}
-          onChange={(e) => setProjectUrl(e.target.value)}
+          onChange={(e: any) => setProjectUrl(e.target.value)}
           placeholder="https://your-project.com"
         />
         <Input
           label="GitHub Repository URL"
           type="url"
           value={githubUrl}
-          onChange={(e) => setGithubUrl(e.target.value)}
+          onChange={(e: any) => setGithubUrl(e.target.value)}
           placeholder="https://github.com/username/repo"
         />
       </div>
@@ -109,7 +109,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
           type="checkbox"
           id="is-featured"
           checked={isFeatured}
-          onChange={(e) => setIsFeatured(e.target.checked)}
+          onChange={(e: any) => setIsFeatured(e.target.checked)}
           className="w-4 h-4 rounded border-gray-300 text-primary cursor-pointer"
         />
         <label htmlFor="is-featured" className="text-xs font-semibold text-gray-700 cursor-pointer">

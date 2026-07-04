@@ -8,12 +8,21 @@ import { Button } from '../../components/ui/Button';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Loading } from '../../components/ui/Loading';
-import { MapPin, Briefcase, Calendar, Award, FolderGit2, BookOpen, Download, Globe, Mail, ArrowLeft } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { Briefcase, Calendar, Award, FolderGit2, BookOpen, Download, Mail, ArrowLeft } from 'lucide-react';
+
+interface BaseProfile {
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+}
 
 export const PublicProfile: React.FC = () => {
   const { candidateId } = useParams<{ candidateId: string }>();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
+  const [baseProfile, setBaseProfile] = useState<BaseProfile | null>(null);
   const [skills, setSkills] = useState<CandidateSkill[]>([]);
   const [experience, setExperience] = useState<CandidateExperience[]>([]);
   const [education, setEducation] = useState<CandidateEducation[]>([]);
@@ -25,6 +34,27 @@ export const PublicProfile: React.FC = () => {
       if (!candidateId) return;
       try {
         setLoading(true);
+
+        // Fetch base profile from Supabase or simulated local storage
+        let baseProfileData: BaseProfile = { first_name: 'John', last_name: 'Doe', email: 'candidate@example.com', avatar_url: '' };
+        if (isSupabaseConfigured && supabase) {
+          const { data } = await supabase.from('profiles').select('first_name, last_name, email, avatar_url').eq('id', candidateId).single();
+          if (data) {
+            baseProfileData = data as BaseProfile;
+          }
+        } else {
+          const localProfile = localStorage.getItem(`kth_profile_${candidateId}`);
+          if (localProfile) {
+            const parsed = JSON.parse(localProfile);
+            baseProfileData = {
+              first_name: parsed.first_name || 'John',
+              last_name: parsed.last_name || 'Doe',
+              email: parsed.email || 'candidate@example.com',
+              avatar_url: parsed.avatar_url || '',
+            };
+          }
+        }
+
         const [profileData, skillsData, expData, eduData, certsData, projectsData] = await Promise.all([
           candidateService.getProfile(candidateId),
           candidateService.getSkills(candidateId),
@@ -35,6 +65,7 @@ export const PublicProfile: React.FC = () => {
         ]);
 
         setProfile(profileData);
+        setBaseProfile(baseProfileData);
         setSkills(skillsData);
         setExperience(expData);
         setEducation(eduData);
@@ -52,7 +83,7 @@ export const PublicProfile: React.FC = () => {
 
   if (loading) return <Loading label="Loading candidate profile..." />;
 
-  if (!profile) {
+  if (!profile || !baseProfile) {
     return (
       <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
         <h2 className="text-xl font-bold text-slate-800">Profile Not Found</h2>
@@ -64,9 +95,8 @@ export const PublicProfile: React.FC = () => {
     );
   }
 
-  // Get full name from profile, otherwise mock it if not available
-  const fullName = profile.profiles ? `${profile.profiles.first_name || ''} ${profile.profiles.last_name || ''}`.trim() : 'Candidate Profile';
-  const email = profile.profiles?.email || '';
+  const fullName = `${baseProfile.first_name || ''} ${baseProfile.last_name || ''}`.trim() || 'Candidate Profile';
+  const email = baseProfile.email || '';
 
   return (
     <div className="bg-slate-50/40 min-h-screen py-12 animate-fade-in-up">
@@ -83,7 +113,7 @@ export const PublicProfile: React.FC = () => {
           <CardContent className="p-6 sm:p-8 relative">
             <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 -mt-20 sm:-mt-24 mb-6">
               <img
-                src={profile.profiles?.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${profile.profiles?.first_name || 'User'}`}
+                src={baseProfile.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${baseProfile.first_name || 'User'}`}
                 alt={fullName}
                 className="w-28 h-28 sm:w-32 sm:h-32 rounded-full border-4 border-white bg-white shadow-md shrink-0 object-cover"
               />
@@ -106,15 +136,10 @@ export const PublicProfile: React.FC = () => {
                 <h1 className="text-2xl sm:text-3xl font-black font-heading text-slate-900 tracking-tight leading-tight">
                   {fullName}
                 </h1>
-                {profile.headline && (
-                  <p className="text-sm font-bold text-gray-700 mt-1">{profile.headline}</p>
+                {profile.title && (
+                  <p className="text-sm font-bold text-gray-700 mt-1">{profile.title}</p>
                 )}
                 <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 font-semibold mt-2.5">
-                  {profile.location && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-4 h-4 text-slate-400" /> {profile.location}
-                    </span>
-                  )}
                   {email && (
                     <span className="flex items-center gap-1">
                       <Mail className="w-4 h-4 text-slate-400" /> {email}
@@ -149,8 +174,8 @@ export const PublicProfile: React.FC = () => {
                   {skills.map((skill) => (
                     <Badge key={skill.id} variant="secondary" size="md">
                       {skill.skill_name}
-                      {skill.proficiency_level && (
-                        <span className="opacity-60 font-medium ml-1">({skill.proficiency_level})</span>
+                      {skill.competency_level && (
+                        <span className="opacity-60 font-medium ml-1">({skill.competency_level})</span>
                       )}
                     </Badge>
                   ))}
@@ -174,7 +199,7 @@ export const PublicProfile: React.FC = () => {
                     <div key={exp.id} className="relative pl-8">
                       <div className="absolute left-1.5 top-1.5 w-4 h-4 rounded-full bg-primary border-2 border-white ring-2 ring-blue-50" />
                       <div className="space-y-1">
-                        <h3 className="font-heading font-black text-slate-900 text-sm leading-tight">{exp.role}</h3>
+                        <h3 className="font-heading font-black text-slate-900 text-sm leading-tight">{exp.role_title}</h3>
                         <p className="text-xs font-bold text-gray-700">{exp.company_name} • {exp.location || 'Remote'}</p>
                         <p className="text-[11px] text-slate-400 font-semibold flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5" />
@@ -211,15 +236,13 @@ export const PublicProfile: React.FC = () => {
                       <div className="absolute left-1.5 top-1.5 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white ring-2 ring-emerald-50" />
                       <div className="space-y-1">
                         <h3 className="font-heading font-black text-slate-900 text-sm leading-tight">{edu.degree} in {edu.field_of_study}</h3>
-                        <p className="text-xs font-bold text-gray-700">{edu.institution_name}</p>
+                        <p className="text-xs font-bold text-gray-700">{edu.institution}</p>
                         <p className="text-[11px] text-slate-400 font-semibold flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5" />
                           {new Date(edu.start_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} -{' '}
-                          {edu.is_current
-                            ? 'Present'
-                            : edu.end_date
+                          {edu.end_date
                             ? new Date(edu.end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-                            : ''}
+                            : 'Present'}
                         </p>
                       </div>
                     </div>

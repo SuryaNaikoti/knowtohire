@@ -99,7 +99,7 @@ export const dashboardService = {
         // Simulation mode — check localStorage
         const simApps: string[] = JSON.parse(localStorage.getItem(`kth_applications_${candidateId}`) || '[]');
         appsCount = simApps.length;
-        liveApplications = simApps.slice(0, 5).map((jobId, i) => ({
+        liveApplications = simApps.slice(0, 5).map((_jobId, i) => ({
           company: `Company ${i + 1}`,
           role: 'Applied Position',
           status: 'Applied',

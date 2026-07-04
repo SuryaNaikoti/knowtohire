@@ -4,9 +4,7 @@ import { candidateService } from '../../../lib/services/candidateService';
 import type { CandidateCertification } from '../../../lib/services/candidateService';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
-import { Badge } from '../../../components/ui/Badge';
 import { Loading } from '../../../components/ui/Loading';
-import { Modal } from '../../../components/ui/Modal';
 import { CertificationForm } from '../../../components/dashboard/CertificationForm';
 import { Award, Plus, Trash2, Edit2, ExternalLink, AlertTriangle, CheckCircle } from 'lucide-react';
 
@@ -185,22 +183,17 @@ export const Certifications: React.FC = () => {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={selectedCert ? 'Edit Certification' : 'Add Certification'}
-        size="md"
-      >
-        {profile && (
-          <CertificationForm
-            candidateId={profile.id}
-            existingCert={selectedCert}
-            onSaved={handleSaved}
-            onCancel={() => setIsModalOpen(false)}
-          />
-        )}
-      </Modal>
+      {/* Render CertificationForm Directly as it handles modal wrapping internally */}
+      {profile && (
+        <CertificationForm
+          candidateId={profile.id}
+          certificationToEdit={selectedCert}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSaveSuccess={handleSaved}
+        />
+      )}
     </div>
   );
 };
+export default Certifications;

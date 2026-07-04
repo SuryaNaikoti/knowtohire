@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, User, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { candidateService } from '../../lib/services/candidateService';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../ui/Button';

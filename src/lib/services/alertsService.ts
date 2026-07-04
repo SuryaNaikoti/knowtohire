@@ -62,11 +62,11 @@ export const alertsService = {
       setLocal(alert.candidate_id, current.map((a) => a.id === alert.id ? { ...a, ...alert } as JobAlert : a));
     } else {
       const newAlert: JobAlert = {
-        id: `alert_${Math.random().toString(36).substring(2, 9)}`,
-        frequency: 'weekly',
-        is_active: true,
         ...alert,
+        id: `alert_${Math.random().toString(36).substring(2, 9)}`,
       } as JobAlert;
+      if (!newAlert.frequency) newAlert.frequency = 'weekly';
+      if (newAlert.is_active === undefined) newAlert.is_active = true;
       setLocal(alert.candidate_id, [newAlert, ...current]);
     }
     return true;

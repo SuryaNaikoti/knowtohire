@@ -4,7 +4,6 @@ import { projectsService } from '../../../lib/services/projectsService';
 import type { CandidateProject } from '../../../lib/services/projectsService';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
-import { Badge } from '../../../components/ui/Badge';
 import { Loading } from '../../../components/ui/Loading';
 import { Modal } from '../../../components/ui/Modal';
 import { ProjectForm } from '../../../components/dashboard/ProjectForm';
@@ -65,11 +64,10 @@ export const Projects: React.FC = () => {
 
   const handleFormSubmit = async (data: Omit<CandidateProject, 'id' | 'created_at' | 'updated_at'> & { id?: string }) => {
     if (!profile) return;
-    if (data.id) {
-      await projectsService.updateProject(profile.id, data.id, data);
-    } else {
-      await projectsService.createProject(profile.id, data);
-    }
+    await projectsService.upsertProject({
+      ...data,
+      candidate_id: profile.id
+    } as any);
   };
 
   const handleSaved = () => {
@@ -157,7 +155,7 @@ export const Projects: React.FC = () => {
                       const name = tech.trim();
                       if (!name) return null;
                       return (
-                        <span key={name} className="bg-gray-50 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded-md border border-solid border-gray-100">
+                        <span key={name} className="bg-gray-50 text-gray-650 text-[10px] font-bold px-2 py-0.5 rounded-md border border-solid border-gray-100">
                           {name}
                         </span>
                       );
@@ -213,3 +211,4 @@ export const Projects: React.FC = () => {
     </div>
   );
 };
+export default Projects;

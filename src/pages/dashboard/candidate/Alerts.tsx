@@ -18,7 +18,7 @@ export const Alerts: React.FC = () => {
   const [selectedAlert, setSelectedAlert] = useState<JobAlert | null>(null);
 
   // Form states
-  const [keyword, setKeyword] = useState('');
+  const [keywords, setKeywords] = useState('');
   const [location, setLocation] = useState('');
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [formError, setFormError] = useState('');
@@ -42,7 +42,7 @@ export const Alerts: React.FC = () => {
 
   const handleOpenAdd = () => {
     setSelectedAlert(null);
-    setKeyword('');
+    setKeywords('');
     setLocation('');
     setFrequency('daily');
     setFormError('');
@@ -51,7 +51,7 @@ export const Alerts: React.FC = () => {
 
   const handleOpenEdit = (alert: JobAlert) => {
     setSelectedAlert(alert);
-    setKeyword(alert.keyword);
+    setKeywords(alert.keywords || '');
     setLocation(alert.location || '');
     setFrequency(alert.frequency);
     setFormError('');
@@ -61,7 +61,7 @@ export const Alerts: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
-    if (!keyword.trim()) {
+    if (!keywords.trim()) {
       setFormError('Keyword/Role is required.');
       return;
     }
@@ -70,16 +70,21 @@ export const Alerts: React.FC = () => {
     setFormError('');
     try {
       if (selectedAlert) {
-        await alertsService.updateAlert(profile.id, selectedAlert.id, {
-          keyword: keyword.trim(),
+        await alertsService.upsertAlert({
+          id: selectedAlert.id,
+          candidate_id: profile.id,
+          keywords: keywords.trim(),
           location: location.trim() || undefined,
           frequency,
+          is_active: selectedAlert.is_active,
         });
       } else {
-        await alertsService.createAlert(profile.id, {
-          keyword: keyword.trim(),
+        await alertsService.upsertAlert({
+          candidate_id: profile.id,
+          keywords: keywords.trim(),
           location: location.trim() || undefined,
           frequency,
+          is_active: true,
         });
       }
       setIsModalOpen(false);
@@ -105,11 +110,9 @@ export const Alerts: React.FC = () => {
   const handleToggleActive = async (alert: JobAlert) => {
     if (!profile) return;
     try {
-      const updated = await alertsService.updateAlert(profile.id, alert.id, {
-        is_active: !alert.is_active,
-      });
+      await alertsService.toggleAlert(profile.id, alert.id, !alert.is_active);
       setAlerts((prev) =>
-        prev.map((a) => (a.id === alert.id ? { ...a, is_active: updated.is_active } : a))
+        prev.map((a) => (a.id === alert.id ? { ...a, is_active: !alert.is_active } : a))
       );
     } catch (err) {
       console.error(err);
@@ -157,7 +160,7 @@ export const Alerts: React.FC = () => {
                       <Mail className="w-4 h-4" />
                     </span>
                     <div>
-                      <h3 className="font-heading font-black text-gray-900 text-sm leading-none">{alert.keyword}</h3>
+                      <h3 className="font-heading font-black text-gray-900 text-sm leading-none">{alert.keywords}</h3>
                       {alert.location && (
                         <p className="text-[10px] text-gray-400 font-bold mt-1">Location: {alert.location}</p>
                       )}
@@ -219,15 +222,15 @@ export const Alerts: React.FC = () => {
           <Input
             label="Keyword / Role Title"
             required
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
+            value={keywords}
+            onChange={(e: any) => setKeywords(e.target.value)}
             placeholder="e.g. Frontend Engineer, Product Manager"
           />
 
           <Input
             label="Location (Optional)"
             value={location}
-            onChange={(e) => setLocation(e.target.value)}
+            onChange={(e: any) => setLocation(e.target.value)}
             placeholder="e.g. Remote, San Francisco"
           />
 
@@ -237,7 +240,7 @@ export const Alerts: React.FC = () => {
             </label>
             <select
               value={frequency}
-              onChange={(e) => setFrequency(e.target.value as any)}
+              onChange={(e: any) => setFrequency(e.target.value as any)}
               className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium text-gray-900 bg-white border-solid outline-none cursor-pointer"
             >
               <option value="daily">Daily</option>
@@ -264,3 +267,4 @@ export const Alerts: React.FC = () => {
     </div>
   );
 };
+export default Alerts;

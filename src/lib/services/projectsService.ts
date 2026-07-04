@@ -64,10 +64,10 @@ export const projectsService = {
       );
     } else {
       const newProject: CandidateProject = {
-        id: `proj_${Math.random().toString(36).substring(2, 9)}`,
-        is_featured: false,
         ...project,
+        id: `proj_${Math.random().toString(36).substring(2, 9)}`,
       } as CandidateProject;
+      if (newProject.is_featured === undefined) newProject.is_featured = false;
       setLocalProjects(project.candidate_id, [newProject, ...current]);
     }
     return true;
