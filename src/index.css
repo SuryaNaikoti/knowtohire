@@ -1,0 +1,273 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #16a34a;
+  --color-primary-hover: #15803d;
+  --color-primary-light: #f0fdf4;
+  
+  --kth-focus-ring: focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-shadow;
+  
+  --color-secondary: #00388d;
+  --color-secondary-hover: #002d70;
+  --color-secondary-light: #eff6ff;
+  
+  --color-accent: #d97706;
+  --color-accent-hover: #b45309;
+  --color-accent-light: #fef3c7;
+  
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-heading: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
+  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.05);
+  --shadow-premium: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 10px 15px -3px rgba(0, 0, 0, 0.02), 0 20px 25px -5px rgba(0, 0, 0, 0.04), 0 30px 40px -10px rgba(0, 0, 0, 0.06);
+  --shadow-elevated: 0 8px 10px -2px rgba(0, 0, 0, 0.01), 0 16px 24px -4px rgba(0, 0, 0, 0.03), 0 32px 48px -8px rgba(0, 0, 0, 0.06), 0 48px 60px -12px rgba(0, 0, 0, 0.09);
+  
+  --animate-fade-in-up: fade-in-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Accessibility & Global styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #FAFAFA;
+  color: #1F2937;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Focus styles for keyboard navigability (WCAG 2.2 AA) */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Glassmorphism utility card styling */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark-glass-panel {
+  background: rgba(17, 24, 39, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Custom Scrollbar for modern feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E5E7EB;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #D1D5DB;
+}
+
+/* Reusable class for aligning icons and text horizontally on the same baseline */
+.kth-inline-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-direction: row;
+  white-space: nowrap;
+}
+
+/* ===== PREMIUM HOMEPAGE ANIMATIONS ===== */
+
+/* Scroll-triggered reveal (used with IntersectionObserver or CSS scroll) */
+@keyframes kth-reveal-up {
+  from { opacity: 0; transform: translateY(32px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes kth-reveal-left {
+  from { opacity: 0; transform: translateX(-32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes kth-reveal-right {
+  from { opacity: 0; transform: translateX(32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes kth-reveal-scale {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Floating animation for hero cards / decorative elements */
+@keyframes kth-float {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-12px); }
+}
+@keyframes kth-float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-8px); }
+}
+@keyframes kth-float-reverse {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(10px); }
+}
+
+/* Gradient shimmer for badges and premium elements */
+@keyframes kth-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Slow gradient shift for section backgrounds */
+@keyframes kth-gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
+/* Subtle pulse glow for highlighted elements */
+@keyframes kth-pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.25); }
+  50%      { box-shadow: 0 0 20px 6px rgba(16, 185, 129, 0.15); }
+}
+
+/* Marquee scroll for employer logos / trust badges */
+@keyframes kth-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Rotate for wind turbine / decorative SVGs */
+@keyframes kth-rotate-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Counter spin-up illusion */
+@keyframes kth-count-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Typing cursor blink for hero subtitle */
+@keyframes kth-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.kth-animate-float       { animation: kth-float 6s ease-in-out infinite; }
+.kth-animate-float-slow  { animation: kth-float-slow 8s ease-in-out infinite; }
+.kth-animate-float-rev   { animation: kth-float-reverse 7s ease-in-out infinite; }
+.kth-animate-shimmer     { background-size: 200% 100%; animation: kth-shimmer 3s linear infinite; }
+.kth-animate-pulse-glow  { animation: kth-pulse-glow 3s ease-in-out infinite; }
+.kth-animate-marquee     { animation: kth-marquee 30s linear infinite; }
+.kth-animate-rotate-slow { animation: kth-rotate-slow 25s linear infinite; }
+.kth-animate-gradient    { background-size: 200% 200%; animation: kth-gradient-shift 8s ease infinite; }
+
+/* Staggered reveal delay utilities */
+.kth-delay-1 { animation-delay: 0.1s; }
+.kth-delay-2 { animation-delay: 0.2s; }
+.kth-delay-3 { animation-delay: 0.3s; }
+.kth-delay-4 { animation-delay: 0.4s; }
+.kth-delay-5 { animation-delay: 0.5s; }
+
+/* ===== SVG WAVE DIVIDERS ===== */
+.kth-wave-divider {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 100%;
+  overflow: hidden;
+  line-height: 0;
+  pointer-events: none;
+}
+.kth-wave-divider.top { top: -1px; }
+.kth-wave-divider.bottom { bottom: -1px; }
+.kth-wave-divider svg {
+  display: block;
+  width: 100%;
+  height: 48px;
+}
+
+/* ===== ENHANCED GLASSMORPHISM ===== */
+.glass-card-light {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+.glass-card-dark {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.glass-card-emerald {
+  background: rgba(16, 185, 129, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(16, 185, 129, 0.12);
+}
+
+/* ===== PREMIUM GRADIENT TEXT ===== */
+.kth-gradient-text {
+  background: linear-gradient(135deg, #059669 0%, #0d9488 50%, #0891b2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===== SECTION TRANSITION GRADIENTS ===== */
+.kth-section-fade-white {
+  background: linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%);
+}
+.kth-section-fade-slate {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+}
+
+/* ===== NOISE TEXTURE OVERLAY ===== */
+.kth-noise-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+}
+
