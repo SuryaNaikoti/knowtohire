@@ -50,6 +50,9 @@ const Blog = React.lazy(() =>
 const Pricing = React.lazy(() =>
   import('./pages/public/Pricing').then((m) => ({ default: m.Pricing }))
 );
+const PublicProfile = React.lazy(() =>
+  import('./pages/public/PublicProfile').then((m) => ({ default: m.PublicProfile }))
+);
 
 const CandidateDashboard = React.lazy(() =>
   import('./pages/dashboard/candidate/CandidateDashboard').then((m) => ({ default: m.CandidateDashboard }))
@@ -132,6 +135,7 @@ export const App: React.FC = () => {
             <Route path="templates/:id" element={<TemplateDetails />} />
             <Route path="blog" element={<Blog />} />
             <Route path="pricing" element={<Pricing />} />
+            <Route path="profile/:candidateId" element={<PublicProfile />} />
             
             {/* Auth Screens */}
             <Route path="login" element={<Login />} />

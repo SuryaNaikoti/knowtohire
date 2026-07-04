@@ -9,7 +9,8 @@ import { Select } from '../../../components/ui/Select';
 import { Alert } from '../../../components/ui/Alert';
 import { Loading } from '../../../components/ui/Loading';
 import { ResumeUploader } from '../../../components/dashboard/ResumeUploader';
-import { UserCog, Sparkles } from 'lucide-react';
+import { AvatarUploader } from '../../../components/dashboard/AvatarUploader';
+import { UserCog, Sparkles, User } from 'lucide-react';
 
 export const Portfolio: React.FC = () => {
   const { profile: authProfile } = useAuth();
@@ -169,8 +170,27 @@ export const Portfolio: React.FC = () => {
           </Card>
         </div>
 
-        {/* Right CV Uploader Box */}
+        {/* Right CV & Photo Uploader Box */}
         <div className="space-y-6">
+          {/* Profile Photo Card */}
+          <Card className="bg-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold flex items-center gap-1.5">
+                <User className="w-4 h-4 text-primary" /> Profile Photo
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {authProfile && (
+                <AvatarUploader
+                  candidateId={authProfile.id}
+                  currentAvatarUrl={authProfile.avatar_url || ''}
+                  onUploadSuccess={() => {}}
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Resume Verification Card */}
           <Card className="bg-white">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-bold flex items-center gap-1.5">

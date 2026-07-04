@@ -10,6 +10,14 @@ export interface CandidateKPIs {
   cvDownloadsCount: number;
   profileViewsCount: number;
   applications: any[];
+  breakdown?: {
+    bio: boolean;
+    resume: boolean;
+    skills: boolean;
+    experience: boolean;
+    education: boolean;
+    certifications: boolean;
+  };
 }
 
 export interface EmployerKPIs {
@@ -100,13 +108,23 @@ export const dashboardService = {
         }));
       }
 
+      const breakdown = {
+        bio: !!profile?.bio,
+        resume: !!profile?.resume_url,
+        skills: !!(skills && skills.length >= 3),
+        experience: !!(exp && exp.length > 0),
+        education: !!(edu && edu.length > 0),
+        certifications: !!(certs && certs.length > 0),
+      };
+
       return {
         profileStrength: score,
         cvDownloaded: resumeExists,
         activeAppsCount: appsCount,
         cvDownloadsCount: resumeExists ? 19 : 0,
         profileViewsCount: 142,
-        applications: liveApplications
+        applications: liveApplications,
+        breakdown
       };
     } catch (err) {
       console.error('[dashboardService.getCandidateKPIs error]', err);

@@ -65,7 +65,7 @@ export const CandidateDashboard: React.FC = () => {
       </div>
 
       {/* Completion Meter Row */}
-      <ProfileCompletionMeter percentage={kpis.profileStrength} />
+      <ProfileCompletionMeter percentage={kpis.profileStrength} breakdown={kpis.breakdown} />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">

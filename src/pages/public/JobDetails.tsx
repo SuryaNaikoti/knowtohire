@@ -1,14 +1,51 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { mockJobs } from '../../constants/mockData';
 import type { Job } from '../../constants/mockData';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent } from '../../components/ui/Card';
-import { MapPin, Briefcase, DollarSign, ArrowLeft, ChevronRight, Share2, Heart, Award } from 'lucide-react';
+import { MapPin, Briefcase, DollarSign, ArrowLeft, ChevronRight, Share2, Heart, Award, CheckCircle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { candidateService } from '../../lib/services/candidateService';
 
 export const JobDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { profile } = useAuth();
   const job = mockJobs.find((j: Job) => j.id === id);
+
+  const [hasApplied, setHasApplied] = useState(false);
+  const [checkingApp, setCheckingApp] = useState(false);
+  const [applying, setApplying] = useState(false);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      if (!profile || profile.role !== 'candidate' || !id) return;
+      setCheckingApp(true);
+      try {
+        const applied = await candidateService.hasApplied(profile.id, id);
+        setHasApplied(applied);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setCheckingApp(false);
+      }
+    };
+    checkStatus();
+  }, [profile, id]);
+
+  const handleApply = async () => {
+    if (!profile || profile.role !== 'candidate' || !id) return;
+    setApplying(true);
+    try {
+      await candidateService.applyToJob(profile.id, id);
+      setHasApplied(true);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to submit application. Please try again.');
+    } finally {
+      setApplying(false);
+    }
+  };
 
   if (!job) {
     return (
@@ -150,11 +187,39 @@ export const JobDetails: React.FC = () => {
                   </div>
                 </div>
 
-                <Link to="/register?ref=apply" className="block pt-2">
-                  <Button variant="primary" className="w-full py-3 h-11 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl shadow-md text-xs font-bold">
-                    Apply for this Position
-                  </Button>
-                </Link>
+                {profile ? (
+                  profile.role === 'candidate' ? (
+                    hasApplied ? (
+                      <Button
+                        disabled
+                        variant="secondary"
+                        className="w-full py-3 h-11 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
+                      >
+                        <CheckCircle className="w-4 h-4" /> Applied
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        onClick={handleApply}
+                        isLoading={applying}
+                        disabled={checkingApp}
+                        className="w-full py-3 h-11 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl shadow-md text-xs font-bold"
+                      >
+                        Apply for this Position
+                      </Button>
+                    )
+                  ) : (
+                    <div className="text-center text-[11px] font-bold text-gray-500 bg-gray-50 py-3 rounded-xl border border-dashed border-gray-200">
+                      Logged in as {profile.role}
+                    </div>
+                  )
+                ) : (
+                  <Link to="/register?ref=apply" className="block pt-2">
+                    <Button variant="primary" className="w-full py-3 h-11 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl shadow-md text-xs font-bold">
+                      Apply for this Position
+                    </Button>
+                  </Link>
+                )}
                 <p className="text-[10px] text-slate-400 font-bold text-center leading-relaxed">
                   Submitting matches your CV dossier automatically and sends pipeline alerts.
                 </p>

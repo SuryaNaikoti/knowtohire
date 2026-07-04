@@ -377,7 +377,7 @@ export const candidateService = {
   uploadAvatar: async (candidateId: string, file: File): Promise<string> => {
     if (isSupabaseConfigured && supabase) {
       const fileExt = file.name.split('.').pop();
-      const filePath = `${candidateId}/avatar.${fileExt}`;
+      const filePath = `${candidateId}/avatar-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -389,10 +389,27 @@ export const candidateService = {
       }
 
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-      return data.publicUrl;
+      const publicUrl = data.publicUrl;
+
+      // Update the user's avatar_url in profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+        .eq('id', candidateId);
+
+      if (profileError) {
+        console.error('[SUPABASE AVATAR UPDATE ERROR]', profileError);
+        throw profileError;
+      }
+
+      return publicUrl;
     } else {
       await new Promise((resolve) => setTimeout(resolve, 800));
-      return `https://api.dicebear.com/7.x/adventurer/svg?seed=${candidateId}`;
+      const simulatedUrl = `https://api.dicebear.com/7.x/adventurer/svg?seed=${candidateId}`;
+      const simProfile = getSimulatedData<any>(`kth_profile_${candidateId}`, {});
+      simProfile.avatar_url = simulatedUrl;
+      setSimulatedData(`kth_profile_${candidateId}`, simProfile);
+      return simulatedUrl;
     }
   },
 

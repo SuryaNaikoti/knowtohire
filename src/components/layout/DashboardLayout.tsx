@@ -1,15 +1,32 @@
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { ROUTES } from '../../constants/routes';
 import { LoadingOverlay } from '../ui/Loading';
+import { notificationService } from '../../lib/services/notificationService';
 
 export const DashboardLayout: React.FC = () => {
   const { profile, setRole, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      if (!profile) return;
+      try {
+        const count = await notificationService.getUnreadCount(profile.id);
+        setUnreadCount(count);
+      } catch (err) {
+        console.error('Failed to load unread count:', err);
+      }
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 15000); // refresh every 15s
+    return () => clearInterval(interval);
+  }, [profile]);
 
   const handleLogout = async () => {
     await logout();
@@ -225,16 +242,21 @@ export const DashboardLayout: React.FC = () => {
 
           {/* Right Header Actions */}
           <div className="flex items-center space-x-4">
-            {/* Mock Notifications Button */}
-            <button
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 cursor-pointer relative"
+            {/* Notifications Button */}
+            <Link
+              to={ROUTES.DASHBOARD.CANDIDATE.NOTIFICATIONS}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-650 hover:bg-gray-50 cursor-pointer relative block"
               aria-label="View notifications"
             >
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-500 rounded-full ring-2 ring-white" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white border-solid">
+                  {unreadCount}
+                </span>
+              )}
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
-            </button>
+            </Link>
 
             {/* Profile Dropdown */}
             {profile && (
