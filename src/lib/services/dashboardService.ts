@@ -53,20 +53,60 @@ export const dashboardService = {
       if (edu && edu.length > 0) score += 20;
       if (certs && certs.length > 0) score += 10;
 
-      // Mock Applications details for display
-      const mockApplications = [
-        { company: 'InnoTech Solutions', role: 'Senior React Developer', status: 'Interviewing', date: '2 days ago', match: '98%' },
-        { company: 'CloudBase Corp', role: 'Frontend Architect', status: 'Under Review', date: '5 days ago', match: '95%' },
-        { company: 'EdLearn Systems', role: 'Full Stack Engineer', status: 'Offer Received', date: '1 week ago', match: '92%' },
-      ];
+      // Live applications from Supabase or simulation fallback
+      let liveApplications: any[] = [];
+      let appsCount = 0;
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data: appData, error: appError } = await supabase
+            .from('job_applications')
+            .select(`
+              id,
+              status,
+              created_at,
+              jobs (
+                title,
+                companies ( name )
+              )
+            `)
+            .eq('candidate_id', candidateId)
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+          if (!appError && appData) {
+            appsCount = appData.length;
+            liveApplications = appData.map((a: any) => ({
+              company: a.jobs?.companies?.name || 'Unknown Company',
+              role: a.jobs?.title || 'Unknown Role',
+              status: a.status.charAt(0).toUpperCase() + a.status.slice(1),
+              date: new Date(a.created_at).toLocaleDateString(),
+              match: '—',
+            }));
+          }
+        } catch (appErr) {
+          console.warn('[dashboardService] applications query failed', appErr);
+        }
+      } else {
+        // Simulation mode — check localStorage
+        const simApps: string[] = JSON.parse(localStorage.getItem(`kth_applications_${candidateId}`) || '[]');
+        appsCount = simApps.length;
+        liveApplications = simApps.slice(0, 5).map((jobId, i) => ({
+          company: `Company ${i + 1}`,
+          role: 'Applied Position',
+          status: 'Applied',
+          date: 'Recently',
+          match: '—',
+        }));
+      }
 
       return {
         profileStrength: score,
         cvDownloaded: resumeExists,
-        activeAppsCount: mockApplications.length,
+        activeAppsCount: appsCount,
         cvDownloadsCount: resumeExists ? 19 : 0,
         profileViewsCount: 142,
-        applications: mockApplications
+        applications: liveApplications
       };
     } catch (err) {
       console.error('[dashboardService.getCandidateKPIs error]', err);

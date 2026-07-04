@@ -69,6 +69,21 @@ const CandidateJobs = React.lazy(() =>
 const SavedJobs = React.lazy(() =>
   import('./pages/dashboard/candidate/SavedJobs').then((m) => ({ default: m.SavedJobs }))
 );
+const Education = React.lazy(() =>
+  import('./pages/dashboard/candidate/Education').then((m) => ({ default: m.Education }))
+);
+const Certifications = React.lazy(() =>
+  import('./pages/dashboard/candidate/Certifications').then((m) => ({ default: m.Certifications }))
+);
+const Projects = React.lazy(() =>
+  import('./pages/dashboard/candidate/Projects').then((m) => ({ default: m.Projects }))
+);
+const Alerts = React.lazy(() =>
+  import('./pages/dashboard/candidate/Alerts').then((m) => ({ default: m.Alerts }))
+);
+const Notifications = React.lazy(() =>
+  import('./pages/dashboard/candidate/Notifications').then((m) => ({ default: m.Notifications }))
+);
 
 const EmployerDashboard = React.lazy(() =>
   import('./pages/dashboard/employer/EmployerDashboard').then((m) => ({ default: m.EmployerDashboard }))
@@ -181,6 +196,46 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute allowedRoles={['candidate']}>
                     <SavedJobs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="education"
+                element={
+                  <ProtectedRoute allowedRoles={['candidate']}>
+                    <Education />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="certifications"
+                element={
+                  <ProtectedRoute allowedRoles={['candidate']}>
+                    <Certifications />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="projects"
+                element={
+                  <ProtectedRoute allowedRoles={['candidate']}>
+                    <Projects />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="alerts"
+                element={
+                  <ProtectedRoute allowedRoles={['candidate']}>
+                    <Alerts />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="notifications"
+                element={
+                  <ProtectedRoute allowedRoles={['candidate']}>
+                    <Notifications />
                   </ProtectedRoute>
                 }
               />

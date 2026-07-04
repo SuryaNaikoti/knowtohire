@@ -161,6 +161,22 @@ export const candidateService = {
     }
   },
 
+  updateSkill: async (skillId: string, candidateId: string, updates: Partial<CandidateSkill>): Promise<boolean> => {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from('candidate_skills')
+        .update(updates)
+        .eq('id', skillId);
+      if (error) throw error;
+      return true;
+    } else {
+      const current = await candidateService.getSkills(candidateId);
+      const updated = current.map((s) => s.id === skillId ? { ...s, ...updates } : s);
+      setSimulatedData(`kth_skills_${candidateId}`, updated);
+      return true;
+    }
+  },
+
   // EXPERIENCE API
   getExperience: async (candidateId: string): Promise<CandidateExperience[]> => {
     if (isSupabaseConfigured && supabase) {
@@ -354,6 +370,90 @@ export const candidateService = {
       const current = await candidateService.getCertifications(candidateId);
       setSimulatedData(`kth_certifications_${candidateId}`, current.filter((c) => c.id !== certId));
       return true;
+    }
+  },
+
+  // AVATAR UPLOAD
+  uploadAvatar: async (candidateId: string, file: File): Promise<string> => {
+    if (isSupabaseConfigured && supabase) {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${candidateId}/avatar.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+      if (uploadError) {
+        console.error('[SUPABASE AVATAR UPLOAD ERROR]', uploadError);
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      return data.publicUrl;
+    } else {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return `https://api.dicebear.com/7.x/adventurer/svg?seed=${candidateId}`;
+    }
+  },
+
+  // APPLICATIONS API
+  applyToJob: async (candidateId: string, jobId: string, coverLetter?: string): Promise<boolean> => {
+    if (isSupabaseConfigured && supabase) {
+      // Check for duplicate first
+      const alreadyApplied = await candidateService.hasApplied(candidateId, jobId);
+      if (alreadyApplied) return false;
+
+      const { error } = await supabase.from('job_applications').insert({
+        candidate_id: candidateId,
+        job_id: jobId,
+        cover_letter: coverLetter || null,
+        status: 'applied',
+      });
+      if (error) {
+        console.error('[SUPABASE APPLY ERROR]', error);
+        throw error;
+      }
+      return true;
+    } else {
+      // Simulation
+      const key = `kth_applications_${candidateId}`;
+      const existing: string[] = JSON.parse(localStorage.getItem(key) || '[]');
+      if (existing.includes(jobId)) return false;
+      localStorage.setItem(key, JSON.stringify([...existing, jobId]));
+      return true;
+    }
+  },
+
+  hasApplied: async (candidateId: string, jobId: string): Promise<boolean> => {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from('job_applications')
+        .select('id')
+        .eq('candidate_id', candidateId)
+        .eq('job_id', jobId)
+        .limit(1);
+      if (error) return false;
+      return (data?.length ?? 0) > 0;
+    } else {
+      const key = `kth_applications_${candidateId}`;
+      const existing: string[] = JSON.parse(localStorage.getItem(key) || '[]');
+      return existing.includes(jobId);
+    }
+  },
+
+  getApplications: async (candidateId: string): Promise<{ jobId: string; status: string; created_at: string }[]> => {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from('job_applications')
+        .select('job_id, status, created_at')
+        .eq('candidate_id', candidateId)
+        .order('created_at', { ascending: false });
+      if (error) return [];
+      return (data || []).map((r) => ({ jobId: r.job_id, status: r.status, created_at: r.created_at }));
+    } else {
+      const key = `kth_applications_${candidateId}`;
+      const existing: string[] = JSON.parse(localStorage.getItem(key) || '[]');
+      return existing.map((jobId) => ({ jobId, status: 'applied', created_at: new Date().toISOString() }));
     }
   },
 };

@@ -17,8 +17,8 @@ export const ROUTES = {
   TEMPLATE_DETAILS: '/templates/:id',
   BLOG: '/blog',
   PRICING: '/pricing',
-  
-  
+  PUBLIC_PROFILE: '/profile/:candidateId',
+
   DASHBOARD: {
     ROOT: '/dashboard',
     CANDIDATE: {
@@ -28,6 +28,11 @@ export const ROUTES = {
       SKILLS: '/dashboard/candidate/skills',
       JOBS: '/dashboard/candidate/jobs',
       SAVED: '/dashboard/candidate/saved',
+      EDUCATION: '/dashboard/candidate/education',
+      CERTIFICATIONS: '/dashboard/candidate/certifications',
+      PROJECTS: '/dashboard/candidate/projects',
+      ALERTS: '/dashboard/candidate/alerts',
+      NOTIFICATIONS: '/dashboard/candidate/notifications',
     },
     EMPLOYER: {
       ROOT: '/dashboard/employer',
