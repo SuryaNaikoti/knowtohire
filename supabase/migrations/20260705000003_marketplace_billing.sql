@@ -1,4 +1,4 @@
--- Hardened Database Migration Schema v3 (Idempotent & Audited)
+-- Hardened Database Migration Schema v3.1 (Idempotent & Audited)
 
 -- 1. Create Tables
 CREATE TABLE IF NOT EXISTS public.template_categories (
@@ -167,14 +167,18 @@ BEGIN
     DROP POLICY IF EXISTS "Admin read all order_items" ON public.order_items;
     DROP POLICY IF EXISTS "Candidates read own purchases" ON public.template_purchases;
     DROP POLICY IF EXISTS "Candidates insert own purchases" ON public.template_purchases;
+    DROP POLICY IF EXISTS "Candidates update own purchases" ON public.template_purchases;
     DROP POLICY IF EXISTS "Admin read all purchases" ON public.template_purchases;
     DROP POLICY IF EXISTS "Users read own payments" ON public.payments;
+    DROP POLICY IF EXISTS "Users insert own payments" ON public.payments;
     DROP POLICY IF EXISTS "Admin read all payments" ON public.payments;
     DROP POLICY IF EXISTS "Users read own payment_events" ON public.payment_events;
     DROP POLICY IF EXISTS "Admin read all payment_events" ON public.payment_events;
     DROP POLICY IF EXISTS "Users read own subscriptions" ON public.subscriptions;
+    DROP POLICY IF EXISTS "Users insert own subscriptions" ON public.subscriptions;
     DROP POLICY IF EXISTS "Admin read all subscriptions" ON public.subscriptions;
     DROP POLICY IF EXISTS "Users read own invoices" ON public.invoices;
+    DROP POLICY IF EXISTS "Users insert own invoices" ON public.invoices;
     DROP POLICY IF EXISTS "Admin read all invoices" ON public.invoices;
 EXCEPTION
     WHEN others THEN NULL;
@@ -204,27 +208,34 @@ CREATE POLICY "Admin write for subscription_plans" ON public.subscription_plans 
 
 CREATE POLICY "Users read own orders" ON public.orders FOR SELECT USING (user_id = auth.uid());
 CREATE POLICY "Users insert own orders" ON public.orders FOR INSERT WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Admin read all orders" ON public.orders FOR ALL USING (
+CREATE POLICY "Admin read all orders" ON public.orders FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
 );
 
 CREATE POLICY "Users read own order_items" ON public.order_items FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.orders WHERE id = order_items.order_id AND user_id = auth.uid())
 );
-CREATE POLICY "Admin read all order_items" ON public.order_items FOR ALL USING (
+CREATE POLICY "Admin read all order_items" ON public.order_items FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
 );
 
 CREATE POLICY "Candidates read own purchases" ON public.template_purchases FOR SELECT USING (candidate_id = auth.uid());
 CREATE POLICY "Candidates insert own purchases" ON public.template_purchases FOR INSERT WITH CHECK (candidate_id = auth.uid());
-CREATE POLICY "Admin read all purchases" ON public.template_purchases FOR ALL USING (
+CREATE POLICY "Candidates update own purchases" ON public.template_purchases FOR UPDATE USING (candidate_id = auth.uid()) WITH CHECK (candidate_id = auth.uid());
+CREATE POLICY "Admin read all purchases" ON public.template_purchases FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
 );
 
 CREATE POLICY "Users read own payments" ON public.payments FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.orders WHERE id = payments.order_id AND user_id = auth.uid())
 );
-CREATE POLICY "Admin read all payments" ON public.payments FOR ALL USING (
+CREATE POLICY "Users insert own payments" ON public.payments FOR INSERT WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM public.orders o
+        WHERE o.id = payments.order_id AND o.user_id = auth.uid()
+    )
+);
+CREATE POLICY "Admin read all payments" ON public.payments FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
 );
 
@@ -235,17 +246,19 @@ CREATE POLICY "Users read own payment_events" ON public.payment_events FOR SELEC
         WHERE p.id = payment_events.payment_id AND o.user_id = auth.uid()
     )
 );
-CREATE POLICY "Admin read all payment_events" ON public.payment_events FOR ALL USING (
+CREATE POLICY "Admin read all payment_events" ON public.payment_events FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
 );
 
 CREATE POLICY "Users read own subscriptions" ON public.subscriptions FOR SELECT USING (user_id = auth.uid());
-CREATE POLICY "Admin read all subscriptions" ON public.subscriptions FOR ALL USING (
+CREATE POLICY "Users insert own subscriptions" ON public.subscriptions FOR INSERT WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Admin read all subscriptions" ON public.subscriptions FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
 );
 
 CREATE POLICY "Users read own invoices" ON public.invoices FOR SELECT USING (user_id = auth.uid());
-CREATE POLICY "Admin read all invoices" ON public.invoices FOR ALL USING (
+CREATE POLICY "Users insert own invoices" ON public.invoices FOR INSERT WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Admin read all invoices" ON public.invoices FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
 );
 
