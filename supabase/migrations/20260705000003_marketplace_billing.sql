@@ -180,6 +180,9 @@ BEGIN
     DROP POLICY IF EXISTS "Users read own invoices" ON public.invoices;
     DROP POLICY IF EXISTS "Users insert own invoices" ON public.invoices;
     DROP POLICY IF EXISTS "Admin read all invoices" ON public.invoices;
+    DROP POLICY IF EXISTS "Users update own orders" ON public.orders;
+    DROP POLICY IF EXISTS "Users update own subscriptions" ON public.subscriptions;
+    DROP POLICY IF EXISTS "Service role manage payment_events" ON public.payment_events;
 EXCEPTION
     WHEN others THEN NULL;
 END $$;
@@ -261,6 +264,10 @@ CREATE POLICY "Users insert own invoices" ON public.invoices FOR INSERT WITH CHE
 CREATE POLICY "Admin read all invoices" ON public.invoices FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role::text = 'admin')
 );
+
+CREATE POLICY "Users update own orders" ON public.orders FOR UPDATE USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users update own subscriptions" ON public.subscriptions FOR UPDATE USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Service role manage payment_events" ON public.payment_events FOR ALL USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
 
 -- 5. Auto updated_at Trigger (Refactored for PostgreSQL compliance)
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()

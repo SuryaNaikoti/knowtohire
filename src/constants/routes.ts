@@ -18,6 +18,10 @@ export const ROUTES = {
   BLOG: '/blog',
   PRICING: '/pricing',
   PUBLIC_PROFILE: '/profile/:candidateId',
+  MARKETPLACE: '/marketplace',
+  MARKETPLACE_TEMPLATE: '/marketplace/template/:slug',
+  CHECKOUT: '/marketplace/checkout',
+  ORDER_SUCCESS: '/marketplace/success',
 
   DASHBOARD: {
     ROOT: '/dashboard',
@@ -33,6 +37,9 @@ export const ROUTES = {
       PROJECTS: '/dashboard/candidate/projects',
       ALERTS: '/dashboard/candidate/alerts',
       NOTIFICATIONS: '/dashboard/candidate/notifications',
+      PURCHASES: '/dashboard/candidate/purchases',
+      BILLING: '/dashboard/candidate/billing',
+      SUBSCRIPTIONS: '/dashboard/candidate/subscriptions',
     },
     EMPLOYER: {
       ROOT: '/dashboard/employer',

@@ -53,6 +53,27 @@ const Pricing = React.lazy(() =>
 const PublicProfile = React.lazy(() =>
   import('./pages/public/PublicProfile').then((m) => ({ default: m.PublicProfile }))
 );
+const Marketplace = React.lazy(() =>
+  import('./pages/public/Marketplace').then((m) => ({ default: m.Marketplace }))
+);
+const MarketplaceTemplateDetails = React.lazy(() =>
+  import('./pages/public/TemplateDetails').then((m) => ({ default: m.TemplateDetails }))
+);
+const Checkout = React.lazy(() =>
+  import('./pages/public/Checkout').then((m) => ({ default: m.Checkout }))
+);
+const OrderSuccess = React.lazy(() =>
+  import('./pages/public/OrderSuccess').then((m) => ({ default: m.OrderSuccess }))
+);
+const Purchases = React.lazy(() =>
+  import('./pages/dashboard/candidate/Purchases').then((m) => ({ default: m.Purchases }))
+);
+const Billing = React.lazy(() =>
+  import('./pages/dashboard/candidate/Billing').then((m) => ({ default: m.Billing }))
+);
+const Subscriptions = React.lazy(() =>
+  import('./pages/dashboard/candidate/Subscriptions').then((m) => ({ default: m.Subscriptions }))
+);
 
 const CandidateDashboard = React.lazy(() =>
   import('./pages/dashboard/candidate/CandidateDashboard').then((m) => ({ default: m.CandidateDashboard }))
@@ -136,6 +157,10 @@ export const App: React.FC = () => {
             <Route path="blog" element={<Blog />} />
             <Route path="pricing" element={<Pricing />} />
             <Route path="profile/:candidateId" element={<PublicProfile />} />
+            <Route path="marketplace" element={<Marketplace />} />
+            <Route path="marketplace/template/:slug" element={<MarketplaceTemplateDetails />} />
+            <Route path="marketplace/checkout" element={<Checkout />} />
+            <Route path="marketplace/success" element={<OrderSuccess />} />
             
             {/* Auth Screens */}
             <Route path="login" element={<Login />} />
@@ -240,6 +265,30 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute allowedRoles={['candidate']}>
                     <Notifications />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="purchases"
+                element={
+                  <ProtectedRoute allowedRoles={['candidate']}>
+                    <Purchases />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="billing"
+                element={
+                  <ProtectedRoute allowedRoles={['candidate']}>
+                    <Billing />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="subscriptions"
+                element={
+                  <ProtectedRoute allowedRoles={['candidate']}>
+                    <Subscriptions />
                   </ProtectedRoute>
                 }
               />
