@@ -23,6 +23,18 @@ CREATE TABLE IF NOT EXISTS public.templates (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
+-- Reconcile templates table columns if the relation already existed
+ALTER TABLE public.templates ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES public.template_categories(id) ON DELETE SET NULL;
+ALTER TABLE public.templates ADD COLUMN IF NOT EXISTS price_cents INT DEFAULT 0;
+ALTER TABLE public.templates ADD COLUMN IF NOT EXISTS preview_image_url TEXT;
+ALTER TABLE public.templates ADD COLUMN IF NOT EXISTS download_url TEXT;
+ALTER TABLE public.templates ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+
+-- Copy legacy columns data
+UPDATE public.templates SET download_url = file_url WHERE download_url IS NULL AND file_url IS NOT NULL;
+UPDATE public.templates SET price_cents = (price * 100)::INT WHERE price_cents = 0 AND price IS NOT NULL;
+UPDATE public.templates SET preview_image_url = cover_url WHERE preview_image_url IS NULL AND cover_url IS NOT NULL;
+
 CREATE TABLE IF NOT EXISTS public.subscription_plans (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL UNIQUE,
@@ -75,6 +87,27 @@ CREATE TABLE IF NOT EXISTS public.template_purchases (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     UNIQUE(candidate_id, template_id)
 );
+
+-- Reconcile template_purchases table columns if the relation already existed
+ALTER TABLE public.template_purchases ADD COLUMN IF NOT EXISTS candidate_id UUID REFERENCES public.candidate_profiles(id) ON DELETE CASCADE;
+ALTER TABLE public.template_purchases ADD COLUMN IF NOT EXISTS order_id UUID REFERENCES public.orders(id) ON DELETE SET NULL;
+ALTER TABLE public.template_purchases ADD COLUMN IF NOT EXISTS purchase_price_cents INT DEFAULT 0;
+ALTER TABLE public.template_purchases ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
+-- Copy legacy columns data
+UPDATE public.template_purchases SET candidate_id = buyer_id WHERE candidate_id IS NULL AND buyer_id IS NOT NULL;
+UPDATE public.template_purchases SET purchase_price_cents = (amount * 100)::INT WHERE purchase_price_cents = 0 AND amount IS NOT NULL;
+
+-- Handle UNIQUE constraint if it doesn't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'template_purchases_candidate_id_template_id_key'
+    ) THEN
+        ALTER TABLE public.template_purchases ADD CONSTRAINT template_purchases_candidate_id_template_id_key UNIQUE(candidate_id, template_id);
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.payments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
