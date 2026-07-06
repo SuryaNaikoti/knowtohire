@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { MainLayout } from './components/layout/MainLayout';
@@ -47,15 +47,13 @@ const TemplateDetails = React.lazy(() =>
 const Blog = React.lazy(() =>
   import('./pages/public/Blog').then((m) => ({ default: m.Blog }))
 );
-const BlogPostDetail = React.lazy(() =>
-  import('./pages/public/BlogPostDetail').then((m) => ({ default: m.BlogPostDetail }))
-);
-const ResourcesHub = React.lazy(() =>
-  import('./pages/public/ResourcesHub').then((m) => ({ default: m.ResourcesHub }))
-);
+const BlogPostDetail = lazy(() => import('@/pages/public/BlogPostDetail'));
+const ResourcesHub = lazy(() => import('@/pages/public/ResourcesHub'));
 const Pricing = React.lazy(() =>
   import('./pages/public/Pricing').then((m) => ({ default: m.Pricing }))
 );
+const SearchResults = lazy(() => import('@/pages/public/SearchResults'));
+const NotificationCenter = lazy(() => import('@/pages/dashboard/shared/NotificationCenter'));
 const PublicProfile = React.lazy(() =>
   import('./pages/public/PublicProfile').then((m) => ({ default: m.PublicProfile }))
 );
@@ -140,9 +138,7 @@ const AdminDashboard = React.lazy(() =>
 const Moderation = React.lazy(() =>
   import('./pages/dashboard/admin/Moderation').then((m) => ({ default: m.Moderation }))
 );
-const AdminCMS = React.lazy(() =>
-  import('./pages/dashboard/admin/AdminCMS').then((m) => ({ default: m.AdminCMS }))
-);
+const AdminCMS = lazy(() => import('@/pages/dashboard/admin/AdminCMS'));
 
 export const App: React.FC = () => {
   return (
@@ -166,6 +162,7 @@ export const App: React.FC = () => {
             <Route path="blog" element={<Blog />} />
             <Route path="blog/:slug" element={<BlogPostDetail />} />
             <Route path="resources-hub" element={<ResourcesHub />} />
+            <Route path="search" element={<SearchResults />} />
             <Route path="pricing" element={<Pricing />} />
             <Route path="profile/:candidateId" element={<PublicProfile />} />
             <Route path="marketplace" element={<Marketplace />} />
@@ -188,6 +185,15 @@ export const App: React.FC = () => {
           {/* Protected Dashboard Shell Routes */}
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Navigate to="candidate" replace />} />
+            
+            <Route
+              path="notifications"
+              element={
+                <ProtectedRoute allowedRoles={['candidate', 'employer', 'admin', 'super_admin']}>
+                  <NotificationCenter />
+                </ProtectedRoute>
+              }
+            />
             
             {/* Candidate Dashboard Sub-routes */}
             <Route path="candidate">

@@ -6,8 +6,12 @@ import type { DashboardStats } from '../../../lib/services/analyticsService';
 import { leadMagnetService } from '../../../lib/services/contentService';
 import {
   LayoutDashboard, FileText, Download, BarChart3, Shield, Eye, TrendingUp,
-  Users, Plus, Edit3, Globe, Clock, Sparkles
+  Users, Plus, Edit3, Globe, Clock, Sparkles, Activity, Layers, AlertOctagon, Database
 } from 'lucide-react';
+import { SystemHealth } from './SystemHealth';
+import { QueueMonitor } from './QueueMonitor';
+import { ErrorLogs } from './ErrorLogs';
+import { DatabaseMetrics } from './DatabaseMetrics';
 
 // ── Stat Card ─────────────────────────────────────────────────────────────────
 const StatCard: React.FC<{
@@ -67,7 +71,7 @@ const BlogPostRow: React.FC<{ post: BlogPost; onPublish: (id: string) => void; o
 };
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
-type Tab = 'overview' | 'blog' | 'resources' | 'analytics' | 'audit';
+type Tab = 'overview' | 'blog' | 'resources' | 'analytics' | 'audit' | 'health' | 'queues' | 'errors' | 'database';
 
 const tabs: { key: Tab; label: string; icon: React.FC<any> }[] = [
   { key: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -75,6 +79,10 @@ const tabs: { key: Tab; label: string; icon: React.FC<any> }[] = [
   { key: 'resources', label: 'Resources', icon: Download },
   { key: 'analytics', label: 'Analytics', icon: BarChart3 },
   { key: 'audit', label: 'Audit Logs', icon: Shield },
+  { key: 'health', label: 'System Health', icon: Activity },
+  { key: 'queues', label: 'Queue Monitor', icon: Layers },
+  { key: 'errors', label: 'Error Logs', icon: AlertOctagon },
+  { key: 'database', label: 'DB Metrics', icon: Database },
 ];
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -480,6 +488,26 @@ export const AdminCMS: React.FC = () => {
                   )}
                 </div>
               </div>
+            )}
+
+            {/* ── SYSTEM HEALTH ────────────────────────────────────────────── */}
+            {activeTab === 'health' && (
+              <SystemHealth />
+            )}
+
+            {/* ── QUEUE MONITOR ─────────────────────────────────────────────── */}
+            {activeTab === 'queues' && (
+              <QueueMonitor />
+            )}
+
+            {/* ── ERROR LOGS ────────────────────────────────────────────────── */}
+            {activeTab === 'errors' && (
+              <ErrorLogs />
+            )}
+
+            {/* ── DATABASE METRICS ──────────────────────────────────────────── */}
+            {activeTab === 'database' && (
+              <DatabaseMetrics />
             )}
           </>
         )}

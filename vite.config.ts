@@ -11,5 +11,17 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react')) return 'react';
+          if (id.includes('node_modules/@supabase')) return 'supabase';
+          if (id.includes('node_modules/lucide')) return 'ui';
+          if (id.includes('node_modules/dompurify')) return 'utilities';
+        }
+      }
+    }
+  }
 })
 
