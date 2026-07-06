@@ -47,6 +47,12 @@ const TemplateDetails = React.lazy(() =>
 const Blog = React.lazy(() =>
   import('./pages/public/Blog').then((m) => ({ default: m.Blog }))
 );
+const BlogPostDetail = React.lazy(() =>
+  import('./pages/public/BlogPostDetail').then((m) => ({ default: m.BlogPostDetail }))
+);
+const ResourcesHub = React.lazy(() =>
+  import('./pages/public/ResourcesHub').then((m) => ({ default: m.ResourcesHub }))
+);
 const Pricing = React.lazy(() =>
   import('./pages/public/Pricing').then((m) => ({ default: m.Pricing }))
 );
@@ -134,6 +140,9 @@ const AdminDashboard = React.lazy(() =>
 const Moderation = React.lazy(() =>
   import('./pages/dashboard/admin/Moderation').then((m) => ({ default: m.Moderation }))
 );
+const AdminCMS = React.lazy(() =>
+  import('./pages/dashboard/admin/AdminCMS').then((m) => ({ default: m.AdminCMS }))
+);
 
 export const App: React.FC = () => {
   return (
@@ -155,6 +164,8 @@ export const App: React.FC = () => {
             <Route path="templates" element={<TemplatesListing />} />
             <Route path="templates/:id" element={<TemplateDetails />} />
             <Route path="blog" element={<Blog />} />
+            <Route path="blog/:slug" element={<BlogPostDetail />} />
+            <Route path="resources-hub" element={<ResourcesHub />} />
             <Route path="pricing" element={<Pricing />} />
             <Route path="profile/:candidateId" element={<PublicProfile />} />
             <Route path="marketplace" element={<Marketplace />} />
@@ -358,6 +369,14 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
                     <Moderation />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="cms"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <AdminCMS />
                   </ProtectedRoute>
                 }
               />
