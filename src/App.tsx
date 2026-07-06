@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { MainLayout } from './components/layout/MainLayout';
 import { DashboardLayout } from './components/layout/DashboardLayout';
+import { FeedbackWidget } from './components/FeedbackWidget';
 
 // Public pages
 import { Home } from './pages/public/Home';
@@ -428,6 +429,7 @@ export const App: React.FC = () => {
           {/* Catch-all fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <FeedbackWidget />
       </BrowserRouter>
     </AuthProvider>
   );
