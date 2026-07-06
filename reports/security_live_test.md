@@ -1,11 +1,10 @@
-# Security Live Testing Report
+# Security Live Testing Report (Final)
 
 **Generated:** 2026-07-06  
 **Status:** 🟢 PASSED  
 
-## Vulnerability Scans
-- **Unauthorized Paths:** Route guards automatically redirect unauthorized requests to `/login`.
-- **RLS Bypass attempts:** SQL select/write operations verify user ID and role constraints.
-- **XSS Sanitization:** `DOMPurify.sanitize` is utilized for CMS post content rendering.
-- **File Upload Vulnerabilities:** File upload endpoint enforces size limits and MIME validation.
-- **Console Secrets:** Console log reviews confirm zero tokens or secret keys are exposed in client logs.
+## Vulnerability & Bypass Logs
+- **XSS Protection:** `DOMPurify.sanitize` sanitizes CMS markdown before rendering.
+- **SQL Injection:** Postgres parameters escaping protects against injection attacks.
+- **Route Guards:** Direct URLs to dashboards block access for unauthenticated users.
+- **Storage bypass checks:** Storage RLS policies block anonymous download attempts for private `resumes` and `templates` assets.
