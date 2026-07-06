@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { blogService, BlogPost as BlogPostType } from '../../lib/services/blogService';
+import { blogService } from '../../lib/services/blogService';
+import type { BlogPost as BlogPostType } from '../../lib/services/blogService';
 import { analyticsService } from '../../lib/services/analyticsService';
+import DOMPurify from 'dompurify';
 import { Clock, ArrowLeft, Eye, Heart, Share2, BookOpen, Tag, Calendar, ChevronRight } from 'lucide-react';
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
@@ -203,7 +205,7 @@ export const BlogPostDetail: React.FC = () => {
             {post.content ? (
               <div
                 className="prose prose-slate prose-emerald max-w-none prose-headings:font-bold prose-a:text-emerald-600 prose-a:no-underline hover:prose-a:underline"
-                dangerouslySetInnerHTML={{ __html: post.content }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content, { USE_PROFILES: { html: true } }) }}
               />
             ) : (
               <div className="text-slate-500 italic">Content coming soon.</div>

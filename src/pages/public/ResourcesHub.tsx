@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { leadMagnetService, resourceRequestService, LeadMagnet, ResourceRequest } from '../../lib/services/contentService';
+import { leadMagnetService, resourceRequestService } from '../../lib/services/contentService';
+import type { LeadMagnet, ResourceRequest } from '../../lib/services/contentService';
 import { analyticsService } from '../../lib/services/analyticsService';
 import {
   Download, FileText, CheckSquare, BookOpen, Video, Globe, BarChart3,
-  Plus, ThumbsUp, MessageSquare, ChevronRight, Sparkles, Users, TrendingUp
+  Plus, ThumbsUp, MessageSquare, Sparkles, Users, TrendingUp
 } from 'lucide-react';
 
 // ── Type icon map ─────────────────────────────────────────────────────────────

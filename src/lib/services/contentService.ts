@@ -82,12 +82,8 @@ export const leadMagnetService = {
 
     if (captureError) throw captureError;
 
-    // Increment download count (fire-and-forget)
-    supabase
-      .from('lead_magnets')
-      .update({ download_count: supabase.rpc('increment', { x: 1 }) as any })
-      .eq('id', payload.lead_magnet_id)
-      .then(() => {});
+    // Increment download count via RPC (fire-and-forget)
+    void supabase.rpc('increment_lead_magnet_download_count' as any, { magnet_id: payload.lead_magnet_id });
   },
 
   async getUserCaptures(userId: string) {

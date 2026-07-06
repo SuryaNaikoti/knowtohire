@@ -67,21 +67,19 @@ export const blogService = {
   // ── Posts ──────────────────────────────────────────────────────────────────
 
   async getPosts(filters: BlogFilters = {}) {
-    const { page = 1, limit = 12, search, category, is_featured } = filters;
+    const { page = 1, limit = 12, search, is_featured } = filters;
     const offset = (page - 1) * limit;
 
     let query = supabase
       .from('blog_posts')
       .select('*, author:profiles(id, full_name, avatar_url)', { count: 'exact' })
-      .is('is_deleted', null)
+      .is('deleted_at', null)
+      .not('published_at', 'is', null)
       .order('published_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (search) {
       query = query.or(`title.ilike.%${search}%,excerpt.ilike.%${search}%`);
-    }
-    if (category) {
-      query = query.eq('category', category);
     }
     if (typeof is_featured === 'boolean') {
       query = query.eq('is_featured', is_featured);
@@ -97,16 +95,13 @@ export const blogService = {
       .from('blog_posts')
       .select('*, author:profiles(id, full_name, avatar_url)')
       .eq('slug', slug)
+      .is('deleted_at', null)
       .single();
 
     if (error) throw error;
 
-    // Increment view count (fire-and-forget)
-    supabase
-      .from('blog_posts')
-      .update({ view_count: (data.view_count ?? 0) + 1 })
-      .eq('id', data.id)
-      .then(() => {});
+    // Increment view count atomically via RPC (fire-and-forget)
+    void supabase.rpc('increment_blog_post_view_count' as any, { post_id: data.id });
 
     return data as BlogPost;
   },
@@ -116,6 +111,8 @@ export const blogService = {
       .from('blog_posts')
       .select('*, author:profiles(id, full_name, avatar_url)')
       .eq('is_featured', true)
+      .is('deleted_at', null)
+      .not('published_at', 'is', null)
       .order('published_at', { ascending: false })
       .limit(limit);
 
@@ -213,11 +210,11 @@ export const blogService = {
   },
 
   async publishPost(id: string) {
-    return blogService.updatePost(id, { published_at: new Date().toISOString() });
+    return blogService.updatePost(id, { published_at: new Date().toISOString() } as any);
   },
 
   async unpublishPost(id: string) {
-    return blogService.updatePost(id, { published_at: undefined });
+    return blogService.updatePost(id, { published_at: null } as any);
   },
 
   async approveComment(commentId: string) {
