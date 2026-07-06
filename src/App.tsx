@@ -54,6 +54,10 @@ const Pricing = React.lazy(() =>
 );
 const SearchResults = lazy(() => import('@/pages/public/SearchResults'));
 const NotificationCenter = lazy(() => import('@/pages/dashboard/shared/NotificationCenter'));
+const ResumeAnalyzer = lazy(() => import('@/pages/dashboard/candidate/ResumeAnalyzer'));
+const AIJobMatches = lazy(() => import('@/pages/dashboard/candidate/AIJobMatches'));
+const InterviewPrep = lazy(() => import('@/pages/dashboard/candidate/InterviewPrep'));
+const CareerAssistant = lazy(() => import('@/pages/dashboard/candidate/CareerAssistant'));
 const PublicProfile = React.lazy(() =>
   import('./pages/public/PublicProfile').then((m) => ({ default: m.PublicProfile }))
 );
@@ -210,6 +214,38 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute allowedRoles={['candidate']}>
                     <Portfolio />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="resume-analyzer"
+                element={
+                  <ProtectedRoute allowedRoles={['candidate']}>
+                    <ResumeAnalyzer />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="job-matches"
+                element={
+                  <ProtectedRoute allowedRoles={['candidate']}>
+                    <AIJobMatches />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="interview-prep"
+                element={
+                  <ProtectedRoute allowedRoles={['candidate']}>
+                    <InterviewPrep />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="assistant"
+                element={
+                  <ProtectedRoute allowedRoles={['candidate']}>
+                    <CareerAssistant />
                   </ProtectedRoute>
                 }
               />
