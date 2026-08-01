@@ -1,39 +1,84 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import { Loading } from '../../components/ui/Loading';
+import { AlertTriangle, ArrowLeft, RefreshCw } from 'lucide-react';
 
 export const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { refreshProfile } = useAuth();
+
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isExpiredToken, setIsExpiredToken] = useState(false);
+
+  const code = searchParams.get('code');
+  const tokenHash = searchParams.get('token_hash');
+  const typeParam = searchParams.get('type');
+  const errorDescription = searchParams.get('error_description');
 
   useEffect(() => {
-    const handleCallback = async () => {
+    const handleAuthCallback = async () => {
+      setErrorMsg(null);
+      setIsExpiredToken(false);
+
+      if (errorDescription) {
+        if (
+          errorDescription.toLowerCase().includes('expired') ||
+          errorDescription.toLowerCase().includes('invalid')
+        ) {
+          setIsExpiredToken(true);
+        }
+        setErrorMsg(errorDescription);
+        return;
+      }
+
       try {
-        // Exchange session parameters
-        const { data, error } = await supabase.auth.getSession();
-        if (error) throw error;
+        // 1. Password Reset Recovery Callback
+        if (typeParam === 'recovery') {
+          if (tokenHash) {
+            const { error } = await supabase.auth.verifyOtp({
+              token_hash: tokenHash,
+              type: 'recovery',
+            });
+            if (error) throw error;
+          }
+          navigate('/reset-password', { replace: true });
+          return;
+        }
+
+        // 2. PKCE Code Exchange
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+        } else if (tokenHash && typeParam) {
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: typeParam as any,
+          });
+          if (error) throw error;
+        }
+
+        // 3. Obtain Active Session
+        const { data, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
 
         if (!data.session) {
-          throw new Error('No session active after redirect Callback.');
+          throw new Error('Authentication callback completed but no active session was established.');
         }
 
         const user = data.session.user;
-
-        // 1. Sync public profiles database records
         await refreshProfile();
 
-        // 2. Fetch profile from DB to check role and onboarding status
-        const { data: profile, error: profileError } = await supabase
+        // 4. Determine Workspace Redirection Path
+        const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .single();
 
-        if (profileError || !profile || !profile.role) {
-          // If no role set yet, redirect to role selection screen
+        if (!profile || !profile.role) {
           navigate('/role-selection', { replace: true });
           return;
         }
@@ -41,7 +86,6 @@ export const AuthCallback: React.FC = () => {
         const userRole = profile.role;
 
         if (userRole === 'candidate') {
-          // Check if candidate onboarding is done
           const { data: candidateProfile } = await supabase
             .from('candidate_profiles')
             .select('headline')
@@ -54,7 +98,6 @@ export const AuthCallback: React.FC = () => {
             navigate('/onboarding/candidate', { replace: true });
           }
         } else if (userRole === 'employer') {
-          // Check if employer onboarding is done (linked to a company)
           const { data: employerProfile } = await supabase
             .from('employer_profiles')
             .select('company_id')
@@ -72,24 +115,59 @@ export const AuthCallback: React.FC = () => {
           navigate('/', { replace: true });
         }
       } catch (err: any) {
-        console.error('OAuth Callback handling error:', err);
-        setErrorMsg(err.message || 'OAuth verification failed.');
-        navigate('/login?error=oauth_failed', { replace: true });
+        console.error('Auth Callback processing failure:', err);
+        const message = err.message || 'Authentication link verification failed.';
+        if (
+          message.toLowerCase().includes('expired') ||
+          message.toLowerCase().includes('invalid') ||
+          message.toLowerCase().includes('already used')
+        ) {
+          setIsExpiredToken(true);
+        }
+        setErrorMsg(message);
       }
     };
 
-    handleCallback();
-  }, [navigate, refreshProfile]);
+    handleAuthCallback();
+  }, [code, tokenHash, typeParam, errorDescription, navigate, refreshProfile]);
 
   return (
-    <div className="flex-1 min-h-screen bg-slate-50 flex items-center justify-center p-8">
-      <div className="max-w-md w-full space-y-4 text-center">
+    <div className="flex-1 min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <div className="max-w-md w-full bg-white rounded-2xl p-6 border border-slate-200 shadow-xl space-y-4 text-center">
         {errorMsg ? (
-          <div className="p-3.5 bg-red-50 border border-red-100 rounded-xl text-red-750 text-xs font-semibold leading-relaxed">
-            {errorMsg}
+          <div role="alert" aria-live="assertive" className="space-y-4">
+            <div className="w-12 h-12 rounded-full bg-red-50 border border-red-200 flex items-center justify-center text-red-600 mx-auto">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-slate-850">
+                {isExpiredToken ? 'Link Expired or Invalid' : 'Verification Issue'}
+              </h3>
+              <p className="text-xs text-slate-600 font-semibold leading-relaxed">
+                {errorMsg}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-2">
+              <Link
+                to="/verify-email"
+                className="w-full h-11 bg-emerald-650 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>Request New Verification Email</span>
+              </Link>
+              <Link
+                to="/login"
+                className="w-full h-10 text-slate-600 hover:text-slate-800 text-xs font-bold flex items-center justify-center gap-1"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Return to Login</span>
+              </Link>
+            </div>
           </div>
         ) : (
-          <Loading label="Authenticating callback token credentials..." />
+          <Loading label="Exchanging security tokens & initializing session..." />
         )}
       </div>
     </div>

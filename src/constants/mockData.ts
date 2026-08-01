@@ -62,101 +62,122 @@ export const mockJobs: Job[] = [
   {
     id: 'job-1',
     title: 'Senior Software Engineer',
-    company: 'Stripe',
+    company: 'TechNova Labs',
     logo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=80&h=80&q=80',
-    location: 'San Francisco, CA (Hybrid)',
+    location: 'Karnataka (Bengaluru)',
     type: 'Full-time',
     department: 'Engineering',
-    salary: '$180,000 - $220,000 / yr',
-    postedAt: '2 days ago',
-    matchScore: 94,
-    description: 'We are looking for a Senior Software Engineer to help build the next generation of global checkout infrastructure. You will work on robust APIs, fault-tolerant distributed networks, and scale transactional engines handling billions of monthly volume.',
+    salary: '₹18,00,000 - ₹28,00,000 / yr',
+    postedAt: '2 hours ago',
+    matchScore: 98,
+    description: 'We are looking for a Senior Software Engineer to help build the next generation of cloud checkout infrastructure. You will work on robust APIs, fault-tolerant distributed networks, and scale transactional engines handling millions of daily events.',
     requirements: [
-      '8+ years of professional backend software engineering experience.',
-      'Strong expertise in Go, Ruby, Java, or Rust.',
-      'Experience designing and scaling RESTful APIs and distributed microservices.',
-      'Deep understanding of PostgreSQL, Redis, and message queues (Kafka/RabbitMQ).'
+      '5+ years of professional backend software engineering experience.',
+      'Strong expertise in React, Node.js, Go, or Java.',
+      'Experience designing and scaling RESTful APIs and microservices.',
+      'Understanding of PostgreSQL, Redis, and message queues.'
     ],
     benefits: [
-      'Comprehensive healthcare, vision, and dental insurance plans.',
-      'Flexible paid time off (PTO) and parental leave.',
-      'Annual learning & development stipend ($2,500).',
-      'Home office equipment budget ($1,500).'
+      'Comprehensive health and medical coverage.',
+      'Flexible remote & hybrid work options.',
+      'Annual learning & development stipend (₹50,000).',
+      'Performance bonus and equity grants.'
     ]
   },
   {
     id: 'job-2',
-    title: 'Lead Product Designer',
-    company: 'Notion',
+    title: 'Financial Risk Analyst',
+    company: 'CapitalWise Partners',
     logo: 'https://images.unsplash.com/photo-1568200306481-967613f0c74a?auto=format&fit=crop&w=80&h=80&q=80',
-    location: 'Remote (US/Canada)',
-    type: 'Remote',
-    department: 'Design',
-    salary: '$160,000 - $190,000 / yr',
-    postedAt: '1 week ago',
-    matchScore: 88,
-    description: 'Notion is seeking a Lead Product Designer to shape the future of collaborative knowledge workspaces. In this role, you will lead the core product editor design, draft intuitive UI interfaces, conduct customer user-testing sessions, and collaborate directly with product and engineering departments.',
+    location: 'Maharashtra (Mumbai)',
+    type: 'Full-time',
+    department: 'Finance',
+    salary: '₹14,00,000 - ₹22,00,000 / yr',
+    postedAt: '1 day ago',
+    matchScore: 95,
+    description: 'CapitalWise Partners is seeking a Lead Financial Risk Analyst to oversee portfolio risk models, regulatory capital compliance, and stress testing scenarios for high-net-worth institutional clients.',
     requirements: [
-      '6+ years of UX/UI product design experience in SaaS environments.',
-      'Exceptional portfolio showcasing interactions, workspace systems, and product thinking.',
-      'Proficiency in Figma, prototyping software, and components design libraries.',
-      'Experience conducting user interviews and iterating designs based on telemetry.'
+      '4+ years in financial modeling, risk analysis, or wealth management.',
+      'Proficiency in Python, SQL, Excel, and quantitative risk software.',
+      'FRM or CFA certification preferred.',
+      'Strong presentation skills for C-suite executive briefings.'
     ],
     benefits: [
-      'Competitive equity packages.',
-      'Health wellness monthly stipend ($200).',
-      '401(k) retirement matching (4% match).',
-      'Annual remote team meetups in creative spaces.'
+      'Quarterly performance bonuses.',
+      'Health insurance including family coverage.',
+      'Subsidized professional certification funding.',
+      'Flexible wellness allowances.'
     ]
   },
   {
     id: 'job-3',
-    title: 'Principal AI Researcher',
-    company: 'Google DeepMind',
-    logo: 'https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?auto=format&fit=crop&w=80&h=80&q=80',
-    location: 'London, UK (On-site)',
-    type: 'Full-time',
-    department: 'Research',
-    salary: '£140,000 - £180,000 / yr',
-    postedAt: '3 days ago',
+    title: 'Product Marketing Manager',
+    company: 'BrightPath Digital',
+    logo: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=80&h=80&q=80',
+    location: 'Maharashtra (Pune)',
+    type: 'Hybrid',
+    department: 'Marketing',
+    salary: '₹12,00,000 - ₹18,00,000 / yr',
+    postedAt: '5 hours ago',
     matchScore: 92,
-    description: 'Join Google DeepMind as a Principal AI Researcher to push the boundaries of artificial general intelligence (AGI). You will collaborate with elite scientists, lead large-scale reinforcement learning runs, and design neural networks for biological, physical, and coding reasoning structures.',
+    description: 'BrightPath Digital is hiring a Product Marketing Manager to drive go-to-market strategies, user acquisition campaigns, and brand storytelling across digital channels.',
     requirements: [
-      'Ph.D. in Computer Science, Mathematics, Machine Learning, or related field.',
-      'Publication record at top ML venues (NeurIPS, ICML, ICLR, CVPR).',
-      'Strong research implementation skills in JAX, PyTorch, or TensorFlow.',
-      'Experience leading large-scale neural network training pipelines.'
+      '3+ years of product marketing experience in SaaS or B2B tech.',
+      'Demonstrated track record of launching successful digital campaigns.',
+      'Proficiency in Google Analytics, HubSpot, and content strategy.',
+      'Excellent written communication and copywriting skills.'
     ],
     benefits: [
-      'Top-tier international pension and compensation packages.',
-      'Unlimited access to state-of-the-art GPU cluster compute blocks.',
-      'Comprehensive family medical coverage.',
-      'Subsidized gourmet on-site dining and wellness gyms.'
+      'Flexible hybrid schedule (2 days in office).',
+      'Medical insurance and wellness days.',
+      'Annual team offsites.',
+      'Subsidized learning budget.'
     ]
   },
   {
     id: 'job-4',
-    title: 'Product Marketing Manager',
-    company: 'Linear',
-    logo: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=80&h=80&q=80',
-    location: 'New York, NY (Hybrid)',
-    type: 'Hybrid',
-    department: 'Marketing',
-    salary: '$130,000 - $160,000 / yr',
-    postedAt: '5 days ago',
-    matchScore: 82,
-    description: 'We are seeking a Product Marketing Manager to craft the narrative, launch campaigns, and drive adoption for Linear features. You will translate developer tools specifications into clear user value points and orchestrate global features rollouts.',
+    title: 'Lead Healthcare Systems Specialist',
+    company: 'MedPulse Health',
+    logo: 'https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?auto=format&fit=crop&w=80&h=80&q=80',
+    location: 'Tamil Nadu (Chennai)',
+    type: 'Full-time',
+    department: 'Healthcare',
+    salary: '₹16,00,000 - ₹24,00,000 / yr',
+    postedAt: '3 days ago',
+    matchScore: 89,
+    description: 'MedPulse Health is expanding its clinical operations platform. We need a Systems Specialist to coordinate telemetry software integration across regional hospital networks.',
     requirements: [
-      '4+ years of product marketing experience within developer tools or B2B SaaS.',
-      'Superb writing skills and visual storytelling capability.',
-      'Experience managing multi-channel launches (social, email, changelog).',
-      'Familiarity with modern developer tools and tracking systems.'
+      'Bachelor degree in Biomedical Engineering or Health Informatics.',
+      '3+ years experience with EHR/EMR systems and HL7/FHIR protocols.',
+      'Proven ability to collaborate with hospital administration and clinical teams.'
     ],
     benefits: [
-      'Flexible remote schedule options.',
-      'Full healthcare coverage + mental health wellness apps access.',
-      'Stipend for learning materials and books ($1,000).',
-      'Bi-annual company retreats.'
+      'Top-tier family medical coverage.',
+      'Annual health checkups and wellness stipends.',
+      'Career progression path to Regional Health Director.'
+    ]
+  },
+  {
+    id: 'job-5',
+    title: 'ESG & Sustainability Lead Consultant',
+    company: 'EcoGreen Solutions',
+    logo: 'https://images.unsplash.com/photo-1542744094-3a31b272c490?auto=format&fit=crop&w=80&h=80&q=80',
+    location: 'Delhi NCR',
+    type: 'Full-time',
+    department: 'ESG & Sustainability',
+    salary: '₹15,00,000 - ₹25,00,000 / yr',
+    postedAt: '1 day ago',
+    matchScore: 91,
+    description: 'EcoGreen Solutions is advising enterprise clients on carbon accounting, CSRD compliance, and renewable energy transitions across Delhi NCR and Northern India.',
+    requirements: [
+      'Degree in Environmental Science, Sustainability, or Business Administration.',
+      '4+ years advising on ESG frameworks (GRI, TCFD, ISSB).',
+      'Experience conducting GHG inventory audits and lifecycle assessments.'
+    ],
+    benefits: [
+      'Green commute allowance.',
+      'Comprehensive insurance.',
+      'Flexible work location.'
     ]
   }
 ];

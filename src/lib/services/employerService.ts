@@ -104,22 +104,70 @@ export const employerService = {
         .select('company_id')
         .eq('employer_id', employerId)
         .single();
-      if (error) {
-        if (error.code === 'PGRST116') return null;
-        throw error;
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      // If the employer has an existing company link, return it
+      if (data?.company_id) {
+        return employerService.getCompany(data.company_id);
       }
-      return employerService.getCompany(data.company_id);
+
+      // AUTO-CREATE: new employer has no company — create one and link them
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, email')
+          .eq('id', employerId)
+          .single();
+
+        const companyName = profile
+          ? `${profile.first_name || 'My'} ${profile.last_name || 'Company'}`
+          : 'My Company';
+
+        const newCompanyId = crypto.randomUUID();
+
+        const { error: companyInsertError } = await supabase
+          .from('companies')
+          .insert({
+            id: newCompanyId,
+            name: companyName,
+            company_email: profile?.email || '',
+            industry: '',
+            description: '',
+            verification_status: 'pending',
+          });
+
+        if (companyInsertError) throw companyInsertError;
+
+        const { error: memberInsertError } = await supabase
+          .from('company_team_members')
+          .insert({
+            company_id: newCompanyId,
+            employer_id: employerId,
+            member_role: 'Admin',
+          });
+
+        if (memberInsertError) throw memberInsertError;
+
+        console.info('[employerService] Auto-created company for new employer:', employerId);
+        return employerService.getCompany(newCompanyId);
+      } catch (autoCreateError) {
+        console.error('[employerService] Auto-create company failed:', autoCreateError);
+        return null;
+      }
     } else {
       // In local simulation, everyone belongs to company 'comp-1'
       return employerService.getCompany('comp-1');
     }
   },
 
+
   updateCompany: async (companyId: string, company: Partial<Company>): Promise<boolean> => {
     if (isSupabaseConfigured && supabase) {
       const { error } = await supabase
         .from('companies')
-        .upsert({ id: companyId, ...company, updated_at: new Date().toISOString() });
+        .update({ ...company, updated_at: new Date().toISOString() })
+        .eq('id', companyId);
       if (error) throw error;
       return true;
     } else {

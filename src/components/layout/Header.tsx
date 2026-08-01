@@ -1,15 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import type { UserRole } from '../../context/AuthContext';
 import { Button } from '../ui/Button';
-import { User, UserPlus, Briefcase, Menu, X, ChevronDown, LogOut } from 'lucide-react';
+import { User, UserPlus, Briefcase, Menu, X, ChevronDown, LogOut, Search } from 'lucide-react';
+import { GlobalSearchModal } from '../common/GlobalSearchModal';
 
 export const Header: React.FC = () => {
   const { profile, isAuthenticated, logout, setRole } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const profileDropdownRef = React.useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchModalOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(event.target as Node)
+      ) {
+        setProfileDropdownOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setProfileDropdownOpen(false);
+      }
+    };
+
+    if (profileDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [profileDropdownOpen]);
 
   const handleLogout = async () => {
     await logout();
@@ -22,7 +62,7 @@ export const Header: React.FC = () => {
     { name: 'Jobs', path: '/jobs' },
     { name: 'Study Hub', path: '/resources' },
     { name: 'Templates', path: '/templates' },
-    { name: 'Employers', path: '/coming-soon?feature=Employers' },
+    { name: 'Employers', path: '/login?role=employer' },
     { name: 'Blog', path: '/blog' },
     { name: 'About Us', path: '/about' },
     { name: 'Contact Us', path: '/contact' }
@@ -68,6 +108,16 @@ export const Header: React.FC = () => {
 
           {/* Right Actions */}
           <div className="flex items-center gap-4">
+            {/* Global Search Button Trigger */}
+            <button
+              onClick={() => setSearchModalOpen(true)}
+              className="flex items-center gap-2 text-xs font-semibold bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+            >
+              <Search className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden md:inline">Search...</span>
+              <kbd className="hidden md:inline text-[10px] bg-slate-900 px-1.5 py-0.5 rounded text-slate-400 border border-slate-700">⌘K</kbd>
+            </button>
+
             {/* Quick role switcher for testing */}
             {isAuthenticated && profile && (
               <select
@@ -87,7 +137,7 @@ export const Header: React.FC = () => {
             )}
 
             {isAuthenticated && profile ? (
-              <div className="relative">
+              <div className="relative" ref={profileDropdownRef}>
                 <button
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                   className="flex items-center gap-2 text-sm font-semibold hover:text-emerald-500 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg py-1 px-2 cursor-pointer"
@@ -144,7 +194,7 @@ export const Header: React.FC = () => {
                     <span>Register</span>
                   </Button>
                 </Link>
-                <Link to="/coming-soon?feature=PostJob">
+                <Link to="/login?role=employer">
                   <Button variant="secondary" size="sm" className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-md h-10 px-5 rounded-xl font-bold text-sm">
                     <Briefcase className="w-4 h-4 shrink-0" />
                     <span>Post a Job</span>
@@ -175,7 +225,7 @@ export const Header: React.FC = () => {
                 key={item.name}
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center h-full px-1 text-sm font-semibold border-b-2 transition-all duration-200 select-none whitespace-nowrap cursor-pointer kth-inline-icon ${
+                  `flex items-center h-full px-1 text-sm font-semibold border-b-2 transition-all duration-200 select-none whitespace-nowrap cursor-pointer kth-inline-icon focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 rounded-md ${
                     isActive
                       ? 'border-emerald-600 text-emerald-600'
                       : 'border-transparent text-slate-600 hover:text-emerald-600'
@@ -183,9 +233,6 @@ export const Header: React.FC = () => {
                 }
               >
                 <span>{item.name}</span>
-                {['Jobs', 'Study Hub', 'Templates'].includes(item.name) && (
-                  <ChevronDown className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                )}
               </NavLink>
             ))}
           </nav>
@@ -302,9 +349,9 @@ export const Header: React.FC = () => {
                     </Button>
                   </Link>
                 </div>
-                <Link to="/coming-soon?feature=PostJob" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="secondary" size="sm" className="w-full text-xs font-bold flex items-center justify-center gap-1.5 h-10 rounded-xl bg-blue-600 hover:bg-blue-750 text-white">
-                    <Briefcase className="w-4 h-4 shrink-0" />
+                <Link to="/login?role=employer" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="secondary" size="sm" className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-bold rounded-xl h-11">
+                    <Briefcase className="w-4 h-4" />
                     <span>Post a Job</span>
                   </Button>
                 </Link>
@@ -313,6 +360,10 @@ export const Header: React.FC = () => {
           </div>
         </div>
       )}
+      <GlobalSearchModal
+        isOpen={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+      />
     </header>
   );
 };

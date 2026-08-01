@@ -203,49 +203,28 @@ export const Home: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Column — 5/12 — Dashboard Mockup */}
-            <div className="lg:col-span-5 flex flex-col gap-6 justify-end w-full">
-              <div className="relative w-full max-w-[480px] mx-auto">
-                
-                {/* Floating Candidate Card — top left */}
-                <div className="absolute -top-8 -left-8 glass-card-light p-4 rounded-2xl shadow-xl z-20 hidden sm:flex items-center gap-3 kth-animate-float" style={{ animationDelay: '-2s' }}>
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-black text-xs shadow-inner">RS</div>
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-slate-900">Rahul Sharma</p>
-                    <p className="text-[10px] text-slate-450 font-semibold">Product Manager • Hired</p>
-                  </div>
-                  <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full ml-1">✓ Verified</span>
-                </div>
+            {/* Right Column — 5/12 — Premium SaaS Search Panel */}
+            <div className="lg:col-span-5 flex flex-col justify-center w-full">
+              <Card className="bg-white/95 backdrop-blur-xl p-0 shadow-[0_8px_40px_rgba(15,23,42,0.10),0_0_0_1px_rgba(15,23,42,0.04)] rounded-[28px] relative z-10 overflow-hidden">
 
-                {/* Floating Job Match — bottom right */}
-                <div className="absolute -right-4 -bottom-4 glass-card-dark text-white p-4 rounded-2xl shadow-2xl z-20 hidden sm:flex flex-col gap-2 kth-animate-float-rev text-left" style={{ animationDelay: '-4s' }}>
-                  <div className="flex justify-between items-center gap-6">
-                    <p className="text-[10px] font-extrabold text-emerald-400 uppercase tracking-widest">AI MATCH SCORE</p>
-                    <span className="bg-emerald-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded">98%</span>
-                  </div>
-                  <p className="text-xs font-bold">Senior Software Engineer</p>
-                  <p className="text-[9px] text-slate-400">TechNova Labs • Bengaluru</p>
-                </div>
+                {/* Top accent bar */}
+                <div className="h-1 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
 
-                {/* Floating sparkle decoration */}
-                <div className="absolute -top-4 right-8 text-emerald-400 kth-animate-float-slow z-20 hidden lg:block">
-                  <Sparkles className="w-6 h-6 opacity-40" />
-                </div>
-
-                {/* Main Dashboard Widget */}
-                <Card overflowVisible={true} className="bg-white p-6 shadow-elevated border border-slate-150 rounded-[24px] relative z-10 overflow-visible space-y-6">
-                  {/* Dashboard Header */}
-                  <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+                {/* Dashboard Header + Profile Completion */}
+                <div className="px-6 pt-5 pb-4">
+                  <div className="flex justify-between items-center">
                     <div className="text-left">
-                      <p className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wider">Career Dashboard</p>
-                      <h4 className="text-sm font-black text-slate-900">Profile Completeness</h4>
+                      <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.15em]">Career Dashboard</p>
+                      <h4 className="text-sm font-black text-slate-900 mt-0.5">Find Your Next Opportunity</h4>
+                      <p className="text-[11px] text-slate-400 font-medium mt-0.5">Search across 50,000+ jobs</p>
                     </div>
-                    <div className="relative w-12 h-12 flex items-center justify-center">
-                      <svg className="w-full h-full transform -rotate-90">
-                        <circle cx="24" cy="24" r="18" stroke="#f1f5f9" strokeWidth="4" fill="transparent" />
-                        <circle cx="24" cy="24" r="18" stroke="url(#progressGradient)" strokeWidth="4" fill="transparent" strokeDasharray="113" strokeDashoffset="28" strokeLinecap="round" />
+                    {/* Profile completion ring */}
+                    <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 48 48">
+                        <circle cx="24" cy="24" r="19" stroke="#f1f5f9" strokeWidth="4" fill="transparent" />
+                        <circle cx="24" cy="24" r="19" stroke="url(#heroProgressGrad)" strokeWidth="4" fill="transparent" strokeDasharray="119" strokeDashoffset="30" strokeLinecap="round" className="transition-all duration-1000" />
                         <defs>
-                          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <linearGradient id="heroProgressGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" stopColor="#10b981" />
                             <stop offset="100%" stopColor="#0d9488" />
                           </linearGradient>
@@ -254,31 +233,35 @@ export const Home: React.FC = () => {
                       <span className="absolute text-[10px] font-black text-slate-800">75%</span>
                     </div>
                   </div>
+                </div>
 
-                  {/* Search Form */}
-                  <form onSubmit={handleSearch} className="space-y-3">
+                {/* Divider */}
+                <div className="mx-6 h-px bg-slate-100" />
+
+                {/* Search Form */}
+                <div className="px-6 py-4">
+                  <form onSubmit={handleSearch} className="space-y-2.5">
                     <Input
                       placeholder="Job title, skill, or keyword..."
-                      leftIcon={<Search className="w-4 h-4 text-slate-455" />}
+                      leftIcon={<Search className="w-4 h-4 text-slate-400" />}
                       value={keyword}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setKeyword(e.target.value)}
-                      className="text-xs border-slate-200 focus:border-emerald-500 focus:ring-1 bg-slate-50/50 h-[44px] rounded-xl"
+                      className="text-sm border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 bg-slate-50/60 h-[44px] rounded-2xl"
                       aria-label="Keyword"
                     />
-
                     <div className="grid grid-cols-2 gap-2">
                       <Input
                         placeholder="Location"
-                        leftIcon={<MapPin className="w-4 h-4 text-slate-455" />}
+                        leftIcon={<MapPin className="w-4 h-4 text-slate-400" />}
                         value={location}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocation(e.target.value)}
-                        className="text-xs border-slate-200 focus:border-emerald-500 focus:ring-1 bg-slate-50/50 h-[44px] rounded-xl"
+                        className="text-sm border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 bg-slate-50/60 h-[44px] rounded-2xl"
                         aria-label="Location"
                       />
                       <Select
                         value={category}
                         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCategory(e.target.value)}
-                        className="text-xs border-slate-200 focus:border-emerald-500 focus:ring-1 bg-slate-50/50 h-[44px] rounded-xl"
+                        className="text-sm border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 bg-slate-50/60 h-[44px] rounded-2xl"
                         aria-label="Category dropdown"
                       >
                         <option value="">All Industries</option>
@@ -291,40 +274,95 @@ export const Home: React.FC = () => {
                       </Select>
                     </div>
 
-                    <Button type="submit" variant="primary" className="w-full text-xs font-bold h-11 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl shadow-md inline-flex items-center justify-center gap-1.5">
-                      <Search className="w-4 h-4" />
+                    {/* Premium Search Button with animated icons */}
+                    <button
+                      type="submit"
+                      className="group w-full h-[46px] bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-600 hover:from-emerald-500 hover:via-emerald-600 hover:to-teal-500 text-white text-sm font-bold rounded-2xl shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/35 inline-flex items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                    >
+                      <Search className="w-4 h-4 transition-transform duration-300 group-hover:scale-110" />
                       <span>Search Opportunities</span>
-                    </Button>
-                  </form>
+                      <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                    </button>
 
-                  {/* Application Analytics */}
-                  <div className="space-y-2 pt-4 border-t border-slate-100 text-left">
-                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Application Analytics</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-center hover:bg-slate-100/50 transition-colors">
-                        <p className="text-base font-black text-slate-900 leading-none">12</p>
-                        <p className="text-[9px] text-slate-400 font-bold mt-1">Applied</p>
-                      </div>
-                      <div className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100/50 text-center hover:bg-emerald-50 transition-colors">
-                        <p className="text-base font-black text-emerald-700 leading-none">4</p>
-                        <p className="text-[9px] text-emerald-600 font-bold mt-1">Shortlist</p>
-                      </div>
-                      <div className="bg-blue-50/50 p-2.5 rounded-xl border border-blue-100/50 text-center hover:bg-blue-50 transition-colors">
-                        <p className="text-base font-black text-blue-700 leading-none">2</p>
-                        <p className="text-[9px] text-blue-600 font-bold mt-1">Offers</p>
-                      </div>
+                    {/* Trust indicators */}
+                    <div className="flex items-center justify-center gap-4 pt-0.5">
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+                        <Briefcase className="w-3 h-3 text-emerald-500" />
+                        50K+ Active Jobs
+                      </span>
+                      <span className="w-px h-3 bg-slate-200" />
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+                        <Building className="w-3 h-3 text-emerald-500" />
+                        2K+ Companies
+                      </span>
+                      <span className="w-px h-3 bg-slate-200" />
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+                        <Sparkles className="w-3 h-3 text-emerald-500" />
+                        AI Powered
+                      </span>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Divider */}
+                <div className="mx-6 h-px bg-slate-100" />
+
+                {/* Popular Searches */}
+                <div className="px-6 py-3.5">
+                  <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.15em] mb-2.5">Popular Searches</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['Software Engineer', 'Data Scientist', 'Product Manager', 'UX Designer', 'ESG Consultant', 'Financial Analyst'].map((term) => (
+                      <button
+                        key={term}
+                        type="button"
+                        onClick={() => { setKeyword(term); navigate(`/jobs?search=${encodeURIComponent(term)}`); }}
+                        className="text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-all duration-200 cursor-pointer"
+                      >
+                        {term}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="mx-6 h-px bg-slate-100" />
+
+                {/* Application Analytics */}
+                <div className="px-6 pt-3.5 pb-5">
+                  <div className="flex justify-between items-center mb-2.5">
+                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.15em]">Application Analytics</p>
+                    <RouterLink to="/dashboard" className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5 transition-colors">
+                      View all <ArrowRight className="w-3 h-3" />
+                    </RouterLink>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <div className="relative bg-gradient-to-br from-slate-50 to-slate-100/60 p-3.5 rounded-2xl border border-slate-150 text-center overflow-hidden hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300">
+                      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-slate-400/30 rounded-l-2xl" />
+                      <p className="text-xl font-black text-slate-900 leading-none tabular-nums">12</p>
+                      <p className="text-[10px] text-slate-500 font-bold mt-1">Applied</p>
+                    </div>
+                    <div className="relative bg-gradient-to-br from-emerald-50 to-emerald-100/40 p-3.5 rounded-2xl border border-emerald-100/80 text-center overflow-hidden hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300">
+                      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-emerald-500/50 rounded-l-2xl" />
+                      <p className="text-xl font-black text-emerald-700 leading-none tabular-nums">4</p>
+                      <p className="text-[10px] text-emerald-600 font-bold mt-1">Shortlisted</p>
+                    </div>
+                    <div className="relative bg-gradient-to-br from-blue-50 to-blue-100/40 p-3.5 rounded-2xl border border-blue-100/80 text-center overflow-hidden hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300">
+                      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-blue-500/50 rounded-l-2xl" />
+                      <p className="text-xl font-black text-blue-700 leading-none tabular-nums">2</p>
+                      <p className="text-[10px] text-blue-600 font-bold mt-1">Interviews</p>
                     </div>
                   </div>
+                </div>
 
-                </Card>
-              </div>
+              </Card>
             </div>
 
           </div>
         </div>
-        
+
         <WaveDivider position="bottom" fill="#022c22" />
       </section>
+
 
       {/* ════════════════════════════════════════════════════════════════════
           2. TRUST BAR — Platform statistics

@@ -15,10 +15,35 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules/react')) return 'react';
-          if (id.includes('node_modules/@supabase')) return 'supabase';
-          if (id.includes('node_modules/lucide')) return 'ui';
-          if (id.includes('node_modules/dompurify')) return 'utilities';
+          if (!id.includes('node_modules')) return;
+
+          // React Core & Router (Essential React framework runtime)
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/scheduler/')) {
+            return 'react-vendor';
+          }
+          if (id.includes('node_modules/react-router') || id.includes('node_modules/@remix-run/')) {
+            return 'react-router';
+          }
+          
+          // Supabase Client SDK (Backend data sync & authentication client)
+          if (id.includes('node_modules/@supabase/')) {
+            return 'supabase';
+          }
+          
+          // Authentication Gateway (Clerk auth SDK)
+          if (id.includes('node_modules/@clerk/')) {
+            return 'auth-vendor';
+          }
+
+          // UI Icon Set (Lucide React SVG iconography)
+          if (id.includes('node_modules/lucide-react')) {
+            return 'ui-icons';
+          }
+
+          // Security Sanitization (DOMPurify XSS protection)
+          if (id.includes('node_modules/dompurify')) {
+            return 'security';
+          }
         }
       }
     }

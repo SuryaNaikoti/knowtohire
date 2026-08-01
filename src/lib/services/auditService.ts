@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../supabase';
 
-export type AuditCategory = 'Auth' | 'Job' | 'Candidate' | 'Employer' | 'Application' | 'Marketplace';
+export type AuditCategory = 'Auth' | 'Job' | 'Candidate' | 'Employer' | 'Application' | 'Marketplace' | 'AdminBroadcast';
 
 export interface AuditLog {
   id: string;

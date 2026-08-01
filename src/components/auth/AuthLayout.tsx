@@ -23,16 +23,29 @@ const DotGrid: React.FC<{ className?: string }> = ({ className = '' }) => (
 export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle }) => {
   return (
     <div className="flex-1 min-h-[calc(100vh-76px)] bg-slate-50 flex items-center justify-center py-20 px-4 relative overflow-hidden">
+      {/* Skip Link for Keyboard Accessibility */}
+      <a
+        href="#main-auth-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 px-4 py-2 bg-emerald-650 text-white font-bold text-xs rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
+      >
+        Skip to main authentication content
+      </a>
+
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.06),transparent_50%),radial-gradient(circle_at_bottom_left,rgba(0,56,141,0.04),transparent_50%)] pointer-events-none" />
       <DotGrid className="text-slate-400 opacity-20" />
 
-      <div className="max-w-md w-full relative z-10 space-y-8 bg-white/70 backdrop-blur-md border border-slate-200 p-8 md:p-10 rounded-[32px] shadow-premium hover:shadow-elevated transition-shadow duration-300">
+      {/* Main Semantic Landmark */}
+      <main
+        id="main-auth-content"
+        tabIndex={-1}
+        className="max-w-md w-full relative z-10 space-y-8 bg-white/70 backdrop-blur-md border border-slate-200 p-8 md:p-10 rounded-[32px] shadow-premium hover:shadow-elevated transition-shadow duration-300 motion-reduce:transition-none focus:outline-none"
+      >
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-black font-heading tracking-tight text-slate-900 leading-none">
             {title}
           </h1>
           {subtitle && (
-            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+            <p className="text-xs text-slate-600 font-semibold leading-relaxed">
               {subtitle}
             </p>
           )}
@@ -41,7 +54,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitl
         <div className="space-y-6">
           {children}
         </div>
-      </div>
+      </main>
     </div>
   );
 };

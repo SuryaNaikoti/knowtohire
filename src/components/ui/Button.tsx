@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import type { ButtonHTMLAttributes } from 'react';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -7,9 +7,13 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  eventName?: string;
+  eventCategory?: string;
+  eventLabel?: string;
+  onTrackEvent?: (eventInfo: { name?: string; category?: string; label?: string }) => void;
 }
 
-export const Button: React.FC<ButtonProps> = ({
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   children,
   variant = 'primary',
   size = 'md',
@@ -18,10 +22,24 @@ export const Button: React.FC<ButtonProps> = ({
   rightIcon,
   className = '',
   disabled,
+  eventName,
+  eventCategory,
+  eventLabel,
+  onTrackEvent,
+  onClick,
   ...props
-}) => {
+}, ref) => {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (onTrackEvent || eventName) {
+      onTrackEvent?.({ name: eventName, category: eventCategory, label: eventLabel });
+    }
+    if (onClick) {
+      onClick(e);
+    }
+  };
+
   // Base styles
-  const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-98 disabled:pointer-events-none disabled:opacity-50 cursor-pointer';
+  const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 active:scale-98 disabled:pointer-events-none disabled:opacity-50 cursor-pointer min-h-[44px]';
 
   // Variant styles
   const variants = {
@@ -42,8 +60,10 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <button
+      ref={ref}
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
       disabled={disabled || isLoading}
+      onClick={handleClick}
       {...props}
     >
       {isLoading && (
@@ -74,4 +94,6 @@ export const Button: React.FC<ButtonProps> = ({
       {!isLoading && rightIcon && <span className="inline-flex shrink-0">{rightIcon}</span>}
     </button>
   );
-};
+});
+
+Button.displayName = 'Button';

@@ -2,6 +2,7 @@ import { candidateService } from './candidateService';
 import { employerService } from './employerService';
 import { jobsService } from './jobsService';
 import { supabase, isSupabaseConfigured } from '../supabase';
+import type { DashboardWidget } from '../../pages/dashboard/candidate/widgets/widgetTypes';
 
 export interface CandidateKPIs {
   profileStrength: number;
@@ -36,8 +37,44 @@ export interface AdminKPIs {
   totalUsersCount: number;
 }
 
-export const dashboardService = {
-  getCandidateKPIs: async (candidateId: string): Promise<CandidateKPIs> => {
+export interface IDashboardService {
+  registerWidget(widget: DashboardWidget): void;
+  getWidgets(userRole: string, activeFlags?: string[]): DashboardWidget[];
+  getCandidateKPIs(candidateId: string): Promise<CandidateKPIs>;
+  getEmployerKPIs(employerId: string): Promise<EmployerKPIs>;
+  getAdminKPIs(): Promise<AdminKPIs>;
+}
+
+class DashboardServiceImpl implements IDashboardService {
+  private registry: Map<string, DashboardWidget> = new Map();
+
+  registerWidget(widget: DashboardWidget): void {
+    this.registry.set(widget.id, widget);
+  }
+
+  getWidgets(userRole: string, activeFlags: string[] = []): DashboardWidget[] {
+    const widgets: DashboardWidget[] = Array.from(this.registry.values());
+    
+    return widgets
+      .filter(widget => {
+        if (!widget.isEnabled) return false;
+        
+        // 1. Permission check
+        if (widget.permission && widget.permission !== userRole) {
+          return false;
+        }
+
+        // 2. Feature flag check
+        if (widget.featureFlag && !activeFlags.includes(widget.featureFlag)) {
+          return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => a.priority - b.priority);
+  }
+
+  async getCandidateKPIs(candidateId: string): Promise<CandidateKPIs> {
     try {
       const [profile, skills, exp, edu, certs] = await Promise.all([
         candidateService.getProfile(candidateId),
@@ -130,9 +167,9 @@ export const dashboardService = {
       console.error('[dashboardService.getCandidateKPIs error]', err);
       throw err;
     }
-  },
+  }
 
-  getEmployerKPIs: async (employerId: string): Promise<EmployerKPIs> => {
+  async getEmployerKPIs(employerId: string): Promise<EmployerKPIs> {
     try {
       const comp = await employerService.getCompanyByEmployer(employerId);
       if (!comp) {
@@ -191,9 +228,9 @@ export const dashboardService = {
       console.error('[dashboardService.getEmployerKPIs error]', err);
       throw err;
     }
-  },
+  }
 
-  getAdminKPIs: async (): Promise<AdminKPIs> => {
+  async getAdminKPIs(): Promise<AdminKPIs> {
     try {
       const pendingJobs = await jobsService.getPendingApprovalJobs();
       
@@ -229,4 +266,7 @@ export const dashboardService = {
       throw err;
     }
   }
-};
+}
+
+export const dashboardService = new DashboardServiceImpl();
+export default dashboardService;

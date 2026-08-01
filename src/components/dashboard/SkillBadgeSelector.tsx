@@ -21,6 +21,7 @@ export const SkillBadgeSelector: React.FC<SkillBadgeSelectorProps> = ({
   const [skillName, setSkillName] = useState('');
   const [yearsOfExp, setYearsOfExp] = useState(1);
   const [competency, setCompetency] = useState<'Beginner' | 'Intermediate' | 'Expert'>('Intermediate');
+  const [category, setCategory] = useState<'Frontend' | 'Backend' | 'Cloud' | 'AI' | 'Patent' | 'ESG' | 'Languages'>('Frontend');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -76,6 +77,16 @@ export const SkillBadgeSelector: React.FC<SkillBadgeSelectorProps> = ({
     }
   };
 
+  const categoryOptions = [
+    { value: 'Frontend', label: 'Frontend' },
+    { value: 'Backend', label: 'Backend' },
+    { value: 'Cloud', label: 'Cloud' },
+    { value: 'AI', label: 'AI' },
+    { value: 'Patent', label: 'Patent' },
+    { value: 'ESG', label: 'ESG' },
+    { value: 'Languages', label: 'Languages' },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Skill Input Form */}
@@ -86,7 +97,7 @@ export const SkillBadgeSelector: React.FC<SkillBadgeSelectorProps> = ({
 
         {error && <Alert type="error" className="text-xs" title="Skills Alert">{error}</Alert>}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
             label="Skill Name"
             placeholder="e.g. React, TypeScript, Python"
@@ -95,14 +106,30 @@ export const SkillBadgeSelector: React.FC<SkillBadgeSelectorProps> = ({
             onChange={(e) => setSkillName(e.target.value)}
           />
 
-          <Input
-            label="Years of Experience"
-            type="number"
-            min={0}
-            required
-            value={yearsOfExp}
-            onChange={(e) => setYearsOfExp(Math.max(0, parseInt(e.target.value) || 0))}
+          <Select
+            label="Domain Category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value as any)}
+            options={categoryOptions}
           />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-semibold text-gray-700">Years of Experience</label>
+              <span className="text-xs font-bold text-primary">{yearsOfExp} Yr{yearsOfExp !== 1 && 's'}</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="20"
+              step="1"
+              value={yearsOfExp}
+              onChange={(e) => setYearsOfExp(parseInt(e.target.value) || 0)}
+              className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+            />
+          </div>
 
           <Select
             label="Competency Rating"
@@ -123,7 +150,7 @@ export const SkillBadgeSelector: React.FC<SkillBadgeSelectorProps> = ({
       </form>
 
       {/* Active Skills Inventory Grid */}
-      <div className="space-y-2">
+      <div className="space-y-4">
         <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Skills Inventory ({skills.length})</h4>
         {skills.length === 0 ? (
           <div className="bg-white border border-gray-150 border-solid rounded-xl p-6 text-center space-y-1">
@@ -169,3 +196,4 @@ export const SkillBadgeSelector: React.FC<SkillBadgeSelectorProps> = ({
     </div>
   );
 };
+

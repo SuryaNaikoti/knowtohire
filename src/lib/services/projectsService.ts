@@ -49,7 +49,22 @@ export const projectsService = {
 
   upsertProject: async (project: Omit<CandidateProject, 'id'> & { id?: string }): Promise<boolean> => {
     if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase.from('candidate_projects').upsert(project);
+      const payload: any = {
+        candidate_id: project.candidate_id,
+        title: project.title,
+        description: project.description,
+        tech_stack: project.tech_stack,
+        project_url: project.project_url || null,
+        github_url: project.github_url || null,
+        thumbnail_url: project.thumbnail_url || null,
+        is_featured: project.is_featured ?? false,
+        start_date: project.start_date || null,
+        end_date: project.end_date || null,
+      };
+      if (project.id) {
+        payload.id = project.id;
+      }
+      const { error } = await supabase.from('candidate_projects').upsert(payload);
       if (error) {
         console.error('[projectsService.upsertProject error]', error);
         throw error;

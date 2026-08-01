@@ -34,7 +34,7 @@ export const CertificationForm: React.FC<CertificationFormProps> = ({
     if (certificationToEdit) {
       setName(certificationToEdit.name);
       setIssuingOrg(certificationToEdit.issuing_organization);
-      setIssueDate(certificationToEdit.issue_date);
+      setIssueDate(certificationToEdit.issue_date || '');
       setExpirationDate(certificationToEdit.expiration_date || '');
       setCredentialId(certificationToEdit.credential_id || '');
       setCredentialUrl(certificationToEdit.credential_url || '');

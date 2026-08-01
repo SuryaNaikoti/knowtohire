@@ -58,8 +58,6 @@ export const CompanyProfile: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!company) return;
-
     setError('');
     setSuccess(false);
     setSaving(true);
@@ -75,18 +73,33 @@ export const CompanyProfile: React.FC = () => {
         description,
       };
 
-      const success = await employerService.updateCompany(company.id, payload);
-      if (success) {
+      let activeCompany = company;
+      if (!activeCompany && user) {
+        // Fallback: If no company exists in state, trigger lazy creation
+        const initialized = await employerService.getCompanyByEmployer(user.id);
+        if (initialized) {
+          activeCompany = initialized;
+          setCompany(initialized);
+        }
+      }
+
+      if (!activeCompany) {
+        throw new Error('No company profile associated with this employer account.');
+      }
+
+      const isUpdated = await employerService.updateCompany(activeCompany.id, payload);
+      if (isUpdated) {
         setSuccess(true);
-        // Refresh details
-        const updated = await employerService.getCompany(company.id);
+        const updated = await employerService.getCompany(activeCompany.id);
         if (updated) setCompany(updated);
+        // Automatically hide success alert after 3 seconds
+        setTimeout(() => setSuccess(false), 4000);
       } else {
         setError('Failed to update company details.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError('An error occurred during save operations.');
+      setError(err?.message || 'An error occurred during save operations.');
     } finally {
       setSaving(false);
     }

@@ -18,15 +18,15 @@ export const Footer: React.FC = () => {
 
   const jobSeekerLinks = [
     { label: 'Browse Jobs', path: '/jobs' },
-    { label: 'Create Profile', path: '/coming-soon?feature=CreateProfile' },
-    { label: 'Job Alerts', path: '/coming-soon?feature=JobAlerts' },
+    { label: 'Create Profile', path: '/register' },
+    { label: 'Job Alerts', path: '/jobs' },
     { label: 'Career Resources', path: '/resources' }
   ];
 
   const employerLinks = [
-    { label: 'Post a Job', path: '/coming-soon?feature=PostJob' },
-    { label: 'Browse Candidates', path: '/coming-soon?feature=Candidates' },
-    { label: 'Employer Dashboard', path: '/coming-soon?feature=EmployerDashboard' },
+    { label: 'Post a Job', path: '/login?role=employer' },
+    { label: 'Browse Candidates', path: '/login?role=employer' },
+    { label: 'Employer Dashboard', path: '/dashboard/employer' },
     { label: 'Pricing Plans', path: '/pricing' }
   ];
 

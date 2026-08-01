@@ -52,6 +52,20 @@ export const ROUTES = {
     ADMIN: {
       ROOT: '/dashboard/admin',
       MODERATION: '/dashboard/admin/moderation',
+      USERS: '/dashboard/admin/users',
+      CANDIDATES: '/dashboard/admin/candidates',
+      EMPLOYERS: '/dashboard/admin/employers',
+      APPLICATIONS: '/dashboard/admin/applications',
+      RESOURCES: '/dashboard/admin/resources',
+      TEMPLATES: '/dashboard/admin/templates',
+      BLOG: '/dashboard/admin/blog',
+      ORDERS: '/dashboard/admin/orders',
+      SUBSCRIPTIONS: '/dashboard/admin/subscriptions',
+      AI: '/dashboard/admin/ai',
+      ANALYTICS: '/dashboard/admin/analytics',
+      AUDIT_LOGS: '/dashboard/admin/audit-logs',
+      ROLES: '/dashboard/admin/roles',
+      SETTINGS: '/dashboard/admin/settings',
     }
   }
 } as const;

@@ -4,14 +4,27 @@ import { useAuth } from '../../context/AuthContext';
 import { ROUTES } from '../../constants/routes';
 import { LoadingOverlay } from '../ui/Loading';
 import { notificationService } from '../../lib/services/notificationService';
+import { useNotifications } from '../../lib/services/notifications';
+import { ToastContainer } from '../common/ToastContainer';
+import { GlobalCommandSearch } from '../ui/GlobalCommandSearch';
+import { Search, Sun, Moon } from 'lucide-react';
 
 export const DashboardLayout: React.FC = () => {
   const { profile, setRole, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+  const profileDropdownRef = React.useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const toggleTheme = () => {
+    setIsDark(!isDark);
+    document.documentElement.classList.toggle('dark');
+  };
+
+  const { unreadCount, setUnreadCount, toasts, dismissToast } = useNotifications(profile?.id);
 
   useEffect(() => {
     const fetchUnread = async () => {
@@ -24,9 +37,33 @@ export const DashboardLayout: React.FC = () => {
       }
     };
     fetchUnread();
-    const interval = setInterval(fetchUnread, 15000); // refresh every 15s
-    return () => clearInterval(interval);
-  }, [profile]);
+  }, [profile, setUnreadCount]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(event.target as Node)
+      ) {
+        setProfileDropdownOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setProfileDropdownOpen(false);
+      }
+    };
+
+    if (profileDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [profileDropdownOpen]);
 
   const handleLogout = async () => {
     await logout();
@@ -67,7 +104,7 @@ export const DashboardLayout: React.FC = () => {
       { name: 'My Purchases', path: ROUTES.DASHBOARD.CANDIDATE.PURCHASES, icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z' },
       { name: 'Billing History', path: ROUTES.DASHBOARD.CANDIDATE.BILLING, icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
       { name: 'Subscriptions', path: ROUTES.DASHBOARD.CANDIDATE.SUBSCRIPTIONS, icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.286L13 21l-2.286-6.857L5 12l5.714-2.286L13 3z' },
-      { name: 'Account Settings', path: `${ROUTES.COMING_SOON}?feature=Settings`, icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
+      { name: 'Account Settings', path: `${ROUTES.DASHBOARD.CANDIDATE.ROOT}/settings`, icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
     ];
 
     const employerItems = [
@@ -76,18 +113,32 @@ export const DashboardLayout: React.FC = () => {
       { name: 'Office Locations', path: ROUTES.DASHBOARD.EMPLOYER.LOCATIONS, icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z' },
       { name: 'Team Directory', path: ROUTES.DASHBOARD.EMPLOYER.TEAM, icon: 'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M9 7a4 4 0 11-8 0 4 4 0 018 0 M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75' },
       { name: 'Active Postings', path: ROUTES.DASHBOARD.EMPLOYER.JOBS, icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
-      { name: 'Talent Scout AI', path: `${ROUTES.COMING_SOON}?feature=Candidates`, icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
-      { name: 'Market Intelligence', path: `${ROUTES.COMING_SOON}?feature=Research`, icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
-      { name: 'Billing & Subscriptions', path: ROUTES.DASHBOARD.CANDIDATE.SUBSCRIPTIONS, icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 003-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
+      { name: 'Job Applications', path: `${ROUTES.DASHBOARD.EMPLOYER.ROOT}/applications`, icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2H9z' },
+      { name: 'Talent Scout AI', path: `${ROUTES.DASHBOARD.EMPLOYER.ROOT}/talent-scout`, icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
+      { name: 'Market Intelligence', path: `${ROUTES.DASHBOARD.EMPLOYER.ROOT}/research`, icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+      { name: 'Billing & Plans', path: `${ROUTES.DASHBOARD.EMPLOYER.ROOT}/billing`, icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 003-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
+      { name: 'Notifications', path: `${ROUTES.DASHBOARD.EMPLOYER.ROOT}/notifications`, icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
+      { name: 'Workspace Settings', path: `${ROUTES.DASHBOARD.EMPLOYER.ROOT}/settings`, icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
     ];
+
 
     const adminItems = [
       ...baseItems,
+      { name: 'User Directory', path: `${ROUTES.DASHBOARD.ADMIN.ROOT}/users`, icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20H2v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+      { name: 'Candidates', path: `${ROUTES.DASHBOARD.ADMIN.ROOT}/candidates`, icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+      { name: 'Employers', path: `${ROUTES.DASHBOARD.ADMIN.ROOT}/employers`, icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
       { name: 'Job Moderation', path: ROUTES.DASHBOARD.ADMIN.MODERATION, icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
-      { name: 'User Directory', path: `${ROUTES.COMING_SOON}?feature=Users`, icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20H2v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
-      { name: 'Access Configuration', path: `${ROUTES.COMING_SOON}?feature=Roles`, icon: 'M15 7a2 2 0 012 2m-2 4a2 2 0 012 2m-2-7a3 3 0 11-6 0 3 3 0 016 0zm-3 9a6 6 0 00-2 11.667v-3.43a2 2 0 00-1-1.732V9a2 2 0 012-2h.01' },
-      { name: 'Audit Tracker', path: `${ROUTES.COMING_SOON}?feature=Audit%20Logs`, icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-      { name: 'System Telemetry', path: `${ROUTES.COMING_SOON}?feature=Platform%20Settings`, icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
+      { name: 'Applications Monitor', path: `${ROUTES.DASHBOARD.ADMIN.ROOT}/applications`, icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2H9z' },
+      { name: 'Resources CMS', path: `${ROUTES.DASHBOARD.ADMIN.ROOT}/resources`, icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+      { name: 'Templates Marketplace', path: `${ROUTES.DASHBOARD.ADMIN.ROOT}/templates`, icon: 'M9.663 17h4.673M12 3v1m6.364.364l-.707.707M21 12h-1M4 12H3m3.343-5.657l.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' },
+      { name: 'Blog CMS', path: `${ROUTES.DASHBOARD.ADMIN.ROOT}/blog`, icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+      { name: 'Marketplace Orders', path: `${ROUTES.DASHBOARD.ADMIN.ROOT}/orders`, icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z' },
+      { name: 'Subscriptions', path: `${ROUTES.DASHBOARD.ADMIN.ROOT}/subscriptions`, icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
+      { name: 'AI Intelligence', path: `${ROUTES.DASHBOARD.ADMIN.ROOT}/ai`, icon: 'M9.663 17h4.673M12 3v1m6.364.364l-.707.707M21 12h-1M4 12H3m3.343-5.657l.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' },
+      { name: 'Platform Analytics', path: `${ROUTES.DASHBOARD.ADMIN.ROOT}/analytics`, icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+      { name: 'Audit Tracker', path: `${ROUTES.DASHBOARD.ADMIN.ROOT}/audit-logs`, icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+      { name: 'Access Configuration', path: `${ROUTES.DASHBOARD.ADMIN.ROOT}/roles`, icon: 'M15 7a2 2 0 012 2m-2 4a2 2 0 012 2m-2-7a3 3 0 11-6 0 3 3 0 016 0zm-3 9a6 6 0 00-2 11.667v-3.43a2 2 0 00-1-1.732V9a2 2 0 012-2h.01' },
+      { name: 'System Settings', path: `${ROUTES.DASHBOARD.ADMIN.ROOT}/settings`, icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
     ];
 
     switch (userRole) {
@@ -155,8 +206,8 @@ export const DashboardLayout: React.FC = () => {
         <div className="h-16 px-6 border-b border-gray-800 border-solid flex items-center justify-between shrink-0">
           <Link to="/" className="flex items-center space-x-2">
             <span className="text-lg font-black font-heading text-white flex items-center gap-1.5">
-              <span className="bg-primary text-white w-6 h-6 rounded flex items-center justify-center text-xs font-black shadow-sm">K</span>
-              Know<span className="text-secondary font-black">To</span><span className="text-gray-300 font-extrabold text-sm">Hire</span>
+              <span className="bg-emerald-650 text-white w-6 h-6 rounded flex items-center justify-center text-xs font-black shadow-sm">K</span>
+              Know<span className="text-emerald-400 font-black">To</span><span className="text-gray-300 font-extrabold text-sm">Hire</span>
             </span>
           </Link>
           <button
@@ -171,31 +222,104 @@ export const DashboardLayout: React.FC = () => {
         </div>
 
         {/* Sidebar Nav Items */}
-        <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
-          {sidebarItems.map((item) => (
-            <NavLink
-              key={item.name}
-              to={item.path}
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center px-3 py-2.5 text-xs font-bold rounded-lg transition-all duration-150 group gap-3 ${
-                  isActive && !item.path.includes('coming-soon')
-                    ? 'bg-primary text-white shadow-md shadow-blue-500/10'
-                    : 'text-gray-400 hover:bg-gray-850 hover:text-white'
-                }`
-              }
-            >
-              <svg
-                className="w-4 h-4 shrink-0 transition-colors"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+        <nav className="flex-1 px-4 py-6 space-y-4 overflow-y-auto">
+          {userRole === 'candidate' ? [
+            {
+              title: 'Career',
+              items: [
+                { name: 'Dashboard', path: getDashboardPath(userRole), icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z' },
+                { name: 'Profile', path: ROUTES.DASHBOARD.CANDIDATE.PORTFOLIO, icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+                { name: 'Resume', path: '/candidate/resume-builder', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2H9z' },
+                { name: 'Experience', path: ROUTES.DASHBOARD.CANDIDATE.EXPERIENCE, icon: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+                { name: 'Education', path: ROUTES.DASHBOARD.CANDIDATE.EDUCATION, icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253' },
+                { name: 'Skills', path: ROUTES.DASHBOARD.CANDIDATE.SKILLS, icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2' },
+                { name: 'Certifications', path: ROUTES.DASHBOARD.CANDIDATE.CERTIFICATIONS, icon: 'M9 12l2 2 4-4' },
+                { name: 'Portfolio', path: ROUTES.DASHBOARD.CANDIDATE.PROJECTS, icon: 'M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2' }
+              ]
+            },
+            {
+              title: 'Jobs',
+              items: [
+                { name: 'Explore Jobs', path: ROUTES.DASHBOARD.CANDIDATE.JOBS, icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
+                { name: 'Saved Jobs', path: ROUTES.DASHBOARD.CANDIDATE.SAVED, icon: 'M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z' },
+                { name: 'Applications', path: ROUTES.DASHBOARD.CANDIDATE.JOBS, icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5' },
+                { name: 'Job Alerts', path: ROUTES.DASHBOARD.CANDIDATE.ALERTS, icon: 'M15 17h5l-1.405-1.405' }
+              ]
+            },
+            {
+              title: 'Learning',
+              items: [
+                { name: 'Career Roadmap', path: '/guides/career-roadmap', icon: 'M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894' },
+                { name: 'Learning Hub', path: ROUTES.RESOURCES, icon: 'M12 6.253v13' },
+                { name: 'Certifications', path: ROUTES.DASHBOARD.CANDIDATE.CERTIFICATIONS, icon: 'M5 3v4M3 5h4' },
+                { name: 'AI Coach', path: '/dashboard/candidate/assistant', icon: 'M9.663 17h4.673' }
+              ]
+            },
+            {
+              title: 'Account',
+              items: [
+                { name: 'Notifications', path: ROUTES.DASHBOARD.CANDIDATE.NOTIFICATIONS, icon: 'M3 8l7.89 5.26a2 2 0 002.22 0' },
+                { name: 'Purchases', path: ROUTES.DASHBOARD.CANDIDATE.PURCHASES, icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12' },
+                { name: 'Billing', path: ROUTES.DASHBOARD.CANDIDATE.BILLING, icon: 'M9 12h6' },
+                { name: 'Settings', path: `${ROUTES.DASHBOARD.CANDIDATE.ROOT}/settings`, icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0' }
+              ]
+            }
+          ].map((section) => (
+            <div key={section.title} className="space-y-1.5">
+              <span className="text-[10px] font-black text-gray-500/90 uppercase tracking-widest px-3 block mb-1.5 font-mono">
+                {section.title}
+              </span>
+              {section.items.map((item) => (
+                <NavLink
+                  key={item.name}
+                  to={item.path}
+                  onClick={() => setSidebarOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center px-3 py-2 text-xs font-semibold rounded-lg transition-all duration-200 group gap-2.5 ${
+                      isActive
+                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/25 font-bold'
+                        : 'text-gray-400 hover:bg-gray-800/80 hover:text-gray-100'
+                    }`
+                  }
+                >
+                  <svg
+                    className="w-4 h-4 shrink-0 transition-colors"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={item.icon} />
+                  </svg>
+                  <span>{item.name}</span>
+                </NavLink>
+              ))}
+            </div>
+          )) : (
+            sidebarItems.map((item) => (
+              <NavLink
+                key={item.name}
+                to={item.path}
+                onClick={() => setSidebarOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center px-3 py-2.5 text-xs font-bold rounded-lg transition-all duration-150 group gap-3 ${
+                    isActive && !item.path.includes('coming-soon')
+                      ? 'bg-primary text-white shadow-md shadow-blue-500/10'
+                      : 'text-gray-400 hover:bg-gray-850 hover:text-white'
+                  }`
+                }
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={item.icon} />
-              </svg>
-              <span>{item.name}</span>
-            </NavLink>
-          ))}
+                <svg
+                  className="w-4 h-4 shrink-0 transition-colors"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={item.icon} />
+                </svg>
+                <span>{item.name}</span>
+              </NavLink>
+            ))
+          )}
         </nav>
 
         {/* Developer Demo Role Selector in Sidebar */}
@@ -244,7 +368,27 @@ export const DashboardLayout: React.FC = () => {
           </nav>
 
           {/* Right Header Actions */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
+            {/* Global Search Button */}
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-solid border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50 cursor-pointer text-xs font-semibold"
+              aria-label="Open Command Search"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Search...</span>
+              <kbd className="hidden sm:inline px-1.5 py-0.5 bg-slate-100 rounded text-[9px] font-mono font-bold text-slate-500">Ctrl K</kbd>
+            </button>
+
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-50 cursor-pointer"
+              aria-label="Toggle Dark Theme"
+            >
+              {isDark ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-slate-600" />}
+            </button>
+
             {/* Notifications Button */}
             <Link
               to={ROUTES.DASHBOARD.CANDIDATE.NOTIFICATIONS}
@@ -263,7 +407,7 @@ export const DashboardLayout: React.FC = () => {
 
             {/* Profile Dropdown */}
             {profile && (
-              <div className="relative">
+              <div className="relative" ref={profileDropdownRef}>
                 <button
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                   className="flex items-center space-x-2 cursor-pointer focus:outline-none"
@@ -310,6 +454,10 @@ export const DashboardLayout: React.FC = () => {
           </Suspense>
         </main>
       </div>
+      
+      {/* Global Command Search Modal */}
+      <GlobalCommandSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 };

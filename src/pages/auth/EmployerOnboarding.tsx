@@ -65,7 +65,7 @@ export const EmployerOnboarding: React.FC = () => {
       if (profileError) throw profileError;
 
       await refreshProfile();
-      navigate('/employer/dashboard');
+      navigate('/dashboard/employer');
     } catch (err: any) {
       setErrorMsg(err.message || 'Employer onboarding registration failed.');
     } finally {

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, Image, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { UploadCloud, CheckCircle2, AlertTriangle, Loader2, Trash2 } from 'lucide-react';
 import { employerService } from '../../lib/services/employerService';
 import { Button } from '../ui/Button';
 
@@ -22,11 +22,11 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const limitMb = type === 'logo' ? 2 : 3;
+  const limitMb = type === 'logo' ? 2 : 5;
 
   const validateFile = (file: File): boolean => {
     const maxSizeBytes = limitMb * 1024 * 1024;
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
 
     if (file.size > maxSizeBytes) {
       setError(`File size exceeds the ${limitMb}MB limit.`);
@@ -34,7 +34,7 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
     }
 
     if (!allowedTypes.includes(file.type)) {
-      setError('Invalid file type. Only PNG, JPG, JPEG, and SVG images are accepted.');
+      setError('Invalid file type. Only PNG, JPG, JPEG, and WEBP images are accepted.');
       return false;
     }
 
@@ -56,9 +56,32 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
       }
       onUploadSuccess(url);
       setSuccess(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError('An error occurred during image upload. Please try again.');
+      setError(err?.message || 'An error occurred during image upload. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to delete this ${type}?`)) return;
+    setUploading(true);
+    setError('');
+    setSuccess(false);
+    try {
+      if (type === 'logo') {
+        await employerService.updateCompany(companyId, { logo_url: '' });
+        onUploadSuccess('');
+      } else {
+        await employerService.updateCompany(companyId, { banner_url: '' });
+        onUploadSuccess('');
+      }
+      setSuccess(true);
+    } catch (err: any) {
+      console.error(err);
+      setError('Failed to remove asset.');
     } finally {
       setUploading(false);
     }
@@ -103,6 +126,25 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Current Preview */}
+      {currentUrl && (
+        <div className="relative rounded-xl overflow-hidden border border-solid border-gray-200 bg-gray-50 flex items-center justify-center p-2 group">
+          {type === 'logo' ? (
+            <img src={currentUrl} alt="Logo preview" className="h-24 w-24 object-contain rounded-lg" />
+          ) : (
+            <img src={currentUrl} alt="Banner preview" className="w-full h-32 object-cover rounded-lg" />
+          )}
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+            <Button size="sm" variant="outline" className="bg-white/90 text-xs font-bold text-gray-800" onClick={triggerClick}>
+              Replace
+            </Button>
+            <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold" onClick={handleDelete}>
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div
         onDragEnter={handleDrag}
         onDragOver={handleDrag}
@@ -118,7 +160,7 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept="image/png, image/jpeg, image/jpg, image/svg+xml"
+          accept="image/png, image/jpeg, image/jpg, image/webp"
           onChange={handleChange}
           disabled={uploading}
         />
@@ -138,7 +180,7 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
                 Drag/drop or <span className="text-primary hover:underline">browse</span> to upload {type}
               </p>
               <p className="text-[9px] text-gray-400 font-medium">
-                PNG, JPG, JPEG, SVG (Max: {limitMb}MB)
+                PNG, JPG, JPEG, WEBP (Max: {limitMb}MB)
               </p>
             </div>
           </div>
@@ -155,36 +197,10 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
       {success && (
         <div className="bg-emerald-50 border border-emerald-150 border-solid rounded-lg p-2.5 flex items-start space-x-2 text-emerald-900 animate-fade-in-up">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-          <div className="text-[10px] font-semibold">{type === 'logo' ? 'Logo' : 'Banner'} uploaded successfully!</div>
-        </div>
-      )}
-
-      {currentUrl && !uploading && !error && (
-        <div className="bg-gray-50 border border-gray-200 border-solid rounded-lg p-2.5 flex items-center justify-between">
-          <div className="flex items-center space-x-2 min-w-0">
-            <Image className="w-4 h-4 text-gray-400 shrink-0" />
-            <a
-              href={currentUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] font-bold text-primary hover:underline truncate max-w-[150px]"
-            >
-              View current {type}
-            </a>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={(e) => {
-              e.stopPropagation();
-              triggerClick();
-            }}
-            className="text-[9px] h-6 py-0 font-bold bg-white"
-          >
-            Change
-          </Button>
+          <div className="text-[10px] font-semibold">{type === 'logo' ? 'Logo' : 'Banner'} updated successfully!</div>
         </div>
       )}
     </div>
   );
 };
+

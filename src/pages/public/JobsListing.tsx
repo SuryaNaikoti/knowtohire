@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { mockJobs } from '../../constants/mockData';
 import type { Job } from '../../constants/mockData';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent } from '../../components/ui/Card';
-import { EmptyState, CardSkeleton } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/common/EmptyState';
+import { CardSkeleton } from '../../components/common/CardSkeleton';
 import { Search, MapPin, DollarSign, Calendar, SlidersHorizontal, Check, RefreshCw, X, Briefcase } from 'lucide-react';
 
 /* ── Reusable Dot Grid Background ── */
@@ -22,39 +23,71 @@ const DotGrid: React.FC<{ className?: string }> = ({ className = '' }) => (
 );
 
 export const JobsListing: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDept, setSelectedDept] = useState('All');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const locationParam = searchParams.get('location') || '';
+  const categoryParam = searchParams.get('category') || '';
+  const searchParam = searchParams.get('search') || '';
+
+  const [searchQuery, setSearchQuery] = useState(searchParam);
+  const [selectedDept, setSelectedDept] = useState(categoryParam ? categoryParam : 'All');
   const [selectedType, setSelectedType] = useState('All');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParam) setSearchQuery(searchParam);
+  }, [searchParam]);
+
+  const clearLocationFilter = () => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('location');
+    setSearchParams(newParams);
+  };
 
   const simulateLoading = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-    }, 600);
+    }, 400);
   };
 
   // Filter logic
   const filteredJobs = mockJobs.filter((job: Job) => {
     const matchesSearch =
+      !searchQuery ||
       job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.description.toLowerCase().includes(searchQuery.toLowerCase());
+      job.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.location.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesDept = selectedDept === 'All' || job.department === selectedDept;
+    const matchesDept = selectedDept === 'All' || job.department.toLowerCase().includes(selectedDept.toLowerCase());
     const matchesType = selectedType === 'All' || job.type === selectedType;
 
-    return matchesSearch && matchesDept && matchesType;
+    const matchesLocation =
+      !locationParam ||
+      job.location.toLowerCase().includes(locationParam.toLowerCase()) ||
+      locationParam.toLowerCase().includes(job.location.toLowerCase().split(' ')[0]);
+
+    return matchesSearch && matchesDept && matchesType && matchesLocation;
   });
 
-  const departments = ['All', 'Engineering', 'Design', 'Research', 'Marketing', 'Finance', 'ESG & Sustainability'];
+  const departments = ['All', 'Engineering', 'Design', 'Research', 'Marketing', 'Finance', 'ESG & Sustainability', 'Healthcare'];
   const jobTypes = ['All', 'Full-time', 'Part-time', 'Remote', 'Hybrid'];
 
   const resetFilters = () => {
     setSearchQuery('');
     setSelectedDept('All');
     setSelectedType('All');
+    setSearchParams({});
+  };
+
+  // Dynamic Header Title
+  const getHeaderTitle = () => {
+    if (locationParam) return `Jobs in ${locationParam}`;
+    if (categoryParam) return `${categoryParam.toUpperCase()} Positions`;
+    if (searchParam) return `Results for "${searchParam}"`;
+    return 'Explore Opportunities';
   };
 
   return (
@@ -70,11 +103,26 @@ export const JobsListing: React.FC = () => {
             <span>Active Boards</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-black font-heading text-slate-900 tracking-tight leading-none">
-            Explore <span className="kth-gradient-text">Opportunities</span>
+            {getHeaderTitle()}
           </h1>
           <p className="text-sm md:text-base text-slate-500 font-medium leading-relaxed">
             Connect directly with leading companies and teams looking for your exact skills and experience.
           </p>
+
+          {/* Active Location Filter Banner */}
+          {locationParam && (
+            <div className="inline-flex items-center gap-2 bg-emerald-100/70 border border-emerald-200 text-emerald-900 px-4 py-2 rounded-xl text-xs font-bold shadow-sm">
+              <MapPin className="w-4 h-4 text-emerald-600" />
+              <span>Location Filter Active: <strong>{locationParam}</strong></span>
+              <button
+                onClick={clearLocationFilter}
+                className="ml-2 hover:bg-emerald-200/60 p-1 rounded-md transition-colors cursor-pointer text-emerald-800"
+                title="Clear location filter"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -242,10 +290,10 @@ export const JobsListing: React.FC = () => {
             ) : (
               <EmptyState 
                 title="No Opportunities Match"
-                description="Try adjusting your filters, clearing the search query, or resetting to see new active vacancy postings."
-                icon={<Search className="h-12 w-12 text-slate-300" />}
-                actionText="Clear Filters"
+                description="Try adjusting your filters, clearing the location filter or search query, or resetting to see new active vacancy postings."
+                actionLabel="Clear All Filters"
                 onAction={resetFilters}
+                icon="filter"
               />
             )}
           </div>

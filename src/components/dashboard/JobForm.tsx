@@ -5,7 +5,8 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Alert } from '../ui/Alert';
-import { Plus, Trash2 } from 'lucide-react';
+import { Badge } from '../ui/Badge';
+import { Eye, Edit2, MapPin, DollarSign, Clock } from 'lucide-react';
 
 interface JobFormProps {
   jobToEdit?: Job | null;
@@ -23,6 +24,8 @@ export const JobForm: React.FC<JobFormProps> = ({
   const [categories, setCategories] = useState<JobCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [autosaveStatus, setAutosaveStatus] = useState('');
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   // Primary Fields
   const [title, setTitle] = useState('');
@@ -42,6 +45,7 @@ export const JobForm: React.FC<JobFormProps> = ({
   const [benefits, setBenefits] = useState('');
   const [deadline, setDeadline] = useState('');
   const [status, setStatus] = useState<'draft' | 'published'>('draft');
+  const [scheduledPublishDate, setScheduledPublishDate] = useState('');
 
   // Skills List State
   const [skills, setSkills] = useState<JobSkillPayload[]>([]);
@@ -108,10 +112,51 @@ export const JobForm: React.FC<JobFormProps> = ({
       setBenefits('');
       setDeadline(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
       setStatus('draft');
+      setScheduledPublishDate('');
       setSkills([]);
     }
     setError('');
   }, [jobToEdit, skillsToEdit]);
+
+  // AUTOSAVE TRIGGER: every 15 seconds if fields are dirty and status is draft
+  useEffect(() => {
+    if (status !== 'draft' || !title) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const payload: JobPayload = {
+          title,
+          slug: jobToEdit ? jobToEdit.slug : `autosave-${title.toLowerCase().replace(/ /g, '-')}-${Math.random().toString(36).substring(2, 6)}`,
+          category_id: category || null,
+          description,
+          requirements,
+          benefits: benefits || undefined,
+          career_domain: careerDomain,
+          location_type: locationType,
+          country,
+          state: stateVal || undefined,
+          city,
+          employment_type: employmentType,
+          salary_min: salaryMin ? parseFloat(salaryMin) : undefined,
+          salary_max: salaryMax ? parseFloat(salaryMax) : undefined,
+          salary_currency: salaryCurrency,
+          salary_visible: salaryVisible,
+          status: 'draft',
+          application_deadline: deadline || undefined,
+        };
+
+        if (jobToEdit) {
+          await jobsService.updateJob(jobToEdit.id, payload, skills);
+        }
+        setAutosaveStatus(`Draft autosaved at ${new Date().toLocaleTimeString()}`);
+        setTimeout(() => setAutosaveStatus(''), 3000);
+      } catch (err) {
+        console.error('Autosave failed:', err);
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [title, category, description, requirements, benefits, careerDomain, locationType, country, stateVal, city, employmentType, salaryMin, salaryMax, salaryCurrency, salaryVisible, deadline, status, skills, jobToEdit]);
 
   const generateSlug = (text: string) => {
     const base = text
@@ -198,12 +243,89 @@ export const JobForm: React.FC<JobFormProps> = ({
   const parentCategories = categories.filter(c => !c.parent_category_id);
   const getSubcategories = (parentId: string) => categories.filter(c => c.parent_category_id === parentId);
 
+  if (isPreviewMode) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center border-b border-solid border-gray-150 pb-3">
+          <h3 className="font-heading font-black text-gray-900 text-sm flex items-center gap-1.5">
+            <Eye className="w-4 h-4 text-primary" /> Candidate Preview Mode
+          </h3>
+          <Button size="sm" variant="outline" className="bg-white text-xs font-bold" onClick={() => setIsPreviewMode(false)}>
+            <Edit2 className="w-3.5 h-3.5 mr-1" /> Back to Editor
+          </Button>
+        </div>
+
+        <div className="border border-solid border-gray-200 rounded-2xl p-6 bg-white space-y-6">
+          <div className="space-y-2">
+            <h2 className="text-xl font-black text-gray-950">{title || 'Vacancy Title'}</h2>
+            <div className="flex items-center gap-2 flex-wrap text-xs font-bold text-gray-500">
+              <Badge variant="primary">{careerDomain}</Badge>
+              <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {city || 'City'}, {country || 'Country'} ({locationType})</span>
+              <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {employmentType}</span>
+              {salaryVisible && salaryMin && (
+                <span className="text-emerald-700 font-extrabold flex items-center gap-0.5">
+                  <DollarSign className="w-3.5 h-3.5" /> {salaryMin} - {salaryMax} {salaryCurrency}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">About the Role</h4>
+            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{description || 'No description provided.'}</p>
+          </div>
+
+          <div className="space-y-2">
+            <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">Required Qualifications</h4>
+            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{requirements || 'No requirements provided.'}</p>
+          </div>
+
+          {benefits && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">Benefits & Perks</h4>
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{benefits}</p>
+            </div>
+          )}
+
+          {skills.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">Skill Matching Criteria</h4>
+              <div className="flex flex-wrap gap-2">
+                {skills.map((s, idx) => (
+                  <Badge key={idx} variant="secondary" className="bg-blue-50 text-blue-800 border-blue-200">
+                    {s.skill_name} ({s.required_level}, {s.years_experience_required} yrs)
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in-up">
-      {error && <Alert type="error" className="text-xs" title="Form Submission Error">{error}</Alert>}
+      <div className="flex justify-between items-center">
+        {error && <Alert type="error" className="text-xs flex-1 mr-4" title="Form Submission Error">{error}</Alert>}
+        {autosaveStatus && (
+          <div className="text-[10px] text-gray-400 font-bold bg-gray-50 border border-gray-150 px-2.5 py-1 rounded-lg">
+            {autosaveStatus}
+          </div>
+        )}
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="bg-white text-xs font-bold self-start ml-auto"
+          onClick={() => setIsPreviewMode(true)}
+        >
+          <Eye className="w-3.5 h-3.5 mr-1" /> Live Preview
+        </Button>
+      </div>
 
       {/* Basic Vacancy details */}
-      <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-150 border-solid space-y-4">
+      <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-155 border-solid space-y-4">
         <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Vacancy Information</h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
@@ -268,7 +390,7 @@ export const JobForm: React.FC<JobFormProps> = ({
       </div>
 
       {/* Localization details */}
-      <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-150 border-solid space-y-4">
+      <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-155 border-solid space-y-4">
         <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Job Location Details</h4>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Input
@@ -295,164 +417,150 @@ export const JobForm: React.FC<JobFormProps> = ({
       </div>
 
       {/* Compensation & Expirations */}
-      <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-150 border-solid space-y-4">
+      <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-155 border-solid space-y-4">
         <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Compensation & Timelines</h4>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <Input
-            label="Min Salary (Annual/Hr)"
+            label="Min Salary (Annual)"
             type="number"
             value={salaryMin}
             onChange={(e) => setSalaryMin(e.target.value)}
-            placeholder="e.g. 120000"
+            placeholder="e.g. 80000"
           />
           <Input
-            label="Max Salary (Annual/Hr)"
+            label="Max Salary (Annual)"
             type="number"
             value={salaryMax}
             onChange={(e) => setSalaryMax(e.target.value)}
-            placeholder="e.g. 160000"
+            placeholder="e.g. 120000"
           />
-          <Select
+          <Input
             label="Currency"
             value={salaryCurrency}
             onChange={(e) => setSalaryCurrency(e.target.value)}
-          >
-            <option value="USD">USD ($)</option>
-            <option value="CAD">CAD (C$)</option>
-            <option value="EUR">EUR (€)</option>
-            <option value="GBP">GBP (£)</option>
-            <option value="INR">INR (₹)</option>
-          </Select>
+          />
+          <div className="flex flex-col justify-end pb-2.5">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={salaryVisible}
+                onChange={(e) => setSalaryVisible(e.target.checked)}
+                className="rounded border-gray-300 text-primary w-4 h-4"
+              />
+              <span className="text-xs font-bold text-gray-700">Display salary range to candidates</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
           <Input
             label="Application Deadline"
             type="date"
-            required
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
           />
-        </div>
-
-        <label className="flex items-center space-x-2 text-xs font-semibold text-gray-650 cursor-pointer pt-1">
-          <input
-            type="checkbox"
-            checked={salaryVisible}
-            onChange={(e) => setSalaryVisible(e.target.checked)}
-            className="rounded border-gray-350 text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+          <Input
+            label="Scheduled Publish Date (Optional)"
+            type="date"
+            value={scheduledPublishDate}
+            onChange={(e) => setScheduledPublishDate(e.target.value)}
           />
-          <span>Show salary range publicly on candidate listings</span>
-        </label>
+        </div>
       </div>
 
-      {/* Copy Rich Text Description */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Job Description & Requirements */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div className="flex flex-col space-y-1.5">
-          <label className="text-xs font-bold text-gray-700 tracking-wide">
-            Job Description / Roles & Responsibilities *
-          </label>
+          <label className="text-xs font-bold text-gray-700">Vacancy Description</label>
           <textarea
-            required
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium text-gray-900 bg-white placeholder-gray-400 border-solid min-h-[140px] outline-none"
-            placeholder="Provide a bio introducing the vacancy scope, day-to-day duties, and project timelines..."
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-350 focus:border-primary text-sm font-medium text-gray-900 min-h-[160px] outline-none"
+            placeholder="Provide a description of role goals, technologies, and team context..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            required
           />
         </div>
 
         <div className="flex flex-col space-y-1.5">
-          <label className="text-xs font-bold text-gray-700 tracking-wide">
-            Candidate Requirements / Skills *
-          </label>
+          <label className="text-xs font-bold text-gray-700">Role Requirements</label>
           <textarea
-            required
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium text-gray-900 bg-white placeholder-gray-400 border-solid min-h-[140px] outline-none"
-            placeholder="Specify educational degrees, specific coding experience, cert codes, and stack tools..."
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-350 focus:border-primary text-sm font-medium text-gray-900 min-h-[160px] outline-none"
+            placeholder="Outline credentials, tech skills, and domain certifications required..."
             value={requirements}
             onChange={(e) => setRequirements(e.target.value)}
+            required
           />
         </div>
       </div>
 
       <div className="flex flex-col space-y-1.5">
-        <label className="text-xs font-bold text-gray-700 tracking-wide">Benefits & Perks</label>
+        <label className="text-xs font-bold text-gray-700">Corporate Benefits & Perks</label>
         <textarea
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium text-gray-900 bg-white placeholder-gray-400 border-solid min-h-[80px] outline-none"
-          placeholder="e.g. Remote stipend, equity opportunities, premium health plans, gym membership..."
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-350 focus:border-primary text-sm font-medium text-gray-900 min-h-[80px] outline-none"
+          placeholder="Mention matching pension schemes, medical coverage, flexible remote working setups..."
           value={benefits}
           onChange={(e) => setBenefits(e.target.value)}
         />
       </div>
 
-      {/* Relational Required Skills Matrix */}
-      <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-150 border-solid space-y-4">
-        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Relational Required Skills</h4>
+      {/* Skill builder matching constraints */}
+      <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-155 border-solid space-y-4">
+        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Automated Skill Matching Triggers</h4>
         
-        {/* Active Skills Badges */}
-        {skills.length === 0 ? (
-          <p className="text-xs text-gray-400 font-semibold italic">No skill requirements specified. Candidates matching will rely strictly on resume text scanning.</p>
-        ) : (
-          <div className="flex flex-wrap gap-2">
+        {skills.length > 0 && (
+          <div className="flex flex-wrap gap-2 pb-2">
             {skills.map((s, idx) => (
-              <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 border-solid rounded-lg select-none">
-                <span>{s.skill_name} ({s.years_experience_required}y+, {s.required_level})</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveSkill(idx)}
-                  className="text-blue-400 hover:text-blue-900 cursor-pointer border-none bg-transparent"
-                  aria-label={`Remove skill constraint ${s.skill_name}`}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </span>
+              <Badge key={idx} variant="secondary" className="bg-blue-50 text-blue-800 border-blue-200 flex items-center gap-1.5">
+                {s.skill_name} ({s.required_level}, {s.years_experience_required} yrs)
+                <button type="button" onClick={() => handleRemoveSkill(idx)} className="hover:text-red-655 font-bold cursor-pointer">&times;</button>
+              </Badge>
             ))}
           </div>
         )}
 
-        {/* Skill addition widget */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end pt-2 border-t border-gray-100 border-solid">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
           <Input
             label="Skill Name"
-            placeholder="e.g. React, USPTO, ESG"
+            placeholder="e.g. React"
             value={skillName}
             onChange={(e) => setSkillName(e.target.value)}
           />
-          <Select
-            label="Competency Required"
-            value={skillLevel}
-            onChange={(e) => setSkillLevel(e.target.value as any)}
-          >
-            <option value="Beginner">Beginner</option>
-            <option value="Intermediate">Intermediate</option>
-            <option value="Expert">Expert</option>
-          </Select>
+          <div className="flex flex-col space-y-1.5">
+            <label className="text-xs font-semibold text-gray-700">Competency Required</label>
+            <Select value={skillLevel} onChange={(e) => setSkillLevel(e.target.value as any)}>
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Expert">Expert</option>
+            </Select>
+          </div>
           <Input
-            label="Min Yrs Experience"
+            label="Min Experience (Years)"
             type="number"
-            min="0"
+            min="1"
             value={skillYears}
             onChange={(e) => setSkillYears(e.target.value)}
           />
-          <Button type="button" onClick={handleAddSkill} variant="outline" size="sm" className="h-10 text-xs font-bold bg-white w-full">
-            <Plus className="w-4 h-4 mr-1" /> Add Constraint
+          <Button type="button" variant="outline" className="bg-white font-bold h-10" onClick={handleAddSkill}>
+            Add Skill Filter
           </Button>
         </div>
       </div>
 
-      {/* Submission State Toggles */}
-      <div className="border-t border-gray-150 border-solid pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex flex-col space-y-1.5 self-start">
-          <label className="text-xs font-bold text-gray-700 tracking-wide">Vacancy Status Status</label>
+      <div className="flex justify-between items-center pt-4 border-t border-solid border-gray-200">
+        <div className="flex flex-col space-y-1.5">
+          <label className="text-xs font-bold text-gray-700">Publication Status</label>
           <Select value={status} onChange={(e) => setStatus(e.target.value as any)}>
-            <option value="draft">Save as Draft (Recruiter workspace only)</option>
-            <option value="published">Publish (Submit to Admin approval queue)</option>
+            <option value="draft">Save as Draft (Private)</option>
+            <option value="published">Publish to Directory (Vetted Queue)</option>
           </Select>
         </div>
 
-        <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={loading} className="font-bold text-xs bg-white">
+        <div className="flex space-x-2">
+          <Button type="button" variant="outline" onClick={onCancel} className="bg-white text-xs font-bold" disabled={loading}>
             Cancel
           </Button>
-          <Button type="submit" isLoading={loading} className="font-bold text-xs">
-            {jobToEdit ? 'Save Changes' : 'Create Vacancy'}
+          <Button type="submit" isLoading={loading} className="text-xs font-bold">
+            {jobToEdit ? 'Save Changes' : 'Post Vacancy'}
           </Button>
         </div>
       </div>

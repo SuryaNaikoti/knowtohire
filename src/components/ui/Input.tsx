@@ -61,7 +61,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               ${
                 error
                   ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
-                  : 'border-slate-250 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                  : 'border-slate-250 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
               }
               ${disabled ? 'bg-slate-50 text-slate-400 cursor-not-allowed border-slate-200' : 'hover:border-slate-350'}
               ${className}
@@ -72,14 +72,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           />
 
           {rightIcon && (
-            <span className="absolute right-3.5 text-gray-400 pointer-events-none flex items-center justify-center">
+            <span className="absolute right-3.5 text-gray-400 flex items-center justify-center">
               {rightIcon}
             </span>
           )}
         </div>
 
         {error && (
-          <p id={`${inputId}-error`} className="text-xs text-red-600 font-semibold flex items-center" role="alert">
+          <p id={`${inputId}-error`} className="text-xs text-red-600 font-semibold flex items-center mt-0.5" role="alert" aria-live="polite">
             <span className="mr-1">⚠️</span> {error}
           </p>
         )}

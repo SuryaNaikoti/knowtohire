@@ -33,15 +33,15 @@ export const Skills: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in-up">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 border-solid pb-5">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black font-heading text-gray-900 tracking-tight">
-            Skills Management
+    <div className="space-y-6 sm:space-y-8 bg-[#F9FAFB] dark:bg-slate-950 min-h-screen p-2 sm:p-6 font-sans text-slate-900 dark:text-slate-100 transition-colors animate-fade-in">
+      {/* Executive Header Block */}
+      <div className="bg-white dark:bg-slate-900 border border-solid border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+            <Layers className="w-6 h-6 text-emerald-600 dark:text-emerald-400" /> Skill Competency Matrix
           </h1>
-          <p className="text-xs text-gray-500 font-semibold mt-0.5">
-            Maintain your inventory of technical competencies, years of experience, and proficiency levels.
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            Manage your verified technical stack competencies and years of experience.
           </p>
         </div>
       </div>

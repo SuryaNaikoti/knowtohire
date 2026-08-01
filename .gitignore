@@ -49,3 +49,7 @@ brain/
 *.sln
 *.sw?
 check_types.json
+
+# === Secrets ===
+Secrets/
+

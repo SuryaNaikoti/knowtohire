@@ -1,154 +1,132 @@
-import React, { lazy } from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { MainLayout } from './components/layout/MainLayout';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { FeedbackWidget } from './components/FeedbackWidget';
+import { Loading } from './components/ui/Loading';
 
-// Public pages
+// Public core pages (Eagerly loaded for fast initial landing paint)
 import { Home } from './pages/public/Home';
 import { About } from './pages/public/About';
 import { Contact } from './pages/public/Contact';
 import { Privacy } from './pages/public/Privacy';
 import { Terms } from './pages/public/Terms';
 import { ComingSoon } from './pages/public/ComingSoon';
+import { NotFound } from './pages/public/NotFound';
 
-// Authentication pages
-import { Login } from './pages/auth/Login';
-import { Register } from './pages/auth/Register';
-import { ResetPassword } from './pages/auth/ResetPassword';
-import { VerifyEmail } from './pages/auth/VerifyEmail';
-import { RoleSelection } from './pages/auth/RoleSelection';
-import { CandidateOnboarding } from './pages/auth/CandidateOnboarding';
-import { EmployerOnboarding } from './pages/auth/EmployerOnboarding';
-import { ForgotPassword } from './pages/auth/ForgotPassword';
-import { AuthCallback } from './pages/auth/AuthCallback';
+// Authentication pages (Lazy Loaded)
+const Login = React.lazy(() => import('./pages/auth/Login').then((m) => ({ default: m.Login })));
+const Register = React.lazy(() => import('./pages/auth/Register').then((m) => ({ default: m.Register })));
+const ResetPassword = React.lazy(() => import('./pages/auth/ResetPassword').then((m) => ({ default: m.ResetPassword })));
+const VerifyEmail = React.lazy(() => import('./pages/auth/VerifyEmail').then((m) => ({ default: m.VerifyEmail })));
+const RoleSelection = React.lazy(() => import('./pages/auth/RoleSelection').then((m) => ({ default: m.RoleSelection })));
+const CandidateOnboarding = React.lazy(() => import('./pages/auth/CandidateOnboarding').then((m) => ({ default: m.CandidateOnboarding })));
+const EmployerOnboarding = React.lazy(() => import('./pages/auth/EmployerOnboarding').then((m) => ({ default: m.EmployerOnboarding })));
+const ForgotPassword = React.lazy(() => import('./pages/auth/ForgotPassword').then((m) => ({ default: m.ForgotPassword })));
+const AuthCallback = React.lazy(() => import('./pages/auth/AuthCallback').then((m) => ({ default: m.AuthCallback })));
 
 // Dashboard pages & guards
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
-const JobsListing = React.lazy(() =>
-  import('./pages/public/JobsListing').then((m) => ({ default: m.JobsListing }))
-);
-const JobDetails = React.lazy(() =>
-  import('./pages/public/JobDetails').then((m) => ({ default: m.JobDetails }))
-);
-const ResourcesListing = React.lazy(() =>
-  import('./pages/public/ResourcesListing').then((m) => ({ default: m.ResourcesListing }))
-);
-const ResourceDetails = React.lazy(() =>
-  import('./pages/public/ResourceDetails').then((m) => ({ default: m.ResourceDetails }))
-);
-const TemplatesListing = React.lazy(() =>
-  import('./pages/public/TemplatesListing').then((m) => ({ default: m.TemplatesListing }))
-);
-const TemplateDetails = React.lazy(() =>
-  import('./pages/public/TemplateDetails').then((m) => ({ default: m.TemplateDetails }))
-);
-const Blog = React.lazy(() =>
-  import('./pages/public/Blog').then((m) => ({ default: m.Blog }))
-);
-const BlogPostDetail = lazy(() => import('@/pages/public/BlogPostDetail'));
-const ResourcesHub = lazy(() => import('@/pages/public/ResourcesHub'));
-const Pricing = React.lazy(() =>
-  import('./pages/public/Pricing').then((m) => ({ default: m.Pricing }))
-);
-const SearchResults = lazy(() => import('@/pages/public/SearchResults'));
-const NotificationCenter = lazy(() => import('@/pages/dashboard/shared/NotificationCenter'));
-const ResumeAnalyzer = lazy(() => import('@/pages/dashboard/candidate/ResumeAnalyzer'));
-const AIJobMatches = lazy(() => import('@/pages/dashboard/candidate/AIJobMatches'));
-const InterviewPrep = lazy(() => import('@/pages/dashboard/candidate/InterviewPrep'));
-const CareerAssistant = lazy(() => import('@/pages/dashboard/candidate/CareerAssistant'));
-const PublicProfile = React.lazy(() =>
-  import('./pages/public/PublicProfile').then((m) => ({ default: m.PublicProfile }))
-);
-const Marketplace = React.lazy(() =>
-  import('./pages/public/Marketplace').then((m) => ({ default: m.Marketplace }))
-);
-const MarketplaceTemplateDetails = React.lazy(() =>
-  import('./pages/public/TemplateDetails').then((m) => ({ default: m.TemplateDetails }))
-);
-const Checkout = React.lazy(() =>
-  import('./pages/public/Checkout').then((m) => ({ default: m.Checkout }))
-);
-const OrderSuccess = React.lazy(() =>
-  import('./pages/public/OrderSuccess').then((m) => ({ default: m.OrderSuccess }))
-);
-const Purchases = React.lazy(() =>
-  import('./pages/dashboard/candidate/Purchases').then((m) => ({ default: m.Purchases }))
-);
-const Billing = React.lazy(() =>
-  import('./pages/dashboard/candidate/Billing').then((m) => ({ default: m.Billing }))
-);
-const Subscriptions = React.lazy(() =>
-  import('./pages/dashboard/candidate/Subscriptions').then((m) => ({ default: m.Subscriptions }))
-);
+// Public Feature Pages (Lazy Loaded)
+const JobsListing = React.lazy(() => import('./pages/public/JobsListing').then((m) => ({ default: m.JobsListing })));
+const JobDetails = React.lazy(() => import('./pages/public/JobDetails').then((m) => ({ default: m.JobDetails })));
+const ResourcesListing = React.lazy(() => import('./pages/public/ResourcesListing').then((m) => ({ default: m.ResourcesListing })));
+const ResourceDetails = React.lazy(() => import('./pages/public/ResourceDetails').then((m) => ({ default: m.ResourceDetails })));
+const TemplatesListing = React.lazy(() => import('./pages/public/TemplatesListing').then((m) => ({ default: m.TemplatesListing })));
+const TemplateDetails = React.lazy(() => import('./pages/public/TemplateDetails').then((m) => ({ default: m.TemplateDetails })));
+const Blog = React.lazy(() => import('./pages/public/Blog').then((m) => ({ default: m.Blog })));
+const BlogPostDetail = React.lazy(() => import('./pages/public/BlogPostDetail'));
+const ResourcesHub = React.lazy(() => import('./pages/public/ResourcesHub'));
+const Pricing = React.lazy(() => import('./pages/public/Pricing').then((m) => ({ default: m.Pricing })));
+const SearchResults = React.lazy(() => import('./pages/public/SearchResults'));
+const ResumeBuilder = React.lazy(() => import('./pages/candidate/ResumeBuilder'));
+const PublicProfile = React.lazy(() => import('./pages/public/PublicProfile').then((m) => ({ default: m.PublicProfile })));
+const Marketplace = React.lazy(() => import('./pages/public/Marketplace').then((m) => ({ default: m.Marketplace })));
+const Checkout = React.lazy(() => import('./pages/public/Checkout').then((m) => ({ default: m.Checkout })));
+const OrderSuccess = React.lazy(() => import('./pages/public/OrderSuccess').then((m) => ({ default: m.OrderSuccess })));
+const SalaryBenchmarkGuide = React.lazy(() => import('./pages/public/SalaryBenchmarkGuide'));
+const InterviewPrepKit = React.lazy(() => import('./pages/public/InterviewPrepKit'));
+const CareerGrowthRoadmap = React.lazy(() => import('./pages/public/CareerGrowthRoadmap'));
 
-const CandidateDashboard = React.lazy(() =>
-  import('./pages/dashboard/candidate/CandidateDashboard').then((m) => ({ default: m.CandidateDashboard }))
-);
-const Portfolio = React.lazy(() =>
-  import('./pages/dashboard/candidate/Portfolio').then((m) => ({ default: m.Portfolio }))
-);
-const Experience = React.lazy(() =>
-  import('./pages/dashboard/candidate/Experience').then((m) => ({ default: m.Experience }))
-);
-const Skills = React.lazy(() =>
-  import('./pages/dashboard/candidate/Skills').then((m) => ({ default: m.Skills }))
-);
-const CandidateJobs = React.lazy(() =>
-  import('./pages/dashboard/candidate/Jobs').then((m) => ({ default: m.Jobs }))
-);
-const SavedJobs = React.lazy(() =>
-  import('./pages/dashboard/candidate/SavedJobs').then((m) => ({ default: m.SavedJobs }))
-);
-const Education = React.lazy(() =>
-  import('./pages/dashboard/candidate/Education').then((m) => ({ default: m.Education }))
-);
-const Certifications = React.lazy(() =>
-  import('./pages/dashboard/candidate/Certifications').then((m) => ({ default: m.Certifications }))
-);
-const Projects = React.lazy(() =>
-  import('./pages/dashboard/candidate/Projects').then((m) => ({ default: m.Projects }))
-);
-const Alerts = React.lazy(() =>
-  import('./pages/dashboard/candidate/Alerts').then((m) => ({ default: m.Alerts }))
-);
-const Notifications = React.lazy(() =>
-  import('./pages/dashboard/candidate/Notifications').then((m) => ({ default: m.Notifications }))
-);
+// Shared & Candidate Dashboard Pages (Lazy Loaded)
+const NotificationCenter = React.lazy(() => import('./pages/dashboard/shared/NotificationCenter'));
+const ResumeAnalyzer = React.lazy(() => import('./pages/dashboard/candidate/ResumeAnalyzer'));
+const AIJobMatches = React.lazy(() => import('./pages/dashboard/candidate/AIJobMatches'));
+const InterviewPrep = React.lazy(() => import('./pages/dashboard/candidate/InterviewPrep'));
+const CareerAssistant = React.lazy(() => import('./pages/dashboard/candidate/CareerAssistant'));
+const Purchases = React.lazy(() => import('./pages/dashboard/candidate/Purchases').then((m) => ({ default: m.Purchases })));
+const Billing = React.lazy(() => import('./pages/dashboard/candidate/Billing').then((m) => ({ default: m.Billing })));
+const Subscriptions = React.lazy(() => import('./pages/dashboard/candidate/Subscriptions').then((m) => ({ default: m.Subscriptions })));
 
-const EmployerDashboard = React.lazy(() =>
-  import('./pages/dashboard/employer/EmployerDashboard').then((m) => ({ default: m.EmployerDashboard }))
-);
-const CompanyProfile = React.lazy(() =>
-  import('./pages/dashboard/employer/CompanyProfile').then((m) => ({ default: m.CompanyProfile }))
-);
-const Locations = React.lazy(() =>
-  import('./pages/dashboard/employer/Locations').then((m) => ({ default: m.Locations }))
-);
-const Team = React.lazy(() =>
-  import('./pages/dashboard/employer/Team').then((m) => ({ default: m.Team }))
-);
-const EmployerJobs = React.lazy(() =>
-  import('./pages/dashboard/employer/Jobs').then((m) => ({ default: m.Jobs }))
-);
-const CreateJob = React.lazy(() =>
-  import('./pages/dashboard/employer/CreateJob').then((m) => ({ default: m.CreateJob }))
-);
+const CandidateDashboard = React.lazy(() => import('./pages/dashboard/candidate/CandidateDashboard').then((m) => ({ default: m.CandidateDashboard })));
+const Portfolio = React.lazy(() => import('./pages/dashboard/candidate/Portfolio').then((m) => ({ default: m.Portfolio })));
+const Experience = React.lazy(() => import('./pages/dashboard/candidate/Experience').then((m) => ({ default: m.Experience })));
+const Skills = React.lazy(() => import('./pages/dashboard/candidate/Skills').then((m) => ({ default: m.Skills })));
+const CandidateJobs = React.lazy(() => import('./pages/dashboard/candidate/Jobs').then((m) => ({ default: m.Jobs })));
+const SavedJobs = React.lazy(() => import('./pages/dashboard/candidate/SavedJobs').then((m) => ({ default: m.SavedJobs })));
+const Education = React.lazy(() => import('./pages/dashboard/candidate/Education').then((m) => ({ default: m.Education })));
+const Certifications = React.lazy(() => import('./pages/dashboard/candidate/Certifications').then((m) => ({ default: m.Certifications })));
+const Projects = React.lazy(() => import('./pages/dashboard/candidate/Projects').then((m) => ({ default: m.Projects })));
+const Alerts = React.lazy(() => import('./pages/dashboard/candidate/Alerts').then((m) => ({ default: m.Alerts })));
+const Notifications = React.lazy(() => import('./pages/dashboard/candidate/Notifications').then((m) => ({ default: m.Notifications })));
+const Settings = React.lazy(() => import('./pages/dashboard/candidate/Settings').then((m) => ({ default: m.Settings })));
 
-const AdminDashboard = React.lazy(() =>
-  import('./pages/dashboard/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard }))
+// Employer Dashboard Pages (Lazy Loaded)
+const EmployerDashboard = React.lazy(() => import('./pages/dashboard/employer/EmployerDashboard').then((m) => ({ default: m.EmployerDashboard })));
+const CompanyProfile = React.lazy(() => import('./pages/dashboard/employer/CompanyProfile').then((m) => ({ default: m.CompanyProfile })));
+const Locations = React.lazy(() => import('./pages/dashboard/employer/Locations').then((m) => ({ default: m.Locations })));
+const Team = React.lazy(() => import('./pages/dashboard/employer/Team').then((m) => ({ default: m.Team })));
+const EmployerJobs = React.lazy(() => import('./pages/dashboard/employer/Jobs').then((m) => ({ default: m.Jobs })));
+const CreateJob = React.lazy(() => import('./pages/dashboard/employer/CreateJob').then((m) => ({ default: m.CreateJob })));
+const TalentScout = React.lazy(() => import('./pages/dashboard/employer/TalentScout').then((m) => ({ default: m.TalentScout })));
+const Research = React.lazy(() => import('./pages/dashboard/employer/Research').then((m) => ({ default: m.Research })));
+const EmployerBilling = React.lazy(() => import('./pages/dashboard/employer/EmployerBilling').then((m) => ({ default: m.EmployerBilling })));
+const EmployerApplications = React.lazy(() => import('./pages/dashboard/employer/EmployerApplications').then((m) => ({ default: m.EmployerApplications })));
+const EmployerNotifications = React.lazy(() => import('./pages/dashboard/employer/EmployerNotifications').then((m) => ({ default: m.EmployerNotifications })));
+const EmployerSettings = React.lazy(() => import('./pages/dashboard/employer/EmployerSettings').then((m) => ({ default: m.EmployerSettings })));
+
+// Admin Dashboard Pages (Lazy Loaded)
+const AdminDashboard = React.lazy(() => import('./pages/dashboard/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
+const Moderation = React.lazy(() => import('./pages/dashboard/admin/Moderation').then((m) => ({ default: m.Moderation })));
+const AdminCMS = React.lazy(() => import('./pages/dashboard/admin/AdminCMS'));
+const Users = React.lazy(() => import('./pages/dashboard/admin/Users').then((m) => ({ default: m.Users })));
+const Roles = React.lazy(() => import('./pages/dashboard/admin/Roles').then((m) => ({ default: m.Roles })));
+const AuditLogs = React.lazy(() => import('./pages/dashboard/admin/AuditLogs').then((m) => ({ default: m.AuditLogs })));
+const PlatformSettings = React.lazy(() => import('./pages/dashboard/admin/PlatformSettings').then((m) => ({ default: m.PlatformSettings })));
+const Candidates = React.lazy(() => import('./pages/dashboard/admin/Candidates').then((m) => ({ default: m.Candidates })));
+const Employers = React.lazy(() => import('./pages/dashboard/admin/Employers').then((m) => ({ default: m.Employers })));
+const Applications = React.lazy(() => import('./pages/dashboard/admin/Applications').then((m) => ({ default: m.Applications })));
+const Resources = React.lazy(() => import('./pages/dashboard/admin/Resources').then((m) => ({ default: m.Resources })));
+const Templates = React.lazy(() => import('./pages/dashboard/admin/Templates').then((m) => ({ default: m.Templates })));
+const AdminBlog = React.lazy(() => import('./pages/dashboard/admin/Blog').then((m) => ({ default: m.Blog })));
+const Orders = React.lazy(() => import('./pages/dashboard/admin/Orders').then((m) => ({ default: m.Orders })));
+const AdminSubscriptions = React.lazy(() => import('./pages/dashboard/admin/Subscriptions').then((m) => ({ default: m.Subscriptions })));
+const AIControl = React.lazy(() => import('./pages/dashboard/admin/AIControl').then((m) => ({ default: m.AIControl })));
+const Analytics = React.lazy(() => import('./pages/dashboard/admin/Analytics').then((m) => ({ default: m.Analytics })));
+
+import { validateConfig } from './lib/configValidator';
+import { ConfigErrorScreen } from './components/common/ConfigErrorScreen';
+import { TenantProvider } from './context/TenantContext';
+
+// Helper component for fine-grained Suspense boundaries
+const lazyElement = (Component: React.ComponentType) => (
+  <Suspense fallback={<Loading label="Loading content..." />}>
+    <Component />
+  </Suspense>
 );
-const Moderation = React.lazy(() =>
-  import('./pages/dashboard/admin/Moderation').then((m) => ({ default: m.Moderation }))
-);
-const AdminCMS = lazy(() => import('@/pages/dashboard/admin/AdminCMS'));
 
 export const App: React.FC = () => {
+  const validation = validateConfig();
+  if (!validation.isValid) {
+    return <ConfigErrorScreen missingVariables={validation.missingVariables} errorMessage={validation.errorMessage} />;
+  }
+
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <TenantProvider>
+        <BrowserRouter>
         <Routes>
           {/* Public Website Routes */}
           <Route path="/" element={<MainLayout />}>
@@ -158,33 +136,37 @@ export const App: React.FC = () => {
             <Route path="privacy" element={<Privacy />} />
             <Route path="terms" element={<Terms />} />
             <Route path="coming-soon" element={<ComingSoon />} />
-            <Route path="jobs" element={<JobsListing />} />
-            <Route path="jobs/:id" element={<JobDetails />} />
-            <Route path="resources" element={<ResourcesListing />} />
-            <Route path="resources/:id" element={<ResourceDetails />} />
-            <Route path="templates" element={<TemplatesListing />} />
-            <Route path="templates/:id" element={<TemplateDetails />} />
-            <Route path="blog" element={<Blog />} />
-            <Route path="blog/:slug" element={<BlogPostDetail />} />
-            <Route path="resources-hub" element={<ResourcesHub />} />
-            <Route path="search" element={<SearchResults />} />
-            <Route path="pricing" element={<Pricing />} />
-            <Route path="profile/:candidateId" element={<PublicProfile />} />
-            <Route path="marketplace" element={<Marketplace />} />
-            <Route path="marketplace/template/:slug" element={<MarketplaceTemplateDetails />} />
-            <Route path="marketplace/checkout" element={<Checkout />} />
-            <Route path="marketplace/success" element={<OrderSuccess />} />
+            <Route path="jobs" element={lazyElement(JobsListing)} />
+            <Route path="jobs/:id" element={lazyElement(JobDetails)} />
+            <Route path="resources" element={lazyElement(ResourcesListing)} />
+            <Route path="resources/:id" element={lazyElement(ResourceDetails)} />
+            <Route path="templates" element={lazyElement(TemplatesListing)} />
+            <Route path="templates/:id" element={lazyElement(TemplateDetails)} />
+            <Route path="blog" element={lazyElement(Blog)} />
+            <Route path="blog/:slug" element={lazyElement(BlogPostDetail)} />
+            <Route path="resources-hub" element={lazyElement(ResourcesHub)} />
+            <Route path="search" element={lazyElement(SearchResults)} />
+            <Route path="candidate/resume-builder" element={lazyElement(ResumeBuilder)} />
+            <Route path="pricing" element={lazyElement(Pricing)} />
+            <Route path="profile/:candidateId" element={lazyElement(PublicProfile)} />
+            <Route path="marketplace" element={lazyElement(Marketplace)} />
+            <Route path="marketplace/template/:slug" element={lazyElement(TemplateDetails)} />
+            <Route path="marketplace/checkout" element={lazyElement(Checkout)} />
+            <Route path="marketplace/success" element={lazyElement(OrderSuccess)} />
+            <Route path="guides/salary-benchmark" element={lazyElement(SalaryBenchmarkGuide)} />
+            <Route path="guides/interview-prep" element={lazyElement(InterviewPrepKit)} />
+            <Route path="guides/career-roadmap" element={lazyElement(CareerGrowthRoadmap)} />
             
             {/* Auth Screens */}
-            <Route path="login" element={<Login />} />
-            <Route path="register" element={<Register />} />
-            <Route path="reset-password" element={<ResetPassword />} />
-            <Route path="verify-email" element={<VerifyEmail />} />
-            <Route path="role-selection" element={<RoleSelection />} />
-            <Route path="onboarding/candidate" element={<CandidateOnboarding />} />
-            <Route path="onboarding/employer" element={<EmployerOnboarding />} />
-            <Route path="forgot-password" element={<ForgotPassword />} />
-            <Route path="auth/callback" element={<AuthCallback />} />
+            <Route path="login" element={lazyElement(Login)} />
+            <Route path="register" element={lazyElement(Register)} />
+            <Route path="reset-password" element={lazyElement(ResetPassword)} />
+            <Route path="verify-email" element={lazyElement(VerifyEmail)} />
+            <Route path="role-selection" element={lazyElement(RoleSelection)} />
+            <Route path="onboarding/candidate" element={lazyElement(CandidateOnboarding)} />
+            <Route path="onboarding/employer" element={lazyElement(EmployerOnboarding)} />
+            <Route path="forgot-password" element={lazyElement(ForgotPassword)} />
+            <Route path="auth/callback" element={lazyElement(AuthCallback)} />
           </Route>
 
           {/* Protected Dashboard Shell Routes */}
@@ -346,6 +328,14 @@ export const App: React.FC = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="settings"
+                element={
+                  <ProtectedRoute allowedRoles={['candidate']}>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
             </Route>
 
             <Route path="employer">
@@ -397,6 +387,54 @@ export const App: React.FC = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="talent-scout"
+                element={
+                  <ProtectedRoute allowedRoles={['employer']}>
+                    <TalentScout />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="research"
+                element={
+                  <ProtectedRoute allowedRoles={['employer']}>
+                    <Research />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="billing"
+                element={
+                  <ProtectedRoute allowedRoles={['employer']}>
+                    <EmployerBilling />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="applications"
+                element={
+                  <ProtectedRoute allowedRoles={['employer']}>
+                    <EmployerApplications />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="notifications"
+                element={
+                  <ProtectedRoute allowedRoles={['employer']}>
+                    <EmployerNotifications />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="settings"
+                element={
+                  <ProtectedRoute allowedRoles={['employer']}>
+                    <EmployerSettings />
+                  </ProtectedRoute>
+                }
+              />
             </Route>
             <Route path="admin">
               <Route
@@ -423,14 +461,127 @@ export const App: React.FC = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="users"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <Users />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="roles"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <Roles />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="audit-logs"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <AuditLogs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="settings"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <PlatformSettings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="candidates"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <Candidates />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="employers"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <Employers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="applications"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <Applications />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="resources"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <Resources />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="templates"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <Templates />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="blog"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <AdminBlog />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="orders"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <Orders />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="subscriptions"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <AdminSubscriptions />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="ai"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <AIControl />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="analytics"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <Analytics />
+                  </ProtectedRoute>
+                }
+              />
             </Route>
           </Route>
 
-          {/* Catch-all fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Catch-all 404 fallback */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
         <FeedbackWidget />
       </BrowserRouter>
+     </TenantProvider>
     </AuthProvider>
   );
 };

@@ -34,8 +34,8 @@ export const EducationForm: React.FC<EducationFormProps> = ({
     if (educationToEdit) {
       setInstitution(educationToEdit.institution);
       setDegree(educationToEdit.degree);
-      setFieldOfStudy(educationToEdit.field_of_study);
-      setStartDate(educationToEdit.start_date);
+      setFieldOfStudy(educationToEdit.field_of_study || '');
+      setStartDate(educationToEdit.start_date || '');
       setEndDate(educationToEdit.end_date || '');
       setDescription(educationToEdit.description || '');
     } else {
