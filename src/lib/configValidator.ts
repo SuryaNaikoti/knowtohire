@@ -7,20 +7,23 @@ export interface ConfigValidationResult {
   errorMessage?: string;
 }
 
-const REQUIRED_VARS = [
-  'VITE_SUPABASE_URL',
-  'VITE_SUPABASE_ANON_KEY'
-];
 
 export const validateConfig = (): ConfigValidationResult => {
   const missingVariables: string[] = [];
   const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
 
-  for (const key of REQUIRED_VARS) {
-    const value = import.meta.env[key];
-    if (!value || value === 'https://your-supabase-url.supabase.co' || value === 'your-anon-key-placeholder') {
-      missingVariables.push(key);
-    }
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  if (!url || url === 'https://your-supabase-url.supabase.co' || url === 'https://placeholder.supabase.co') {
+    missingVariables.push('VITE_SUPABASE_URL');
+  }
+
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const pubKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const hasValidKey = (anonKey && anonKey !== 'your-anon-key-placeholder' && anonKey !== 'placeholder-key') || 
+                      (pubKey && pubKey !== 'your-publishable-key-placeholder');
+
+  if (!hasValidKey) {
+    missingVariables.push('VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY)');
   }
 
   if (missingVariables.length > 0) {
