@@ -218,19 +218,11 @@ export const App: React.FC = () => {
               />
               <Route
                 path="interview-prep"
-                element={
-                  <ProtectedRoute allowedRoles={['candidate']}>
-                    <InterviewPrep />
-                  </ProtectedRoute>
-                }
+                element={<Navigate to="/dashboard/candidate" replace />}
               />
               <Route
                 path="assistant"
-                element={
-                  <ProtectedRoute allowedRoles={['candidate']}>
-                    <CareerAssistant />
-                  </ProtectedRoute>
-                }
+                element={<Navigate to="/dashboard/candidate" replace />}
               />
               <Route
                 path="experience"
@@ -389,19 +381,11 @@ export const App: React.FC = () => {
               />
               <Route
                 path="talent-scout"
-                element={
-                  <ProtectedRoute allowedRoles={['employer']}>
-                    <TalentScout />
-                  </ProtectedRoute>
-                }
+                element={<Navigate to="/dashboard/employer" replace />}
               />
               <Route
                 path="research"
-                element={
-                  <ProtectedRoute allowedRoles={['employer']}>
-                    <Research />
-                  </ProtectedRoute>
-                }
+                element={<Navigate to="/dashboard/employer" replace />}
               />
               <Route
                 path="billing"
@@ -559,19 +543,11 @@ export const App: React.FC = () => {
               />
               <Route
                 path="ai"
-                element={
-                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-                    <AIControl />
-                  </ProtectedRoute>
-                }
+                element={<Navigate to="/dashboard/admin" replace />}
               />
               <Route
                 path="analytics"
-                element={
-                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-                    <Analytics />
-                  </ProtectedRoute>
-                }
+                element={<Navigate to="/dashboard/admin" replace />}
               />
             </Route>
           </Route>

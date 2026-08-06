@@ -18,7 +18,7 @@ interface Transaction {
 
 export const EmployerBilling: React.FC = () => {
   const [currentPlan, setCurrentPlan] = useState<'Starter' | 'Growth' | 'Enterprise'>('Starter');
-  const [paymentMethod, setPaymentMethod] = useState<'Stripe' | 'Razorpay' | 'Wise'>('Stripe');
+  const [paymentMethod, setPaymentMethod] = useState<'Razorpay' | 'Stripe' | 'Wise'>('Razorpay');
   const [couponCode, setCouponCode] = useState('');
   const [couponStatus, setCouponStatus] = useState('');
   const [successMessage, setSuccessMessage] = useState('');

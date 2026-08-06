@@ -381,7 +381,7 @@ class CandidateService {
 
     try {
       // 1. Find or create general category
-      let { data: catData } = await supabase
+      const { data: catData } = await supabase
         .from('skill_categories')
         .select('id')
         .limit(1)
@@ -398,7 +398,7 @@ class CandidateService {
       }
 
       // 2. Find or create general subcategory
-      let { data: subcatData } = await supabase
+      const { data: subcatData } = await supabase
         .from('skill_subcategories')
         .select('id')
         .limit(1)
@@ -415,7 +415,7 @@ class CandidateService {
       }
 
       // 3. Find or create the skill in the 'skills' table
-      let { data: skillData } = await supabase
+      const { data: skillData } = await supabase
         .from('skills')
         .select('id')
         .eq('skill_name', skillName)

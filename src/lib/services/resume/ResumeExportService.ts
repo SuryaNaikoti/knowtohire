@@ -2,8 +2,12 @@ import type { CandidateResume } from '../resume/types';
 
 export class ResumeExportService {
   exportToPDF(resume: CandidateResume): void {
-    console.log(`[ResumeExportService] Triggering structured PDF export for ${resume.fullName}`);
+    const originalTitle = document.title;
+    document.title = `${resume.fullName.replace(/\s+/g, '_')}_Resume`;
     window.print();
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1000);
   }
 }
 

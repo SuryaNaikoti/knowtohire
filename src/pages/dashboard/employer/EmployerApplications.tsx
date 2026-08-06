@@ -30,11 +30,11 @@ export const EmployerApplications: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Employer ATS Pipeline</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Applicant Management Pipeline</h1>
           <p className="text-xs text-slate-500">Track candidate applications, update hiring stages, and trigger automated notifications.</p>
         </div>
         <div className="px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-1">
-          <CheckCircle2 className="w-3.5 h-3.5" /> Live ATS Workflow Active
+          <CheckCircle2 className="w-3.5 h-3.5" /> Live Applicant Management Active
         </div>
       </div>
 

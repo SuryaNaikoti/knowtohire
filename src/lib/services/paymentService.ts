@@ -24,17 +24,18 @@ export interface PaymentEvent {
 const LOCAL_PAYMENTS_KEY = (orderId: string) => `kth_payments_${orderId}`;
 
 export const paymentService = {
-  createPaymentIntent: async (userId: string, orderId: string): Promise<Payment> => {
+  createPaymentIntent: async (userId: string, orderId: string, provider: 'razorpay' | 'stripe' = 'razorpay'): Promise<Payment> => {
     // Fetch order
     const data = await orderService.getOrder(userId, orderId);
     if (!data) throw new Error('Order not found.');
 
+    const refPrefix = provider === 'razorpay' ? 'order_rzp_' : 'pi_';
     const paymentData: Omit<Payment, 'id'> = {
       order_id: orderId,
       amount_cents: data.order.amount_cents,
       status: 'pending',
-      provider: 'stripe',
-      transaction_reference: `pi_${Math.random().toString(36).substring(2, 10)}`
+      provider,
+      transaction_reference: `${refPrefix}${Math.random().toString(36).substring(2, 10)}`
     };
 
     if (isSupabaseConfigured && supabase) {

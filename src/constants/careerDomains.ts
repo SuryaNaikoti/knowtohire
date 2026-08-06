@@ -2,6 +2,7 @@ export const CAREER_DOMAINS = [
   'General',
   'Environmental',
   'ESG',
+  'Sustainability',
   'Patent',
   'IPR',
   'Research',

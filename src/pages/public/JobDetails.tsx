@@ -4,18 +4,83 @@ import { mockJobs } from '../../constants/mockData';
 import type { Job } from '../../constants/mockData';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent } from '../../components/ui/Card';
-import { MapPin, Briefcase, DollarSign, ArrowLeft, ChevronRight, Share2, Heart, Award, CheckCircle } from 'lucide-react';
+import { 
+  MapPin, 
+  Briefcase, 
+  DollarSign, 
+  ArrowLeft, 
+  ChevronRight, 
+  Share2, 
+  Heart, 
+  Award, 
+  CheckCircle, 
+  Compass, 
+  GraduationCap, 
+  BrainCircuit, 
+  ListChecks 
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { candidateService } from '../../lib/services/candidateService';
+
+// Fallbacks for missing fields in mock data to satisfy Sprint 12.2 requirements
+const getFallbackResponsibilities = (dept: string) => {
+  const defaults = {
+    engineering: [
+      'Collaborate with product and design teams to build scalable web applications.',
+      'Write clean, maintainable, and efficient code with comprehensive test coverage.',
+      'Design robust microservices and optimize database queries for maximum performance.',
+      'Participate in peer code reviews and contribute to architecture design decisions.'
+    ],
+    finance: [
+      'Analyze financial data and build quantitative risk forecasting models.',
+      'Prepare regulatory compliance reports and interface with senior management.',
+      'Evaluate investment portfolio strategies and identify potential market risks.',
+      'Automate data aggregation workflows using Python and SQL.'
+    ],
+    design: [
+      'Create high-fidelity UI designs, user flows, and interactive prototypes.',
+      'Collaborate with engineers to ensure design integrity during implementation.',
+      'Conduct user research, usability testing, and translate insights into design solutions.',
+      'Maintain and expand the company UI design system guidelines.'
+    ]
+  };
+  
+  const key = dept.toLowerCase();
+  if (key.includes('engineer') || key.includes('tech') || key.includes('health')) {
+    return defaults.engineering;
+  }
+  if (key.includes('finance') || key.includes('risk') || key.includes('marketing') || key.includes('esg')) {
+    return defaults.finance;
+  }
+  return defaults.design;
+};
+
+const getFallbackSkills = (dept: string) => {
+  const defaults = {
+    engineering: ['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'Docker', 'AWS'],
+    finance: ['Financial Modeling', 'Python', 'SQL', 'Excel Macros', 'Risk Analysis'],
+    design: ['Figma', 'UI/UX Design', 'Wireframing', 'User Research', 'Adobe Suite']
+  };
+
+  const key = dept.toLowerCase();
+  if (key.includes('engineer') || key.includes('tech') || key.includes('health')) {
+    return defaults.engineering;
+  }
+  if (key.includes('finance') || key.includes('risk') || key.includes('marketing') || key.includes('esg')) {
+    return defaults.finance;
+  }
+  return defaults.design;
+};
 
 export const JobDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { profile } = useAuth();
-  const job = mockJobs.find((j: Job) => j.id === id);
+  const job = mockJobs.find((j: Job) => j.id === id || j.id === `job-${id}`);
 
   const [hasApplied, setHasApplied] = useState(false);
   const [checkingApp, setCheckingApp] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -47,19 +112,48 @@ export const JobDetails: React.FC = () => {
     }
   };
 
+  const handleShare = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href);
+      alert('Job details link copied to clipboard!');
+    } else {
+      alert(`Share this job: ${window.location.href}`);
+    }
+  };
+
   if (!job) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-16 text-center">
-        <h2 className="text-xl font-bold text-slate-800 mb-2">Job Listing Not Found</h2>
-        <p className="text-sm text-slate-500 mb-6">The job posting you are trying to access does not exist or has expired.</p>
-        <Link to="/jobs">
-          <Button variant="primary">Back to All Jobs</Button>
-        </Link>
+      <div className="min-h-[75vh] flex items-center justify-center p-6 font-sans">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="w-16 h-16 bg-slate-105 text-slate-700 rounded-3xl flex items-center justify-center mx-auto shadow-xs border border-slate-200">
+            <Compass className="w-8 h-8 animate-spin-slow" />
+          </div>
+          <div className="space-y-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-emerald-600">404 Error</span>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Job Not Found</h1>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              The job posting you are trying to access does not exist or has expired.
+            </p>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Link to="/jobs" className="flex-1">
+              <Button className="w-full h-11 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl flex items-center justify-center gap-1.5 cursor-pointer">
+                Back to All Jobs
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
 
   const similarJobs = mockJobs.filter((j: Job) => j.id !== job.id).slice(0, 2);
+
+  // Dynamic values
+  const responsibilities = getFallbackResponsibilities(job.department);
+  const skills = getFallbackSkills(job.department);
+  const experienceRequired = '3-5 years of relevant industry experience';
+  const educationRequired = "Bachelor's Degree in Computer Science, Finance, Design, or equivalent";
 
   return (
     <div className="bg-slate-50/30 flex-1 w-full min-h-screen py-12 animate-fade-in-up">
@@ -71,11 +165,23 @@ export const JobDetails: React.FC = () => {
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Jobs Feed
           </Link>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="bg-white border-slate-200 text-xs py-1.5 px-3 rounded-lg h-9 hover:bg-slate-50" leftIcon={<Share2 className="w-3.5 h-3.5" />}>
-              Share
+            <Button 
+              onClick={handleShare}
+              variant="outline" 
+              size="sm" 
+              className="bg-white border-slate-200 text-xs py-1.5 px-3 rounded-lg h-9 hover:bg-slate-50" 
+              leftIcon={<Share2 className="w-3.5 h-3.5" />}
+            >
+              Share Job
             </Button>
-            <Button variant="outline" size="sm" className="bg-white border-slate-200 text-xs py-1.5 px-3 rounded-lg h-9 hover:bg-slate-50" leftIcon={<Heart className="w-3.5 h-3.5" />}>
-              Save
+            <Button 
+              onClick={() => setIsSaved(!isSaved)}
+              variant="outline" 
+              size="sm" 
+              className="bg-white border-slate-200 text-xs py-1.5 px-3 rounded-lg h-9 hover:bg-slate-50" 
+              leftIcon={<Heart className={`w-3.5 h-3.5 ${isSaved ? 'fill-red-500 text-red-500' : ''}`} />}
+            >
+              {isSaved ? 'Saved' : 'Save Job'}
             </Button>
           </div>
         </div>
@@ -99,7 +205,7 @@ export const JobDetails: React.FC = () => {
                     {job.company}
                   </span>
                   {job.matchScore && (
-                    <span className="text-[10px] font-black text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-lg border border-teal-200/20 select-none">
+                    <span className="text-[10px] font-black text-teal-700 bg-teal-55/10 px-2.5 py-0.5 rounded-lg border border-teal-200/20 select-none">
                       🔥 {job.matchScore}% Match Dossier
                     </span>
                   )}
@@ -127,6 +233,21 @@ export const JobDetails: React.FC = () => {
               </p>
             </section>
 
+            {/* Responsibilities Section */}
+            <section className="mb-8 space-y-4">
+              <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-heading flex items-center gap-1.5">
+                <ListChecks className="w-3.5 h-3.5 text-emerald-600" /> Key Responsibilities
+              </h2>
+              <ul className="space-y-3">
+                {responsibilities.map((resp, index) => (
+                  <li key={index} className="flex items-start gap-3 text-sm text-slate-650 font-normal leading-relaxed">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 mt-2" />
+                    <span>{resp}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
             {/* Requirements Section */}
             <section className="mb-8 space-y-4">
               <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-heading flex items-center gap-1.5">
@@ -140,6 +261,36 @@ export const JobDetails: React.FC = () => {
                   </li>
                 ))}
               </ul>
+            </section>
+
+            {/* Skills Section */}
+            <section className="mb-8 space-y-4">
+              <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-heading flex items-center gap-1.5">
+                <BrainCircuit className="w-3.5 h-3.5 text-teal-650" /> Technical Skills & Tech Stack
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {skills.map((skill, index) => (
+                  <span key={index} className="bg-teal-50 text-teal-800 border border-teal-100 px-3 py-1 rounded-xl text-xs font-bold">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </section>
+
+            {/* Experience & Education Section */}
+            <section className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
+              <div className="space-y-2">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-amber-500" /> Required Experience
+                </h4>
+                <p className="text-xs font-semibold text-slate-700">{experienceRequired}</p>
+              </div>
+              <div className="space-y-2">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <GraduationCap className="w-3.5 h-3.5 text-indigo-500" /> Education Level
+                </h4>
+                <p className="text-xs font-semibold text-slate-700">{educationRequired}</p>
+              </div>
             </section>
 
             {/* Benefits Section */}
@@ -243,10 +394,10 @@ export const JobDetails: React.FC = () => {
                       <h4 className="text-xs font-bold text-slate-800 group-hover:text-emerald-700 transition-colors truncate font-heading">
                         {simJob.title}
                       </h4>
-                      <p className="text-[10px] text-slate-450 font-semibold mt-0.5 truncate">{simJob.company} • {simJob.location}</p>
+                      <p className="text-[10px] text-slate-455 font-semibold mt-0.5 truncate">{simJob.company} • {simJob.location}</p>
                     </div>
                     <Link to={`/jobs/${simJob.id}`} className="shrink-0">
-                      <button className="p-2 rounded-lg text-slate-450 hover:text-emerald-700 hover:bg-slate-50 cursor-pointer transition-colors border border-transparent bg-transparent">
+                      <button className="p-2 rounded-lg text-slate-455 hover:text-emerald-700 hover:bg-slate-50 cursor-pointer transition-colors border border-transparent bg-transparent">
                         <ChevronRight className="w-4 h-4" />
                       </button>
                     </Link>

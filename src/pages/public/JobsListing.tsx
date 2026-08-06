@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { mockJobs } from '../../constants/mockData';
 import type { Job } from '../../constants/mockData';
 import { Button } from '../../components/ui/Button';
@@ -42,6 +42,7 @@ const DotGrid: React.FC<{ className?: string }> = ({ className = '' }) => (
 );
 
 export const JobsListing: React.FC = () => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const locationParam = searchParams.get('location') || '';
@@ -54,11 +55,17 @@ export const JobsListing: React.FC = () => {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  // Design View Mode state: 'grid' | 'list' | 'split'
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'split'>('split');
+  // Design View Mode state: 'grid' | 'list' | 'split' with persistence
+  const viewParam = searchParams.get('view') as 'grid' | 'list' | 'split' | null;
+  const initialView = viewParam || (localStorage.getItem('knowtohire_jobs_view') as 'grid' | 'list' | 'split') || 'split';
+  const [viewMode, setViewModeState] = useState<'grid' | 'list' | 'split'>(initialView);
+
+  const setViewMode = (mode: 'grid' | 'list' | 'split') => {
+    setViewModeState(mode);
+    localStorage.setItem('knowtohire_jobs_view', mode);
+  };
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [bookmarkedJobs, setBookmarkedJobs] = useState<string[]>([]);
-  const [appliedJobs, setAppliedJobs] = useState<string[]>([]);
 
   useEffect(() => {
     if (searchParam) setSearchQuery(searchParam);
@@ -125,14 +132,6 @@ export const JobsListing: React.FC = () => {
     setBookmarkedJobs(prev => 
       prev.includes(id) ? prev.filter(jobId => jobId !== id) : [...prev, id]
     );
-  };
-
-  const handleApply = (id: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!appliedJobs.includes(id)) {
-      setAppliedJobs(prev => [...prev, id]);
-    }
   };
 
   // Dynamic Header Title
@@ -324,8 +323,24 @@ export const JobsListing: React.FC = () => {
                 {filteredJobs.map((job) => (
                   <div
                     key={job.id}
-                    onClick={() => setSelectedJobId(job.id)}
-                    className={`p-4 border rounded-[20px] text-left cursor-pointer transition-all duration-300 relative group flex gap-3
+                    tabIndex={0}
+                    role="button"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedJobId(job.id);
+                        if (window.innerWidth < 768) {
+                          navigate(`/jobs/${job.id}`);
+                        }
+                      }
+                    }}
+                    onClick={() => {
+                      setSelectedJobId(job.id);
+                      if (window.innerWidth < 768) {
+                        navigate(`/jobs/${job.id}`);
+                      }
+                    }}
+                    className={`p-4 border rounded-[20px] text-left cursor-pointer transition-all duration-300 relative group flex gap-3 focus:outline-none focus:ring-2 focus:ring-emerald-500
                       ${selectedJobId === job.id 
                         ? 'bg-white border-emerald-500 ring-2 ring-emerald-500/10 shadow-md' 
                         : 'bg-white border-slate-200 hover:border-slate-350 hover:shadow-xs'
@@ -381,7 +396,13 @@ export const JobsListing: React.FC = () => {
                                 {activeJob.type}
                               </span>
                             </div>
-                            <h2 className="text-xl font-black text-slate-900 leading-snug">{activeJob.title}</h2>
+                            <h2 
+                              className="text-xl font-black text-slate-900 leading-snug cursor-pointer hover:text-emerald-700 transition-colors"
+                              onClick={() => navigate(`/jobs/${activeJob.id}`)}
+                              title="Click to view full job details page"
+                            >
+                              {activeJob.title}
+                            </h2>
                           </div>
                         </div>
 
@@ -469,17 +490,12 @@ export const JobsListing: React.FC = () => {
                         />
                       </Button>
                       <Button
-                        onClick={(e) => handleApply(activeJob.id, e)}
-                        variant={appliedJobs.includes(activeJob.id) ? "outline" : "primary"}
-                        className={`flex-1 rounded-xl font-extrabold text-xs py-3 flex items-center justify-center gap-2 transition-all
-                          ${appliedJobs.includes(activeJob.id) 
-                            ? 'border-emerald-600 text-emerald-650' 
-                            : 'bg-emerald-650 hover:bg-emerald-700 text-white'
-                          }
-                        `}
+                        onClick={() => navigate(`/jobs/${activeJob.id}`)}
+                        variant="primary"
+                        className="flex-1 rounded-xl font-extrabold text-xs py-3 flex items-center justify-center gap-2 transition-all bg-emerald-650 hover:bg-emerald-700 text-white cursor-pointer"
                       >
                         <Send className="w-4 h-4" />
-                        <span>{appliedJobs.includes(activeJob.id) ? 'Applied Successfully' : 'Apply For This Position'}</span>
+                        <span>View Full Job Details & Apply</span>
                       </Button>
                     </div>
                   </div>
@@ -499,7 +515,16 @@ export const JobsListing: React.FC = () => {
                 <Card
                   key={job.id}
                   hoverEffect
-                  className="bg-white border border-slate-200 rounded-[24px] relative flex flex-col group shadow-sm text-left overflow-hidden transition-all duration-300"
+                  tabIndex={0}
+                  role="button"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(`/jobs/${job.id}`);
+                    }
+                  }}
+                  onClick={() => navigate(`/jobs/${job.id}`)}
+                  className="bg-white border border-slate-200 rounded-[24px] relative flex flex-col group shadow-sm text-left overflow-hidden transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <div className="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 opacity-80 group-hover:opacity-100 transition-opacity" />
                   
@@ -519,9 +544,17 @@ export const JobsListing: React.FC = () => {
 
                       {/* Info block */}
                       <div className="space-y-1">
-                        <span className="text-[10px] font-black uppercase text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md">
-                          {job.company}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-black uppercase text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md">
+                            {job.company}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                            {job.department}
+                          </span>
+                          <span className="text-[10px] font-semibold text-slate-400 bg-slate-50 border border-slate-150 px-2 py-0.5 rounded-md">
+                            {job.type}
+                          </span>
+                        </div>
                         <h3 className="text-base font-extrabold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-2 leading-tight">
                           {job.title}
                         </h3>
@@ -549,7 +582,7 @@ export const JobsListing: React.FC = () => {
                       >
                         <Heart className={`w-3.5 h-3.5 ${bookmarkedJobs.includes(job.id) ? 'fill-red-500 text-red-500' : 'text-slate-400'}`} />
                       </Button>
-                      <Link to={`/jobs/${job.id}`} className="flex-1">
+                      <Link to={`/jobs/${job.id}`} className="flex-1" onClick={(e) => e.stopPropagation()}>
                         <Button variant="outline" size="sm" className="w-full font-bold text-xs py-2 px-3 rounded-lg border-slate-200 hover:bg-slate-50">
                           Details
                         </Button>
@@ -568,7 +601,16 @@ export const JobsListing: React.FC = () => {
                 <Card
                   key={job.id}
                   hoverEffect
-                  className="hover:shadow-premium hover:-translate-y-0.5 border border-slate-200 relative flex flex-col group shadow-sm bg-white rounded-[24px] overflow-hidden focus:ring-2 focus:ring-emerald-500/20"
+                  tabIndex={0}
+                  role="button"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(`/jobs/${job.id}`);
+                    }
+                  }}
+                  onClick={() => navigate(`/jobs/${job.id}`)}
+                  className="hover:shadow-premium hover:-translate-y-0.5 border border-slate-200 relative flex flex-col group shadow-sm bg-white rounded-[24px] overflow-hidden focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
                 >
                   <CardContent className="p-6 flex flex-col sm:flex-row gap-6 items-start sm:items-center text-left">
                     <div className="w-14 h-14 rounded-xl border border-slate-100 shrink-0 shadow-sm overflow-hidden flex items-center justify-center bg-slate-50">
@@ -585,6 +627,9 @@ export const JobsListing: React.FC = () => {
                             🔥 {job.matchScore}% Match Dossier
                           </span>
                         )}
+                        <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-lg select-none">
+                          {job.department}
+                        </span>
                         <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-lg select-none">
                           {job.type}
                         </span>
@@ -616,7 +661,7 @@ export const JobsListing: React.FC = () => {
                         >
                           <Heart className={`w-3.5 h-3.5 ${bookmarkedJobs.includes(job.id) ? 'fill-red-500 text-red-500' : 'text-slate-400'}`} />
                         </Button>
-                        <Link to={`/jobs/${job.id}`} className="flex-1 sm:flex-none">
+                        <Link to={`/jobs/${job.id}`} className="flex-1 sm:flex-none" onClick={(e) => e.stopPropagation()}>
                           <Button variant="outline" size="sm" className="w-full font-bold text-xs py-2 px-4 border-slate-200 rounded-lg hover:bg-slate-50">
                             View Details
                           </Button>

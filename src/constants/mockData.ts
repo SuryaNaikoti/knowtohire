@@ -37,7 +37,7 @@ export interface Template {
   price: number;
   rating: number;
   downloadsCount: number;
-  formats: string[]; // ['Docx', 'Figma', 'Excel', 'PPT']
+  formats: string[]; // ['Docx', 'Figma', 'Excel', 'PPT', 'PDF']
   creator: string;
   creatorAvatar: string;
   features: string[];
@@ -60,190 +60,279 @@ export interface BlogPost {
 
 export const mockJobs: Job[] = [
   {
-    id: 'job-1',
-    title: 'Senior Software Engineer',
-    company: 'TechNova Labs',
-    logo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=80&h=80&q=80',
+    id: 'job-env-1',
+    title: 'Senior Environmental Engineer',
+    company: 'GreenEarth Consultants',
+    logo: 'https://images.unsplash.com/photo-1542744094-3a31b272c490?auto=format&fit=crop&w=120&h=120&q=80',
     location: 'Karnataka (Bengaluru)',
     type: 'Full-time',
-    department: 'Engineering',
-    salary: '₹18,00,000 - ₹28,00,000 / yr',
+    department: 'Environmental',
+    salary: '₹14,00,000 - ₹22,00,000 / yr',
     postedAt: '2 hours ago',
     matchScore: 98,
-    description: 'We are looking for a Senior Software Engineer to help build the next generation of cloud checkout infrastructure. You will work on robust APIs, fault-tolerant distributed networks, and scale transactional engines handling millions of daily events.',
+    description: 'GreenEarth Consultants is seeking a Senior Environmental Engineer to lead industrial EIA projects, wastewater treatment designs, and regulatory compliance audits across South India.',
     requirements: [
-      '5+ years of professional backend software engineering experience.',
-      'Strong expertise in React, Node.js, Go, or Java.',
-      'Experience designing and scaling RESTful APIs and microservices.',
-      'Understanding of PostgreSQL, Redis, and message queues.'
+      'B.Tech / M.Tech in Environmental or Chemical Engineering.',
+      '5+ years experience in EIA (Environmental Impact Assessment) and CPCB clearances.',
+      'Proficiency in AutoCAD, GIS, and environmental dispersion modeling software.',
+      'Strong knowledge of Water & Air Acts and Hazardous Waste Rules.'
     ],
-    benefits: [
-      'Comprehensive health and medical coverage.',
-      'Flexible remote & hybrid work options.',
-      'Annual learning & development stipend (₹50,000).',
-      'Performance bonus and equity grants.'
-    ]
+    benefits: ['Full health & family insurance', 'Green travel allowance', 'Annual L&D budget', 'Performance bonus']
   },
   {
-    id: 'job-2',
-    title: 'Financial Risk Analyst',
-    company: 'CapitalWise Partners',
-    logo: 'https://images.unsplash.com/photo-1568200306481-967613f0c74a?auto=format&fit=crop&w=80&h=80&q=80',
+    id: 'job-esg-1',
+    title: 'Lead ESG Consultant',
+    company: 'SustainEdge Consulting',
+    logo: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=120&h=120&q=80',
     location: 'Maharashtra (Mumbai)',
-    type: 'Full-time',
-    department: 'Finance',
-    salary: '₹14,00,000 - ₹22,00,000 / yr',
-    postedAt: '1 day ago',
-    matchScore: 95,
-    description: 'CapitalWise Partners is seeking a Lead Financial Risk Analyst to oversee portfolio risk models, regulatory capital compliance, and stress testing scenarios for high-net-worth institutional clients.',
-    requirements: [
-      '4+ years in financial modeling, risk analysis, or wealth management.',
-      'Proficiency in Python, SQL, Excel, and quantitative risk software.',
-      'FRM or CFA certification preferred.',
-      'Strong presentation skills for C-suite executive briefings.'
-    ],
-    benefits: [
-      'Quarterly performance bonuses.',
-      'Health insurance including family coverage.',
-      'Subsidized professional certification funding.',
-      'Flexible wellness allowances.'
-    ]
-  },
-  {
-    id: 'job-3',
-    title: 'Product Marketing Manager',
-    company: 'BrightPath Digital',
-    logo: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=80&h=80&q=80',
-    location: 'Maharashtra (Pune)',
     type: 'Hybrid',
-    department: 'Marketing',
-    salary: '₹12,00,000 - ₹18,00,000 / yr',
-    postedAt: '5 hours ago',
-    matchScore: 92,
-    description: 'BrightPath Digital is hiring a Product Marketing Manager to drive go-to-market strategies, user acquisition campaigns, and brand storytelling across digital channels.',
+    department: 'ESG',
+    salary: '₹18,00,000 - ₹28,00,000 / yr',
+    postedAt: '4 hours ago',
+    matchScore: 96,
+    description: 'SustainEdge Consulting is hiring a Lead ESG Consultant to design CSRD, GRI, and BRSR sustainability disclosure frameworks for BSE/NSE listed enterprise clients.',
     requirements: [
-      '3+ years of product marketing experience in SaaS or B2B tech.',
-      'Demonstrated track record of launching successful digital campaigns.',
-      'Proficiency in Google Analytics, HubSpot, and content strategy.',
-      'Excellent written communication and copywriting skills.'
+      'Master degree in Environmental Science, Sustainability, or MBA.',
+      '4+ years advising on ESG frameworks (GRI, TCFD, ISSB, BRSR).',
+      'Proven experience conducting Scope 1, 2, and 3 GHG inventory audits.'
     ],
-    benefits: [
-      'Flexible hybrid schedule (2 days in office).',
-      'Medical insurance and wellness days.',
-      'Annual team offsites.',
-      'Subsidized learning budget.'
-    ]
+    benefits: ['Hybrid work model', 'Corporate wellness program', 'Global travel opportunities', 'Equity options']
   },
   {
-    id: 'job-4',
-    title: 'Lead Healthcare Systems Specialist',
-    company: 'MedPulse Health',
-    logo: 'https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?auto=format&fit=crop&w=80&h=80&q=80',
-    location: 'Tamil Nadu (Chennai)',
-    type: 'Full-time',
-    department: 'Healthcare',
-    salary: '₹16,00,000 - ₹24,00,000 / yr',
-    postedAt: '3 days ago',
-    matchScore: 89,
-    description: 'MedPulse Health is expanding its clinical operations platform. We need a Systems Specialist to coordinate telemetry software integration across regional hospital networks.',
-    requirements: [
-      'Bachelor degree in Biomedical Engineering or Health Informatics.',
-      '3+ years experience with EHR/EMR systems and HL7/FHIR protocols.',
-      'Proven ability to collaborate with hospital administration and clinical teams.'
-    ],
-    benefits: [
-      'Top-tier family medical coverage.',
-      'Annual health checkups and wellness stipends.',
-      'Career progression path to Regional Health Director.'
-    ]
-  },
-  {
-    id: 'job-5',
-    title: 'ESG & Sustainability Lead Consultant',
-    company: 'EcoGreen Solutions',
-    logo: 'https://images.unsplash.com/photo-1542744094-3a31b272c490?auto=format&fit=crop&w=80&h=80&q=80',
+    id: 'job-sus-1',
+    title: 'Sustainability Analyst',
+    company: 'EcoVision India',
+    logo: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=120&h=120&q=80',
     location: 'Delhi NCR',
     type: 'Full-time',
-    department: 'ESG & Sustainability',
-    salary: '₹15,00,000 - ₹25,00,000 / yr',
+    department: 'Sustainability',
+    salary: '₹9,00,000 - ₹15,00,000 / yr',
     postedAt: '1 day ago',
-    matchScore: 91,
-    description: 'EcoGreen Solutions is advising enterprise clients on carbon accounting, CSRD compliance, and renewable energy transitions across Delhi NCR and Northern India.',
+    matchScore: 94,
+    description: 'EcoVision India is looking for a analytical Sustainability Analyst to analyze carbon footprint metrics, lifecycle assessments (LCA), and supply chain sustainability indicators.',
     requirements: [
-      'Degree in Environmental Science, Sustainability, or Business Administration.',
-      '4+ years advising on ESG frameworks (GRI, TCFD, ISSB).',
-      'Experience conducting GHG inventory audits and lifecycle assessments.'
+      'Degree in Environmental Science or Sustainable Development.',
+      '2+ years experience with SimaPro, OpenLCA, or GaBi software.',
+      'Strong quantitative analysis and report writing skills.'
     ],
-    benefits: [
-      'Green commute allowance.',
-      'Comprehensive insurance.',
-      'Flexible work location.'
-    ]
+    benefits: ['Health coverage', 'Flexible hours', 'Skill certification funding']
+  },
+  {
+    id: 'job-pat-1',
+    title: 'Patent Associate (Pharma & Biotech)',
+    company: 'Patent Nexus',
+    logo: 'https://images.unsplash.com/photo-1568200306481-967613f0c74a?auto=format&fit=crop&w=120&h=120&q=80',
+    location: 'Telangana (Hyderabad)',
+    type: 'Full-time',
+    department: 'Patent',
+    salary: '₹12,00,000 - ₹20,00,000 / yr',
+    postedAt: '1 day ago',
+    matchScore: 92,
+    description: 'Patent Nexus is seeking a registered Patent Agent/Associate to draft patent specifications, conduct prior-art searches, and respond to First Examination Reports (FER).',
+    requirements: [
+      'M.Sc / M.Pharm / Ph.D. in Life Sciences or Biotechnology.',
+      'Registered Patent Agent with the Indian Patent Office (IPO).',
+      '3+ years experience in patent drafting and prosecution.'
+    ],
+    benefits: ['Competitive bonus structure', 'Patent registration support', 'Health insurance']
+  },
+  {
+    id: 'job-ipr-1',
+    title: 'IPR Executive & Trademark Specialist',
+    company: 'IPR Global',
+    logo: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=120&h=120&q=80',
+    location: 'Maharashtra (Pune)',
+    type: 'Hybrid',
+    department: 'IPR',
+    salary: '₹8,00,000 - ₹14,00,000 / yr',
+    postedAt: '2 days ago',
+    matchScore: 90,
+    description: 'IPR Global is hiring an IPR Executive to manage corporate trademark portfolios, brand protection enforcement, and copyright registrations.',
+    requirements: [
+      'LL.B or Specialization in Intellectual Property Rights.',
+      '2+ years in trademark filing, opposition drafting, and IP clearance.',
+      'Strong legal drafting and client negotiation skills.'
+    ],
+    benefits: ['Flexible hybrid schedule', 'Legal research database access', 'Annual health checkups']
+  },
+  {
+    id: 'job-sci-1',
+    title: 'Environmental Scientist (Air Quality & Chemistry)',
+    company: 'Future Sustainability Labs',
+    logo: 'https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?auto=format&fit=crop&w=120&h=120&q=80',
+    location: 'Tamil Nadu (Chennai)',
+    type: 'Full-time',
+    department: 'Research',
+    salary: '₹10,00,000 - ₹16,00,000 / yr',
+    postedAt: '2 days ago',
+    matchScore: 91,
+    description: 'Future Sustainability Labs requires an Environmental Scientist to conduct field sampling, ambient air monitoring, and chemical pollution analysis.',
+    requirements: [
+      'M.Sc in Chemistry, Environmental Science, or Atmospheric Physics.',
+      'Experience operating GC-MS, HPLC, and air quality monitoring instruments.',
+      'Familiarity with NABL accreditation standards.'
+    ],
+    benefits: ['NABL lab equipment training', 'Medical coverage', 'Paid research sabbaticals']
+  },
+  {
+    id: 'job-res-1',
+    title: 'Research Associate (Circular Economy)',
+    company: 'Future Sustainability Labs',
+    logo: 'https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?auto=format&fit=crop&w=120&h=120&q=80',
+    location: 'Remote',
+    type: 'Remote',
+    department: 'Research',
+    salary: '₹7,50,000 - ₹12,00,000 / yr',
+    postedAt: '3 days ago',
+    matchScore: 89,
+    description: 'Conduct policy research, waste stream analysis, and circular economy market studies for international development clients.',
+    requirements: ['Master degree in Public Policy or Environmental Studies', '2+ years research publication experience', 'Data analysis skills in R or Python.'],
+    benefits: ['100% remote flexibility', 'Publication credit', 'Equipment allowance']
+  },
+  {
+    id: 'job-ehs-1',
+    title: 'EHS Manager (Industrial Safety)',
+    company: 'EnviroTech Solutions',
+    logo: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=120&h=120&q=80',
+    location: 'Gujarat (Ahmedabad)',
+    type: 'Full-time',
+    department: 'Environmental',
+    salary: '₹16,00,000 - ₹24,00,000 / yr',
+    postedAt: '3 days ago',
+    matchScore: 93,
+    description: 'Lead Environment, Health, and Safety (EHS) compliance across manufacturing plant facilities, ensuring ISO 14001 and ISO 45001 standards.',
+    requirements: ['Degree in Safety Engineering or RLI Diploma', '6+ years in chemical/manufacturing plant EHS', 'ISO lead auditor certification.'],
+    benefits: ['On-site housing facility', 'Executive health plans', 'Annual bonus']
+  },
+  {
+    id: 'job-water-1',
+    title: 'Water Treatment Process Engineer',
+    company: 'EnviroTech Solutions',
+    logo: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=120&h=120&q=80',
+    location: 'West Bengal (Kolkata)',
+    type: 'Full-time',
+    department: 'Environmental',
+    salary: '₹11,00,000 - ₹18,00,000 / yr',
+    postedAt: '4 days ago',
+    matchScore: 88,
+    description: 'Design zero liquid discharge (ZLD) effluent treatment plants (ETP/STP) for industrial manufacturing clients.',
+    requirements: ['B.Tech Chemical / Environmental', '3+ years in membrane filtration and RO plant design.'],
+    benefits: ['Site allowances', 'Medical coverage', 'Travel stipends']
+  },
+  {
+    id: 'job-carbon-1',
+    title: 'Carbon Accounting & Climate Analyst',
+    company: 'SustainEdge Consulting',
+    logo: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=120&h=120&q=80',
+    location: 'Karnataka (Bengaluru)',
+    type: 'Hybrid',
+    department: 'ESG',
+    salary: '₹12,00,000 - ₹19,00,000 / yr',
+    postedAt: '4 days ago',
+    matchScore: 95,
+    description: 'Quantify GHG emissions, calculate SBTi targets, and prepare net-zero transition roadmaps for corporate clients.',
+    requirements: ['Degree in Environmental Accounting or Energy Management', 'Experience with GHG Protocol Standards.'],
+    benefits: ['Hybrid work model', 'Carbon offset training', 'Wellness allowance']
   }
 ];
 
 export const mockResources: Resource[] = [
   {
-    id: 'resource-1',
-    title: 'AI Engineering Playbook: Production LLMs',
-    category: 'Engineering',
-    format: 'E-Book',
-    coverUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=300&h=400&q=80',
-    downloadsCount: 4820,
+    id: 'res-env-1',
+    title: 'Environmental Compliance Handbook 2026',
+    category: 'Environmental',
+    format: 'Guide',
+    coverUrl: 'https://images.unsplash.com/photo-1542744094-3a31b272c490?auto=format&fit=crop&w=300&h=400&q=80',
+    downloadsCount: 5420,
     rating: 4.9,
-    fileSize: '12.4 MB',
-    publishedDate: 'May 12, 2026',
-    description: 'The ultimate guide to building, evaluation, caching, and running Large Language Models in production pipelines. Covers vector databases, context injection, prompt engineering patterns, security controls, and throughput tuning.',
-    author: 'Dr. Sarah Chen, AI Lead at KnowToHire',
+    fileSize: '14.2 MB',
+    publishedDate: 'June 10, 2026',
+    description: 'A comprehensive regulatory compliance reference covering CPCB guidelines, EIA notifications, Water/Air consent rules, and industrial clearance procedures in India.',
+    author: 'Er. Rajesh Sharma, Chief Auditor at GreenEarth',
     chapters: [
-      'Introduction: The LLM Stack in Production',
-      'Prompt Engineering & Structured Output Parsers',
-      'Retrieval-Augmented Generation (RAG) Architecture',
-      'Vector Databases: Pinecone, pgvector, and Qdrant',
-      'Fine-Tuning vs. Few-Shot In-Context Learning',
-      'Evaluating Model Output, Bias, and Security Holes'
+      'Overview of Environmental Legislation in India',
+      'Consent to Establish (CTE) & Consent to Operate (CTO)',
+      'Environmental Impact Assessment (EIA) Notification 2020/2026',
+      'Effluent & Air Emission Standard Thresholds',
+      'Hazardous & Solid Waste Management Compliance Rules'
     ]
   },
   {
-    id: 'resource-2',
-    title: 'Product Management Bible: Scaling SaaS',
-    category: 'Management',
-    format: 'Manual',
-    coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=300&h=400&q=80',
-    downloadsCount: 3210,
+    id: 'res-esg-1',
+    title: 'ESG Reporting & BRSR Implementation Manual',
+    category: 'ESG',
+    format: 'E-Book',
+    coverUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=300&h=400&q=80',
+    downloadsCount: 3890,
     rating: 4.8,
-    fileSize: '8.1 MB',
-    publishedDate: 'March 18, 2026',
-    description: 'Learn the exact frameworks used by Silicon Valley product leaders to structure teams, define product telemetry, validate customer acquisition fits, track retention indexes, and execute global feature rollouts.',
-    author: 'Marcus Vance, Ex-Director of Product at Notion',
+    fileSize: '9.6 MB',
+    publishedDate: 'May 22, 2026',
+    description: 'Step-by-step practical guide to preparing SEBI BRSR (Business Responsibility and Sustainability Reporting) disclosures, Scope 1-3 carbon accounting, and GRI framework alignments.',
+    author: 'Priya Sundaram, Lead ESG Specialist',
     chapters: [
-      'Defining Product-Market Fit (PMF) Metrics',
-      'SaaS Unit Economics: LTV, CAC, and Churn Mechanics',
-      'User Research & Telemetry-Driven Hypotheses',
-      'Designing High-Conversion Onboarding Funnels',
-      'Frameworks for Feature Prioritization (RICE/Kano)',
-      'Orchestrating Agile Cross-Functional Launch Cycles'
+      'Understanding SEBI BRSR Core Indicators',
+      'Scope 1, 2, and 3 Greenhouse Gas Accounting',
+      'Double Materiality Assessment Methodologies',
+      'Social & Governance Metrics (Diversity, Safety, Ethics)',
+      'Third-Party ESG Audit & Assurance Practices'
     ]
   },
   {
-    id: 'resource-3',
-    title: 'Financial Modeling Core: VC & Startup Valuation',
-    category: 'Finance',
-    format: 'Checklist',
-    coverUrl: 'https://images.unsplash.com/photo-1554774853-aae0a22c8aa4?auto=format&fit=crop&w=300&h=400&q=80',
-    downloadsCount: 2890,
-    rating: 4.7,
-    fileSize: '4.8 MB',
-    publishedDate: 'April 20, 2026',
-    description: 'A step-by-step spreadsheet checklist for designing financial models, dilution schedules, cap tables, cash-burn logs, valuation metrics, and runway tracking mechanisms.',
-    author: 'Elena Rostova, Venture Partner at SeedCapital',
+    id: 'res-pat-1',
+    title: 'Patent Filing & Prosecution Guide (Indian Patent Office)',
+    category: 'Patent',
+    format: 'Manual',
+    coverUrl: 'https://images.unsplash.com/photo-1568200306481-967613f0c74a?auto=format&fit=crop&w=300&h=400&q=80',
+    downloadsCount: 4120,
+    rating: 4.9,
+    fileSize: '11.0 MB',
+    publishedDate: 'April 18, 2026',
+    description: 'Exhaustive manual on patent search, provisional specification drafting, PCT international filings, FER responses, and hearing procedures at the IPO.',
+    author: 'Adv. Ananya Deshmukh, Patent Attorney',
     chapters: [
-      'Foundations of Startup Dilution & Equity Splits',
-      'Designing the 3-Statement Financial Forecasting Model',
-      'Venture Capital Valuation: Pre-Money vs. Post-Money',
-      'Cap Table Mechanics: Options Pools & Convertible Notes',
-      'Modeling Customer Growth & Multi-Channel Spend Scales',
-      'Valuation Presentation Decks for Series A Pitch Runs'
+      'Prior Art Search Techniques & Patent Databases',
+      'Drafting Claims & Specifications for Inventions',
+      'Provisional vs Complete Specifications',
+      'PCT International Application Routing',
+      'Responding to First Examination Reports (FER)'
+    ]
+  },
+  {
+    id: 'res-res-1',
+    title: 'Research Methodology & Academic Writing Kit',
+    category: 'Research',
+    format: 'Guide',
+    coverUrl: 'https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?auto=format&fit=crop&w=300&h=400&q=80',
+    downloadsCount: 2950,
+    rating: 4.7,
+    fileSize: '6.5 MB',
+    publishedDate: 'March 14, 2026',
+    description: 'Essential guidelines for formulating hypotheses, qualitative/quantitative data analysis, literature reviews, and peer-reviewed journal submission formatting.',
+    author: 'Dr. K. V. Ramanathan, Senior Research Scientist',
+    chapters: [
+      'Formulating Clear Research Questions',
+      'Literature Review & Citation Management',
+      'Statistical Analysis Methods (SPSS, R, Python)',
+      'Manuscript Preparation for High-Impact Journals'
+    ]
+  },
+  {
+    id: 'res-audit-1',
+    title: 'Environmental Audit Checklist & Standard Templates',
+    category: 'Environmental',
+    format: 'Checklist',
+    coverUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=300&h=400&q=80',
+    downloadsCount: 3100,
+    rating: 4.8,
+    fileSize: '4.2 MB',
+    publishedDate: 'June 01, 2026',
+    description: 'Ready-to-use audit checklists for inspecting ETP/STP units, stack emissions, chemical storage safety, and occupational health parameters during site visits.',
+    author: 'GreenEarth Consulting Team',
+    chapters: [
+      'Pre-Audit Inspection Formats',
+      'On-Site Waste Stream Audit Worksheets',
+      'Air Emission & Stack Monitoring Sheets',
+      'Post-Audit Non-Compliance Remediation Form'
     ]
   }
 ];
@@ -251,123 +340,107 @@ export const mockResources: Resource[] = [
 export const mockTemplates: Template[] = [
   {
     id: 'temp-1',
-    title: 'Minimalist Tech Resume Template',
-    description: 'A single-page, ATS-optimized minimalist resume template customized for software engineers, product designers, and technical product managers. Engineered to parse cleanly with major recruitment engines.',
+    title: 'Professional ATS-Friendly Resume Template',
+    description: 'Recruiter-approved, single-column resume layout formatted for 100% extraction accuracy across major ATS applicant software.',
     coverUrl: 'https://images.unsplash.com/photo-1586075010923-2dd45e9b2d4f?auto=format&fit=crop&w=400&h=500&q=80',
-    price: 15.00,
+    price: 0,
     rating: 4.9,
-    downloadsCount: 1450,
-    formats: ['Docx', 'Figma'],
-    creator: 'Alex Rivera, Senior Designer',
+    downloadsCount: 6850,
+    formats: ['Docx', 'PDF'],
+    creator: 'KnowToHire Design Team',
     creatorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=40&h=40&q=80',
-    features: [
-      'ATS-compatible layout structure verified by recruiters.',
-      'Available in both Microsoft Word (docx) and Figma layout links.',
-      'Includes 30+ resume writing pointers for technical sections.',
-      'Free lifetime layout updates and cover letter mockup additions.'
-    ],
-    reviews: [
-      { name: 'John Doe', rating: 5, comment: 'ATS parser had 100% extraction rates on my resume. Landed interviews at Stripe!', date: 'June 1, 2026' },
-      { name: 'Sarah Miller', rating: 4.8, comment: 'Clean, elegant layout. Very easy to customize in Figma.', date: 'May 20, 2026' }
-    ]
+    features: ['100% ATS parser extraction verified', 'Word (.docx) & PDF formats', 'Includes action verb cheat sheet', 'Free lifetime updates'],
+    reviews: [{ name: 'Siddharth Rao', rating: 5, comment: 'Parsed cleanly when applying online. Highly recommended!', date: 'June 20, 2026' }]
   },
   {
     id: 'temp-2',
-    title: 'Series A Venture Pitch Deck',
-    description: 'A premium, modern pitch deck template composed of 22 visual slides designed to showcase traction, financial models, market size, competition indexes, and funding requirements.',
+    title: 'Executive CV Template (Academic & Research)',
+    description: 'Multi-page formal CV template tailored for researchers, scientists, patent associates, and senior consultants listing publications & patents.',
     coverUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=400&h=500&q=80',
-    price: 29.00,
+    price: 12.00,
     rating: 4.8,
-    downloadsCount: 890,
-    formats: ['PPT', 'Figma'],
-    creator: 'KnowToHire Design Lab',
-    creatorAvatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=40&h=40&q=80',
-    features: [
-      '22 premium, highly structured presentation slides.',
-      'Optimized layout flows for problem-solution storytelling.',
-      'Vector charts, competitive grids, and roadmap tables included.',
-      'Available in Google Slides, PowerPoint, and Figma formats.'
-    ],
-    reviews: [
-      { name: 'David Park', rating: 5, comment: 'We closed our $3.2M round using these layouts. Highly recommended!', date: 'May 12, 2026' },
-      { name: 'Emily Taylor', rating: 4.6, comment: 'Beautiful typography pairing. Made my financials look professional.', date: 'April 28, 2026' }
-    ]
+    downloadsCount: 2340,
+    formats: ['Docx', 'Figma'],
+    creator: 'Dr. Sarah Chen',
+    creatorAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=40&h=40&q=80',
+    features: ['Structured sections for research papers & patents', 'Editable in Microsoft Word & Figma', 'Professional typography design'],
+    reviews: [{ name: 'Dr. Amit Patel', rating: 5, comment: 'Perfect layout for listing my journal papers and patents.', date: 'May 15, 2026' }]
   },
   {
     id: 'temp-3',
-    title: 'SaaS Business Financial Model',
-    description: 'A comprehensive, automated Excel financial forecasting workbook. Includes automated formulas to calculate customer metrics (LTV, CAC, payback period), headcount schedules, and cap table models.',
+    title: 'Patent Specification Application Template',
+    description: 'Standardized legal format template for drafting Indian Patent Office (Form 2) complete patent specifications including claims & abstract.',
     coverUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=400&h=500&q=80',
-    price: 24.00,
+    price: 25.00,
+    rating: 4.9,
+    downloadsCount: 1560,
+    formats: ['Docx'],
+    creator: 'Patent Nexus Legal Team',
+    creatorAvatar: 'https://images.unsplash.com/photo-1568200306481-967613f0c74a?auto=format&fit=crop&w=40&h=40&q=80',
+    features: ['IPO Form 2 compliant format', 'Pre-formatted claim numbering and drawing references', 'Includes sample patent application text'],
+    reviews: [{ name: 'Kavita Nair', rating: 5, comment: 'Saved us hours of manual IPO formatting.', date: 'June 05, 2026' }]
+  },
+  {
+    id: 'temp-4',
+    title: 'ESG & Environmental Audit Report Template',
+    description: 'Corporate report presentation and document template for presenting ESG audit findings, carbon calculations, and compliance action plans.',
+    coverUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=400&h=500&q=80',
+    price: 19.00,
     rating: 4.7,
-    downloadsCount: 1120,
-    formats: ['Excel'],
-    creator: 'Elena Rostova, VC Partner',
-    creatorAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=40&h=40&q=80',
-    features: [
-      'Fully automated financial sheets with dashboard graphs.',
-      'Headcount planning inputs and corporate tax calculation algorithms.',
-      'Pre-configured CAC/LTV valuation matrices.',
-      'Includes instructions worksheet for simple calculations.'
-    ],
-    reviews: [
-      { name: 'Robert Chen', rating: 5, comment: 'Saved me 40 hours of Excel formulas design. Essential tool for founders.', date: 'June 10, 2026' }
-    ]
+    downloadsCount: 1890,
+    formats: ['Docx', 'PPT'],
+    creator: 'SustainEdge Design Studio',
+    creatorAvatar: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=40&h=40&q=80',
+    features: ['20 PowerPoint slides & 15-page Word document', 'Infographic charts for GHG emissions', 'Executive summary dashboard layouts'],
+    reviews: [{ name: 'Manish Verma', rating: 5, comment: 'Clients loved the clean visual presentation of audit data.', date: 'May 30, 2026' }]
   }
 ];
 
 export const mockBlogs: BlogPost[] = [
   {
     id: 'blog-1',
-    title: 'The AI Resume Optimization Guide for 2026',
-    excerpt: 'ATS parsing tools are smarter than ever. Learn how to design your resume structures, highlight technical skills keywords, and format sections to align with modern corporate matching dashboards.',
-    coverUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&h=450&q=80',
+    title: 'Top Environmental & Sustainability Careers in India (2026 Guide)',
+    excerpt: 'Explore high-demand career paths in Environmental Engineering, ESG Consulting, Sustainability Analysis, and Renewable Energy across Indian sectors.',
+    coverUrl: 'https://images.unsplash.com/photo-1542744094-3a31b272c490?auto=format&fit=crop&w=800&h=450&q=80',
     category: 'Careers',
     readTime: '6 min read',
-    publishedAt: 'June 15, 2026',
-    authorName: 'Alex Rivera',
+    publishedAt: 'June 25, 2026',
+    authorName: 'Er. Rajesh Sharma',
     authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=40&h=40&q=80',
-    content: `Recruitment engines in 2026 do not just look for keyword matching; they analyze contextual semantics. When applying for roles, your resume undergoes structural parsing. Here is how you optimize your profile:
+    content: `Sustainability is rapidly transforming corporate operations across India. Key opportunities include:
     
-    ### 1. Maintain Standard Section Headings
-    Avoid creative section names like "My Journey" or "Core Powers". Use "Professional Experience", "Education", and "Technical Skills" to allow parsers to categorize content instantly.
+    ### 1. Environmental Engineering
+    Designing industrial effluent treatment plants (ETP), zero liquid discharge (ZLD) systems, and conducting Environmental Impact Assessments (EIA).
     
-    ### 2. Standardize File Layouts
-    Single-column layouts in Microsoft Word (docx) or clean PDF outputs remain the gold standard. Avoid multi-column text boxes, since parsers can read text horizontally across dividers and blend sentences.
+    ### 2. ESG & Sustainability Consulting
+    Advising listed companies on SEBI BRSR disclosures, carbon accounting, and global GRI/TCFD framework reporting.
     
-    ### 3. Highlight Practical Results
-    Rather than listing task duties, list numeric accomplishments: "Increased caching speed by 40% utilizing Redis clustering structures" instead of "Managed database memory caching systems."`,
+    ### 3. Patent & IPR Careers
+    Protecting green tech innovations, renewable energy patents, and chemical formulations at the Indian Patent Office.`,
     isFeatured: true
   },
   {
     id: 'blog-2',
-    title: 'How to Build a World-Class Candidate Sourcing Pipeline',
-    excerpt: 'Hiring is an engineering funnel. Learn how to draft precise technical specs, utilize AI candidate matching score indicators, and manage recruitment stages using visual Kanban columns.',
-    coverUrl: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=400&h=250&q=80',
-    category: 'Recruiting',
+    title: 'How to Build a Successful Career in ESG Consulting',
+    excerpt: 'Learn the required certifications, carbon accounting tools, and regulatory knowledge needed to become a certified ESG Consultant.',
+    coverUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&h=250&q=80',
+    category: 'ESG',
     readTime: '8 min read',
-    publishedAt: 'June 08, 2026',
-    authorName: 'Dr. Sarah Chen',
+    publishedAt: 'June 18, 2026',
+    authorName: 'Priya Sundaram',
     authorAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=40&h=40&q=80',
-    content: `Designing a recruitment workflow requires high operational structure. Recruiters must treat candidates as high-value resources. 
-    
-    *   **Step 1: Set Detailed Candidate Targets:** Write precise requirements list, outline tech stacks, and set target match scores.
-    *   **Step 2: Automate Sourcing Filters:** Utilize automated screening tests for technical roles.
-    *   **Step 3: Kanban Pipeline Synchronization:** Active pipelines should be mapped visibly so all teammates see candidate progress states.`
+    content: `ESG consulting requires a blend of environmental science, regulatory law, and financial reporting skills. Focus on mastering GRI standards and GHG Protocol Scope 1-3 calculations.`
   },
   {
     id: 'blog-3',
-    title: 'Startup Valuation Rules: Pre-seed to Series A',
-    excerpt: 'Navigating startup dilution patterns requires financial model clarity. Learn how options pools, safe notes, and Series A valuations affect cap tables.',
-    coverUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&h=250&q=80',
-    category: 'Finance',
-    readTime: '10 min read',
-    publishedAt: 'May 28, 2026',
-    authorName: 'Elena Rostova',
+    title: 'Patent Filing in India: Step-by-Step Explanation',
+    excerpt: 'Demystifying the patent process from prior art search and provisional drafting to IPO examination and grant.',
+    coverUrl: 'https://images.unsplash.com/photo-1568200306481-967613f0c74a?auto=format&fit=crop&w=400&h=250&q=80',
+    category: 'Patent',
+    readTime: '7 min read',
+    publishedAt: 'June 10, 2026',
+    authorName: 'Adv. Ananya Deshmukh',
     authorAvatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=40&h=40&q=80',
-    content: `Startups seeking VC funding must understand cap tables. SAFE notes are easy to issue but compound dilution percentages heavily during primary valuation pricing rounds.
-    
-    *   **Option Pools:** VC firms will require pre-money options pool creation (10-15%), which dilutes founders before investment cash joins the sheets.
-    *   **Headcount Schedules:** Align financial forecast models with actual team scaling roadmaps to justify valuation multipliers.`
+    content: `Understanding patent law in India empowers inventors and IP professionals. Always start with a thorough prior art search before drafting complete specifications.`
   }
 ];

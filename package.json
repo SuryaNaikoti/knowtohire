@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "seed:demo": "node scripts/seed-demo.cjs",
+    "verify:demo": "node scripts/seed-demo.cjs verify",
+    "reset:demo": "node scripts/seed-demo.cjs"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.61.8",

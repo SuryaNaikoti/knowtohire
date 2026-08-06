@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Job } from '../../lib/services/jobsService';
 import { Card, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
@@ -19,6 +20,16 @@ export const JobCard: React.FC<JobCardProps> = ({
   onViewDetails,
   showSaveButton = true,
 }) => {
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    if (onViewDetails) {
+      onViewDetails();
+    } else {
+      navigate(`/jobs/${job.id}`);
+    }
+  };
+
   const getDomainBadgeColor = (domain: string) => {
     switch (domain) {
       case 'Environmental':
@@ -62,7 +73,19 @@ export const JobCard: React.FC<JobCardProps> = ({
   };
 
   return (
-    <Card hoverEffect className={`bg-white border border-gray-200 border-solid relative transition-all duration-200 overflow-hidden ${job.is_featured ? 'ring-1 ring-amber-450 border-amber-300' : ''}`}>
+    <Card 
+      hoverEffect 
+      onClick={handleCardClick}
+      tabIndex={0}
+      role="button"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleCardClick();
+        }
+      }}
+      className={`bg-white border border-gray-200 border-solid relative transition-all duration-200 overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${job.is_featured ? 'ring-1 ring-amber-450 border-amber-300' : ''}`}
+    >
       {/* Featured Ribbon Tag */}
       {job.is_featured && (
         <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-orange-500 text-white text-[9px] font-black px-2 py-0.5 rounded-bl-lg shadow-sm flex items-center gap-0.5 select-none z-10">

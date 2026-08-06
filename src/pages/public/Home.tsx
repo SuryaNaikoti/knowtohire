@@ -84,7 +84,7 @@ export const Home: React.FC = () => {
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
 
   // Saved Jobs State mockup
-  const [savedJobs, setSavedJobs] = useState<number[]>([]);
+  const [savedJobs, setSavedJobs] = useState<string[]>([]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +103,7 @@ export const Home: React.FC = () => {
     }
   };
 
-  const toggleSaveJob = (id: number) => {
+  const toggleSaveJob = (id: string) => {
     if (savedJobs.includes(id)) {
       setSavedJobs(savedJobs.filter((item) => item !== id));
     } else {
@@ -500,14 +500,27 @@ export const Home: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
-              { id: 1, title: 'Senior Frontend Engineer', company: 'TechNova Labs', location: 'Bengaluru, India', salary: '₹18,00,000 - ₹28,00,000', score: '98% Match', tag: 'Full-time', logoColor: 'bg-blue-50 text-blue-600 border-blue-100', logoIcon: Code2, applicants: '62 applicants', trend: 'Trending upward', posted: '2 hours ago' },
-              { id: 2, title: 'Financial Risk Analyst', company: 'CapitalWise Partners', location: 'Mumbai, India', salary: '₹14,00,000 - ₹22,00,000', score: '95% Match', tag: 'Full-time', logoColor: 'bg-emerald-50 text-emerald-600 border-emerald-100', logoIcon: DollarSign, applicants: '38 applicants', trend: 'High demand', posted: '1 day ago' },
-              { id: 3, title: 'Product Marketing Manager', company: 'BrightPath Digital', location: 'Pune, India', salary: '₹12,00,000 - ₹18,00,000', score: '92% Match', tag: 'Full-time', logoColor: 'bg-purple-50 text-purple-600 border-purple-100', logoIcon: Megaphone, applicants: '24 applicants', trend: 'Steady hiring', posted: '5 hours ago' }
+              { id: 'job-1', title: 'Senior Frontend Engineer', company: 'TechNova Labs', location: 'Bengaluru, India', salary: '₹18,00,000 - ₹28,00,000', score: '98% Match', tag: 'Full-time', logoColor: 'bg-blue-50 text-blue-600 border-blue-100', logoIcon: Code2, applicants: '62 applicants', trend: 'Trending upward', posted: '2 hours ago' },
+              { id: 'job-2', title: 'Financial Risk Analyst', company: 'CapitalWise Partners', location: 'Mumbai, India', salary: '₹14,00,000 - ₹22,00,000', score: '95% Match', tag: 'Full-time', logoColor: 'bg-emerald-50 text-emerald-600 border-emerald-100', logoIcon: DollarSign, applicants: '38 applicants', trend: 'High demand', posted: '1 day ago' },
+              { id: 'job-3', title: 'Product Marketing Manager', company: 'BrightPath Digital', location: 'Pune, India', salary: '₹12,00,000 - ₹18,00,000', score: '92% Match', tag: 'Full-time', logoColor: 'bg-purple-50 text-purple-600 border-purple-100', logoIcon: Megaphone, applicants: '24 applicants', trend: 'Steady hiring', posted: '5 hours ago' }
             ].map((job) => {
               const LogoIcon = job.logoIcon;
               const isSaved = savedJobs.includes(job.id);
               return (
-                <Card key={job.id} hoverEffect className="bg-white border border-slate-200 p-0 rounded-[24px] shadow-[0_4px_24px_rgba(15,23,42,0.06)] flex flex-col justify-between h-full transition-all duration-300 hover:-translate-y-2 hover:shadow-premium hover:border-emerald-500/30 group relative overflow-hidden">
+                <Card 
+                  key={job.id} 
+                  hoverEffect 
+                  tabIndex={0}
+                  role="button"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(`/jobs/${job.id}`);
+                    }
+                  }}
+                  onClick={() => navigate(`/jobs/${job.id}`)}
+                  className="bg-white border border-slate-200 p-0 rounded-[24px] shadow-[0_4px_24px_rgba(15,23,42,0.06)] flex flex-col justify-between h-full transition-all duration-300 hover:-translate-y-2 hover:shadow-premium hover:border-emerald-500/30 group relative overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
                   <div className="h-1 w-full bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 opacity-50 group-hover:opacity-100 transition-opacity" />
                   
                   <div className="p-8 flex-1 flex flex-col justify-between">
@@ -521,7 +534,10 @@ export const Home: React.FC = () => {
                             {job.score}
                           </span>
                           <button
-                            onClick={() => toggleSaveJob(job.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleSaveJob(job.id);
+                            }}
                             className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
                               isSaved
                                 ? 'bg-red-50 border-red-100 text-red-500 scale-105'
