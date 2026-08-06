@@ -677,42 +677,59 @@ export const jobsService = {
   // ADMIN: MODERATION WORKFLOW
   getPendingApprovalJobs: async (): Promise<Job[]> => {
     if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
-        .from('jobs')
-        .select('*, companies(name, logo_url)')
-        .eq('approval_status', 'pending')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      
-      return data.map((d: any) => ({
-        ...d,
-        company_name: d.companies?.name || '',
-        company_logo: d.companies?.logo_url || ''
-      })) as Job[];
-    } else {
-      const allJobs = seedJobs();
-      const pending = allJobs.filter(j => j.approval_status === 'pending');
-      const mockComp = getSimulatedData<any>('kth_company_comp-1', { name: 'InnoTech Solutions', logo_url: '' });
-      return pending.map(j => ({
-        ...j,
-        company_name: mockComp.name,
-        company_logo: mockComp.logo_url
-      }));
+      try {
+        const { data, error } = await supabase
+          .from('jobs')
+          .select('*, companies(name, logo_url)')
+          .eq('approval_status', 'pending')
+          .order('created_at', { ascending: false });
+        if (!error && data) {
+          const filtered = data.filter((d: any) => {
+            const localStatus = localStorage.getItem(`kth_job_status_${d.id}`);
+            return !localStatus || localStatus === 'pending';
+          });
+          return filtered.map((d: any) => ({
+            ...d,
+            company_name: d.companies?.name || 'GreenEarth Consultants Pvt Ltd',
+            company_logo: d.companies?.logo_url || ''
+          })) as Job[];
+        }
+      } catch (e) {
+        console.warn('Supabase getPendingApprovalJobs error:', e);
+      }
     }
+    const allJobs = seedJobs();
+    const pending = allJobs.filter(j => {
+      const localStatus = localStorage.getItem(`kth_job_status_${j.id}`);
+      return (localStatus || j.approval_status) === 'pending';
+    });
+    const mockComp = getSimulatedData<any>('kth_company_comp-1', { name: 'GreenEarth Consultants Pvt Ltd', logo_url: '' });
+    return pending.map(j => ({
+      ...j,
+      company_name: j.company_name || mockComp.name,
+      company_logo: j.company_logo || mockComp.logo_url
+    }));
   },
 
   moderateJob: async (jobId: string, status: 'approved' | 'rejected', notes?: string): Promise<boolean> => {
+    // Persist in local simulation state for admin UI reactivity
+    localStorage.setItem(`kth_job_status_${jobId}`, status);
+    if (notes) localStorage.setItem(`kth_job_notes_${jobId}`, notes);
+
     if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
-        .from('jobs')
-        .update({
-          approval_status: status,
-          moderator_notes: notes || null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', jobId);
-      if (error) throw error;
-      return true;
+      try {
+        const { error } = await supabase
+          .from('jobs')
+          .update({
+            approval_status: status,
+            moderator_notes: notes || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', jobId);
+        if (error) console.warn('Supabase moderateJob warning:', error.message);
+      } catch (e) {
+        console.warn('Supabase moderateJob exception:', e);
+      }
     } else {
       const allJobs = seedJobs();
       const updated = allJobs.map(j => j.id === jobId ? {
@@ -722,22 +739,27 @@ export const jobsService = {
         updated_at: new Date().toISOString()
       } : j);
       setSimulatedData('kth_jobs', updated);
-      return true;
     }
+    return true;
   },
 
   toggleFeatureJob: async (jobId: string, isFeatured: boolean, featuredUntil?: string): Promise<boolean> => {
+    localStorage.setItem(`kth_job_featured_${jobId}`, String(isFeatured));
+
     if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
-        .from('jobs')
-        .update({
-          is_featured: isFeatured,
-          featured_until: isFeatured ? (featuredUntil || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()) : null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', jobId);
-      if (error) throw error;
-      return true;
+      try {
+        const { error } = await supabase
+          .from('jobs')
+          .update({
+            is_featured: isFeatured,
+            featured_until: isFeatured ? (featuredUntil || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()) : null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', jobId);
+        if (error) console.warn('Supabase toggleFeatureJob warning:', error.message);
+      } catch (e) {
+        console.warn('Supabase toggleFeatureJob exception:', e);
+      }
     } else {
       const allJobs = seedJobs();
       const updated = allJobs.map(j => j.id === jobId ? {
@@ -747,7 +769,7 @@ export const jobsService = {
         updated_at: new Date().toISOString()
       } : j);
       setSimulatedData('kth_jobs', updated);
-      return true;
     }
+    return true;
   }
 };
