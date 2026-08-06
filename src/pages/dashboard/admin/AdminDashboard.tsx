@@ -118,7 +118,7 @@ export const AdminDashboard: React.FC = () => {
   const formattedDate = useMemo(() => {
     return new Date().toLocaleDateString('en-GB', {
       day: '2-digit',
-      month: 'Long',
+      month: 'long',
       year: 'numeric'
     });
   }, []);
