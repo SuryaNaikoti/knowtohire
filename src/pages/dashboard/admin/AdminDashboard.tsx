@@ -72,7 +72,7 @@ export const AdminDashboard: React.FC = () => {
         setAudits(auditLogs);
       } catch (err) {
         console.error('[AdminDashboard fetch error]', err);
-      } font-medium: finally {
+      } finally {
         setLoading(false);
       }
     };
