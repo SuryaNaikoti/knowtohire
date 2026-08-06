@@ -4,12 +4,10 @@ import { Table, TableRow, TableCell } from '../../../components/ui/Table';
 import { Button } from '../../../components/ui/Button';
 import { Loading } from '../../../components/ui/Loading';
 import { Alert } from '../../../components/ui/Alert';
-import { Modal } from '../../../components/ui/Modal';
 import { supabase } from '../../../lib/supabase';
 import {
   Terminal,
   Eye,
-  ShieldAlert,
   ShieldCheck,
   CheckCircle2,
   XCircle,
@@ -23,13 +21,14 @@ import {
   ChevronUp,
   FileCode,
   ArrowRight,
-  Sparkles,
   Search,
-  Filter,
   Check,
   X,
-  Layers,
-  Activity
+  Activity,
+  Briefcase,
+  Building,
+  KeyRound,
+  FileText
 } from 'lucide-react';
 
 interface AuditLogEntry {
@@ -41,49 +40,75 @@ interface AuditLogEntry {
   details: any;
 }
 
-// Demo fallback seed data for rich presentation
+// Demo seed data matching enterprise V1.0 structure
 const DEMO_AUDIT_LOGS: AuditLogEntry[] = [
   {
     id: 'log-89421',
     user_id: 'usr-admin-1',
     action: 'USER_ROLE_UPDATED',
-    ip_address: '192.168.1.104',
-    created_at: '2026-08-06T10:42:15Z',
+    ip_address: '127.0.0.1',
+    created_at: '2026-07-09T17:18:00Z',
     details: {
-      category: 'User Management',
+      event_title: 'Role Updated Successfully',
+      summary: "Rajeev Sharma changed Rahul Sharma's role",
+      category: 'Authentication',
       severity: 'Medium',
-      status: 'Success',
-      module: 'User Directory',
-      actor_name: 'Rajeev Nair (Super Admin)',
-      target_user: 'Sneha Reddy (sneha.reddy@gmail.com)',
+      status: 'Completed',
+      module: 'Access Configuration',
+      actor_name: 'Rajeev Sharma',
+      actor_role: 'Platform Administrator',
+      actor_email: 'admin@knowtohire.com',
+      affected_user: {
+        name: 'Rahul Sharma',
+        role: 'Candidate',
+        email: 'rahul.sharma@gmail.com'
+      },
       changes: [
-        { field: 'Access Role', previous: 'Candidate', new: 'Employer' },
-        { field: 'Is Active Status', previous: 'Suspended', new: 'Active' }
+        { field: 'Role', previous: 'Administrator', new: 'Candidate' },
+        { field: 'Status', previous: 'Pending', new: 'Active' }
       ],
-      browser: 'Chrome 127.0.0 (Windows 11)',
-      session_id: 'sess_8f93a10c92',
-      reason: 'Approved employer organization ownership'
+      browser: 'Chrome 127',
+      os: 'Windows 11',
+      session: 'Current Session',
+      timeline: [
+        { time: '05:14 PM', step: 'Role update initiated' },
+        { time: '05:14 PM', step: 'Permissions validated' },
+        { time: '05:15 PM', step: 'Role updated' },
+        { time: '05:18 PM', step: 'Audit record created' }
+      ]
     }
   },
   {
     id: 'log-89420',
     user_id: 'usr-admin-1',
-    action: 'JOB_MODERATED_APPROVED',
+    action: 'JOB_MODERATION_APPROVED',
     ip_address: '192.168.1.104',
     created_at: '2026-08-06T09:15:30Z',
     details: {
-      category: 'Job Moderation',
+      event_title: 'Job Moderation Approved',
+      summary: 'Rajeev Sharma approved job listing for GreenEarth Consultants',
+      category: 'Moderation',
       severity: 'Low',
-      status: 'Success',
-      module: 'Job Moderation',
-      actor_name: 'Rajeev Nair (Super Admin)',
-      target_entity: 'Job Listing #482 (Senior Frontend Engineer)',
-      company: 'GreenEarth Inc.',
+      status: 'Completed',
+      module: 'Job Audit',
+      actor_name: 'Rajeev Sharma',
+      actor_role: 'Platform Administrator',
+      actor_email: 'admin@knowtohire.com',
+      affected_job: {
+        title: 'Senior Environmental Engineer',
+        company: 'GreenEarth Consultants'
+      },
       changes: [
         { field: 'Moderation Status', previous: 'Pending Review', new: 'Approved & Live' }
       ],
-      browser: 'Chrome 127.0.0 (Windows 11)',
-      session_id: 'sess_8f93a10c92'
+      browser: 'Chrome 127',
+      os: 'Windows 11',
+      session: 'Current Session',
+      timeline: [
+        { time: '09:10 AM', step: 'Job moderation queued' },
+        { time: '09:12 AM', step: 'Content safety checks passed' },
+        { time: '09:15 AM', step: 'Listing approved' }
+      ]
     }
   },
   {
@@ -93,32 +118,22 @@ const DEMO_AUDIT_LOGS: AuditLogEntry[] = [
     ip_address: '10.0.4.12',
     created_at: '2026-08-06T08:50:00Z',
     details: {
+      event_title: 'Employer Verification Submitted',
+      summary: 'Patent Nexus LLC submitted corporate documentation for verification',
       category: 'Employer Audit',
       severity: 'High',
       status: 'Pending',
       module: 'Employers Directory',
-      actor_name: 'Patent Nexus System',
-      company: 'Patent Nexus LLC',
-      browser: 'Firefox 128.0 (macOS Sonoma)',
-      session_id: 'sess_7b22a01d'
-    }
-  },
-  {
-    id: 'log-89418',
-    user_id: 'usr-admin-1',
-    action: 'SYSTEM_BROADCAST_DISPATCHED',
-    ip_address: '172.16.0.1',
-    created_at: '2026-08-05T16:30:00Z',
-    details: {
-      category: 'Broadcast Center',
-      severity: 'Info',
-      status: 'Success',
-      module: 'Platform Broadcasts',
-      actor_name: 'Rajeev Nair (Super Admin)',
-      broadcast_title: 'Scheduled Platform Maintenance Notice',
-      recipients_count: 1782,
-      browser: 'Chrome 127.0.0 (Windows 11)',
-      session_id: 'sess_8f93a10c92'
+      actor_name: 'Patent Nexus Admin',
+      actor_role: 'Employer Partner',
+      actor_email: 'jobs@patentnexus.com',
+      affected_company: {
+        name: 'Patent Nexus LLC',
+        industry: 'Legal Tech'
+      },
+      browser: 'Firefox 128',
+      os: 'macOS Sonoma',
+      session: 'Session #8921'
     }
   }
 ];
@@ -128,12 +143,10 @@ export const AuditLogs: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
-  const [showJson, setShowJson] = useState(false);
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Search & Filters
   const [search, setSearch] = useState('');
-
   const modalRef = useRef<HTMLDivElement>(null);
 
   const fetchLogs = async () => {
@@ -166,98 +179,57 @@ export const AuditLogs: React.FC = () => {
     fetchLogs();
   }, []);
 
-  // Keyboard Escape listener to close modal
+  // Keyboard ESC listener to close modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && selectedLog) {
         setSelectedLog(null);
-        setShowJson(false);
+        setShowTechnicalDetails(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedLog]);
 
-  // Format date helper
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return '06 Aug 2026, 10:42 AM';
+  // Formatters
+  const formatDateOnly = (dateStr?: string) => {
+    if (!dateStr) return '09 Jul 2026';
     try {
-      return new Date(dateStr).toLocaleString('en-GB', {
+      return new Date(dateStr).toLocaleDateString('en-GB', {
         day: '2-digit',
         month: 'short',
-        year: 'numeric',
+        year: 'numeric'
+      });
+    } catch {
+      return '09 Jul 2026';
+    }
+  };
+
+  const formatTimeOnly = (dateStr?: string) => {
+    if (!dateStr) return '05:18 PM';
+    try {
+      return new Date(dateStr).toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
         hour12: true
       });
     } catch {
-      return dateStr;
+      return '05:18 PM';
     }
   };
 
-  // Severity Badge Styling
-  const renderSeverityBadge = (severity?: string) => {
-    const s = (severity || 'Info').toLowerCase();
-    if (s.includes('critical') || s.includes('high')) {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase bg-rose-50 text-rose-700 border border-rose-200/70">
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
-          {severity || 'High'}
-        </span>
-      );
-    }
-    if (s.includes('med')) {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase bg-amber-50 text-amber-700 border border-amber-200/70">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
-          {severity || 'Medium'}
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200/70">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-        {severity || 'Info'}
-      </span>
-    );
-  };
-
-  // Status Badge Styling
-  const renderStatusBadge = (status?: string) => {
-    const st = (status || 'Success').toLowerCase();
-    if (st.includes('fail') || st.includes('error')) {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase bg-rose-100 text-rose-800 border border-rose-200">
-          <XCircle className="w-3 h-3 text-rose-600" />
-          {status || 'Failed'}
-        </span>
-      );
-    }
-    if (st.includes('pend') || st.includes('warn')) {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase bg-amber-100 text-amber-800 border border-amber-200">
-          <Clock className="w-3 h-3 text-amber-600" />
-          {status || 'Pending'}
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
-        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-        {status || 'Success'}
-      </span>
-    );
-  };
-
-  // Copy Summary Handler
+  // Copy Details Handler
   const handleCopyDetails = () => {
     if (!selectedLog) return;
+    const d = selectedLog.details || {};
     const summary = `
 Audit Log ID: ${selectedLog.id}
-Action: ${selectedLog.action}
-Timestamp: ${formatDate(selectedLog.created_at)}
-IP Address: ${selectedLog.ip_address || '192.168.1.104'}
-Details: ${JSON.stringify(selectedLog.details || {}, null, 2)}
+Event: ${d.event_title || selectedLog.action}
+Category: ${d.category || 'Authentication'}
+Module: ${d.module || 'Access Configuration'}
+Performed By: ${d.actor_name || 'Rajeev Sharma'} (${d.actor_email || 'admin@knowtohire.com'})
+Date & Time: ${formatDateOnly(selectedLog.created_at)} ${formatTimeOnly(selectedLog.created_at)}
+IP Address: ${selectedLog.ip_address || '127.0.0.1'}
     `.trim();
 
     navigator.clipboard.writeText(summary);
@@ -277,7 +249,6 @@ Details: ${JSON.stringify(selectedLog.details || {}, null, 2)}
     downloadAnchor.remove();
   };
 
-  // Filtered logs
   const filteredLogs = useMemo(() => {
     if (!search.trim()) return logs;
     const q = search.toLowerCase();
@@ -299,7 +270,7 @@ Details: ${JSON.stringify(selectedLog.details || {}, null, 2)}
 
   return (
     <div className="space-y-6 animate-fade-in-up pb-16">
-      {/* Header */}
+      {/* Header Title Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/60 pb-5">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black font-heading text-slate-900 tracking-tight flex items-center gap-3">
@@ -316,7 +287,7 @@ Details: ${JSON.stringify(selectedLog.details || {}, null, 2)}
 
       {error && <Alert type="error" title="Error">{error}</Alert>}
 
-      {/* Search Toolbar */}
+      {/* Toolbar */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -343,16 +314,16 @@ Details: ${JSON.stringify(selectedLog.details || {}, null, 2)}
                   </div>
                 </TableCell>
                 <TableCell className="text-xs font-mono font-bold text-slate-600">
-                  {l.ip_address || '192.168.1.104'}
+                  {l.ip_address || '127.0.0.1'}
                 </TableCell>
                 <TableCell className="text-xs text-slate-500 font-medium">
-                  {formatDate(l.created_at)}
+                  {formatDateOnly(l.created_at)} {formatTimeOnly(l.created_at)}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => { setSelectedLog(l); setShowJson(false); }}
+                    onClick={() => { setSelectedLog(l); setShowTechnicalDetails(false); }}
                     className="text-xs px-3.5 py-1.5 font-bold h-9 bg-white border-slate-300 hover:bg-slate-50 text-slate-800 rounded-xl flex items-center gap-1.5 ml-auto cursor-pointer shadow-2xs"
                   >
                     <Eye className="w-3.5 h-3.5 text-slate-500" /> Inspect
@@ -364,31 +335,26 @@ Details: ${JSON.stringify(selectedLog.details || {}, null, 2)}
         </CardContent>
       </Card>
 
-      {/* REDESIGNED AUDIT LOG DETAILS ENTERPRISE MODAL */}
+      {/* 10. ENTERPRISE AUDIT LOG DETAILS MODAL (24px ROUNDED, ~900-1000px MAX-WIDTH) */}
       {selectedLog && (
         <div
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-6 overflow-y-auto animate-fade-in"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-2 sm:p-6 overflow-y-auto animate-fade-in"
           onClick={() => setSelectedLog(null)}
         >
           <div
             ref={modalRef}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col max-h-[90vh] my-auto animate-scale-up"
+            className="bg-white rounded-[24px] max-w-4xl w-full shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col max-h-[92vh] my-auto animate-scale-up sm:w-11/12"
           >
-            {/* 1. STICKY HEADER */}
+            {/* 1. MODAL HEADER */}
             <div className="px-6 py-5 border-b border-slate-200/80 bg-slate-50/70 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-purple-50 rounded-2xl border border-purple-200/60 text-purple-600 shadow-2xs">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black font-heading text-slate-900 tracking-tight leading-tight">
-                    Audit Event Inspection
-                  </h3>
-                  <p className="text-xs font-mono text-slate-400 font-medium mt-0.5 flex items-center gap-1.5">
-                    <span>Log ID: {selectedLog.id}</span>
-                  </p>
-                </div>
+              <div>
+                <h2 className="text-xl font-black font-heading text-slate-900 tracking-tight leading-tight">
+                  Audit Log Details
+                </h2>
+                <p className="text-xs text-slate-400 font-medium mt-0.5">
+                  Log ID: <span className="font-mono text-slate-600 font-bold">{selectedLog.id}</span> • Category: <span className="font-bold text-slate-600">{selectedLog.details?.category || 'Authentication'}</span> • Date: <span className="font-bold text-slate-600">{formatDateOnly(selectedLog.created_at)}</span>
+                </p>
               </div>
 
               <button
@@ -401,132 +367,230 @@ Details: ${JSON.stringify(selectedLog.details || {}, null, 2)}
             </div>
 
             {/* 2. MODAL BODY (SCROLLABLE) */}
-            <div className="p-6 space-y-6 overflow-y-auto flex-1">
+            <div className="p-6 space-y-6 overflow-y-auto flex-1 text-slate-900">
               
-              {/* Event Name Banner */}
-              <div className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 block mb-1">
-                    Event Action Symbol
-                  </span>
-                  <h2 className="text-xl font-black font-mono text-white tracking-tight">
-                    {selectedLog.action}
-                  </h2>
+              {/* 2. HERO EVENT SUMMARY CARD */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-700 border border-purple-100 flex items-center justify-center shrink-0 shadow-2xs">
+                    <ShieldCheck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 font-heading">
+                      {selectedLog.details?.event_title || 'Role Updated Successfully'}
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">
+                      {selectedLog.details?.summary || "Rajeev Sharma changed Rahul Sharma's role"}
+                    </p>
+                  </div>
                 </div>
+
                 <div className="flex items-center gap-2 shrink-0">
-                  {renderSeverityBadge(selectedLog.details?.severity)}
-                  {renderStatusBadge(selectedLog.details?.status)}
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    {selectedLog.details?.status || 'Completed'}
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                    {selectedLog.details?.category || 'Authentication'}
+                  </span>
                 </div>
               </div>
 
-              {/* Event Summary Grid */}
+              {/* 3. FOUR EQUAL RESPONSIVE INFORMATION CARDS */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-200/70 space-y-1">
+                {/* Category */}
+                <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/70 space-y-1">
                   <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Category</span>
                   <span className="text-xs font-bold text-slate-900 block truncate">
-                    {selectedLog.details?.category || 'Governance'}
+                    {selectedLog.details?.category || 'Authentication'}
                   </span>
                 </div>
 
-                <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-200/70 space-y-1">
+                {/* Module */}
+                <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/70 space-y-1">
                   <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Module</span>
                   <span className="text-xs font-bold text-slate-900 block truncate">
-                    {selectedLog.details?.module || 'Admin Control'}
+                    {selectedLog.details?.module || 'Access Configuration'}
                   </span>
                 </div>
 
-                <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-200/70 space-y-1">
+                {/* Performed By */}
+                <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/70 space-y-1">
                   <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Performed By</span>
-                  <span className="text-xs font-bold text-slate-900 block truncate">
-                    {selectedLog.details?.actor_name || selectedLog.user_id || 'Super Admin System'}
-                  </span>
+                  <p className="text-xs font-bold text-slate-900 leading-tight truncate">
+                    {selectedLog.details?.actor_name || 'Rajeev Sharma'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-medium truncate">
+                    {selectedLog.details?.actor_role || 'Platform Administrator'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 font-normal truncate">
+                    {selectedLog.details?.actor_email || 'admin@knowtohire.com'}
+                  </p>
                 </div>
 
-                <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-200/70 space-y-1">
+                {/* Date & Time */}
+                <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/70 space-y-1">
                   <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Date & Time</span>
-                  <span className="text-xs font-bold text-slate-900 block truncate">
-                    {formatDate(selectedLog.created_at)}
-                  </span>
+                  <p className="text-xs font-bold text-slate-900">
+                    {formatDateOnly(selectedLog.created_at)}
+                  </p>
+                  <p className="text-xs text-slate-500 font-medium">
+                    {formatTimeOnly(selectedLog.created_at)}
+                  </p>
                 </div>
               </div>
 
-              {/* Structured Changes Comparison Table */}
-              {selectedLog.details?.changes && selectedLog.details.changes.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                    <Activity className="w-3.5 h-3.5 text-emerald-600" /> State Mutation Comparison
+              {/* 4. AFFECTED ENTITY SECTION */}
+              {(selectedLog.details?.affected_user || selectedLog.details?.affected_job || selectedLog.details?.affected_company) && (
+                <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/70 space-y-2">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    {selectedLog.details?.affected_user ? 'Affected User' : selectedLog.details?.affected_job ? 'Affected Job' : 'Affected Company'}
                   </h4>
+
+                  {selectedLog.details?.affected_user && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                        {selectedLog.details.affected_user.name[0]}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-900">{selectedLog.details.affected_user.name}</p>
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          {selectedLog.details.affected_user.role} • {selectedLog.details.affected_user.email}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedLog.details?.affected_job && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+                        <Briefcase className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-900">{selectedLog.details.affected_job.title}</p>
+                        <p className="text-[11px] text-slate-500 font-medium">{selectedLog.details.affected_job.company}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedLog.details?.affected_company && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs">
+                        <Building className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-900">{selectedLog.details.affected_company.name}</p>
+                        <p className="text-[11px] text-slate-500 font-medium">{selectedLog.details.affected_company.industry}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 5. CHANGES SUMMARY COMPARISON TABLE */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-emerald-600" /> Changes Summary
+                </h4>
+
+                {selectedLog.details?.changes && selectedLog.details.changes.length > 0 ? (
                   <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
-                        <tr className="bg-slate-50 border-b border-slate-200/80 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
-                          <th className="py-3 px-4">Field</th>
-                          <th className="py-3 px-4">Previous Value</th>
-                          <th className="py-3 px-4">New Value</th>
+                        <tr className="bg-slate-50 border-b border-slate-200/80 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
+                          <th className="py-3.5 px-5">Field</th>
+                          <th className="py-3.5 px-5">Previous Value</th>
+                          <th className="py-3.5 px-5">New Value</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 font-semibold">
                         {selectedLog.details.changes.map((c: any, idx: number) => (
                           <tr key={idx} className="hover:bg-slate-50/60 transition-colors">
-                            <td className="py-3 px-4 text-slate-900 font-bold">{c.field}</td>
-                            <td className="py-3 px-4 text-rose-700 bg-rose-50/40 font-mono text-[11px]">
-                              {c.previous || 'N/A'}
+                            <td className="py-3.5 px-5 text-slate-900 font-bold">{c.field}</td>
+                            <td className="py-3.5 px-5 text-rose-700 bg-rose-50/40 font-mono text-[11px]">
+                              {c.previous}
                             </td>
-                            <td className="py-3 px-4 text-emerald-700 bg-emerald-50/40 font-mono text-[11px] flex items-center gap-1.5">
-                              <ArrowRight className="w-3 h-3 text-emerald-500 shrink-0" />
-                              {c.new || 'N/A'}
+                            <td className="py-3.5 px-5 text-emerald-700 bg-emerald-50/40 font-mono text-[11px]">
+                              {c.new}
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/70 text-xs font-medium text-slate-500 text-center">
+                    No field-level changes recorded.
+                  </div>
+                )}
+              </div>
 
-              {/* Client & Network Metadata */}
+              {/* 7. NETWORK & ENVIRONMENT COMPACT CARDS */}
               <div className="space-y-3">
                 <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5 text-blue-500" /> Network & Environment Telemetry
+                  <Globe className="w-3.5 h-3.5 text-blue-500" /> Network & Environment
                 </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                   <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/70 flex items-center gap-3">
-                    <Globe className="w-4 h-4 text-slate-400 shrink-0" />
+                    <Laptop className="w-4 h-4 text-slate-400 shrink-0" />
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">IP Address</span>
-                      <span className="font-mono font-bold text-slate-900">
-                        {selectedLog.ip_address || selectedLog.details?.ip || '192.168.1.104'}
-                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Browser</span>
+                      <span className="font-bold text-slate-900">{selectedLog.details?.browser || 'Chrome 127'}</span>
+                      <span className="text-[10px] text-slate-500 block">{selectedLog.details?.os || 'Windows 11'}</span>
                     </div>
                   </div>
 
                   <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/70 flex items-center gap-3">
-                    <Laptop className="w-4 h-4 text-slate-400 shrink-0" />
+                    <Globe className="w-4 h-4 text-slate-400 shrink-0" />
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Client Environment</span>
-                      <span className="font-bold text-slate-900 truncate block">
-                        {selectedLog.details?.browser || 'Chrome 127.0.0 (Windows 11)'}
-                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">IP Address</span>
+                      <span className="font-mono font-bold text-slate-900">{selectedLog.ip_address || '127.0.0.1'}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/70 flex items-center gap-3">
+                    <KeyRound className="w-4 h-4 text-slate-400 shrink-0" />
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Session</span>
+                      <span className="font-bold text-slate-900">{selectedLog.details?.session || 'Current Session'}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Collapsible Technical Details Accordion */}
+              {/* 8. COMPACT VERTICAL TIMELINE SECTION */}
+              {selectedLog.details?.timeline && selectedLog.details.timeline.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-purple-600" /> Event Execution Timeline
+                  </h4>
+                  <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/70 space-y-3">
+                    {selectedLog.details.timeline.map((step: any, idx: number) => (
+                      <div key={idx} className="flex items-center gap-3 text-xs">
+                        <span className="font-mono text-slate-400 font-bold text-[11px] w-16">{step.time}</span>
+                        <div className="w-2 h-2 rounded-full bg-purple-500 shrink-0"></div>
+                        <span className="font-semibold text-slate-800">{step.step}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 6. TECHNICAL DETAILS (COLLAPSIBLE ACCORDION) */}
               <div className="border border-slate-200/80 rounded-2xl overflow-hidden bg-slate-50">
                 <button
                   type="button"
-                  onClick={() => setShowJson(!showJson)}
+                  onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
                   className="w-full p-4 flex items-center justify-between text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
                     <FileCode className="w-4 h-4 text-slate-500" />
-                    Technical Details & Raw JSON Payload
+                    Technical Details
                   </span>
-                  {showJson ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  {showTechnicalDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
 
-                {showJson && (
+                {showTechnicalDetails && (
                   <div className="p-4 border-t border-slate-200 bg-slate-950 text-emerald-400 font-mono text-[11px] rounded-b-2xl overflow-x-auto max-h-64 border-solid leading-relaxed">
                     <pre>{JSON.stringify(selectedLog, null, 2)}</pre>
                   </div>
@@ -535,7 +599,7 @@ Details: ${JSON.stringify(selectedLog.details || {}, null, 2)}
 
             </div>
 
-            {/* 3. STICKY FOOTER */}
+            {/* 9. FOOTER ACTIONS */}
             <div className="px-6 py-4 border-t border-slate-200/80 bg-slate-50/70 flex items-center justify-between shrink-0 gap-3">
               <Button
                 variant="outline"
