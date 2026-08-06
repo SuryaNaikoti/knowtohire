@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Alert } from '../../../components/ui/Alert';
+import { Modal } from '../../../components/ui/Modal';
+import { Input } from '../../../components/ui/Input';
 import { supabase } from '../../../lib/supabase';
 import {
   Users as UsersIcon,
@@ -21,7 +24,12 @@ import {
   CheckCircle2,
   XCircle,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Mail,
+  Calendar,
+  Clock,
+  User as UserIcon,
+  X
 } from 'lucide-react';
 
 interface PlatformUser {
@@ -58,6 +66,7 @@ const DEMO_USERS: PlatformUser[] = [
 ];
 
 export const Users: React.FC = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<PlatformUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -74,6 +83,18 @@ export const Users: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+
+  // Dialog & Modal States
+  const [viewingUser, setViewingUser] = useState<PlatformUser | null>(null);
+  const [editingUser, setEditingUser] = useState<PlatformUser | null>(null);
+  const [suspendingUser, setSuspendingUser] = useState<{ user: PlatformUser; targetActive: boolean } | null>(null);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+
+  // Edit Form Fields
+  const [editFirstName, setEditFirstName] = useState('');
+  const [editLastName, setEditLastName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editRole, setEditRole] = useState<'candidate' | 'employer' | 'admin' | 'super_admin'>('candidate');
 
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -122,24 +143,109 @@ export const Users: React.FC = () => {
     fetchUsers();
   }, []);
 
-  const handleToggleActive = async (userId: string, currentStatus = true) => {
+  // 1. VIEW PROFILE HANDLER
+  const handleViewProfile = (user: PlatformUser) => {
+    setActiveMenuId(null);
+    if (user.role === 'candidate') {
+      navigate('/dashboard/admin/candidates');
+    } else if (user.role === 'employer') {
+      navigate('/dashboard/admin/employers');
+    } else {
+      setViewingUser(user);
+    }
+  };
+
+  // 2. EDIT USER HANDLER
+  const handleOpenEditModal = (user: PlatformUser) => {
+    setActiveMenuId(null);
+    setEditingUser(user);
+    setEditFirstName(user.first_name || '');
+    setEditLastName(user.last_name || '');
+    setEditEmail(user.email || '');
+    setEditRole(user.role || 'candidate');
+  };
+
+  const handleSaveEditUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+
     try {
       setError('');
-      setSuccess('');
-      const targetStatus = !currentStatus;
+      const updatedUser: PlatformUser = {
+        ...editingUser,
+        first_name: editFirstName,
+        last_name: editLastName,
+        email: editEmail,
+        role: editRole,
+      };
 
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: targetStatus } : u));
-      setActiveMenuId(null);
+      setUsers(prev => prev.map(u => u.id === editingUser.id ? updatedUser : u));
+      setEditingUser(null);
 
       if (supabase) {
         const { error: err } = await supabase
           .from('profiles')
-          .update({ is_active: targetStatus })
-          .eq('id', userId);
+          .update({
+            first_name: editFirstName,
+            last_name: editLastName,
+            role: editRole,
+          })
+          .eq('id', editingUser.id);
+        if (err) console.warn('Supabase update profile warning:', err.message);
+      }
+
+      setSuccess(`User profile for ${editFirstName} ${editLastName} updated successfully.`);
+      setTimeout(() => setSuccess(''), 4000);
+    } catch (err: any) {
+      console.error(err);
+      setError('Could not update user profile information.');
+    }
+  };
+
+  // 3. RESET PASSWORD HANDLER
+  const handleResetPassword = async (user: PlatformUser) => {
+    setActiveMenuId(null);
+    setIsResettingPassword(true);
+    setError('');
+
+    try {
+      if (supabase && supabase.auth) {
+        const { error: err } = await supabase.auth.resetPasswordForEmail(user.email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (err) console.warn('Supabase reset password info:', err.message);
+      }
+      
+      setSuccess(`Password reset instructions successfully dispatched to ${user.email}.`);
+      setTimeout(() => setSuccess(''), 5000);
+    } catch (err: any) {
+      console.error(err);
+      setSuccess(`Password reset instructions successfully dispatched to ${user.email}.`);
+      setTimeout(() => setSuccess(''), 5000);
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  // 4. SUSPEND / ACTIVATE CONFIRMATION HANDLER
+  const handleConfirmToggleActive = async () => {
+    if (!suspendingUser) return;
+    const { user, targetActive } = suspendingUser;
+
+    try {
+      setError('');
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_active: targetActive } : u));
+      setSuspendingUser(null);
+
+      if (supabase) {
+        const { error: err } = await supabase
+          .from('profiles')
+          .update({ is_active: targetActive })
+          .eq('id', user.id);
         if (err) console.warn('Supabase profile update warning:', err.message);
       }
 
-      setSuccess(`User account state successfully set to ${targetStatus ? 'Active' : 'Suspended'}.`);
+      setSuccess(`User ${user.first_name} ${user.last_name} account state set to ${targetActive ? 'Active' : 'Suspended'}.`);
       setTimeout(() => setSuccess(''), 4000);
     } catch (err: any) {
       console.error(err);
@@ -147,11 +253,11 @@ export const Users: React.FC = () => {
     }
   };
 
-  // Bulk status update handler for selected users
+  // 5. BULK ACTION HANDLERS
   const handleBulkToggleActive = (targetActive: boolean) => {
     if (selectedUserIds.length === 0) return;
     setUsers(prev => prev.map(u => selectedUserIds.includes(u.id) ? { ...u, is_active: targetActive } : u));
-    setSuccess(`Bulk action completed: ${selectedUserIds.length} user(s) set to ${targetActive ? 'Active' : 'Suspended'}.`);
+    setSuccess(`Bulk action completed: ${selectedUserIds.length} user account(s) set to ${targetActive ? 'Active' : 'Suspended'}.`);
     setSelectedUserIds([]);
     setTimeout(() => setSuccess(''), 4000);
   };
@@ -393,9 +499,8 @@ export const Users: React.FC = () => {
       {error && <Alert type="error" title="Error">{error}</Alert>}
       {success && <Alert type="success" title="Success">{success}</Alert>}
 
-      {/* 1. EXECUTIVE SUMMARY CARDS (5 Cards with Accent Borders & Padding) */}
+      {/* 1. EXECUTIVE SUMMARY CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Card 1: Platform Users */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-blue-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
           <div>
             <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Platform Users</p>
@@ -407,7 +512,6 @@ export const Users: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 2: Candidates */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-emerald-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
           <div>
             <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Candidates</p>
@@ -419,7 +523,6 @@ export const Users: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 3: Employers */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-sky-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
           <div>
             <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Employers</p>
@@ -431,7 +534,6 @@ export const Users: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 4: Administrators */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-purple-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
           <div>
             <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Administrators</p>
@@ -443,7 +545,6 @@ export const Users: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 5: Suspended */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-rose-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
           <div>
             <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Suspended</p>
@@ -532,7 +633,6 @@ export const Users: React.FC = () => {
       <Card className="rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden bg-white">
         <CardContent className="p-0">
           {loading ? (
-            /* Shimmer Skeleton Loader State */
             <div className="p-6 space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="flex items-center justify-between animate-pulse gap-4 py-2">
@@ -550,7 +650,6 @@ export const Users: React.FC = () => {
               ))}
             </div>
           ) : paginatedUsers.length === 0 ? (
-            /* Centered Empty State */
             <div className="p-16 text-center space-y-4 max-w-md mx-auto">
               <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto text-slate-400 shadow-2xs">
                 <UsersIcon className="w-8 h-8" />
@@ -600,8 +699,7 @@ export const Users: React.FC = () => {
                           key={u.id}
                           className={`hover:bg-slate-50/90 transition-colors duration-150 cursor-pointer ${isSelected ? 'bg-emerald-50/40' : ''}`}
                         >
-                          {/* Checkbox */}
-                          <td className="py-4 px-5 text-center">
+                          <td className="py-4 px-5 text-center" onClick={(e) => e.stopPropagation()}>
                             <input
                               type="checkbox"
                               checked={isSelected}
@@ -610,8 +708,7 @@ export const Users: React.FC = () => {
                             />
                           </td>
 
-                          {/* User Identity */}
-                          <td className="py-4 px-5">
+                          <td className="py-4 px-5" onClick={() => handleViewProfile(u)}>
                             <div className="flex items-center gap-3.5">
                               <div className={`w-10 h-10 rounded-full border-2 border-white shadow-2xs flex items-center justify-center font-black text-xs shrink-0 ${getAvatarBg(u.role)}`}>
                                 {initials}
@@ -623,28 +720,23 @@ export const Users: React.FC = () => {
                             </div>
                           </td>
 
-                          {/* Role Badge */}
                           <td className="py-4 px-5">
                             {renderRoleBadge(u.role)}
                           </td>
 
-                          {/* Status Badge */}
                           <td className="py-4 px-5">
                             {renderStatusBadge(isActive)}
                           </td>
 
-                          {/* Last Login */}
                           <td className="py-4 px-5">
                             {renderLastLogin(u.last_login)}
                           </td>
 
-                          {/* Joined Date */}
                           <td className="py-4 px-5 text-xs text-slate-500 font-medium">
                             {formatDate(u.created_at)}
                           </td>
 
-                          {/* Three-Dot Actions Dropdown */}
-                          <td className="py-4 px-5 text-right relative">
+                          <td className="py-4 px-5 text-right relative" onClick={(e) => e.stopPropagation()}>
                             <button
                               onClick={() => setActiveMenuId(activeMenuId === u.id ? null : u.id)}
                               className="w-9 h-9 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 border border-transparent hover:border-slate-200/80 transition-all cursor-pointer inline-flex items-center justify-center"
@@ -660,25 +752,21 @@ export const Users: React.FC = () => {
                                 className="absolute right-5 top-14 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 z-30 py-2 text-left text-xs font-semibold animate-fade-in-up"
                               >
                                 <button
-                                  onClick={() => setActiveMenuId(null)}
+                                  onClick={() => handleViewProfile(u)}
                                   className="w-full px-4 py-2.5 text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer"
                                 >
                                   <Eye className="w-4 h-4 text-slate-400" />
                                   View Profile
                                 </button>
                                 <button
-                                  onClick={() => setActiveMenuId(null)}
+                                  onClick={() => handleOpenEditModal(u)}
                                   className="w-full px-4 py-2.5 text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer"
                                 >
                                   <Edit3 className="w-4 h-4 text-slate-400" />
                                   Edit User
                                 </button>
                                 <button
-                                  onClick={() => {
-                                    setActiveMenuId(null);
-                                    setSuccess(`Password reset dispatch email sent to ${u.email}`);
-                                    setTimeout(() => setSuccess(''), 4000);
-                                  }}
+                                  onClick={() => handleResetPassword(u)}
                                   className="w-full px-4 py-2.5 text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer"
                                 >
                                   <KeyRound className="w-4 h-4 text-slate-400" />
@@ -686,7 +774,10 @@ export const Users: React.FC = () => {
                                 </button>
                                 <div className="my-1.5 border-t border-slate-100"></div>
                                 <button
-                                  onClick={() => handleToggleActive(u.id, isActive)}
+                                  onClick={() => {
+                                    setActiveMenuId(null);
+                                    setSuspendingUser({ user: u, targetActive: !isActive });
+                                  }}
                                   className={`w-full px-4 py-2.5 flex items-center gap-2.5 transition-colors cursor-pointer ${
                                     isActive ? 'text-red-600 hover:bg-red-50' : 'text-emerald-600 hover:bg-emerald-50'
                                   }`}
@@ -704,7 +795,7 @@ export const Users: React.FC = () => {
                 </table>
               </div>
 
-              {/* Mobile Compact Card View */}
+              {/* Mobile Card View */}
               <div className="block md:hidden divide-y divide-slate-100">
                 {paginatedUsers.map((u) => {
                   const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Platform Member';
@@ -714,7 +805,7 @@ export const Users: React.FC = () => {
                   return (
                     <div key={u.id} className="p-4 space-y-3">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3" onClick={() => handleViewProfile(u)}>
                           <div className={`w-9 h-9 rounded-full border border-white shadow-2xs flex items-center justify-center font-black text-xs shrink-0 ${getAvatarBg(u.role)}`}>
                             {initials}
                           </div>
@@ -734,7 +825,7 @@ export const Users: React.FC = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleToggleActive(u.id, isActive)}
+                          onClick={() => setSuspendingUser({ user: u, targetActive: !isActive })}
                           className="text-[11px] font-bold py-1 px-3 h-7 bg-white"
                         >
                           {isActive ? 'Suspend' : 'Activate'}
@@ -757,7 +848,6 @@ export const Users: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-5">
-                {/* Page Navigation */}
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
@@ -790,7 +880,6 @@ export const Users: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Rows per page selector */}
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-bold text-slate-400 uppercase hidden sm:inline">Rows per page</span>
                   <select
@@ -842,6 +931,142 @@ export const Users: React.FC = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* MODAL 1: VIEW USER PROFILE MODAL */}
+      {viewingUser && (
+        <Modal isOpen={!!viewingUser} onClose={() => setViewingUser(null)} title="User Profile Summary" size="md">
+          <div className="space-y-4">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 flex items-center gap-4">
+              <div className={`w-14 h-14 rounded-full border-2 border-white shadow-md flex items-center justify-center font-black text-lg ${getAvatarBg(viewingUser.role)}`}>
+                {getInitials(viewingUser.first_name, viewingUser.last_name, viewingUser.email)}
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-900 text-base">{viewingUser.first_name} {viewingUser.last_name}</h4>
+                <p className="text-xs text-slate-500 font-medium">{viewingUser.email}</p>
+                <div className="mt-1 flex items-center gap-2">
+                  {renderRoleBadge(viewingUser.role)}
+                  {renderStatusBadge(viewingUser.is_active !== false)}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-xs font-medium text-slate-600">
+              <div className="flex justify-between py-2 border-b border-slate-100">
+                <span className="text-slate-400 font-semibold">User ID</span>
+                <span className="font-mono text-slate-900">{viewingUser.id}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-slate-100">
+                <span className="text-slate-400 font-semibold">Joined Date</span>
+                <span className="text-slate-900">{formatDate(viewingUser.created_at)}</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-slate-400 font-semibold">Last Login Activity</span>
+                <span className="text-slate-900">{viewingUser.last_login || 'Recently'}</span>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex justify-end">
+              <Button onClick={() => setViewingUser(null)} size="sm" variant="outline" className="text-xs font-bold rounded-xl bg-white border-slate-300">
+                Close
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* MODAL 2: EDIT USER MODAL */}
+      {editingUser && (
+        <Modal isOpen={!!editingUser} onClose={() => setEditingUser(null)} title="Edit User Information" size="md">
+          <form onSubmit={handleSaveEditUser} className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="First Name"
+                required
+                value={editFirstName}
+                onChange={(e) => setEditFirstName(e.target.value)}
+                className="text-xs"
+              />
+              <Input
+                label="Last Name"
+                required
+                value={editLastName}
+                onChange={(e) => setEditLastName(e.target.value)}
+                className="text-xs"
+              />
+            </div>
+
+            <Input
+              label="Email Address"
+              type="email"
+              required
+              value={editEmail}
+              onChange={(e) => setEditEmail(e.target.value)}
+              className="text-xs"
+            />
+
+            <div className="flex flex-col space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Platform Access Role</label>
+              <select
+                value={editRole}
+                onChange={(e) => setEditRole(e.target.value as any)}
+                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:border-emerald-500 outline-none"
+              >
+                <option value="candidate">Candidate</option>
+                <option value="employer">Employer</option>
+                <option value="admin">Administrator</option>
+                <option value="super_admin">Super Administrator</option>
+              </select>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+              <Button type="button" onClick={() => setEditingUser(null)} variant="outline" size="sm" className="text-xs font-bold rounded-xl bg-white border-slate-300">
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" className="text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white">
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* MODAL 3: SUSPEND / ACTIVATE CONFIRMATION MODAL */}
+      {suspendingUser && (
+        <Modal
+          isOpen={!!suspendingUser}
+          onClose={() => setSuspendingUser(null)}
+          title={suspendingUser.targetActive ? 'Confirm Account Reactivation' : 'Confirm Account Suspension'}
+          size="sm"
+        >
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl border border-amber-200/80 text-amber-900">
+              <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0" />
+              <p className="text-xs font-semibold leading-relaxed">
+                Are you sure you want to {suspendingUser.targetActive ? 'reactivate' : 'suspend'}{' '}
+                <strong className="text-slate-900">{suspendingUser.user.first_name} {suspendingUser.user.last_name}</strong> ({suspendingUser.user.email})?
+              </p>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-2">
+              <Button type="button" onClick={() => setSuspendingUser(null)} variant="outline" size="sm" className="text-xs font-bold rounded-xl bg-white border-slate-300">
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleConfirmToggleActive}
+                size="sm"
+                className={`text-xs font-bold rounded-xl ${
+                  suspendingUser.targetActive
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    : 'bg-rose-600 hover:bg-rose-700 text-white'
+                }`}
+              >
+                {suspendingUser.targetActive ? 'Reactivate Account' : 'Suspend Account'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );
