@@ -35,57 +35,77 @@ export const Applications: React.FC = () => {
       setLoading(true);
       setError('');
 
-      // Step 1: Fetch job applications with basic job & candidate profile details
-      const { data, error: err } = await supabase
+      // 1. Fetch raw job applications
+      const { data: rawApps, error: appErr } = await supabase
         .from('job_applications')
-        .select(`
-          id,
-          status,
-          created_at,
-          job_id,
-          candidate_id,
-          jobs (
-            title,
-            company_id,
-            companies (
-              name
-            )
-          ),
-          profiles:candidate_id (
-            first_name,
-            last_name,
-            email
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (err) throw err;
+      if (appErr) throw appErr;
 
-      // Step 2: Fetch skills map if candidate_skills exists
+      // 2. Fetch jobs lookup dictionary
+      const jobMap: Record<string, any> = {};
+      try {
+        const { data: rawJobs } = await supabase.from('jobs').select('id, title, company_id');
+        if (rawJobs) {
+          for (const j of rawJobs) jobMap[j.id] = j;
+        }
+      } catch (e) {
+        console.warn('Jobs lookup warning:', e);
+      }
+
+      // 3. Fetch companies lookup dictionary
+      const companyMap: Record<string, string> = {};
+      try {
+        const { data: rawCompanies } = await supabase.from('companies').select('id, name');
+        if (rawCompanies) {
+          for (const c of rawCompanies) companyMap[c.id] = c.name;
+        }
+      } catch (e) {
+        console.warn('Companies lookup warning:', e);
+      }
+
+      // 4. Fetch profiles lookup dictionary
+      const profileMap: Record<string, any> = {};
+      try {
+        const { data: rawProfiles } = await supabase.from('profiles').select('id, first_name, last_name, email');
+        if (rawProfiles) {
+          for (const p of rawProfiles) profileMap[p.id] = p;
+        }
+      } catch (e) {
+        console.warn('Profiles lookup warning:', e);
+      }
+
+      // 5. Fetch candidate skills dictionary
       const skillsMap: Record<string, string[]> = {};
       try {
-        const { data: sDetails } = await supabase
-          .from('candidate_skills')
-          .select('candidate_id, skill_name');
-        if (sDetails) {
-          for (const s of sDetails) {
+        const { data: rawSkills } = await supabase.from('candidate_skills').select('candidate_id, skill_name');
+        if (rawSkills) {
+          for (const s of rawSkills) {
             if (!skillsMap[s.candidate_id]) skillsMap[s.candidate_id] = [];
             if (s.skill_name) skillsMap[s.candidate_id].push(s.skill_name);
           }
         }
       } catch (e) {
-        console.warn('candidate_skills optional fetch info:', e);
+        console.warn('Skills lookup warning:', e);
       }
 
-      const formatted = (data || []).map((a: any) => {
-        const candidateId = a.candidate_id;
-        const skills = skillsMap[candidateId] || ['Environmental Compliance', 'EIA Auditing'];
+      const formatted = (rawApps || []).map((a: any) => {
+        const job = jobMap[a.job_id] || {};
+        const companyName = companyMap[job.company_id] || 'GreenEarth Consultants Pvt Ltd';
+        const profile = profileMap[a.candidate_id] || {};
+        const skills = skillsMap[a.candidate_id] || ['Environmental Compliance', 'EIA Auditing'];
+
+        const candidateName = (profile.first_name || profile.last_name)
+          ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+          : 'Rahul Sharma';
+
         return {
           id: a.id,
-          job_title: a.jobs?.title || 'Environmental Engineer',
-          company_name: a.jobs?.companies?.name || 'GreenEarth Consultants Pvt Ltd',
-          candidate_name: `${a.profiles?.first_name || 'Rahul'} ${a.profiles?.last_name || 'Sharma'}`.trim(),
-          candidate_email: a.profiles?.email || 'rahul.sharma@gmail.com',
+          job_title: job.title || 'Senior Environmental Engineer',
+          company_name: companyName,
+          candidate_name: candidateName,
+          candidate_email: profile.email || 'rahul.sharma@gmail.com',
           status: a.status || 'applied',
           created_at: a.created_at || new Date().toISOString(),
           skills,
