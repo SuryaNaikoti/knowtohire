@@ -5,7 +5,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Alert } from '../ui/Alert';
-import { ShieldCheck, ShieldAlert, Star } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, Star, Sparkles } from 'lucide-react';
 
 interface ModerationModalProps {
   job: Job | null;

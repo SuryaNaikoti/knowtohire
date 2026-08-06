@@ -6,7 +6,7 @@ import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
 import { Loading } from '../../../components/ui/Loading';
 import { ModerationModal } from '../../../components/dashboard/ModerationModal';
-import { ShieldCheck, MapPin } from 'lucide-react';
+import { ShieldCheck, MapPin, CheckCircle2 } from 'lucide-react';
 
 export const Moderation: React.FC = () => {
   const [pendingJobs, setPendingJobs] = useState<Job[]>([]);
