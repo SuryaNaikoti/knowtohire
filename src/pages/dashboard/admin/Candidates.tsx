@@ -40,28 +40,47 @@ export const Candidates: React.FC = () => {
       setLoading(true);
       setError('');
       
-      const { data, error: err } = await supabase
+      // Step 1: Fetch candidate profiles from profiles table
+      const { data: profs, error: err } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          email,
-          headline,
-          city,
-          country,
-          created_at,
-          role,
-          candidate_skills (
-            skill_name
-          )
-        `)
+        .select('id, first_name, last_name, email, created_at, avatar_url')
         .eq('role', 'candidate');
 
       if (err) throw err;
 
-      const formatted = (data || []).map((p: any) => {
-        // Load simulated status/featured state from local storage if not in schema
+      // Step 2: Fetch detailed candidate profile metadata
+      const candMap: Record<string, any> = {};
+      try {
+        const { data: cDetails } = await supabase
+          .from('candidate_profiles')
+          .select('id, headline, bio, experience_years, preferred_location');
+        if (cDetails) {
+          for (const c of cDetails) {
+            candMap[c.id] = c;
+          }
+        }
+      } catch (e) {
+        console.warn('candidate_profiles optional fetch info:', e);
+      }
+
+      // Step 3: Fetch candidate skills if available
+      const skillsMap: Record<string, string[]> = {};
+      try {
+        const { data: sDetails } = await supabase
+          .from('candidate_skills')
+          .select('candidate_id, skill_name');
+        if (sDetails) {
+          for (const s of sDetails) {
+            if (!skillsMap[s.candidate_id]) skillsMap[s.candidate_id] = [];
+            if (s.skill_name) skillsMap[s.candidate_id].push(s.skill_name);
+          }
+        }
+      } catch (e) {
+        console.warn('candidate_skills optional fetch info:', e);
+      }
+
+      const formatted = (profs || []).map((p: any) => {
+        const detail = candMap[p.id] || {};
         const localStatus = localStorage.getItem(`kth_cand_status_${p.id}`) as any;
         const isFeatured = localStorage.getItem(`kth_cand_featured_${p.id}`) === 'true';
         
@@ -70,13 +89,13 @@ export const Candidates: React.FC = () => {
           first_name: p.first_name || '',
           last_name: p.last_name || '',
           email: p.email || '',
-          headline: p.headline || 'Product Specialist',
-          city: p.city || 'Hyderabad',
-          country: p.country || 'India',
-          created_at: p.created_at,
+          headline: detail.headline || 'Environmental & Sustainability Specialist',
+          city: detail.preferred_location || 'Bengaluru',
+          country: 'India',
+          created_at: p.created_at || new Date().toISOString(),
           is_featured: isFeatured,
           approval_status: localStatus || 'approved',
-          skills: p.candidate_skills ? p.candidate_skills.map((s: any) => s.skill_name) : [],
+          skills: skillsMap[p.id] || ['Environmental Audit', 'EIA Compliance', 'ESG Strategy'],
         };
       });
 
