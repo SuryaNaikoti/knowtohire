@@ -78,10 +78,16 @@ export const ModerationModal: React.FC<ModerationModalProps> = ({
           {error && <Alert type="error" className="text-xs" title="Moderation Alert">{error}</Alert>}
 
           {/* Job Overview Summary */}
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-2">
-            <div className="flex items-center space-x-2">
-              <span className="text-[10px] bg-blue-100 text-blue-800 font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider">{job.career_domain || 'General'} Domain</span>
-              <span className="text-[10px] bg-slate-200 text-slate-800 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">{job.employment_type || 'Full-Time'}</span>
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-2.5">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center space-x-2">
+                <span className="text-[10px] bg-blue-100 text-blue-800 font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider">{job.career_domain || 'General'} Domain</span>
+                <span className="text-[10px] bg-slate-200 text-slate-800 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">{job.employment_type || 'Full-Time'}</span>
+              </div>
+              <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300/60 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                <Sparkles className="w-3 h-3 text-amber-600 shrink-0" />
+                Employer Tier: Enterprise (Featured Slot Eligible)
+              </span>
             </div>
             <h4 className="font-heading font-black text-slate-900 text-base leading-tight">
               {job.title}
@@ -92,7 +98,7 @@ export const ModerationModal: React.FC<ModerationModalProps> = ({
           </div>
 
           {/* Featured Configuration */}
-          <div className="bg-amber-50/60 p-4 rounded-xl border border-amber-200/70 space-y-3">
+          <div className="bg-amber-50/60 p-4 rounded-xl border border-amber-200/70 space-y-2">
             <label className="flex items-center space-x-2 text-xs font-bold text-slate-900 cursor-pointer">
               <input
                 type="checkbox"
@@ -102,16 +108,21 @@ export const ModerationModal: React.FC<ModerationModalProps> = ({
               />
               <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-amber-500 fill-amber-500" /> Feature this posting (pins to top of candidate board)</span>
             </label>
+            <p className="text-[11px] text-amber-800 font-medium pl-6">
+              Check this if the employer purchased a Featured Listing package or to grant priority top-of-feed placement for urgent vacancies.
+            </p>
             
             {isFeatured && (
-              <Input
-                label="Featured Until Date"
-                type="date"
-                required
-                value={featuredUntil}
-                onChange={(e) => setFeaturedUntil(e.target.value)}
-                className="bg-white text-xs py-1.5"
-              />
+              <div className="pt-1">
+                <Input
+                  label="Featured Until Date"
+                  type="date"
+                  required
+                  value={featuredUntil}
+                  onChange={(e) => setFeaturedUntil(e.target.value)}
+                  className="bg-white text-xs py-1.5"
+                />
+              </div>
             )}
           </div>
 
