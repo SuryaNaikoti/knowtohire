@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
+import { Select } from '../../../components/ui/Select';
 
 export const AdminDashboard: React.FC = () => {
   const { profile } = useAuth();
@@ -432,21 +433,17 @@ export const AdminDashboard: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Category
-              </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as NotificationCategory)}
-                className="w-full px-4 py-2.5 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:bg-white cursor-pointer"
-              >
-                <option value="system">System Announcement</option>
-                <option value="security">Security Alert</option>
-                <option value="job_alert">Job Market Update</option>
-                <option value="marketplace">Marketplace Release</option>
-              </select>
-            </div>
+            <Select
+              label="Category"
+              value={category}
+              onChange={(val) => setCategory(val as NotificationCategory)}
+              options={[
+                { value: 'system', label: 'System Announcement' },
+                { value: 'security', label: 'Security Alert' },
+                { value: 'job_alert', label: 'Job Market Update' },
+                { value: 'marketplace', label: 'Marketplace Release' }
+              ]}
+            />
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
