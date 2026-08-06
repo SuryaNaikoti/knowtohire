@@ -24,12 +24,9 @@ import {
   CheckCircle2,
   XCircle,
   RotateCcw,
-  Sparkles,
-  Mail,
-  Calendar,
-  Clock,
-  User as UserIcon,
-  X
+  ChevronDown,
+  Check,
+  Sparkles
 } from 'lucide-react';
 
 interface PlatformUser {
@@ -44,7 +41,7 @@ interface PlatformUser {
   avatar_url?: string;
 }
 
-// Demo fallback seed data for rich presentation if Supabase returns partial data
+// Demo fallback seed data
 const DEMO_USERS: PlatformUser[] = [
   { id: 'usr-1', first_name: 'Rahul', last_name: 'Sharma', email: 'rahul.sharma@gmail.com', role: 'candidate', created_at: '2026-08-06T10:00:00Z', is_active: true, last_login: '2 hours ago' },
   { id: 'usr-2', first_name: 'Sneha', last_name: 'Reddy', email: 'sneha.reddy@gmail.com', role: 'candidate', created_at: '2026-08-06T09:30:00Z', is_active: true, last_login: '5 hours ago' },
@@ -78,6 +75,9 @@ export const Users: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
 
+  // Custom Dropdown Popover States
+  const [openDropdown, setOpenDropdown] = useState<'role' | 'status' | 'sort' | null>(null);
+
   // Selection & Pagination
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -99,12 +99,16 @@ export const Users: React.FC = () => {
   const [editRole, setEditRole] = useState<'candidate' | 'employer' | 'admin' | 'super_admin'>('candidate');
 
   const menuRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close actions dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setActiveMenuId(null);
+      }
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -145,7 +149,7 @@ export const Users: React.FC = () => {
     fetchUsers();
   }, []);
 
-  // 1. VIEW PROFILE HANDLER
+  // Handlers
   const handleViewProfile = (user: PlatformUser) => {
     setActiveMenuId(null);
     if (user.role === 'candidate') {
@@ -157,7 +161,6 @@ export const Users: React.FC = () => {
     }
   };
 
-  // 2. EDIT USER HANDLER
   const handleOpenEditModal = (user: PlatformUser) => {
     setActiveMenuId(null);
     setEditingUser(user);
@@ -185,7 +188,7 @@ export const Users: React.FC = () => {
       setEditingUser(null);
 
       if (supabase) {
-        const { error: err } = await supabase
+        await supabase
           .from('profiles')
           .update({
             first_name: editFirstName,
@@ -193,10 +196,9 @@ export const Users: React.FC = () => {
             role: editRole,
           })
           .eq('id', editingUser.id);
-        if (err) console.warn('Supabase update profile warning:', err.message);
       }
 
-      setSuccess(`User profile for ${editFirstName} ${editLastName} updated successfully.`);
+      setSuccess(`User profile for ${editFirstName} ${editLastName} updated.`);
       setTimeout(() => setSuccess(''), 4000);
     } catch (err: any) {
       console.error(err);
@@ -204,7 +206,6 @@ export const Users: React.FC = () => {
     }
   };
 
-  // 3. RESET PASSWORD HANDLERS
   const handleOpenResetModal = (user: PlatformUser) => {
     setActiveMenuId(null);
     setResettingUser(user);
@@ -225,12 +226,11 @@ export const Users: React.FC = () => {
     } finally {
       setIsResettingPassword(false);
       setResetSent(true);
-      setSuccess(`Password reset instructions successfully dispatched to ${resettingUser.email}.`);
+      setSuccess(`Password reset email sent to ${resettingUser.email}.`);
       setTimeout(() => setSuccess(''), 5000);
     }
   };
 
-  // 4. SUSPEND / ACTIVATE CONFIRMATION HANDLER
   const handleConfirmToggleActive = async () => {
     if (!suspendingUser) return;
     const { user, targetActive } = suspendingUser;
@@ -241,14 +241,13 @@ export const Users: React.FC = () => {
       setSuspendingUser(null);
 
       if (supabase) {
-        const { error: err } = await supabase
+        await supabase
           .from('profiles')
           .update({ is_active: targetActive })
           .eq('id', user.id);
-        if (err) console.warn('Supabase profile update warning:', err.message);
       }
 
-      setSuccess(`User ${user.first_name} ${user.last_name} account state set to ${targetActive ? 'Active' : 'Suspended'}.`);
+      setSuccess(`User ${user.first_name} ${user.last_name} set to ${targetActive ? 'Active' : 'Suspended'}.`);
       setTimeout(() => setSuccess(''), 4000);
     } catch (err: any) {
       console.error(err);
@@ -256,16 +255,14 @@ export const Users: React.FC = () => {
     }
   };
 
-  // 5. BULK ACTION HANDLERS
   const handleBulkToggleActive = (targetActive: boolean) => {
     if (selectedUserIds.length === 0) return;
     setUsers(prev => prev.map(u => selectedUserIds.includes(u.id) ? { ...u, is_active: targetActive } : u));
-    setSuccess(`Bulk action completed: ${selectedUserIds.length} user account(s) set to ${targetActive ? 'Active' : 'Suspended'}.`);
+    setSuccess(`Bulk action completed: ${selectedUserIds.length} user(s) set to ${targetActive ? 'Active' : 'Suspended'}.`);
     setSelectedUserIds([]);
     setTimeout(() => setSuccess(''), 4000);
   };
 
-  // Format Date to "06 Aug 2026"
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '06 Aug 2026';
     try {
@@ -276,7 +273,6 @@ export const Users: React.FC = () => {
     }
   };
 
-  // Get Initials for Avatar
   const getInitials = (firstName: string, lastName: string, email: string) => {
     if (firstName || lastName) {
       return `${(firstName || '')[0] || ''}${(lastName || '')[0] || ''}`.toUpperCase();
@@ -284,86 +280,81 @@ export const Users: React.FC = () => {
     return (email[0] || 'U').toUpperCase();
   };
 
-  // Avatar gradient & background based on role
   const getAvatarBg = (role: string) => {
     switch (role) {
       case 'super_admin':
       case 'admin':
-        return 'bg-gradient-to-br from-purple-100 to-fuchsia-100 text-purple-800 border-purple-200/80';
+        return 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-2xs';
       case 'employer':
-        return 'bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-800 border-blue-200/80';
+        return 'bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-2xs';
       case 'candidate':
       default:
-        return 'bg-gradient-to-br from-emerald-100 to-teal-100 text-emerald-800 border-emerald-200/80';
+        return 'bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-2xs';
     }
   };
 
-  // Role Badge Styling
   const renderRoleBadge = (role: string) => {
     switch (role) {
       case 'super_admin':
       case 'admin':
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase bg-purple-50/90 text-purple-700 border border-purple-200/70 shadow-2xs">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200/60">
             Administrator
           </span>
         );
       case 'employer':
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase bg-blue-50/90 text-blue-700 border border-blue-200/70 shadow-2xs">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200/60">
             Employer
           </span>
         );
       case 'candidate':
       default:
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase bg-emerald-50/90 text-emerald-700 border border-emerald-200/70 shadow-2xs">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200/60">
             Candidate
           </span>
         );
     }
   };
 
-  // Status Badge Styling
   const renderStatusBadge = (isActive: boolean) => {
     if (isActive) {
       return (
-        <span className="inline-flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50/90 px-3 py-1 rounded-full border border-emerald-200/70 shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/70">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
           Active
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-2 text-xs font-bold text-rose-700 bg-rose-50/90 px-3 py-1 rounded-full border border-rose-200/70 shadow-2xs">
-        <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-200/70">
+        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
         Suspended
       </span>
     );
   };
 
-  // Render Last Login with Online Dot status
   const renderLastLogin = (lastLogin?: string) => {
     const text = lastLogin || 'Recently';
     const isRecent = text.includes('hour') || text.includes('Just') || text.includes('Yesterday') || text.includes('3 days') || text.includes('4 days');
     
     if (isRecent) {
       return (
-        <span className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
           {text}
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-400">
-        <span className="w-2 h-2 rounded-full bg-slate-300 shrink-0"></span>
+      <span className="inline-flex items-center gap-1.5 text-xs font-normal text-slate-400">
+        <span className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0"></span>
         {text}
       </span>
     );
   };
 
-  // Summary Metrics Computation
   const stats = useMemo(() => {
     const total = users.length;
     const candidates = users.filter(u => u.role === 'candidate').length;
@@ -373,7 +364,6 @@ export const Users: React.FC = () => {
     return { total, candidates, employers, admins, suspended };
   }, [users]);
 
-  // Filtering & Sorting Logic
   const filteredUsers = useMemo(() => {
     let result = [...users];
 
@@ -424,7 +414,6 @@ export const Users: React.FC = () => {
     return result;
   }, [users, search, roleFilter, statusFilter, sortBy]);
 
-  // Pagination Logic
   const totalPages = Math.ceil(filteredUsers.length / rowsPerPage) || 1;
   const paginatedUsers = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;
@@ -445,7 +434,6 @@ export const Users: React.FC = () => {
     );
   };
 
-  // CSV Export Handler (All or Selected)
   const handleExportCSV = (exportSelectedOnly = false) => {
     const listToExport = exportSelectedOnly
       ? filteredUsers.filter(u => selectedUserIds.includes(u.id))
@@ -482,13 +470,34 @@ export const Users: React.FC = () => {
     setSelectedUserIds([]);
   };
 
+  // Label Mappings for Custom Minimalist Select Dropdowns
+  const roleLabels: Record<string, string> = {
+    all: 'All Roles',
+    candidate: 'Candidate',
+    employer: 'Employer',
+    admin: 'Administrator',
+  };
+
+  const statusLabels: Record<string, string> = {
+    all: 'All Statuses',
+    active: 'Active',
+    suspended: 'Suspended',
+  };
+
+  const sortLabels: Record<string, string> = {
+    newest: 'Newest First',
+    oldest: 'Oldest First',
+    'name-asc': 'Name A–Z',
+    'name-desc': 'Name Z–A',
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in-up pb-16 relative">
+    <div className="space-y-6 animate-fade-in-up pb-16 relative scroll-smooth">
       {/* Header Title Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/60 pb-5">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black font-heading text-slate-900 tracking-tight flex items-center gap-3">
-            <div className="p-2.5 bg-emerald-50 rounded-2xl border border-emerald-200/70 text-emerald-600 shadow-2xs">
+            <div className="p-2.5 bg-emerald-50 rounded-2xl border border-emerald-200/50 text-emerald-600 shadow-2xs">
               <UsersIcon className="w-6 h-6" />
             </div>
             User Directory
@@ -502,66 +511,71 @@ export const Users: React.FC = () => {
       {error && <Alert type="error" title="Error">{error}</Alert>}
       {success && <Alert type="success" title="Success">{success}</Alert>}
 
-      {/* 1. EXECUTIVE SUMMARY CARDS */}
+      {/* 1. MINIMALIST EXECUTIVE SUMMARY CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-blue-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
+        {/* Card 1 */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-blue-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
           <div>
-            <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Platform Users</p>
-            <h3 className="text-3xl font-black text-slate-900 font-heading mt-2 min-h-[36px] flex items-center">{stats.total}</h3>
-            <p className="text-xs font-semibold text-slate-500 mt-1">Registered Accounts</p>
+            <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Platform Users</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.total}</h3>
+            <p className="text-xs font-medium text-slate-400 mt-1">Registered Accounts</p>
           </div>
-          <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl border border-blue-100 flex items-center justify-center shrink-0">
-            <UsersIcon className="w-6 h-6" />
+          <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl border border-blue-100 flex items-center justify-center shrink-0">
+            <UsersIcon className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-emerald-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
+        {/* Card 2 */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-emerald-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
           <div>
-            <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Candidates</p>
-            <h3 className="text-3xl font-black text-slate-900 font-heading mt-2 min-h-[36px] flex items-center">{stats.candidates}</h3>
-            <p className="text-xs font-semibold text-slate-500 mt-1">Active Talent</p>
+            <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Candidates</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.candidates}</h3>
+            <p className="text-xs font-medium text-slate-400 mt-1">Active Talent</p>
           </div>
-          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 flex items-center justify-center shrink-0">
-            <UserCheck className="w-6 h-6" />
+          <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 flex items-center justify-center shrink-0">
+            <UserCheck className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-sky-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
+        {/* Card 3 */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-sky-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
           <div>
-            <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Employers</p>
-            <h3 className="text-3xl font-black text-slate-900 font-heading mt-2 min-h-[36px] flex items-center">{stats.employers}</h3>
-            <p className="text-xs font-semibold text-slate-500 mt-1">Verified Companies</p>
+            <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Employers</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.employers}</h3>
+            <p className="text-xs font-medium text-slate-400 mt-1">Verified Companies</p>
           </div>
-          <div className="w-12 h-12 bg-sky-50 text-sky-600 rounded-2xl border border-sky-100 flex items-center justify-center shrink-0">
-            <Briefcase className="w-6 h-6" />
+          <div className="w-10 h-10 bg-sky-50 text-sky-600 rounded-xl border border-sky-100 flex items-center justify-center shrink-0">
+            <Briefcase className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-purple-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
+        {/* Card 4 */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-purple-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
           <div>
-            <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Administrators</p>
-            <h3 className="text-3xl font-black text-slate-900 font-heading mt-2 min-h-[36px] flex items-center">{stats.admins}</h3>
-            <p className="text-xs font-semibold text-slate-500 mt-1">Platform Managers</p>
+            <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Administrators</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.admins}</h3>
+            <p className="text-xs font-medium text-slate-400 mt-1">Platform Managers</p>
           </div>
-          <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl border border-purple-100 flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-6 h-6" />
+          <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl border border-purple-100 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-rose-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
+        {/* Card 5 */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-rose-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
           <div>
-            <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Suspended</p>
-            <h3 className="text-3xl font-black text-slate-900 font-heading mt-2 min-h-[36px] flex items-center">{stats.suspended}</h3>
-            <p className="text-xs font-semibold text-slate-500 mt-1">Inactive Accounts</p>
+            <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Suspended</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.suspended}</h3>
+            <p className="text-xs font-medium text-slate-400 mt-1">Inactive Accounts</p>
           </div>
-          <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl border border-rose-100 flex items-center justify-center shrink-0">
-            <UserX className="w-6 h-6" />
+          <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl border border-rose-100 flex items-center justify-center shrink-0">
+            <UserX className="w-5 h-5" />
           </div>
         </div>
       </div>
 
-      {/* 2. SEARCH & FILTER TOOLBAR */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      {/* 2. MINIMALIST TOOLBAR WITH CUSTOM FLOATING SELECT DROPDOWNS */}
+      <div ref={dropdownRef} className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row items-center gap-3 flex-1 flex-wrap">
           {/* Search Box */}
           <div className="relative w-full md:w-80 lg:w-96">
@@ -571,52 +585,98 @@ export const Users: React.FC = () => {
               placeholder="Search users by name or email..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-11 pr-4 bg-slate-50/90 border border-slate-200/90 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none h-10 transition-all shadow-2xs"
+              className="w-full pl-11 pr-4 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-medium text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 outline-none h-10 transition-all shadow-2xs"
             />
           </div>
 
-          {/* Role Filter */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider hidden lg:inline">Role</span>
-            <select
-              value={roleFilter}
-              onChange={(e) => { setRoleFilter(e.target.value); setCurrentPage(1); }}
-              className="w-full sm:w-auto px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:bg-white focus:border-emerald-500 outline-none h-10 transition-all cursor-pointer shadow-2xs"
+          {/* Custom Minimalist Role Select */}
+          <div className="relative w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setOpenDropdown(openDropdown === 'role' ? null : 'role')}
+              className="w-full sm:w-auto px-4 bg-slate-50 border border-slate-200/80 hover:bg-slate-100/70 rounded-xl text-xs font-bold text-slate-700 h-10 flex items-center justify-between gap-2 transition-all cursor-pointer shadow-2xs"
             >
-              <option value="all">All Roles</option>
-              <option value="candidate">Candidate</option>
-              <option value="employer">Employer</option>
-              <option value="admin">Administrator</option>
-            </select>
+              <span className="text-slate-400 font-semibold uppercase text-[10px] mr-1 hidden lg:inline">Role</span>
+              <span>{roleLabels[roleFilter]}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+
+            {openDropdown === 'role' && (
+              <div className="absolute left-0 top-11 w-48 bg-white rounded-xl shadow-xl border border-slate-100 z-30 py-1 text-xs font-semibold animate-fade-in-up">
+                {Object.entries(roleLabels).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => { setRoleFilter(key); setOpenDropdown(null); setCurrentPage(1); }}
+                    className={`w-full px-4 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                      roleFilter === key ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    {label}
+                    {roleFilter === key && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Status Filter */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider hidden lg:inline">Status</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-              className="w-full sm:w-auto px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:bg-white focus:border-emerald-500 outline-none h-10 transition-all cursor-pointer shadow-2xs"
+          {/* Custom Minimalist Status Select */}
+          <div className="relative w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setOpenDropdown(openDropdown === 'status' ? null : 'status')}
+              className="w-full sm:w-auto px-4 bg-slate-50 border border-slate-200/80 hover:bg-slate-100/70 rounded-xl text-xs font-bold text-slate-700 h-10 flex items-center justify-between gap-2 transition-all cursor-pointer shadow-2xs"
             >
-              <option value="all">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="suspended">Suspended</option>
-            </select>
+              <span className="text-slate-400 font-semibold uppercase text-[10px] mr-1 hidden lg:inline">Status</span>
+              <span>{statusLabels[statusFilter]}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+
+            {openDropdown === 'status' && (
+              <div className="absolute left-0 top-11 w-44 bg-white rounded-xl shadow-xl border border-slate-100 z-30 py-1 text-xs font-semibold animate-fade-in-up">
+                {Object.entries(statusLabels).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => { setStatusFilter(key); setOpenDropdown(null); setCurrentPage(1); }}
+                    className={`w-full px-4 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                      statusFilter === key ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    {label}
+                    {statusFilter === key && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Sort By */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider hidden lg:inline">Sort</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="w-full sm:w-auto px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:bg-white focus:border-emerald-500 outline-none h-10 transition-all cursor-pointer shadow-2xs"
+          {/* Custom Minimalist Sort Select */}
+          <div className="relative w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setOpenDropdown(openDropdown === 'sort' ? null : 'sort')}
+              className="w-full sm:w-auto px-4 bg-slate-50 border border-slate-200/80 hover:bg-slate-100/70 rounded-xl text-xs font-bold text-slate-700 h-10 flex items-center justify-between gap-2 transition-all cursor-pointer shadow-2xs"
             >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="name-asc">Name A–Z</option>
-              <option value="name-desc">Name Z–A</option>
-            </select>
+              <span className="text-slate-400 font-semibold uppercase text-[10px] mr-1 hidden lg:inline">Sort</span>
+              <span>{sortLabels[sortBy]}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+
+            {openDropdown === 'sort' && (
+              <div className="absolute left-0 top-11 w-44 bg-white rounded-xl shadow-xl border border-slate-100 z-30 py-1 text-xs font-semibold animate-fade-in-up">
+                {Object.entries(sortLabels).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => { setSortBy(key); setOpenDropdown(null); }}
+                    className={`w-full px-4 py-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                      sortBy === key ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    {label}
+                    {sortBy === key && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -625,14 +685,14 @@ export const Users: React.FC = () => {
           onClick={() => handleExportCSV(false)}
           variant="outline"
           size="sm"
-          className="bg-white border-slate-300 text-slate-800 hover:bg-slate-50 hover:border-slate-400 font-bold h-10 px-5 rounded-xl flex items-center justify-center gap-2 shrink-0 shadow-2xs text-xs transition-all"
+          className="bg-white border-slate-300 text-slate-800 hover:bg-slate-50 font-bold h-10 px-5 rounded-xl flex items-center justify-center gap-2 shrink-0 shadow-2xs text-xs transition-all"
         >
           <Download className="w-4 h-4 text-slate-500" />
           Export CSV
         </Button>
       </div>
 
-      {/* 3. USER TABLE CONTAINER */}
+      {/* 3. MINIMALIST TABLE CONTAINER */}
       <Card className="rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden bg-white">
         <CardContent className="p-0">
           {loading ? (
@@ -673,8 +733,8 @@ export const Users: React.FC = () => {
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
-                      <th className="py-4 px-5 w-12 text-center">
+                    <tr className="bg-slate-50/70 border-b border-slate-200/80 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      <th className="py-4 px-6 w-12 text-center">
                         <input
                           type="checkbox"
                           checked={selectedUserIds.length === paginatedUsers.length && paginatedUsers.length > 0}
@@ -682,12 +742,12 @@ export const Users: React.FC = () => {
                           className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
                         />
                       </th>
-                      <th className="py-4 px-5">User</th>
-                      <th className="py-4 px-5">Role</th>
-                      <th className="py-4 px-5">Status</th>
-                      <th className="py-4 px-5">Last Login</th>
-                      <th className="py-4 px-5">Joined On</th>
-                      <th className="py-4 px-5 text-right">Actions</th>
+                      <th className="py-4 px-6">User</th>
+                      <th className="py-4 px-6">Role</th>
+                      <th className="py-4 px-6">Status</th>
+                      <th className="py-4 px-6">Last Login</th>
+                      <th className="py-4 px-6">Joined On</th>
+                      <th className="py-4 px-6 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs">
@@ -700,9 +760,9 @@ export const Users: React.FC = () => {
                       return (
                         <tr
                           key={u.id}
-                          className={`hover:bg-slate-50/90 transition-colors duration-150 cursor-pointer ${isSelected ? 'bg-emerald-50/40' : ''}`}
+                          className={`hover:bg-slate-50/80 transition-colors duration-150 cursor-pointer ${isSelected ? 'bg-emerald-50/40' : ''}`}
                         >
-                          <td className="py-4 px-5 text-center" onClick={(e) => e.stopPropagation()}>
+                          <td className="py-4 px-6 text-center" onClick={(e) => e.stopPropagation()}>
                             <input
                               type="checkbox"
                               checked={isSelected}
@@ -711,9 +771,9 @@ export const Users: React.FC = () => {
                             />
                           </td>
 
-                          <td className="py-4 px-5" onClick={() => handleViewProfile(u)}>
+                          <td className="py-4 px-6" onClick={() => handleViewProfile(u)}>
                             <div className="flex items-center gap-3.5">
-                              <div className={`w-10 h-10 rounded-full border-2 border-white shadow-2xs flex items-center justify-center font-black text-xs shrink-0 ${getAvatarBg(u.role)}`}>
+                              <div className={`w-10 h-10 rounded-full border border-white flex items-center justify-center font-black text-xs shrink-0 ${getAvatarBg(u.role)}`}>
                                 {initials}
                               </div>
                               <div className="min-w-0">
@@ -723,26 +783,26 @@ export const Users: React.FC = () => {
                             </div>
                           </td>
 
-                          <td className="py-4 px-5">
+                          <td className="py-4 px-6">
                             {renderRoleBadge(u.role)}
                           </td>
 
-                          <td className="py-4 px-5">
+                          <td className="py-4 px-6">
                             {renderStatusBadge(isActive)}
                           </td>
 
-                          <td className="py-4 px-5">
+                          <td className="py-4 px-6">
                             {renderLastLogin(u.last_login)}
                           </td>
 
-                          <td className="py-4 px-5 text-xs text-slate-500 font-medium">
+                          <td className="py-4 px-6 text-xs text-slate-500 font-medium">
                             {formatDate(u.created_at)}
                           </td>
 
-                          <td className="py-4 px-5 text-right relative" onClick={(e) => e.stopPropagation()}>
+                          <td className="py-4 px-6 text-right relative" onClick={(e) => e.stopPropagation()}>
                             <button
                               onClick={() => setActiveMenuId(activeMenuId === u.id ? null : u.id)}
-                              className="w-9 h-9 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 border border-transparent hover:border-slate-200/80 transition-all cursor-pointer inline-flex items-center justify-center"
+                              className="w-9 h-9 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-all cursor-pointer inline-flex items-center justify-center"
                               aria-label="Actions menu"
                             >
                               <MoreVertical className="w-4 h-4" />
@@ -752,7 +812,7 @@ export const Users: React.FC = () => {
                             {activeMenuId === u.id && (
                               <div
                                 ref={menuRef}
-                                className="absolute right-5 top-14 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 z-30 py-2 text-left text-xs font-semibold animate-fade-in-up"
+                                className="absolute right-6 top-14 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 z-30 py-1.5 text-left text-xs font-semibold animate-fade-in-up"
                               >
                                 <button
                                   onClick={() => handleViewProfile(u)}
@@ -782,7 +842,7 @@ export const Users: React.FC = () => {
                                     setSuspendingUser({ user: u, targetActive: !isActive });
                                   }}
                                   className={`w-full px-4 py-2.5 flex items-center gap-2.5 transition-colors cursor-pointer ${
-                                    isActive ? 'text-red-600 hover:bg-red-50' : 'text-emerald-600 hover:bg-emerald-50'
+                                    isActive ? 'text-rose-600 hover:bg-rose-50' : 'text-emerald-600 hover:bg-emerald-50'
                                   }`}
                                 >
                                   <ShieldAlert className="w-4 h-4" />
@@ -841,7 +901,7 @@ export const Users: React.FC = () => {
             </>
           )}
 
-          {/* 4. PAGINATION FOOTER */}
+          {/* PAGINATION FOOTER */}
           {!loading && filteredUsers.length > 0 && (
             <div className="px-6 py-4 border-t border-slate-200/80 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-600">
               <div>
@@ -901,7 +961,7 @@ export const Users: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 5. FLOATING BULK ACTION BAR */}
+      {/* FLOATING BULK ACTION BAR */}
       {selectedUserIds.length > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl z-40 flex items-center gap-4 animate-fade-in-up border border-slate-800">
           <span className="text-xs font-bold text-slate-300">
@@ -913,21 +973,21 @@ export const Users: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleBulkToggleActive(true)}
-              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               Activate
             </button>
             <button
               onClick={() => handleBulkToggleActive(false)}
-              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
             >
               <XCircle className="w-3.5 h-3.5" />
               Suspend
             </button>
             <button
               onClick={() => handleExportCSV(true)}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
             >
               <Download className="w-3.5 h-3.5" />
               Export
@@ -1043,7 +1103,7 @@ export const Users: React.FC = () => {
           size="sm"
         >
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl border border-amber-200/80 text-amber-900">
+            <div className="flex items-center gap-3 p-3.5 bg-amber-50 rounded-xl border border-amber-200/80 text-amber-900">
               <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0" />
               <p className="text-xs font-semibold leading-relaxed">
                 Are you sure you want to {suspendingUser.targetActive ? 'reactivate' : 'suspend'}{' '}
