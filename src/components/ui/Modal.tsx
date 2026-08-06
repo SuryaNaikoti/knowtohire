@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from './Button';
 
 export interface ModalProps {
@@ -43,23 +44,23 @@ export const Modal: React.FC<ModalProps> = ({
     xl: 'max-w-4xl',
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto" role="dialog" aria-modal="true">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
+        className="fixed inset-0 bg-slate-900/65 backdrop-blur-md transition-opacity duration-300"
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Modal Container */}
       <div
-        className={`w-full ${sizeClasses[size]} bg-white rounded-2xl shadow-xl border border-gray-100 border-solid transform transition-all duration-300 relative z-10 animate-fade-in-up flex flex-col max-h-[90vh]`}
+        className={`w-full ${sizeClasses[size]} bg-white rounded-2xl shadow-2xl border border-slate-100 transform transition-all duration-300 relative z-10 animate-fade-in-up flex flex-col max-h-[90vh] my-auto`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-100 border-solid">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl shrink-0">
           {title ? (
-            <h3 className="text-lg font-bold font-heading text-gray-900 tracking-tight">{title}</h3>
+            <h3 className="text-base sm:text-lg font-bold font-heading text-slate-900 tracking-tight">{title}</h3>
           ) : (
             <div />
           )}
@@ -67,7 +68,7 @@ export const Modal: React.FC<ModalProps> = ({
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 w-8 h-8 flex items-center justify-center min-w-0"
+            className="p-1 rounded-full text-slate-400 hover:bg-slate-200/60 hover:text-slate-700 w-8 h-8 flex items-center justify-center min-w-0"
             aria-label="Close modal"
           >
             <svg
@@ -83,10 +84,12 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {/* Scrollable Content */}
-        <div className="p-6 overflow-y-auto flex-1 text-sm text-gray-600 leading-relaxed">
+        <div className="p-6 overflow-y-auto flex-1 text-sm text-slate-600 leading-relaxed">
           {children}
         </div>
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
