@@ -183,10 +183,10 @@ export const Header: React.FC = () => {
             ) : (
               <div className="hidden sm:flex items-center gap-3">
                 <Link to="/login">
-                  <Button variant="ghost" size="sm" className="flex items-center justify-center gap-2 text-white hover:text-emerald-500 hover:bg-slate-800 h-10 px-5 rounded-xl font-bold text-sm bg-transparent">
+                  <button className="flex items-center justify-center gap-2 text-slate-100 hover:text-emerald-400 hover:bg-slate-800/80 h-10 px-5 rounded-xl font-bold text-sm transition-all duration-200 cursor-pointer">
                     <User className="w-4 h-4 shrink-0" />
                     <span>Login</span>
-                  </Button>
+                  </button>
                 </Link>
                 <Link to="/register">
                   <Button variant="primary" size="sm" className="flex items-center justify-center gap-2 bg-emerald-650 hover:bg-emerald-700 text-white shadow-md h-10 px-5 rounded-xl font-bold text-sm">
