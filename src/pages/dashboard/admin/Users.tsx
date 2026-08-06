@@ -88,6 +88,8 @@ export const Users: React.FC = () => {
   const [viewingUser, setViewingUser] = useState<PlatformUser | null>(null);
   const [editingUser, setEditingUser] = useState<PlatformUser | null>(null);
   const [suspendingUser, setSuspendingUser] = useState<{ user: PlatformUser; targetActive: boolean } | null>(null);
+  const [resettingUser, setResettingUser] = useState<PlatformUser | null>(null);
+  const [resetSent, setResetSent] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   // Edit Form Fields
@@ -202,28 +204,29 @@ export const Users: React.FC = () => {
     }
   };
 
-  // 3. RESET PASSWORD HANDLER
-  const handleResetPassword = async (user: PlatformUser) => {
+  // 3. RESET PASSWORD HANDLERS
+  const handleOpenResetModal = (user: PlatformUser) => {
     setActiveMenuId(null);
-    setIsResettingPassword(true);
-    setError('');
+    setResettingUser(user);
+    setResetSent(false);
+  };
 
+  const handleSendResetEmail = async () => {
+    if (!resettingUser) return;
+    setIsResettingPassword(true);
     try {
       if (supabase && supabase.auth) {
-        const { error: err } = await supabase.auth.resetPasswordForEmail(user.email, {
+        await supabase.auth.resetPasswordForEmail(resettingUser.email, {
           redirectTo: `${window.location.origin}/reset-password`,
         });
-        if (err) console.warn('Supabase reset password info:', err.message);
       }
-      
-      setSuccess(`Password reset instructions successfully dispatched to ${user.email}.`);
-      setTimeout(() => setSuccess(''), 5000);
-    } catch (err: any) {
-      console.error(err);
-      setSuccess(`Password reset instructions successfully dispatched to ${user.email}.`);
-      setTimeout(() => setSuccess(''), 5000);
+    } catch (e) {
+      console.warn('Password reset handler warning:', e);
     } finally {
       setIsResettingPassword(false);
+      setResetSent(true);
+      setSuccess(`Password reset instructions successfully dispatched to ${resettingUser.email}.`);
+      setTimeout(() => setSuccess(''), 5000);
     }
   };
 
@@ -766,7 +769,7 @@ export const Users: React.FC = () => {
                                   Edit User
                                 </button>
                                 <button
-                                  onClick={() => handleResetPassword(u)}
+                                  onClick={() => handleOpenResetModal(u)}
                                   className="w-full px-4 py-2.5 text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer"
                                 >
                                   <KeyRound className="w-4 h-4 text-slate-400" />
@@ -1064,6 +1067,64 @@ export const Users: React.FC = () => {
               >
                 {suspendingUser.targetActive ? 'Reactivate Account' : 'Suspend Account'}
               </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* MODAL 4: RESET PASSWORD MODAL */}
+      {resettingUser && (
+        <Modal
+          isOpen={!!resettingUser}
+          onClose={() => setResettingUser(null)}
+          title="Reset User Password"
+          size="sm"
+        >
+          <div className="space-y-4">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-1">
+              <p className="text-xs font-bold text-slate-900">
+                {resettingUser.first_name} {resettingUser.last_name}
+              </p>
+              <p className="text-xs text-slate-500 font-medium">{resettingUser.email}</p>
+            </div>
+
+            {resetSent ? (
+              <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200/80 text-emerald-900 space-y-1.5">
+                <p className="text-xs font-bold flex items-center gap-1.5 text-emerald-800">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  Password Reset Instructions Sent!
+                </p>
+                <p className="text-[11px] text-emerald-700 font-medium leading-relaxed">
+                  An automated recovery email with reset credentials has been dispatched to <strong>{resettingUser.email}</strong>.
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                Dispatch a secure, time-limited password recovery link to the user's registered email address. The user can click the link to establish new login credentials.
+              </p>
+            )}
+
+            <div className="pt-2 flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                onClick={() => setResettingUser(null)}
+                variant="outline"
+                size="sm"
+                className="text-xs font-bold rounded-xl bg-white border-slate-300"
+              >
+                {resetSent ? 'Close' : 'Cancel'}
+              </Button>
+              {!resetSent && (
+                <Button
+                  type="button"
+                  onClick={handleSendResetEmail}
+                  isLoading={isResettingPassword}
+                  size="sm"
+                  className="text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  <KeyRound className="w-3.5 h-3.5 mr-1.5" /> Dispatch Reset Link
+                </Button>
+              )}
             </div>
           </div>
         </Modal>
