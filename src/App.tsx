@@ -96,6 +96,7 @@ const Roles = React.lazy(() => import('./pages/dashboard/admin/Roles').then((m) 
 const AuditLogs = React.lazy(() => import('./pages/dashboard/admin/AuditLogs').then((m) => ({ default: m.AuditLogs })));
 const PlatformSettings = React.lazy(() => import('./pages/dashboard/admin/PlatformSettings').then((m) => ({ default: m.PlatformSettings })));
 const Candidates = React.lazy(() => import('./pages/dashboard/admin/Candidates').then((m) => ({ default: m.Candidates })));
+const CandidateDetail = React.lazy(() => import('./pages/dashboard/admin/CandidateDetail').then((m) => ({ default: m.CandidateDetail })));
 const Employers = React.lazy(() => import('./pages/dashboard/admin/Employers').then((m) => ({ default: m.Employers })));
 const Applications = React.lazy(() => import('./pages/dashboard/admin/Applications').then((m) => ({ default: m.Applications })));
 const Resources = React.lazy(() => import('./pages/dashboard/admin/Resources').then((m) => ({ default: m.Resources })));
@@ -482,6 +483,14 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
                     <Candidates />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="candidates/:id"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <CandidateDetail />
                   </ProtectedRoute>
                 }
               />
