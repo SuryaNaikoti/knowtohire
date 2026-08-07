@@ -342,8 +342,8 @@ export const DashboardLayout: React.FC = () => {
 
       {/* Main Container */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header */}
-        <header className="bg-white border-b border-gray-200 border-solid h-16 flex items-center justify-between px-6 sticky top-0 z-20 shrink-0">
+        {/* Top Header (Hidden on Mobile hidden md:flex) */}
+        <header className="hidden md:flex bg-white border-b border-gray-200 border-solid h-16 items-center justify-between px-6 sticky top-0 z-20 shrink-0">
           {/* Breadcrumb Area (Hidden on Mobile & Tablet, Visible on Desktop lg: flex) */}
           <nav className="hidden lg:flex items-center text-xs font-semibold text-gray-500 overflow-x-auto" aria-label="Breadcrumb">
             <ol className="flex items-center space-x-1 sm:space-x-2 whitespace-nowrap">
