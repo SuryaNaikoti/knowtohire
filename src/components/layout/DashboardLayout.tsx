@@ -7,7 +7,7 @@ import { notificationService } from '../../lib/services/notificationService';
 import { useNotifications } from '../../lib/services/notifications';
 import { ToastContainer } from '../common/ToastContainer';
 import { GlobalCommandSearch } from '../ui/GlobalCommandSearch';
-import { Search, Sun, Moon } from 'lucide-react';
+import { Search, Sun, Moon, LayoutDashboard } from 'lucide-react';
 
 export const DashboardLayout: React.FC = () => {
   const { profile, setRole, logout } = useAuth();
@@ -451,32 +451,32 @@ export const DashboardLayout: React.FC = () => {
         </main>
       </div>
       
-      {/* Mobile Bottom Fixed Quick Actions Bar (Hidden on Desktop md:hidden) */}
+      {/* Mobile Bottom Fixed Essential Navigation Bar (Hidden on Desktop md:hidden) */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 py-2 px-6 flex items-center justify-around shadow-lg md:hidden">
-        {/* Search */}
+        {/* Essential 1: Dashboard Overview */}
+        <Link
+          to={getDashboardPath(userRole)}
+          className="p-1.5 rounded-xl text-slate-500 hover:text-emerald-600 hover:bg-slate-100 cursor-pointer flex flex-col items-center gap-0.5"
+          aria-label="Dashboard"
+        >
+          <LayoutDashboard className="w-5 h-5 text-slate-600" />
+          <span className="text-[9px] font-bold text-slate-500">Overview</span>
+        </Link>
+
+        {/* Essential 2: Global Search */}
         <button
           onClick={() => setSearchOpen(true)}
-          className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer flex flex-col items-center gap-0.5"
+          className="p-1.5 rounded-xl text-slate-500 hover:text-emerald-600 hover:bg-slate-100 cursor-pointer flex flex-col items-center gap-0.5"
           aria-label="Search"
         >
           <Search className="w-5 h-5 text-slate-600" />
           <span className="text-[9px] font-bold text-slate-500">Search</span>
         </button>
 
-        {/* Theme Toggle */}
-        <button
-          onClick={toggleTheme}
-          className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer flex flex-col items-center gap-0.5"
-          aria-label="Toggle Theme"
-        >
-          {isDark ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-slate-600" />}
-          <span className="text-[9px] font-bold text-slate-500">Theme</span>
-        </button>
-
-        {/* Notifications */}
+        {/* Essential 3: Alerts / Notifications */}
         <Link
-          to={ROUTES.DASHBOARD.CANDIDATE.NOTIFICATIONS}
-          className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer relative flex flex-col items-center gap-0.5"
+          to={userRole === 'admin' ? ROUTES.DASHBOARD.ADMIN.NOTIFICATIONS : ROUTES.DASHBOARD.CANDIDATE.NOTIFICATIONS}
+          className="p-1.5 rounded-xl text-slate-500 hover:text-emerald-600 hover:bg-slate-100 cursor-pointer relative flex flex-col items-center gap-0.5"
           aria-label="Notifications"
         >
           {unreadCount > 0 && (
@@ -490,11 +490,11 @@ export const DashboardLayout: React.FC = () => {
           <span className="text-[9px] font-bold text-slate-500">Alerts</span>
         </Link>
 
-        {/* Profile Avatar */}
+        {/* Essential 4: User Profile Menu */}
         {profile && (
           <button
             onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-            className="p-1 rounded-full border border-slate-200 cursor-pointer flex flex-col items-center"
+            className="p-1 rounded-full border border-slate-200 cursor-pointer flex flex-col items-center hover:border-emerald-500 transition-colors"
             aria-label="Profile Menu"
           >
             <img
