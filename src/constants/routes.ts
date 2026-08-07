@@ -68,6 +68,7 @@ export const ROUTES = {
       ROLES: '/dashboard/admin/roles',
       SETTINGS: '/dashboard/admin/settings',
       NOTIFICATIONS: '/dashboard/notifications',
+      BROADCASTS: '/dashboard/admin/broadcasts',
     }
   }
 } as const;

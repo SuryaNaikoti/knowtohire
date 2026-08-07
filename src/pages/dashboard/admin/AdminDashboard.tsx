@@ -579,7 +579,9 @@ export const AdminDashboard: React.FC = () => {
               <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                 <Radio className="w-3.5 h-3.5 text-purple-600" /> Recent Broadcasts
               </h3>
-              <span className="text-[11px] font-bold text-purple-600 hover:underline cursor-pointer">View All</span>
+              <Link to="/dashboard/admin/broadcasts" className="text-[11px] font-bold text-purple-600 hover:underline cursor-pointer">
+                View All →
+              </Link>
             </div>
 
             <div className="space-y-2.5 text-xs">

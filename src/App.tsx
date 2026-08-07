@@ -104,6 +104,7 @@ const Templates = React.lazy(() => import('./pages/dashboard/admin/Templates').t
 const AdminBlog = React.lazy(() => import('./pages/dashboard/admin/Blog').then((m) => ({ default: m.Blog })));
 const Orders = React.lazy(() => import('./pages/dashboard/admin/Orders').then((m) => ({ default: m.Orders })));
 const AdminSubscriptions = React.lazy(() => import('./pages/dashboard/admin/Subscriptions').then((m) => ({ default: m.Subscriptions })));
+const AdminBroadcast = React.lazy(() => import('./pages/dashboard/admin/AdminBroadcast').then((m) => ({ default: m.AdminBroadcast })));
 const AIControl = React.lazy(() => import('./pages/dashboard/admin/AIControl').then((m) => ({ default: m.AIControl })));
 const Analytics = React.lazy(() => import('./pages/dashboard/admin/Analytics').then((m) => ({ default: m.Analytics })));
 
@@ -547,6 +548,14 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
                     <AdminSubscriptions />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="broadcasts"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <AdminBroadcast />
                   </ProtectedRoute>
                 }
               />
