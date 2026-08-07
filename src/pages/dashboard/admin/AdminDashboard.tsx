@@ -38,6 +38,8 @@ import {
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Select } from '../../../components/ui/Select';
+import { motion } from 'framer-motion';
+import { StaggerGrid, StaggerItem, MotionCard } from '../../../components/ui/Motion';
 
 export const AdminDashboard: React.FC = () => {
   const { profile } = useAuth();
@@ -163,98 +165,108 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. EXECUTIVE KPI CARDS (5 CARDS IN 1 ROW) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Card 1: Total Users */}
-        <Link to="/dashboard/admin/users" className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-emerald-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 block">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Total Users</p>
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{kpis.totalUsersCount || 17}</h3>
-              <p className="text-xs font-medium text-slate-400 mt-1">Registered Accounts</p>
+      {/* 2. EXECUTIVE OVERVIEW METRICS GRID (Staggered Entrance Animation) */}
+      <StaggerGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* Card 1: Total Candidates */}
+        <StaggerItem>
+          <Link to="/dashboard/admin/candidates" className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-emerald-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 block h-full">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Total Candidates</p>
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{kpis.totalCandidatesCount || 11}</h3>
+                <p className="text-xs font-medium text-slate-400 mt-1">Verified Talent Profiles</p>
+              </div>
+              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5" />
+              </div>
             </div>
-            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 flex items-center justify-center shrink-0">
-              <Users className="w-5 h-5" />
+            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>↑ 3 this week</span>
             </div>
-          </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1 text-[11px] font-bold text-emerald-600">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>↑ 3 this week</span>
-          </div>
-        </Link>
+          </Link>
+        </StaggerItem>
 
         {/* Card 2: Active Jobs */}
-        <Link to="/dashboard/admin/moderation" className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-blue-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 block">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Active Jobs</p>
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{kpis.totalJobsCount || 6}</h3>
-              <p className="text-xs font-medium text-slate-400 mt-1">Live Job Listings</p>
+        <StaggerItem>
+          <Link to="/dashboard/admin/moderation" className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-blue-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 block h-full">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Active Jobs</p>
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{kpis.totalJobsCount || 6}</h3>
+                <p className="text-xs font-medium text-slate-400 mt-1">Live Job Listings</p>
+              </div>
+              <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl border border-blue-100 flex items-center justify-center shrink-0">
+                <Briefcase className="w-5 h-5" />
+              </div>
             </div>
-            <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl border border-blue-100 flex items-center justify-center shrink-0">
-              <Briefcase className="w-5 h-5" />
+            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>↑ 1 this week</span>
             </div>
-          </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1 text-[11px] font-bold text-emerald-600">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>↑ 1 this week</span>
-          </div>
-        </Link>
+          </Link>
+        </StaggerItem>
 
         {/* Card 3: Verified Employers */}
-        <Link to="/dashboard/admin/employers" className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-purple-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 block">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Verified Employers</p>
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{kpis.totalCompaniesCount || 3}</h3>
-              <p className="text-xs font-medium text-slate-400 mt-1">Active Companies</p>
+        <StaggerItem>
+          <Link to="/dashboard/admin/employers" className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-purple-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 block h-full">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Verified Employers</p>
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{kpis.totalCompaniesCount || 3}</h3>
+                <p className="text-xs font-medium text-slate-400 mt-1">Active Companies</p>
+              </div>
+              <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl border border-purple-100 flex items-center justify-center shrink-0">
+                <Building className="w-5 h-5" />
+              </div>
             </div>
-            <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl border border-purple-100 flex items-center justify-center shrink-0">
-              <Building className="w-5 h-5" />
+            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>↑ 1 this week</span>
             </div>
-          </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1 text-[11px] font-bold text-emerald-600">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>↑ 1 this week</span>
-          </div>
-        </Link>
+          </Link>
+        </StaggerItem>
 
         {/* Card 4: Pending Moderation */}
-        <Link to="/dashboard/admin/moderation" className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-amber-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 block">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Pending Moderation</p>
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{kpis.pendingModerationCount || 1}</h3>
-              <p className="text-xs font-medium text-slate-400 mt-1">Items Awaiting Review</p>
+        <StaggerItem>
+          <Link to="/dashboard/admin/moderation" className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-amber-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 block h-full">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Pending Moderation</p>
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{kpis.pendingModerationCount || 1}</h3>
+                <p className="text-xs font-medium text-slate-400 mt-1">Items Awaiting Review</p>
+              </div>
+              <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl border border-amber-100 flex items-center justify-center shrink-0">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
             </div>
-            <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl border border-amber-100 flex items-center justify-center shrink-0">
-              <ShieldAlert className="w-5 h-5" />
+            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1 text-[11px] font-bold text-amber-600">
+              <TrendingDown className="w-3.5 h-3.5" />
+              <span>↓ 0 this week</span>
             </div>
-          </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1 text-[11px] font-bold text-amber-600">
-            <TrendingDown className="w-3.5 h-3.5" />
-            <span>↓ 0 this week</span>
-          </div>
-        </Link>
+          </Link>
+        </StaggerItem>
 
         {/* Card 5: Broadcasts Today */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-rose-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Broadcasts Today</p>
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">2</h3>
-              <p className="text-xs font-medium text-slate-400 mt-1">Messages Sent</p>
+        <StaggerItem>
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-rose-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 h-full">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Broadcasts Today</p>
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">2</h3>
+                <p className="text-xs font-medium text-slate-400 mt-1">Messages Sent</p>
+              </div>
+              <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl border border-rose-100 flex items-center justify-center shrink-0">
+                <Radio className="w-5 h-5" />
+              </div>
             </div>
-            <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl border border-rose-100 flex items-center justify-center shrink-0">
-              <Radio className="w-5 h-5" />
+            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>↑ 2 today</span>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1 text-[11px] font-bold text-emerald-600">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>↑ 2 today</span>
-          </div>
-        </div>
-      </div>
+        </StaggerItem>
+      </StaggerGrid>
 
       {/* 3. NEEDS ATTENTION + PLATFORM ACTIVITY (TODAY) GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -5,6 +5,7 @@ import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
 import { Alert } from '../../../components/ui/Alert';
 import { Select } from '../../../components/ui/Select';
+import { StaggerGrid, StaggerItem, MotionCard } from '../../../components/ui/Motion';
 import { supabase } from '../../../lib/supabase';
 import {
   UserCheck,
@@ -277,43 +278,53 @@ export const Candidates: React.FC = () => {
       {success && <Alert type="success" title="Success">{success}</Alert>}
       {error && <Alert type="error" title="Error">{error}</Alert>}
 
-      {/* Executive Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+      {/* Executive Summary Cards (Staggered Motion Entrance) */}
+      <StaggerGrid className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* Card 1: Total Candidates */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-emerald-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-          <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Total Candidates</p>
-          <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.total}</h3>
-          <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5">Registered Profiles</p>
-        </div>
+        <StaggerItem>
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-emerald-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 h-full">
+            <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Total Candidates</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.total}</h3>
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5">Registered Profiles</p>
+          </div>
+        </StaggerItem>
 
         {/* Card 2: Verified Candidates */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-teal-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-          <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Verified Profiles</p>
-          <h3 className="text-2xl sm:text-3xl font-black text-emerald-600 font-heading mt-1.5">{stats.verified}</h3>
-          <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5">Approved Talent</p>
-        </div>
+        <StaggerItem>
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-teal-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 h-full">
+            <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Verified Profiles</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-emerald-600 font-heading mt-1.5">{stats.verified}</h3>
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5">Approved Talent</p>
+          </div>
+        </StaggerItem>
 
         {/* Card 3: Pending Verification */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-amber-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-          <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Pending Verification</p>
-          <h3 className="text-2xl sm:text-3xl font-black text-amber-600 font-heading mt-1.5">{stats.pending}</h3>
-          <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5">In Governance Review</p>
-        </div>
+        <StaggerItem>
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-amber-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 h-full">
+            <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Pending Verification</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-amber-600 font-heading mt-1.5">{stats.pending}</h3>
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5">In Governance Review</p>
+          </div>
+        </StaggerItem>
 
         {/* Card 4: Featured Talent */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-indigo-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-          <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Featured Spotlights</p>
-          <h3 className="text-2xl sm:text-3xl font-black text-indigo-600 font-heading mt-1.5">{stats.featured}</h3>
-          <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5">Promoted Profiles</p>
-        </div>
+        <StaggerItem>
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-indigo-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 h-full">
+            <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Featured Spotlights</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-indigo-600 font-heading mt-1.5">{stats.featured}</h3>
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5">Promoted Profiles</p>
+          </div>
+        </StaggerItem>
 
         {/* Card 5: Open to Work */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-blue-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 col-span-2 sm:col-span-1">
-          <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Open to Work</p>
-          <h3 className="text-2xl sm:text-3xl font-black text-blue-600 font-heading mt-1.5">{stats.openToWork}</h3>
-          <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5">Active Jobseekers</p>
-        </div>
-      </div>
+        <StaggerItem className="col-span-2 sm:col-span-1">
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-blue-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 h-full">
+            <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Open to Work</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-blue-600 font-heading mt-1.5">{stats.openToWork}</h3>
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5">Active Jobseekers</p>
+          </div>
+        </StaggerItem>
+      </StaggerGrid>
 
       {/* Floating Filter & Search Toolbar */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">

@@ -5,6 +5,7 @@ import { Button } from '../../../components/ui/Button';
 import { Alert } from '../../../components/ui/Alert';
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
+import { StaggerGrid, StaggerItem, MotionCard } from '../../../components/ui/Motion';
 import { supabase } from '../../../lib/supabase';
 import {
   Users as UsersIcon,
@@ -511,68 +512,78 @@ export const Users: React.FC = () => {
       {error && <Alert type="error" title="Error">{error}</Alert>}
       {success && <Alert type="success" title="Success">{success}</Alert>}
 
-      {/* 1. MINIMALIST EXECUTIVE SUMMARY CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* 1. MINIMALIST EXECUTIVE SUMMARY CARDS (Staggered Entrance Animation) */}
+      <StaggerGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Card 1 */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-blue-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Platform Users</p>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.total}</h3>
-            <p className="text-xs font-medium text-slate-400 mt-1">Registered Accounts</p>
+        <StaggerItem>
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-blue-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between h-full">
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Platform Users</p>
+              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.total}</h3>
+              <p className="text-xs font-medium text-slate-400 mt-1">Registered Accounts</p>
+            </div>
+            <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl border border-blue-100 flex items-center justify-center shrink-0">
+              <UsersIcon className="w-5 h-5" />
+            </div>
           </div>
-          <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl border border-blue-100 flex items-center justify-center shrink-0">
-            <UsersIcon className="w-5 h-5" />
-          </div>
-        </div>
+        </StaggerItem>
 
         {/* Card 2 */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-emerald-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Candidates</p>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.candidates}</h3>
-            <p className="text-xs font-medium text-slate-400 mt-1">Active Talent</p>
+        <StaggerItem>
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-emerald-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between h-full">
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Candidates</p>
+              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.candidates}</h3>
+              <p className="text-xs font-medium text-slate-400 mt-1">Active Talent</p>
+            </div>
+            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 flex items-center justify-center shrink-0">
+              <UserCheck className="w-5 h-5" />
+            </div>
           </div>
-          <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 flex items-center justify-center shrink-0">
-            <UserCheck className="w-5 h-5" />
-          </div>
-        </div>
+        </StaggerItem>
 
         {/* Card 3 */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-sky-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Employers</p>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.employers}</h3>
-            <p className="text-xs font-medium text-slate-400 mt-1">Verified Companies</p>
+        <StaggerItem>
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-sky-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between h-full">
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Employers</p>
+              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.employers}</h3>
+              <p className="text-xs font-medium text-slate-400 mt-1">Verified Companies</p>
+            </div>
+            <div className="w-10 h-10 bg-sky-50 text-sky-600 rounded-xl border border-sky-100 flex items-center justify-center shrink-0">
+              <Briefcase className="w-5 h-5" />
+            </div>
           </div>
-          <div className="w-10 h-10 bg-sky-50 text-sky-600 rounded-xl border border-sky-100 flex items-center justify-center shrink-0">
-            <Briefcase className="w-5 h-5" />
-          </div>
-        </div>
+        </StaggerItem>
 
         {/* Card 4 */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-purple-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Administrators</p>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.admins}</h3>
-            <p className="text-xs font-medium text-slate-400 mt-1">Platform Managers</p>
+        <StaggerItem>
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-purple-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between h-full">
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Administrators</p>
+              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.admins}</h3>
+              <p className="text-xs font-medium text-slate-400 mt-1">Platform Managers</p>
+            </div>
+            <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl border border-purple-100 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
           </div>
-          <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl border border-purple-100 flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-        </div>
+        </StaggerItem>
 
         {/* Card 5 */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-rose-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Suspended</p>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.suspended}</h3>
-            <p className="text-xs font-medium text-slate-400 mt-1">Inactive Accounts</p>
+        <StaggerItem>
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-2 border-t-rose-500 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between h-full">
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Suspended</p>
+              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.suspended}</h3>
+              <p className="text-xs font-medium text-slate-400 mt-1">Inactive Accounts</p>
+            </div>
+            <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl border border-rose-100 flex items-center justify-center shrink-0">
+              <UserX className="w-5 h-5" />
+            </div>
           </div>
-          <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl border border-rose-100 flex items-center justify-center shrink-0">
-            <UserX className="w-5 h-5" />
-          </div>
-        </div>
-      </div>
+        </StaggerItem>
+      </StaggerGrid>
 
       {/* 2. MINIMALIST TOOLBAR WITH CUSTOM FLOATING SELECT DROPDOWNS */}
       <div ref={dropdownRef} className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
