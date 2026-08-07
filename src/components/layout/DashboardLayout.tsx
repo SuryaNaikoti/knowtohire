@@ -195,7 +195,7 @@ export const DashboardLayout: React.FC = () => {
       {/* Sidebar Panel */}
       <aside
         className={`fixed inset-y-0 left-0 bg-gray-900 text-gray-300 w-64 transform ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-0 md:translate-x-0'
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } transition-transform duration-200 ease-in-out z-50 md:sticky md:top-0 md:h-screen shrink-0 flex flex-col border-r border-gray-800 border-solid`}
       >
         {/* Sidebar Header */}
