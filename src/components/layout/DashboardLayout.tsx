@@ -363,8 +363,8 @@ export const DashboardLayout: React.FC = () => {
             </ol>
           </nav>
 
-          {/* Right Header Actions */}
-          <div className="flex items-center space-x-3">
+          {/* Right Header Actions (Hidden on Mobile md:flex, rendered in Mobile Bottom Bar on mobile) */}
+          <div className="hidden md:flex items-center space-x-3">
             {/* Global Search Button */}
             <button
               onClick={() => setSearchOpen(true)}
@@ -444,13 +444,68 @@ export const DashboardLayout: React.FC = () => {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 p-6 md:p-8 overflow-y-auto max-w-7xl w-full mx-auto relative">
+        <main className="flex-1 p-4 md:p-8 pb-20 md:pb-8 overflow-y-auto max-w-7xl w-full mx-auto relative">
           <Suspense fallback={<LoadingOverlay />}>
             <Outlet />
           </Suspense>
         </main>
       </div>
       
+      {/* Mobile Bottom Fixed Quick Actions Bar (Hidden on Desktop md:hidden) */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 py-2 px-6 flex items-center justify-around shadow-lg md:hidden">
+        {/* Search */}
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer flex flex-col items-center gap-0.5"
+          aria-label="Search"
+        >
+          <Search className="w-5 h-5 text-slate-600" />
+          <span className="text-[9px] font-bold text-slate-500">Search</span>
+        </button>
+
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer flex flex-col items-center gap-0.5"
+          aria-label="Toggle Theme"
+        >
+          {isDark ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-slate-600" />}
+          <span className="text-[9px] font-bold text-slate-500">Theme</span>
+        </button>
+
+        {/* Notifications */}
+        <Link
+          to={ROUTES.DASHBOARD.CANDIDATE.NOTIFICATIONS}
+          className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer relative flex flex-col items-center gap-0.5"
+          aria-label="Notifications"
+        >
+          {unreadCount > 0 && (
+            <span className="absolute top-0.5 right-2 bg-rose-500 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white">
+              {unreadCount}
+            </span>
+          )}
+          <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          <span className="text-[9px] font-bold text-slate-500">Alerts</span>
+        </Link>
+
+        {/* Profile Avatar */}
+        {profile && (
+          <button
+            onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+            className="p-1 rounded-full border border-slate-200 cursor-pointer flex flex-col items-center"
+            aria-label="Profile Menu"
+          >
+            <img
+              className="h-6 w-6 rounded-full"
+              src={profile.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${profile.first_name || 'User'}`}
+              alt={profile.first_name || 'User'}
+            />
+          </button>
+        )}
+      </div>
+
       {/* Global Command Search Modal */}
       <GlobalCommandSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
