@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Alert } from '../../../components/ui/Alert';
+import { Select } from '../../../components/ui/Select';
+import { StaggerGrid, StaggerItem, MotionCard } from '../../../components/ui/Motion';
 import { supabase } from '../../../lib/supabase';
 import {
   Building2,
@@ -166,52 +168,60 @@ export const Employers: React.FC = () => {
       {success && <Alert type="success" title="Success">{success}</Alert>}
       {error && <Alert type="error" title="Error">{error}</Alert>}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-sky-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
-          <div>
-            <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Employer Entities</p>
-            <h3 className="text-3xl font-black text-slate-900 font-heading mt-2">{stats.total}</h3>
-            <p className="text-xs font-semibold text-slate-500 mt-1">Verified Organizations</p>
+      {/* Summary Cards (Staggered Motion Entrance) */}
+      <StaggerGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StaggerItem>
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-sky-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between h-full">
+            <div>
+              <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Employer Entities</p>
+              <h3 className="text-3xl font-black text-slate-900 font-heading mt-2">{stats.total}</h3>
+              <p className="text-xs font-semibold text-slate-500 mt-1">Verified Organizations</p>
+            </div>
+            <div className="w-12 h-12 bg-sky-50 text-sky-600 rounded-2xl border border-sky-100 flex items-center justify-center shrink-0">
+              <Building2 className="w-6 h-6" />
+            </div>
           </div>
-          <div className="w-12 h-12 bg-sky-50 text-sky-600 rounded-2xl border border-sky-100 flex items-center justify-center shrink-0">
-            <Building2 className="w-6 h-6" />
-          </div>
-        </div>
+        </StaggerItem>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-emerald-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
-          <div>
-            <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Verified Partners</p>
-            <h3 className="text-3xl font-black text-slate-900 font-heading mt-2">{stats.verified}</h3>
-            <p className="text-xs font-semibold text-slate-500 mt-1">Audited Employers</p>
+        <StaggerItem>
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-emerald-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between h-full">
+            <div>
+              <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Verified Partners</p>
+              <h3 className="text-3xl font-black text-slate-900 font-heading mt-2">{stats.verified}</h3>
+              <p className="text-xs font-semibold text-slate-500 mt-1">Audited Employers</p>
+            </div>
+            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
           </div>
-          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-        </div>
+        </StaggerItem>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-amber-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
-          <div>
-            <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Pending Audit</p>
-            <h3 className="text-3xl font-black text-slate-900 font-heading mt-2">{stats.pending}</h3>
-            <p className="text-xs font-semibold text-slate-500 mt-1">Awaiting Review</p>
+        <StaggerItem>
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-amber-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between h-full">
+            <div>
+              <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Pending Audit</p>
+              <h3 className="text-3xl font-black text-slate-900 font-heading mt-2">{stats.pending}</h3>
+              <p className="text-xs font-semibold text-slate-500 mt-1">Awaiting Review</p>
+            </div>
+            <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl border border-amber-100 flex items-center justify-center shrink-0">
+              <Clock className="w-6 h-6" />
+            </div>
           </div>
-          <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl border border-amber-100 flex items-center justify-center shrink-0">
-            <Clock className="w-6 h-6" />
-          </div>
-        </div>
+        </StaggerItem>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-purple-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between">
-          <div>
-            <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Enterprise Scale</p>
-            <h3 className="text-3xl font-black text-slate-900 font-heading mt-2">{stats.enterprise}</h3>
-            <p className="text-xs font-semibold text-slate-500 mt-1">50+ Member Tier</p>
+        <StaggerItem>
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-t-4 border-t-purple-500 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between h-full">
+            <div>
+              <p className="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Enterprise Scale</p>
+              <h3 className="text-3xl font-black text-slate-900 font-heading mt-2">{stats.enterprise}</h3>
+              <p className="text-xs font-semibold text-slate-500 mt-1">50+ Member Tier</p>
+            </div>
+            <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl border border-purple-100 flex items-center justify-center shrink-0">
+              <Briefcase className="w-6 h-6" />
+            </div>
           </div>
-          <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl border border-purple-100 flex items-center justify-center shrink-0">
-            <Briefcase className="w-6 h-6" />
-          </div>
-        </div>
-      </div>
+        </StaggerItem>
+      </StaggerGrid>
 
       {/* Toolbar */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -225,16 +235,18 @@ export const Employers: React.FC = () => {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-full sm:w-48 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:bg-white focus:border-emerald-500 outline-none h-10 transition-all cursor-pointer"
-        >
-          <option value="all">All Verification States</option>
-          <option value="verified">Verified</option>
-          <option value="pending">Pending Audit</option>
-          <option value="rejected">Rejected</option>
-        </select>
+        <div className="w-full sm:w-56">
+          <Select
+            value={statusFilter}
+            onChange={(val) => setStatusFilter(val)}
+            options={[
+              { value: 'all', label: 'All Verification States' },
+              { value: 'verified', label: 'Verified' },
+              { value: 'pending', label: 'Pending Audit' },
+              { value: 'rejected', label: 'Rejected' },
+            ]}
+          />
+        </div>
       </div>
 
       {/* Content Grid */}

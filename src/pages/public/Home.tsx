@@ -4,6 +4,8 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
+import { motion } from 'framer-motion';
+import { StaggerGrid, StaggerItem, MotionCard } from '../../components/ui/Motion';
 import { 
   Search, 
   MapPin, 

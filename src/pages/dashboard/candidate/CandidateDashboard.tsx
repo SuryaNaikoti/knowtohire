@@ -10,6 +10,7 @@ import { analyticsService } from '../../../lib/services/analyticsService';
 import { ResumeWidgetAdapter, CareerCoachWidgetAdapter } from '../../../lib/services/dashboard/dashboardAdapters';
 import { ROUTES } from '../../../constants/routes';
 import { Link, useNavigate } from 'react-router-dom';
+import { StaggerGrid, StaggerItem, MotionCard } from '../../../components/ui/Motion';
 import { 
   Award, FileText, CheckCircle, TrendingUp, Briefcase, 
   Brain, Compass, CheckSquare, Calendar, ChevronRight, 
@@ -211,8 +212,8 @@ export const CandidateDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. TOP KPI ROW WITH MICRO VISUALIZATIONS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+      {/* 2. TOP KPI ROW WITH MICRO VISUALIZATIONS (Staggered Motion Entrance) */}
+      <StaggerGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         
         {/* KPI 1: Career Score */}
         <Link 
@@ -335,7 +336,7 @@ export const CandidateDashboard: React.FC = () => {
           </div>
         </Link>
 
-      </div>
+      </StaggerGrid>
 
       {/* 3. MAIN DASHBOARD GRID (12 Columns Layout) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

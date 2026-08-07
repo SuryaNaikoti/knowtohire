@@ -4,6 +4,7 @@ import { Table, TableRow, TableCell } from '../../../components/ui/Table';
 import { Button } from '../../../components/ui/Button';
 import { Loading } from '../../../components/ui/Loading';
 import { Alert } from '../../../components/ui/Alert';
+import { StaggerGrid, StaggerItem, MotionCard } from '../../../components/ui/Motion';
 import { supabase } from '../../../lib/supabase';
 import {
   Terminal,
