@@ -253,8 +253,8 @@ export const Candidates: React.FC = () => {
           </p>
         </div>
 
-        {/* View Switcher Toggle */}
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/80 w-fit">
+        {/* View Switcher Toggle (Desktop hidden on mobile md:flex) */}
+        <div className="hidden md:flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/80 w-fit">
           <button
             onClick={() => setViewMode('table')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -277,46 +277,46 @@ export const Candidates: React.FC = () => {
       {success && <Alert type="success" title="Success">{success}</Alert>}
       {error && <Alert type="error" title="Error">{error}</Alert>}
 
-      {/* Executive Summary Cards (Exact User Directory Accent Standard) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* Executive Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* Card 1: Total Candidates */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-emerald-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-          <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Total Candidates</p>
-          <h3 className="text-3xl font-black text-slate-900 font-heading mt-2">{stats.total}</h3>
-          <p className="text-xs font-semibold text-slate-500 mt-1">Registered Profiles</p>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-emerald-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+          <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Total Candidates</p>
+          <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mt-1.5">{stats.total}</h3>
+          <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5">Registered Profiles</p>
         </div>
 
         {/* Card 2: Verified Candidates */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-teal-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-          <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Verified Profiles</p>
-          <h3 className="text-3xl font-black text-emerald-600 font-heading mt-2">{stats.verified}</h3>
-          <p className="text-xs font-semibold text-slate-500 mt-1">Approved Talent</p>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-teal-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+          <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Verified Profiles</p>
+          <h3 className="text-2xl sm:text-3xl font-black text-emerald-600 font-heading mt-1.5">{stats.verified}</h3>
+          <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5">Approved Talent</p>
         </div>
 
         {/* Card 3: Pending Verification */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-amber-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-          <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Pending Verification</p>
-          <h3 className="text-3xl font-black text-amber-600 font-heading mt-2">{stats.pending}</h3>
-          <p className="text-xs font-semibold text-slate-500 mt-1">In Governance Review</p>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-amber-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+          <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Pending Verification</p>
+          <h3 className="text-2xl sm:text-3xl font-black text-amber-600 font-heading mt-1.5">{stats.pending}</h3>
+          <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5">In Governance Review</p>
         </div>
 
         {/* Card 4: Featured Talent */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-indigo-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-          <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Featured Spotlights</p>
-          <h3 className="text-3xl font-black text-indigo-600 font-heading mt-2">{stats.featured}</h3>
-          <p className="text-xs font-semibold text-slate-500 mt-1">Promoted Profiles</p>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-indigo-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+          <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Featured Spotlights</p>
+          <h3 className="text-2xl sm:text-3xl font-black text-indigo-600 font-heading mt-1.5">{stats.featured}</h3>
+          <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5">Promoted Profiles</p>
         </div>
 
         {/* Card 5: Open to Work */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-blue-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-          <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Open to Work</p>
-          <h3 className="text-3xl font-black text-blue-600 font-heading mt-2">{stats.openToWork}</h3>
-          <p className="text-xs font-semibold text-slate-500 mt-1">Active Jobseekers</p>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-blue-500 shadow-2xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 col-span-2 sm:col-span-1">
+          <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Open to Work</p>
+          <h3 className="text-2xl sm:text-3xl font-black text-blue-600 font-heading mt-1.5">{stats.openToWork}</h3>
+          <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5">Active Jobseekers</p>
         </div>
       </div>
 
       {/* Floating Filter & Search Toolbar */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
           {/* Search Input */}
           <div className="lg:col-span-4 relative">
@@ -325,7 +325,7 @@ export const Candidates: React.FC = () => {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by candidate name, email, skills, designation..."
+              placeholder="Search candidate by name, email, skills..."
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200/90 bg-slate-50/80 text-xs font-semibold text-slate-800 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 outline-none transition-all"
             />
           </div>
@@ -387,45 +387,45 @@ export const Candidates: React.FC = () => {
         </div>
 
         {/* Quick Filter Presets */}
-        <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-500 pt-3 border-t border-slate-100">
-          <div className="flex items-center gap-2 overflow-x-auto">
-            <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-semibold text-slate-500 pt-3 border-t border-slate-100">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+            <span className="text-[11px] font-bold text-slate-400 shrink-0 flex items-center gap-1">
               <Filter className="w-3 h-3" /> Presets:
             </span>
             <button
               onClick={() => setFeaturedFilter(featuredFilter === 'featured' ? 'all' : 'featured')}
-              className={`px-3 py-1 rounded-full border text-[11px] font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-full border text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
                 featuredFilter === 'featured' ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200/80 text-slate-600 hover:bg-slate-100'
               }`}
             >
-              ⭐ Featured Spotlight Only
+              ⭐ Featured Spotlight
             </button>
             <button
               onClick={() => setStatusFilter(statusFilter === 'approved' ? 'all' : 'approved')}
-              className={`px-3 py-1 rounded-full border text-[11px] font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-full border text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
                 statusFilter === 'approved' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-slate-50 border-slate-200/80 text-slate-600 hover:bg-slate-100'
               }`}
             >
-              ✓ Verified Profiles Only
+              ✓ Verified Profiles
             </button>
             <button
               onClick={() => setAvailabilityFilter(availabilityFilter === 'Open to Work' ? 'all' : 'Open to Work')}
-              className={`px-3 py-1 rounded-full border text-[11px] font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-full border text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
                 availabilityFilter === 'Open to Work' ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-slate-50 border-slate-200/80 text-slate-600 hover:bg-slate-100'
               }`}
             >
-              🟢 Open to Work Only
+              🟢 Open to Work
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between sm:justify-end gap-3 text-xs">
             <span>Showing <strong className="text-slate-900 font-bold">{filteredCandidates.length}</strong> candidates</span>
             {(search || statusFilter !== 'all' || expFilter !== 'all' || availabilityFilter !== 'all' || featuredFilter !== 'all') && (
               <button
                 onClick={resetFilters}
                 className="text-emerald-600 hover:text-emerald-700 font-bold flex items-center gap-1 cursor-pointer"
               >
-                <RotateCcw className="w-3.5 h-3.5" /> Reset Filters
+                <RotateCcw className="w-3.5 h-3.5" /> Reset
               </button>
             )}
           </div>
@@ -445,196 +445,270 @@ export const Candidates: React.FC = () => {
           <p className="text-xs text-slate-500">Try adjusting search parameters or reset active filter options.</p>
           <Button size="sm" variant="outline" onClick={resetFilters}>Reset Filters</Button>
         </div>
-      ) : viewMode === 'grid' ? (
-        /* CARD GRID VIEW MODE */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredCandidates.map((c) => {
-            const initials = getInitials(c.first_name, c.last_name);
-            return (
-              <div
-                key={c.id}
-                className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group"
-              >
-                {c.is_featured && (
-                  <div className="absolute top-0 right-0 bg-indigo-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-bl-xl shadow-sm flex items-center gap-1">
-                    <Star className="w-3 h-3 fill-white" /> Featured
+      ) : (
+        <>
+          {/* MOBILE CANDIDATE CARDS LIST (Visible on mobile screens md:hidden) */}
+          <div className="block md:hidden space-y-3">
+            {filteredCandidates.map((c) => {
+              const initials = getInitials(c.first_name, c.last_name);
+              return (
+                <div key={c.id} className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {c.avatar_url ? (
+                        <img src={c.avatar_url} alt={c.first_name} className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-2xs" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-black text-xs flex items-center justify-center shadow-2xs border border-white">
+                          {initials}
+                        </div>
+                      )}
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                          {c.first_name} {c.last_name}
+                          {c.is_featured && <Star className="w-3.5 h-3.5 text-indigo-500 fill-indigo-500" title="Featured Candidate" />}
+                        </h3>
+                        <p className="text-[11px] font-medium text-slate-400">{c.email}</p>
+                      </div>
+                    </div>
+
+                    <Badge
+                      variant={
+                        c.approval_status === 'approved' ? 'success' :
+                        c.approval_status === 'rejected' ? 'danger' : 'warning'
+                      }
+                      size="sm"
+                      className="capitalize font-bold"
+                    >
+                      {c.approval_status}
+                    </Badge>
                   </div>
-                )}
 
-                <div className="space-y-4">
-                  <div className="flex items-start gap-4">
-                    {c.avatar_url ? (
-                      <img src={c.avatar_url} alt={c.first_name} className="w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-sm" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-black text-sm flex items-center justify-center shadow-sm border border-white">
-                        {initials}
-                      </div>
-                    )}
-
-                    <div className="space-y-1 pr-6">
-                      <h3 className="text-base font-black font-heading text-slate-900 leading-tight group-hover:text-emerald-600 transition-colors">
-                        {c.first_name} {c.last_name}
-                      </h3>
-                      <p className="text-xs font-bold text-slate-600">{c.headline}</p>
-                      <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500">
-                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-slate-400" /> {c.city}</span>
-                        <span>•</span>
-                        <span className="font-bold text-slate-800">{c.experience_years} Yrs Exp</span>
-                      </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-800 leading-snug">{c.headline}</p>
+                    <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-500 mt-1">
+                      <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-slate-400" /> {c.city}</span>
+                      <span>•</span>
+                      <span className="font-bold text-slate-900">{c.experience_years} Yrs Exp</span>
                     </div>
                   </div>
 
-                  {/* Skills Pills */}
-                  <div className="flex flex-wrap gap-1.5">
+                  {/* Verified Skills Pills */}
+                  <div className="flex flex-wrap gap-1">
                     {c.skills.slice(0, 3).map((skill) => (
-                      <span key={skill} className="bg-slate-100 text-slate-700 text-[10px] font-bold px-2.5 py-1 rounded-md border border-slate-200/60">
+                      <span key={skill} className="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200/60">
                         {skill}
                       </span>
                     ))}
                     {c.skills.length > 3 && (
-                      <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-md">
+                      <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
                         +{c.skills.length - 3}
                       </span>
                     )}
                   </div>
-                </div>
 
-                {/* Footer Action */}
-                <div className="pt-4 mt-5 border-t border-slate-100 flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    {c.availability}
-                  </span>
+                  {/* Action & Availability */}
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      {c.availability}
+                    </span>
 
-                  <Button
-                    size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition-all"
-                    onClick={() => navigate(`/dashboard/admin/candidates/${c.id}`)}
-                  >
-                    View Profile <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                  </Button>
+                    <Button
+                      size="sm"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs"
+                      onClick={() => navigate(`/dashboard/admin/candidates/${c.id}`)}
+                    >
+                      View Profile <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        /* TABLE VIEW MODE (Enterprise Standard Table Layout) */
-        <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-2xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[1000px]">
-              <thead>
-                <tr className="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
-                  <th className="py-4 px-5">Candidate</th>
-                  <th className="py-4 px-5 min-w-[220px]">Headline & Designation</th>
-                  <th className="py-4 px-5">Location</th>
-                  <th className="py-4 px-5">Experience</th>
-                  <th className="py-4 px-5 min-w-[260px]">Verified Skill Set</th>
-                  <th className="py-4 px-5">Availability</th>
-                  <th className="py-4 px-5">Status</th>
-                  <th className="py-4 px-5 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+              );
+            })}
+          </div>
+
+          {/* DESKTOP TABLE & GRID VIEW MODE (Visible on tablet/desktop md:block) */}
+          <div className="hidden md:block">
+            {viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredCandidates.map((c) => {
                   const initials = getInitials(c.first_name, c.last_name);
                   return (
-                    <tr key={c.id} className="hover:bg-slate-50/80 transition-colors group">
-                      {/* Candidate Avatar & Email */}
-                      <td className="py-4 px-5">
-                        <div className="flex items-center gap-3">
+                    <div
+                      key={c.id}
+                      className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group"
+                    >
+                      {c.is_featured && (
+                        <div className="absolute top-0 right-0 bg-indigo-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-bl-xl shadow-sm flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-white" /> Featured
+                        </div>
+                      )}
+
+                      <div className="space-y-4">
+                        <div className="flex items-start gap-4">
                           {c.avatar_url ? (
-                            <img src={c.avatar_url} alt={c.first_name} className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-2xs" />
+                            <img src={c.avatar_url} alt={c.first_name} className="w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-sm" />
                           ) : (
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-black text-xs flex items-center justify-center shadow-2xs border border-white">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-black text-sm flex items-center justify-center shadow-sm border border-white">
                               {initials}
                             </div>
                           )}
-                          <div>
-                            <div className="font-bold text-slate-900 flex items-center gap-1.5 group-hover:text-emerald-600 transition-colors">
+
+                          <div className="space-y-1 pr-6">
+                            <h3 className="text-base font-black font-heading text-slate-900 leading-tight group-hover:text-emerald-600 transition-colors">
                               {c.first_name} {c.last_name}
-                              {c.is_featured && <Star className="w-3.5 h-3.5 text-indigo-500 fill-indigo-500" title="Featured Candidate" />}
+                            </h3>
+                            <p className="text-xs font-bold text-slate-600">{c.headline}</p>
+                            <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500">
+                              <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-slate-400" /> {c.city}</span>
+                              <span>•</span>
+                              <span className="font-bold text-slate-800">{c.experience_years} Yrs Exp</span>
                             </div>
-                            <div className="text-[11px] text-slate-400 font-medium">{c.email}</div>
                           </div>
                         </div>
-                      </td>
 
-                      {/* Headline (No truncated Senior...!) */}
-                      <td className="py-4 px-5 min-w-[220px]">
-                        <div className="font-bold text-slate-800 text-xs leading-relaxed line-clamp-2">{c.headline}</div>
-                      </td>
-
-                      {/* Location */}
-                      <td className="py-4 px-5 whitespace-nowrap">
-                        <div className="flex items-center gap-1 text-slate-600 font-bold text-xs">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                          {c.city}, {c.country}
-                        </div>
-                      </td>
-
-                      {/* Experience Years */}
-                      <td className="py-4 px-5 whitespace-nowrap">
-                        <span className="font-extrabold text-slate-900 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg text-xs">
-                          {c.experience_years} Years
-                        </span>
-                      </td>
-
-                      {/* Verified Skills (Horizontal Inline Row) */}
-                      <td className="py-4 px-5 min-w-[260px]">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {c.skills.slice(0, 2).map((skill) => (
-                            <span key={skill} className="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-md border border-emerald-200/70 whitespace-nowrap">
+                        <div className="flex flex-wrap gap-1.5">
+                          {c.skills.slice(0, 3).map((skill) => (
+                            <span key={skill} className="bg-slate-100 text-slate-700 text-[10px] font-bold px-2.5 py-1 rounded-md border border-slate-200/60">
                               {skill}
                             </span>
                           ))}
-                          {c.skills.length > 2 && (
-                            <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-1.5 py-1 rounded-md">
-                              +{c.skills.length - 2}
+                          {c.skills.length > 3 && (
+                            <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-md">
+                              +{c.skills.length - 3}
                             </span>
                           )}
                         </div>
-                      </td>
+                      </div>
 
-                      {/* Availability */}
-                      <td className="py-4 px-5 whitespace-nowrap">
+                      <div className="pt-4 mt-5 border-t border-slate-100 flex items-center justify-between">
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                           {c.availability}
                         </span>
-                      </td>
 
-                      {/* Approval Status */}
-                      <td className="py-4 px-5 whitespace-nowrap">
-                        <Badge
-                          variant={
-                            c.approval_status === 'approved' ? 'success' :
-                            c.approval_status === 'rejected' ? 'danger' : 'warning'
-                          }
-                          size="sm"
-                          className="capitalize font-bold"
-                        >
-                          {c.approval_status}
-                        </Badge>
-                      </td>
-
-                      {/* Action Button */}
-                      <td className="py-4 px-5 text-right whitespace-nowrap">
                         <Button
                           size="sm"
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs hover:shadow-md transition-all"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition-all"
                           onClick={() => navigate(`/dashboard/admin/candidates/${c.id}`)}
                         >
                           View Profile <ChevronRight className="w-3.5 h-3.5 ml-1" />
                         </Button>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-2xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse min-w-[1000px]">
+                    <thead>
+                      <tr className="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                        <th className="py-4 px-5">Candidate</th>
+                        <th className="py-4 px-5 min-w-[220px]">Headline & Designation</th>
+                        <th className="py-4 px-5">Location</th>
+                        <th className="py-4 px-5">Experience</th>
+                        <th className="py-4 px-5 min-w-[260px]">Verified Skill Set</th>
+                        <th className="py-4 px-5">Availability</th>
+                        <th className="py-4 px-5">Status</th>
+                        <th className="py-4 px-5 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                      {filteredCandidates.map((c) => {
+                        const initials = getInitials(c.first_name, c.last_name);
+                        return (
+                          <tr key={c.id} className="hover:bg-slate-50/80 transition-colors group">
+                            <td className="py-4 px-5">
+                              <div className="flex items-center gap-3">
+                                {c.avatar_url ? (
+                                  <img src={c.avatar_url} alt={c.first_name} className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-2xs" />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-black text-xs flex items-center justify-center shadow-2xs border border-white">
+                                    {initials}
+                                  </div>
+                                )}
+                                <div>
+                                  <div className="font-bold text-slate-900 flex items-center gap-1.5 group-hover:text-emerald-600 transition-colors">
+                                    {c.first_name} {c.last_name}
+                                    {c.is_featured && <Star className="w-3.5 h-3.5 text-indigo-500 fill-indigo-500" title="Featured Candidate" />}
+                                  </div>
+                                  <div className="text-[11px] text-slate-400 font-medium">{c.email}</div>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="py-4 px-5 min-w-[220px]">
+                              <div className="font-bold text-slate-800 text-xs leading-relaxed line-clamp-2">{c.headline}</div>
+                            </td>
+
+                            <td className="py-4 px-5 whitespace-nowrap">
+                              <div className="flex items-center gap-1 text-slate-600 font-bold text-xs">
+                                <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                                {c.city}, {c.country}
+                              </div>
+                            </td>
+
+                            <td className="py-4 px-5 whitespace-nowrap">
+                              <span className="font-extrabold text-slate-900 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg text-xs">
+                                {c.experience_years} Years
+                              </span>
+                            </td>
+
+                            <td className="py-4 px-5 min-w-[260px]">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {c.skills.slice(0, 2).map((skill) => (
+                                  <span key={skill} className="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-md border border-emerald-200/70 whitespace-nowrap">
+                                    {skill}
+                                  </span>
+                                ))}
+                                {c.skills.length > 2 && (
+                                  <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-1.5 py-1 rounded-md">
+                                    +{c.skills.length - 2}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            <td className="py-4 px-5 whitespace-nowrap">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                {c.availability}
+                              </span>
+                            </td>
+
+                            <td className="py-4 px-5 whitespace-nowrap">
+                              <Badge
+                                variant={
+                                  c.approval_status === 'approved' ? 'success' :
+                                  c.approval_status === 'rejected' ? 'danger' : 'warning'
+                                }
+                                size="sm"
+                                className="capitalize font-bold"
+                              >
+                                {c.approval_status}
+                              </Badge>
+                            </td>
+
+                            <td className="py-4 px-5 text-right whitespace-nowrap">
+                              <Button
+                                size="sm"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs hover:shadow-md transition-all"
+                                onClick={() => navigate(`/dashboard/admin/candidates/${c.id}`)}
+                              >
+                                View Profile <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        </>
       )}
     </div>
   );
