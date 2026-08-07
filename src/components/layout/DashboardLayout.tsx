@@ -387,7 +387,7 @@ export const DashboardLayout: React.FC = () => {
 
             {/* Notifications Button */}
             <Link
-              to={ROUTES.DASHBOARD.CANDIDATE.NOTIFICATIONS}
+              to="/dashboard/notifications"
               className="p-1.5 rounded-lg text-gray-400 hover:text-gray-650 hover:bg-gray-50 cursor-pointer relative block"
               aria-label="View notifications"
             >
@@ -475,7 +475,7 @@ export const DashboardLayout: React.FC = () => {
 
         {/* Essential 3: Alerts / Notifications */}
         <Link
-          to={userRole === 'admin' ? ROUTES.DASHBOARD.ADMIN.NOTIFICATIONS : ROUTES.DASHBOARD.CANDIDATE.NOTIFICATIONS}
+          to="/dashboard/notifications"
           className="p-1.5 rounded-xl text-slate-500 hover:text-emerald-600 hover:bg-slate-100 cursor-pointer relative flex flex-col items-center gap-0.5"
           aria-label="Notifications"
         >

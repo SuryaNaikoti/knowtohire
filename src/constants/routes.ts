@@ -48,6 +48,7 @@ export const ROUTES = {
       TEAM: '/dashboard/employer/team',
       JOBS: '/dashboard/employer/jobs',
       CREATE_JOB: '/dashboard/employer/jobs/create',
+      NOTIFICATIONS: '/dashboard/notifications',
     },
     ADMIN: {
       ROOT: '/dashboard/admin',
@@ -66,6 +67,7 @@ export const ROUTES = {
       AUDIT_LOGS: '/dashboard/admin/audit-logs',
       ROLES: '/dashboard/admin/roles',
       SETTINGS: '/dashboard/admin/settings',
+      NOTIFICATIONS: '/dashboard/notifications',
     }
   }
 } as const;
