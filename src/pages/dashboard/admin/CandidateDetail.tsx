@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
@@ -29,7 +29,9 @@ import {
   Save,
   Check,
   Tag,
-  Star
+  Star,
+  Zap,
+  CheckSquare
 } from 'lucide-react';
 
 interface ExperienceItem {
@@ -104,7 +106,6 @@ export const CandidateDetail: React.FC = () => {
       setLoading(true);
       setError('');
 
-      // Fetch base profile
       const { data: prof, error: profErr } = await supabase
         .from('profiles')
         .select('*')
@@ -115,7 +116,6 @@ export const CandidateDetail: React.FC = () => {
         console.warn('Profile fetch warning:', profErr);
       }
 
-      // Fetch candidate detail extra profile info
       let detail: any = {};
       try {
         const { data: cData } = await supabase
@@ -128,7 +128,6 @@ export const CandidateDetail: React.FC = () => {
         console.warn('candidate_profiles fetch info:', e);
       }
 
-      // Fetch skills
       let skills: string[] = [];
       try {
         const { data: sData } = await supabase
@@ -142,7 +141,6 @@ export const CandidateDetail: React.FC = () => {
         console.warn('candidate_skills fetch info:', e);
       }
 
-      // Fetch experiences
       let experiences: ExperienceItem[] = [];
       try {
         const { data: expData } = await supabase
@@ -155,7 +153,6 @@ export const CandidateDetail: React.FC = () => {
         console.warn('work_experiences fetch info:', e);
       }
 
-      // Fetch educations
       let educations: EducationItem[] = [];
       try {
         const { data: eduData } = await supabase
@@ -167,7 +164,6 @@ export const CandidateDetail: React.FC = () => {
         console.warn('educations fetch info:', e);
       }
 
-      // Fetch certifications
       let certifications: CertificationItem[] = [];
       try {
         const { data: certData } = await supabase
@@ -179,14 +175,12 @@ export const CandidateDetail: React.FC = () => {
         console.warn('certifications fetch info:', e);
       }
 
-      // Read local overrides for demo simulation
       const localStatus = localStorage.getItem(`kth_cand_status_${id}`) as any;
       const isFeatured = localStorage.getItem(`kth_cand_featured_${id}`) === 'true';
       const storedNotes = localStorage.getItem(`kth_cand_notes_${id}`) || '';
 
       setInternalNotes(storedNotes);
 
-      // Fallback enriched mock defaults for pristine display
       const firstName = prof?.first_name || 'Rahul';
       const lastName = prof?.last_name || 'Sharma';
       const email = prof?.email || 'rahul.sharma@gmail.com';
@@ -348,27 +342,27 @@ export const CandidateDetail: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in-up pb-16">
-      {/* Top Navigation & Breadcrumbs */}
+      {/* Back Button & Header Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <button
           onClick={() => navigate('/dashboard/admin/candidates')}
-          className="inline-flex items-center text-xs font-bold text-slate-600 hover:text-emerald-600 bg-white border border-slate-200/80 px-3.5 py-2 rounded-xl transition-all shadow-2xs hover:shadow-xs cursor-pointer w-fit"
+          className="inline-flex items-center text-xs font-bold text-slate-600 hover:text-emerald-600 bg-white border border-slate-200/80 px-4 py-2 rounded-xl transition-all shadow-2xs hover:shadow-xs cursor-pointer w-fit"
         >
-          <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to Candidate Directory
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Candidate Directory
         </button>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 font-medium">ID:</span>
-          <code className="text-xs font-mono font-bold bg-slate-100 px-2 py-1 rounded text-slate-700">{candidate.id}</code>
+          <span className="text-xs text-slate-400 font-medium">Candidate Reference ID:</span>
+          <code className="text-xs font-mono font-bold bg-slate-100 px-2.5 py-1 rounded-lg text-slate-700">{candidate.id}</code>
         </div>
       </div>
 
       {success && <Alert type="success" title="Success">{success}</Alert>}
       {error && <Alert type="error" title="Error">{error}</Alert>}
 
-      {/* Hero Profile Header Card */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-emerald-500/10 via-emerald-400/5 to-transparent rounded-bl-full pointer-events-none" />
+      {/* Hero Header Card */}
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+        <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
@@ -378,15 +372,15 @@ export const CandidateDetail: React.FC = () => {
                 <img
                   src={candidate.avatar_url}
                   alt={`${candidate.first_name} ${candidate.last_name}`}
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-white shadow-md"
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-emerald-400/50 shadow-xl"
                 />
               ) : (
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-black text-2xl sm:text-3xl flex items-center justify-center shadow-md border-2 border-white">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-black text-2xl sm:text-3xl flex items-center justify-center shadow-xl border-2 border-emerald-400/50">
                   {initials}
                 </div>
               )}
               {candidate.is_featured && (
-                <div className="absolute -top-2 -right-2 bg-indigo-600 text-white p-1.5 rounded-full shadow-md" title="Featured Candidate">
+                <div className="absolute -top-2 -right-2 bg-indigo-500 text-white p-1.5 rounded-full shadow-md" title="Featured Candidate">
                   <Star className="w-3.5 h-3.5 fill-white" />
                 </div>
               )}
@@ -395,10 +389,10 @@ export const CandidateDetail: React.FC = () => {
             {/* Candidate Identity */}
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-black font-heading text-slate-900 tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-black font-heading text-white tracking-tight">
                   {candidate.first_name} {candidate.last_name}
                 </h1>
-                
+
                 {/* Approval Status Badge */}
                 <Badge
                   variant={
@@ -415,37 +409,37 @@ export const CandidateDetail: React.FC = () => {
                 </Badge>
 
                 {/* Availability Badge */}
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   {candidate.availability_status}
                 </span>
               </div>
 
-              <p className="text-sm sm:text-base font-bold text-slate-700">{candidate.headline}</p>
+              <p className="text-sm sm:text-base font-bold text-slate-300">{candidate.headline}</p>
 
-              <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-500 pt-1">
+              <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-400 pt-1">
                 <span className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                  <MapPin className="w-3.5 h-3.5 text-emerald-400" />
                   {candidate.city}, {candidate.country}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+                  <Briefcase className="w-3.5 h-3.5 text-emerald-400" />
                   {candidate.experience_years} Years Experience
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-slate-400" />
+                  <Mail className="w-3.5 h-3.5 text-emerald-400" />
                   {candidate.email}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Header Quick Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2.5 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+          {/* Quick Action Governance Buttons */}
+          <div className="flex flex-wrap items-center gap-2.5 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-800">
             {candidate.approval_status !== 'approved' && (
               <Button
                 size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md"
                 onClick={() => handleUpdateStatus('approved')}
               >
                 <CheckCircle2 className="w-4 h-4 mr-1.5" /> Approve Profile
@@ -456,7 +450,7 @@ export const CandidateDetail: React.FC = () => {
               <Button
                 size="sm"
                 variant="outline"
-                className="border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs"
+                className="border-rose-500/40 text-rose-300 hover:bg-rose-950/40 font-bold text-xs"
                 onClick={() => handleUpdateStatus('rejected')}
               >
                 <XCircle className="w-4 h-4 mr-1.5" /> Reject Profile
@@ -466,10 +460,10 @@ export const CandidateDetail: React.FC = () => {
             <Button
               size="sm"
               variant="outline"
-              className={candidate.is_featured ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-bold text-xs' : 'text-slate-700 font-bold text-xs'}
+              className={candidate.is_featured ? 'bg-indigo-600/30 border-indigo-400/50 text-indigo-200 font-bold text-xs' : 'border-slate-700 text-slate-300 font-bold text-xs'}
               onClick={handleToggleFeatured}
             >
-              <Sparkles className="w-4 h-4 mr-1.5 text-indigo-500" />
+              <Sparkles className="w-4 h-4 mr-1.5 text-indigo-400" />
               {candidate.is_featured ? 'Featured' : 'Feature Candidate'}
             </Button>
 
@@ -477,22 +471,22 @@ export const CandidateDetail: React.FC = () => {
               href={candidate.resume_url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors shadow-2xs cursor-pointer"
+              className="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-white bg-slate-800 hover:bg-slate-700 transition-colors shadow-sm cursor-pointer border border-slate-700"
             >
               <Download className="w-4 h-4 mr-1.5" /> Download Resume
             </a>
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto border-t border-slate-100 mt-6 pt-4">
+        {/* Tab Navigation Menu */}
+        <div className="flex items-center gap-2 overflow-x-auto border-t border-slate-800/80 mt-6 pt-4">
           {[
             { id: 'overview', label: 'Overview', icon: User },
-            { id: 'experience', label: `Experience (${candidate.experiences.length})`, icon: Briefcase },
-            { id: 'education', label: `Education (${candidate.educations.length})`, icon: GraduationCap },
+            { id: 'experience', label: `Career Experience (${candidate.experiences.length})`, icon: Briefcase },
+            { id: 'education', label: `Education & Credentials (${candidate.educations.length})`, icon: GraduationCap },
             { id: 'resume', label: 'Resume Preview', icon: FileText },
-            { id: 'activity', label: 'Audit Timeline', icon: Clock },
-            { id: 'notes', label: 'Internal Admin Notes', icon: Tag },
+            { id: 'activity', label: 'Audit Log Timeline', icon: Clock },
+            { id: 'notes', label: 'Internal Notes', icon: Tag },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -502,8 +496,8 @@ export const CandidateDetail: React.FC = () => {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
                   isActive
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-emerald-500 text-slate-950 font-black shadow-lg shadow-emerald-500/20'
+                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -514,35 +508,35 @@ export const CandidateDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Two-Column Layout */}
+      {/* Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column (Detailed Dossier) */}
+        {/* Left Main Column */}
         <div className="lg:col-span-8 space-y-6">
-          {/* TAB 1: OVERVIEW */}
+          {/* TAB: OVERVIEW */}
           {(activeTab === 'overview' || activeTab === 'notes') && (
             <>
               {/* Professional Summary */}
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-3">
-                <h3 className="text-sm font-black font-heading text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <User className="w-4 h-4 text-emerald-600" /> Professional Summary
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-3">
+                <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <User className="w-4 h-4 text-emerald-600" /> Executive Candidate Summary
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
                   {candidate.bio}
                 </p>
               </div>
 
-              {/* Verified Technical Skills */}
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-                <h3 className="text-sm font-black font-heading text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-emerald-600" /> Verified Technical Skills & Domain Expertise
+              {/* Verified Technical Skills Matrix */}
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-4">
+                <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-600" /> Verified Technical Skills Matrix
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {candidate.skills.map((skill) => (
                     <span
                       key={skill}
-                      className="px-3 py-1.5 rounded-xl bg-emerald-50/90 text-emerald-800 border border-emerald-200/70 text-xs font-bold shadow-2xs flex items-center gap-1.5"
+                      className="px-3.5 py-2 rounded-xl bg-emerald-50/90 text-emerald-800 border border-emerald-200/70 text-xs font-bold shadow-2xs flex items-center gap-2"
                     >
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
                       {skill}
                     </span>
                   ))}
@@ -551,19 +545,19 @@ export const CandidateDetail: React.FC = () => {
             </>
           )}
 
-          {/* TAB 2: WORK EXPERIENCE */}
+          {/* TAB: EXPERIENCE */}
           {(activeTab === 'overview' || activeTab === 'experience') && (
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-6">
+            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-6">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <h3 className="text-sm font-black font-heading text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <Briefcase className="w-4 h-4 text-emerald-600" /> Career History & Work Experience
+                <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <Briefcase className="w-4 h-4 text-emerald-600" /> Career History & Professional Timeline
                 </h3>
-                <span className="text-xs font-bold text-slate-400">{candidate.experiences.length} Position(s) Listed</span>
+                <span className="text-xs font-bold text-slate-400">{candidate.experiences.length} Positions</span>
               </div>
 
               <div className="space-y-6 relative before:absolute before:left-3.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200/70">
                 {candidate.experiences.map((exp) => (
-                  <div key={exp.id} className="relative pl-8 space-y-1.5">
+                  <div key={exp.id} className="relative pl-8 space-y-2">
                     <div className="absolute left-1.5 top-1.5 w-4.5 h-4.5 rounded-full bg-emerald-600 border-2 border-white shadow-sm flex items-center justify-center">
                       <div className="w-1.5 h-1.5 rounded-full bg-white" />
                     </div>
@@ -589,13 +583,13 @@ export const CandidateDetail: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 3: EDUCATION & CERTIFICATIONS */}
+          {/* TAB: EDUCATION & CERTIFICATIONS */}
           {(activeTab === 'overview' || activeTab === 'education') && (
             <div className="space-y-6">
               {/* Education Cards */}
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-                <h3 className="text-sm font-black font-heading text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
-                  <GraduationCap className="w-4 h-4 text-emerald-600" /> Academic Qualifications
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-4">
+                <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-3">
+                  <GraduationCap className="w-4 h-4 text-emerald-600" /> Academic Degrees & Qualifications
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -617,9 +611,9 @@ export const CandidateDetail: React.FC = () => {
               </div>
 
               {/* Certifications Cards */}
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-                <h3 className="text-sm font-black font-heading text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
-                  <Award className="w-4 h-4 text-emerald-600" /> Industry Certifications & Credentials
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-4">
+                <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-3">
+                  <Award className="w-4 h-4 text-emerald-600" /> Professional Certifications & Credentials
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -641,28 +635,27 @@ export const CandidateDetail: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 4: EMBEDDED RESUME VIEWER */}
+          {/* TAB: RESUME VIEWER */}
           {(activeTab === 'resume') && (
             <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
-                  <h3 className="text-sm font-black font-heading text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-emerald-600" /> Primary Candidate Resume File
+                  <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-emerald-600" /> Primary Resume Document
                   </h3>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">Format: PDF / Verified Attachment Document</p>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">PDF Attachment Preview</p>
                 </div>
                 <a
                   href={candidate.resume_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs hover:bg-emerald-700 transition-colors"
+                  className="px-3.5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs hover:bg-emerald-700 transition-colors"
                 >
-                  <Download className="w-3.5 h-3.5" /> Download PDF
+                  <Download className="w-3.5 h-3.5" /> Download Resume PDF
                 </a>
               </div>
 
-              {/* Embedded Document Viewport Box */}
-              <div className="w-full h-128 rounded-2xl border border-slate-200 bg-slate-900/90 flex flex-col items-center justify-center text-white p-6 relative overflow-hidden shadow-inner">
+              <div className="w-full h-128 rounded-2xl border border-slate-200 bg-slate-900 flex flex-col items-center justify-center text-white p-2 relative overflow-hidden shadow-inner">
                 <iframe
                   src={candidate.resume_url}
                   className="w-full h-full rounded-xl bg-white"
@@ -672,19 +665,19 @@ export const CandidateDetail: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 5: AUDIT TIMELINE */}
+          {/* TAB: ACTIVITY TIMELINE */}
           {(activeTab === 'activity') && (
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-              <h3 className="text-sm font-black font-heading text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
-                <Clock className="w-4 h-4 text-emerald-600" /> Candidate Activity & Verification Timeline
+            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-4">
+              <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-3">
+                <Clock className="w-4 h-4 text-emerald-600" /> Audit Log & System Activity History
               </h3>
 
               <div className="space-y-4 relative before:absolute before:left-3.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
                 {[
-                  { title: 'Account Registration', desc: 'Candidate registered on KnowToHire platform.', time: '15 Jan 2026, 10:30 AM', icon: User },
+                  { title: 'Account Registration', desc: 'Candidate registered profile on platform.', time: '15 Jan 2026, 10:30 AM', icon: User },
                   { title: 'Resume Document Uploaded', desc: 'Uploaded primary CV PDF file.', time: '15 Jan 2026, 11:15 AM', icon: FileText },
                   { title: 'Skills & Experience Declared', desc: 'Added 7 verified technical skills & 2 work history roles.', time: '16 Jan 2026, 02:40 PM', icon: Briefcase },
-                  { title: 'Admin Verification Passed', desc: 'Profile approved by Rajeev Sharma (Platform Admin).', time: '18 Jan 2026, 09:20 AM', icon: ShieldCheck },
+                  { title: 'Admin Governance Approval Passed', desc: 'Profile verified by Rajeev Sharma (Platform Admin).', time: '18 Jan 2026, 09:20 AM', icon: ShieldCheck },
                   { title: 'Spotlight Featured Badge Allocated', desc: 'Promoted to Featured Talent Directory.', time: '20 Jan 2026, 04:00 PM', icon: Star },
                 ].map((item, idx) => (
                   <div key={idx} className="relative pl-8 space-y-1">
@@ -702,42 +695,42 @@ export const CandidateDetail: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 6: INTERNAL NOTES */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+          {/* TAB: INTERNAL NOTES */}
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-black font-heading text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                <Tag className="w-4 h-4 text-emerald-600" /> Administrator Private Internal Notes
+              <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <Tag className="w-4 h-4 text-emerald-600" /> Private Administrator Review Notes
               </h3>
-              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                🔒 Admin Only
+              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                🔒 Admin Secured
               </span>
             </div>
 
             <p className="text-xs text-slate-500 font-medium">
-              Record private compliance notes, interview feedback, or verification remarks. Never visible to candidates.
+              Internal verification comments, compliance notes, or interview observations. Never visible to candidates.
             </p>
 
             <textarea
               rows={4}
               value={internalNotes}
               onChange={(e) => setInternalNotes(e.target.value)}
-              placeholder="e.g. Verified M.Tech degree credentials with IIT Bombay registrar. High suitability for senior environmental consulting roles..."
-              className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all"
+              placeholder="e.g. Verified degree credentials with IIT Bombay registrar. Exceptional fit for ESG advisory roles..."
+              className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all"
             />
 
             <div className="flex justify-end">
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs" onClick={handleSaveNotes}>
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs" onClick={handleSaveNotes}>
                 <Save className="w-3.5 h-3.5 mr-1.5" /> Save Internal Notes
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Right Column (Candidate Snapshot Sidebar Panel) */}
+        {/* Right Sidebar Column (Snapshot & Controls) */}
         <div className="lg:col-span-4 space-y-6">
-          {/* Candidate Snapshot Card */}
+          {/* Snapshot Vitals Panel */}
           <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-            <h3 className="text-sm font-black font-heading text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center justify-between">
+            <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 flex items-center justify-between">
               <span>Candidate Snapshot</span>
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
             </h3>
@@ -750,7 +743,7 @@ export const CandidateDetail: React.FC = () => {
 
               <div className="flex items-center justify-between py-1 border-b border-slate-100">
                 <span className="font-semibold text-slate-500">Primary Industry:</span>
-                <span className="font-bold text-slate-900 text-right">{candidate.preferred_industry}</span>
+                <span className="font-bold text-slate-900 text-right max-w-xs">{candidate.preferred_industry}</span>
               </div>
 
               <div className="flex items-center justify-between py-1 border-b border-slate-100">
@@ -780,15 +773,11 @@ export const CandidateDetail: React.FC = () => {
             </div>
           </div>
 
-          {/* Verification Status Control Panel */}
+          {/* Governance Controls Panel */}
           <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-            <h3 className="text-sm font-black font-heading text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3">
-              Admin Governance Controls
+            <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3">
+              Governance Status Controls
             </h3>
-
-            <p className="text-xs text-slate-500 font-medium">
-              Update candidate directory status across employer search indices.
-            </p>
 
             <div className="space-y-2">
               <button

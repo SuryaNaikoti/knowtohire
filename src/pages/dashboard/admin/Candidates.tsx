@@ -23,7 +23,15 @@ import {
   Users,
   Briefcase,
   SlidersHorizontal,
-  ArrowUpDown
+  LayoutGrid,
+  List,
+  GraduationCap,
+  Award,
+  Check,
+  ExternalLink,
+  Zap,
+  TrendingUp,
+  Filter
 } from 'lucide-react';
 
 export interface CandidateDirectoryRow {
@@ -52,6 +60,7 @@ export const Candidates: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
 
   // Search, Filter & Sort states
   const [search, setSearch] = useState('');
@@ -60,7 +69,7 @@ export const Candidates: React.FC = () => {
   const [locationFilter, setLocationFilter] = useState('all');
   const [availabilityFilter, setAvailabilityFilter] = useState('all');
   const [featuredFilter, setFeaturedFilter] = useState('all');
-  const [sortBy, setSortBy] = useState<'newest' | 'updated' | 'experience' | 'alphabetical'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'experience' | 'alphabetical'>('newest');
 
   const fetchCandidates = async () => {
     try {
@@ -106,7 +115,6 @@ export const Candidates: React.FC = () => {
         const localStatus = localStorage.getItem(`kth_cand_status_${p.id}`) as any;
         const isFeatured = localStorage.getItem(`kth_cand_featured_${p.id}`) === 'true';
 
-        // Rich fallback defaults
         const exp = detail.experience_years !== undefined ? detail.experience_years : (idx % 5) + 3;
         const defaultSkills = skillsMap[p.id] || [
           'Environmental Audit',
@@ -134,7 +142,7 @@ export const Candidates: React.FC = () => {
           availability: availability as any,
           experience_years: exp,
           skills: defaultSkills,
-          completion_pct: 85 + (idx % 3) * 5, // 85%, 90%, 95%
+          completion_pct: 85 + (idx % 3) * 5,
           avatar_url: p.avatar_url
         };
       });
@@ -152,11 +160,9 @@ export const Candidates: React.FC = () => {
     fetchCandidates();
   }, []);
 
-  // Filtered & Sorted Candidate List
   const filteredCandidates = useMemo(() => {
     let result = [...candidates];
 
-    // Search filter
     if (search.trim()) {
       const lower = search.toLowerCase();
       result = result.filter(c =>
@@ -168,12 +174,10 @@ export const Candidates: React.FC = () => {
       );
     }
 
-    // Status filter
     if (statusFilter !== 'all') {
       result = result.filter(c => c.approval_status === statusFilter);
     }
 
-    // Experience filter
     if (expFilter === '0-3') {
       result = result.filter(c => c.experience_years <= 3);
     } else if (expFilter === '3-5') {
@@ -182,22 +186,18 @@ export const Candidates: React.FC = () => {
       result = result.filter(c => c.experience_years > 5);
     }
 
-    // Location filter
     if (locationFilter !== 'all') {
       result = result.filter(c => c.city.toLowerCase() === locationFilter.toLowerCase());
     }
 
-    // Availability filter
     if (availabilityFilter !== 'all') {
       result = result.filter(c => c.availability === availabilityFilter);
     }
 
-    // Featured filter
     if (featuredFilter === 'featured') {
       result = result.filter(c => c.is_featured);
     }
 
-    // Sorting
     result.sort((a, b) => {
       if (sortBy === 'newest') {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -214,7 +214,6 @@ export const Candidates: React.FC = () => {
     return result;
   }, [search, statusFilter, expFilter, locationFilter, availabilityFilter, featuredFilter, sortBy, candidates]);
 
-  // Executive KPI Card Metrics
   const stats = useMemo(() => {
     const total = candidates.length;
     const verified = candidates.filter(c => c.approval_status === 'approved').length;
@@ -240,64 +239,78 @@ export const Candidates: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in-up pb-16">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black font-heading text-slate-900 tracking-tight flex items-center gap-3">
-            <div className="p-2.5 bg-emerald-50 rounded-2xl border border-emerald-200/70 text-emerald-600 shadow-2xs">
-              <UserCheck className="w-6 h-6" />
+      {/* Sleek Top Banner & Title */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-emerald-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+        <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-extrabold tracking-wide uppercase">
+              <Zap className="w-3.5 h-3.5 text-emerald-400" /> Enterprise Talent Network
             </div>
-            Candidate Directory
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-            Browse candidate profiles, verify technical credentials, filter availability states, and manage talent spotlights.
-          </p>
+            <h1 className="text-2xl sm:text-4xl font-black font-heading tracking-tight text-white">
+              Candidate Directory
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl font-medium">
+              Vetted talent pipeline, verified technical credentials, governance reviews, and instant candidate profiles.
+            </p>
+          </div>
+
+          {/* Quick View Mode Switcher */}
+          <div className="flex items-center gap-2 bg-slate-800/80 p-1.5 rounded-2xl border border-slate-700/80 backdrop-blur-md w-fit">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                viewMode === 'table' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <List className="w-4 h-4" /> Table View
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                viewMode === 'grid' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" /> Card Grid View
+            </button>
+          </div>
+        </div>
+
+        {/* Executive Metrics Strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6 pt-6 border-t border-slate-800/80">
+          <div className="bg-slate-800/50 p-3.5 rounded-2xl border border-slate-700/50">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Total Network</span>
+            <span className="text-xl font-black text-white font-heading">{stats.total}</span>
+          </div>
+
+          <div className="bg-slate-800/50 p-3.5 rounded-2xl border border-slate-700/50">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Verified Talent</span>
+            <span className="text-xl font-black text-emerald-400 font-heading">{stats.verified}</span>
+          </div>
+
+          <div className="bg-slate-800/50 p-3.5 rounded-2xl border border-slate-700/50">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Pending Review</span>
+            <span className="text-xl font-black text-amber-400 font-heading">{stats.pending}</span>
+          </div>
+
+          <div className="bg-slate-800/50 p-3.5 rounded-2xl border border-slate-700/50">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Featured Talent</span>
+            <span className="text-xl font-black text-indigo-400 font-heading">{stats.featured}</span>
+          </div>
+
+          <div className="bg-slate-800/50 p-3.5 rounded-2xl border border-slate-700/50 col-span-2 sm:col-span-1">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Open to Work</span>
+            <span className="text-xl font-black text-blue-400 font-heading">{stats.openToWork}</span>
+          </div>
         </div>
       </div>
 
       {success && <Alert type="success" title="Success">{success}</Alert>}
       {error && <Alert type="error" title="Error">{error}</Alert>}
 
-      {/* Executive Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Card 1: Total Candidates */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-emerald-500 shadow-2xs hover:shadow-md transition-all">
-          <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Total Candidates</p>
-          <h3 className="text-2xl font-black text-slate-900 font-heading mt-1.5">{stats.total}</h3>
-          <p className="text-[11px] font-medium text-slate-500 mt-1">Registered Profiles</p>
-        </div>
-
-        {/* Card 2: Verified Candidates */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-teal-500 shadow-2xs hover:shadow-md transition-all">
-          <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Verified Profiles</p>
-          <h3 className="text-2xl font-black text-emerald-600 font-heading mt-1.5">{stats.verified}</h3>
-          <p className="text-[11px] font-medium text-slate-500 mt-1">Approved Talent</p>
-        </div>
-
-        {/* Card 3: Pending Verification */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-amber-500 shadow-2xs hover:shadow-md transition-all">
-          <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Pending Verification</p>
-          <h3 className="text-2xl font-black text-amber-600 font-heading mt-1.5">{stats.pending}</h3>
-          <p className="text-[11px] font-medium text-slate-500 mt-1">In Governance Review</p>
-        </div>
-
-        {/* Card 4: Featured Talent */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-indigo-500 shadow-2xs hover:shadow-md transition-all">
-          <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Featured Spotlights</p>
-          <h3 className="text-2xl font-black text-indigo-600 font-heading mt-1.5">{stats.featured}</h3>
-          <p className="text-[11px] font-medium text-slate-500 mt-1">Promoted Profiles</p>
-        </div>
-
-        {/* Card 5: Open to Work */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-blue-500 shadow-2xs hover:shadow-md transition-all">
-          <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Open to Work</p>
-          <h3 className="text-2xl font-black text-blue-600 font-heading mt-1.5">{stats.openToWork}</h3>
-          <p className="text-[11px] font-medium text-slate-500 mt-1">Active Jobseekers</p>
-        </div>
-      </div>
-
-      {/* Toolbar: Search, Filters & Sorting */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+      {/* Floating Filter Toolbar */}
+      <div className="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-xs space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
           {/* Search Input */}
           <div className="lg:col-span-4 relative">
@@ -367,58 +380,163 @@ export const Candidates: React.FC = () => {
           </div>
         </div>
 
-        {/* Secondary Filter Bar */}
-        <div className="flex items-center justify-between text-xs font-semibold text-slate-500 pt-2 border-t border-slate-100">
-          <span>Showing <strong className="text-slate-900 font-bold">{filteredCandidates.length}</strong> candidates</span>
-
-          {(search || statusFilter !== 'all' || expFilter !== 'all' || availabilityFilter !== 'all') && (
+        {/* Quick Filter Presets */}
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-500 pt-2 border-t border-slate-100">
+          <div className="flex items-center gap-2 overflow-x-auto">
+            <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1">
+              <Filter className="w-3 h-3" /> Presets:
+            </span>
             <button
-              onClick={resetFilters}
-              className="text-emerald-600 hover:text-emerald-700 font-bold flex items-center gap-1 cursor-pointer"
+              onClick={() => setFeaturedFilter(featuredFilter === 'featured' ? 'all' : 'featured')}
+              className={`px-3 py-1 rounded-full border text-[11px] font-bold transition-all cursor-pointer ${
+                featuredFilter === 'featured' ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+              }`}
             >
-              <RotateCcw className="w-3.5 h-3.5" /> Reset Filters
+              ⭐ Featured Spotlight Only
             </button>
-          )}
+            <button
+              onClick={() => setStatusFilter(statusFilter === 'approved' ? 'all' : 'approved')}
+              className={`px-3 py-1 rounded-full border text-[11px] font-bold transition-all cursor-pointer ${
+                statusFilter === 'approved' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              ✓ Verified Profiles Only
+            </button>
+            <button
+              onClick={() => setAvailabilityFilter(availabilityFilter === 'Open to Work' ? 'all' : 'Open to Work')}
+              className={`px-3 py-1 rounded-full border text-[11px] font-bold transition-all cursor-pointer ${
+                availabilityFilter === 'Open to Work' ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              🟢 Open to Work Only
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span>Showing <strong className="text-slate-900 font-bold">{filteredCandidates.length}</strong> candidates</span>
+            {(search || statusFilter !== 'all' || expFilter !== 'all' || availabilityFilter !== 'all' || featuredFilter !== 'all') && (
+              <button
+                onClick={resetFilters}
+                className="text-emerald-600 hover:text-emerald-700 font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" /> Reset Filters
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Candidate Directory Table */}
+      {/* Directory Content */}
       {loading ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center space-y-3">
+        <div className="bg-white rounded-3xl border border-slate-200/80 p-12 text-center space-y-3">
           <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs font-bold text-slate-500">Loading candidate directory...</p>
+          <p className="text-xs font-bold text-slate-500">Retrieving candidate directory records...</p>
         </div>
       ) : filteredCandidates.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center space-y-3">
+        <div className="bg-white rounded-3xl border border-slate-200/80 p-12 text-center space-y-3">
           <Users className="w-10 h-10 text-slate-300 mx-auto" />
           <h4 className="text-base font-bold text-slate-900 font-heading">No matching candidates found</h4>
-          <p className="text-xs text-slate-500">Try refining your search query or reset active filters.</p>
+          <p className="text-xs text-slate-500">Try adjusting search parameters or reset active filter options.</p>
           <Button size="sm" variant="outline" onClick={resetFilters}>Reset Filters</Button>
         </div>
+      ) : viewMode === 'grid' ? (
+        /* CARD GRID VIEW MODE */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredCandidates.map((c) => {
+            const initials = getInitials(c.first_name, c.last_name);
+            return (
+              <div
+                key={c.id}
+                className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-2xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group"
+              >
+                {c.is_featured && (
+                  <div className="absolute top-0 right-0 bg-indigo-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-bl-2xl shadow-sm flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-white" /> Featured
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  {/* Top Profile Card Header */}
+                  <div className="flex items-start gap-4">
+                    {c.avatar_url ? (
+                      <img src={c.avatar_url} alt={c.first_name} className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow-md" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-black text-lg flex items-center justify-center shadow-md border-2 border-white">
+                        {initials}
+                      </div>
+                    )}
+
+                    <div className="space-y-1 pr-6">
+                      <h3 className="text-base font-black font-heading text-slate-900 leading-tight group-hover:text-emerald-600 transition-colors">
+                        {c.first_name} {c.last_name}
+                      </h3>
+                      <p className="text-xs font-semibold text-slate-500 line-clamp-1">{c.headline}</p>
+                      <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400">
+                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {c.city}</span>
+                        <span>•</span>
+                        <span>{c.experience_years} Yrs Exp</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Skill Badges */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {c.skills.slice(0, 4).map((skill) => (
+                      <span key={skill} className="bg-slate-100 text-slate-700 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-slate-200/60">
+                        {skill}
+                      </span>
+                    ))}
+                    {c.skills.length > 4 && (
+                      <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-lg">
+                        +{c.skills.length - 4}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card Footer Actions & Status */}
+                <div className="pt-4 mt-5 border-t border-slate-100 flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    {c.availability}
+                  </span>
+
+                  <Button
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs group-hover:shadow-md transition-all"
+                    onClick={() => navigate(`/dashboard/admin/candidates/${c.id}`)}
+                  >
+                    View Profile <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-2xs">
+        /* TABLE VIEW MODE */
+        <div className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-2xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
-                  <th className="py-3.5 px-4">Candidate</th>
-                  <th className="py-3.5 px-4">Headline / Designation</th>
-                  <th className="py-3.5 px-4">Location</th>
-                  <th className="py-3.5 px-4">Experience</th>
-                  <th className="py-3.5 px-4">Verified Skills</th>
-                  <th className="py-3.5 px-4">Availability</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4">Profile Score</th>
-                  <th className="py-3.5 px-4 text-right">Action</th>
+                  <th className="py-4 px-5">Candidate Identity</th>
+                  <th className="py-4 px-5">Headline & Designation</th>
+                  <th className="py-4 px-5">Location</th>
+                  <th className="py-4 px-5">Experience</th>
+                  <th className="py-4 px-5">Verified Skill Set</th>
+                  <th className="py-4 px-5">Availability</th>
+                  <th className="py-4 px-5">Status</th>
+                  <th className="py-4 px-5 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
                 {filteredCandidates.map((c) => {
                   const initials = getInitials(c.first_name, c.last_name);
                   return (
-                    <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                      {/* Avatar & Candidate Name */}
-                      <td className="py-3.5 px-4">
+                    <tr key={c.id} className="hover:bg-slate-50/80 transition-colors group">
+                      {/* Candidate Avatar & Name */}
+                      <td className="py-4 px-5">
                         <div className="flex items-center gap-3">
                           {c.avatar_url ? (
                             <img src={c.avatar_url} alt={c.first_name} className="w-10 h-10 rounded-xl object-cover border border-slate-200" />
@@ -428,7 +546,7 @@ export const Candidates: React.FC = () => {
                             </div>
                           )}
                           <div>
-                            <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                            <div className="font-bold text-slate-900 flex items-center gap-1.5 group-hover:text-emerald-600 transition-colors">
                               {c.first_name} {c.last_name}
                               {c.is_featured && <Star className="w-3.5 h-3.5 text-indigo-500 fill-indigo-500" title="Featured Candidate" />}
                             </div>
@@ -438,35 +556,35 @@ export const Candidates: React.FC = () => {
                       </td>
 
                       {/* Headline */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-4 px-5">
                         <div className="font-bold text-slate-800 line-clamp-1 max-w-xs">{c.headline}</div>
                       </td>
 
                       {/* Location */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
+                      <td className="py-4 px-5 whitespace-nowrap">
                         <div className="flex items-center gap-1 text-slate-600 font-bold">
                           <MapPin className="w-3.5 h-3.5 text-slate-400" />
                           {c.city}, {c.country}
                         </div>
                       </td>
 
-                      {/* Experience Years */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="font-extrabold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg">
+                      {/* Experience */}
+                      <td className="py-4 px-5 whitespace-nowrap">
+                        <span className="font-extrabold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-xl">
                           {c.experience_years} Years
                         </span>
                       </td>
 
                       {/* Skills Chips */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-4 px-5">
                         <div className="flex flex-wrap gap-1 max-w-xs">
                           {c.skills.slice(0, 3).map((skill) => (
-                            <span key={skill} className="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200/60">
+                            <span key={skill} className="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-lg border border-emerald-200/60">
                               {skill}
                             </span>
                           ))}
                           {c.skills.length > 3 && (
-                            <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                            <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-1.5 py-0.5 rounded-lg">
                               +{c.skills.length - 3}
                             </span>
                           )}
@@ -474,15 +592,15 @@ export const Candidates: React.FC = () => {
                       </td>
 
                       {/* Availability */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <td className="py-4 px-5 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                           {c.availability}
                         </span>
                       </td>
 
-                      {/* Approval Status */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
+                      {/* Status Badge */}
+                      <td className="py-4 px-5 whitespace-nowrap">
                         <Badge
                           variant={
                             c.approval_status === 'approved' ? 'success' :
@@ -495,27 +613,14 @@ export const Candidates: React.FC = () => {
                         </Badge>
                       </td>
 
-                      {/* Profile Completion Score */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="w-24 space-y-1">
-                          <div className="flex justify-between text-[10px] font-bold text-slate-700">
-                            <span>{c.completion_pct}%</span>
-                          </div>
-                          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${c.completion_pct}%` }} />
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Action: View Profile */}
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                      {/* View Profile Action */}
+                      <td className="py-4 px-5 text-right whitespace-nowrap">
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="bg-white text-xs font-bold text-slate-800 hover:text-emerald-600 hover:border-emerald-500 shadow-2xs"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs hover:shadow-md transition-all"
                           onClick={() => navigate(`/dashboard/admin/candidates/${c.id}`)}
                         >
-                          View Profile <ChevronRight className="w-4 h-4 ml-1 text-slate-400" />
+                          View Profile <ChevronRight className="w-3.5 h-3.5 ml-1" />
                         </Button>
                       </td>
                     </tr>
