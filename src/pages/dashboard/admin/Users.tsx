@@ -150,18 +150,6 @@ export const Users: React.FC = () => {
     fetchUsers();
   }, []);
 
-  // Handlers
-  const handleViewProfile = (user: PlatformUser) => {
-    setActiveMenuId(null);
-    if (user.role === 'candidate') {
-      navigate('/dashboard/admin/candidates');
-    } else if (user.role === 'employer') {
-      navigate('/dashboard/admin/employers');
-    } else {
-      setViewingUser(user);
-    }
-  };
-
   const handleOpenEditModal = (user: PlatformUser) => {
     setActiveMenuId(null);
     setEditingUser(user);
