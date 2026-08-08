@@ -1,3 +1,4 @@
+// KnowToHire V1.0 - User Management Workspace (Clean Vercel Build Trigger)
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../../../components/ui/Card';
