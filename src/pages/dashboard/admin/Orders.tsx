@@ -401,67 +401,53 @@ export const Orders: React.FC = () => {
         </>
       )}
 
-      {/* TRANSACTION INSPECTOR MODAL (Framer Motion Modal) */}
-      <MotionModal
-        isOpen={!!selectedOrder}
-        onClose={() => setSelectedOrder(null)}
-        title="Transaction Ledger Dossier"
-        maxWidth="max-w-md"
-      >
-        {selectedOrder && (
-          <div className="space-y-5">
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Order Reference</p>
-                <h3 className="text-lg font-black font-mono text-slate-900 mt-0.5">{selectedOrder.order_number}</h3>
-              </div>
+      {/* INLINE TRANSACTION LEDGER DOSSIER CARD */}
+      {selectedOrder && (
+        <Card className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-md space-y-4 animate-fade-in-up my-6">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Order Reference</p>
+              <h3 className="text-lg font-black font-mono text-slate-900 mt-0.5">{selectedOrder.order_number}</h3>
+            </div>
+            <div className="flex items-center gap-2">
               <Badge variant={selectedOrder.payment_status === 'paid' ? 'success' : selectedOrder.payment_status === 'refunded' ? 'danger' : 'warning'} size="sm" className="capitalize font-bold">
                 {selectedOrder.payment_status}
               </Badge>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Customer Email</p>
-                <p className="text-xs font-bold text-slate-900 mt-0.5">{selectedOrder.customer_email}</p>
-              </div>
-
-              <div>
-                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Purchased Product Asset</p>
-                <p className="text-xs font-bold text-slate-900 mt-0.5">{selectedOrder.template_title}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="p-3 bg-white border border-slate-200/80 rounded-xl">
-                  <p className="text-[10px] font-extrabold text-slate-400 uppercase">Gross Amount</p>
-                  <p className="text-sm font-black text-emerald-600 mt-0.5">${selectedOrder.amount.toFixed(2)} USD</p>
-                </div>
-                <div className="p-3 bg-white border border-slate-200/80 rounded-xl">
-                  <p className="text-[10px] font-extrabold text-slate-400 uppercase">Checkout Time</p>
-                  <p className="text-xs font-bold text-slate-800 mt-0.5">{new Date(selectedOrder.created_at).toLocaleString()}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-              <Button size="sm" variant="outline" onClick={() => setSelectedOrder(null)}>
-                Close Dossier
-              </Button>
-
-              {selectedOrder.payment_status === 'paid' && (
-                <Button
-                  size="sm"
-                  onClick={() => handleRefund(selectedOrder.id)}
-                  className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs"
-                >
-                  Process Order Refund
-                </Button>
-              )}
+              <button onClick={() => setSelectedOrder(null)} className="text-xs font-bold text-slate-400 hover:text-slate-700 cursor-pointer">Close</button>
             </div>
           </div>
-        )}
-      </MotionModal>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <p className="text-[10px] font-extrabold text-slate-400 uppercase">Customer Email</p>
+              <p className="font-bold text-slate-900 mt-0.5">{selectedOrder.customer_email}</p>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <p className="text-[10px] font-extrabold text-slate-400 uppercase">Purchased Product</p>
+              <p className="font-bold text-slate-900 mt-0.5">{selectedOrder.template_title}</p>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <p className="text-[10px] font-extrabold text-slate-400 uppercase">Gross Amount</p>
+              <p className="font-black text-emerald-600 mt-0.5">${selectedOrder.amount.toFixed(2)} USD</p>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+            <Button size="sm" variant="outline" onClick={() => setSelectedOrder(null)} className="text-xs font-bold rounded-xl">
+              Close Dossier
+            </Button>
+            {selectedOrder.payment_status === 'paid' && (
+              <Button
+                size="sm"
+                onClick={() => handleRefund(selectedOrder.id)}
+                className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl"
+              >
+                Process Order Refund
+              </Button>
+            )}
+          </div>
+        </Card>
+      )}
     </div>
   );
 };

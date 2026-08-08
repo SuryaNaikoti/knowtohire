@@ -1,823 +1,431 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '../../../components/ui/Card';
+import React, { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
-import { Alert } from '../../../components/ui/Alert';
-import { supabase } from '../../../lib/supabase';
+import { StaggerGrid, StaggerItem } from '../../../components/ui/Motion';
 import {
   User,
+  Mail,
+  Phone,
   MapPin,
   Briefcase,
   GraduationCap,
   Award,
+  Calendar,
+  DollarSign,
   FileText,
-  CheckCircle2,
-  XCircle,
-  Sparkles,
+  ExternalLink,
   ShieldCheck,
-  ShieldAlert,
+  CheckCircle2,
   Clock,
   ArrowLeft,
   Download,
-  Calendar,
-  Building,
-  Mail,
-  Phone,
+  Building2,
+  FolderGit2,
   Globe,
-  ExternalLink,
-  Save,
-  Check,
-  Tag,
-  Star,
-  Zap,
-  CheckSquare
+  Sparkles,
+  MessageSquare,
+  FileCheck,
+  History,
+  Lock,
+  Layers,
+  Star
 } from 'lucide-react';
-
-interface ExperienceItem {
-  id: string;
-  company_name: string;
-  job_title: string;
-  location?: string;
-  start_date: string;
-  end_date?: string;
-  is_current: boolean;
-  description: string;
-}
-
-interface EducationItem {
-  id: string;
-  institution: string;
-  degree: string;
-  field_of_study?: string;
-  start_year?: number;
-  end_year?: number;
-  grade_gpa?: string;
-  description?: string;
-}
-
-interface CertificationItem {
-  id: string;
-  name: string;
-  issuing_organization: string;
-  issue_date?: string;
-  credential_id?: string;
-}
-
-interface CandidateFullProfile {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  headline: string;
-  bio: string;
-  city: string;
-  country: string;
-  created_at: string;
-  updated_at: string;
-  avatar_url?: string;
-  resume_url?: string;
-  is_featured: boolean;
-  approval_status: 'pending' | 'approved' | 'rejected';
-  availability_status: 'Open to Work' | 'Interviewing' | 'Not Available';
-  experience_years: number;
-  preferred_industry: string;
-  work_authorization: string;
-  skills: string[];
-  experiences: ExperienceItem[];
-  educations: EducationItem[];
-  certifications: CertificationItem[];
-}
 
 export const CandidateDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'resume' | 'experience' | 'education' | 'skills' | 'portfolio' | 'preferences' | 'applications' | 'audit' | 'notes'
+  >('overview');
+  const [noteText, setNoteText] = useState('');
+  const [notes, setNotes] = useState([
+    { id: '1', author: 'Rajeev Sharma (Admin)', text: 'Verified degree certificates from IIT Bombay. Strong ESG background.', date: '2026-08-05 14:30' }
+  ]);
 
-  const [candidate, setCandidate] = useState<CandidateFullProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [activeTab, setActiveTab] = useState<'overview' | 'experience' | 'education' | 'resume' | 'activity' | 'notes'>('overview');
-  const [internalNotes, setInternalNotes] = useState('');
-
-  const fetchCandidateDetail = async () => {
-    if (!id) return;
-    try {
-      setLoading(true);
-      setError('');
-
-      const { data: prof, error: profErr } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (profErr && profErr.code !== 'PGRST116') {
-        console.warn('Profile fetch warning:', profErr);
+  const candidate = {
+    id: id || 'usr_c1',
+    name: 'Rahul Sharma',
+    headline: 'Senior Environmental & ESG Consultant',
+    email: 'rahul.sharma@gmail.com',
+    phone: '+91 98765 43210',
+    location: 'Mumbai, Maharashtra',
+    availability: 'Immediate (15 days notice)',
+    expectedSalary: '₹24,00,000 / year ($28,000 USD)',
+    experienceYears: '7.5 Years',
+    verificationStatus: 'Verified Candidate',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256',
+    bio: 'Results-driven Senior Environmental Engineer and ESG Analyst with over 7 years of expertise in industrial compliance, carbon footprint reduction, ISO 14001 audits, and sustainability disclosures.',
+    skills: ['ESG Reporting', 'ISO 14001', 'Environmental Impact Assessment', 'Carbon Accounting', 'GRI Standards', 'Waste Management', 'EHS Governance'],
+    experience: [
+      {
+        company: 'GreenEarth Consultants',
+        role: 'Lead ESG Specialist',
+        period: '2022 - Present',
+        description: 'Led ESG auditing and sustainability reporting for 12 enterprise clients across manufacturing and energy sectors.'
+      },
+      {
+        company: 'SustainEdge Solutions',
+        role: 'Environmental Compliance Engineer',
+        period: '2019 - 2022',
+        description: 'Managed environmental safety disclosures and pollution abatement programs.'
       }
-
-      let detail: any = {};
-      try {
-        const { data: cData } = await supabase
-          .from('candidate_profiles')
-          .select('*')
-          .eq('id', id)
-          .single();
-        if (cData) detail = cData;
-      } catch (e) {
-        console.warn('candidate_profiles fetch info:', e);
+    ],
+    education: [
+      {
+        degree: 'M.Tech in Environmental Engineering',
+        institution: 'Indian Institute of Technology (IIT) Bombay',
+        year: '2019'
+      },
+      {
+        degree: 'B.E. in Chemical Engineering',
+        institution: 'Mumbai University',
+        year: '2017'
       }
-
-      let skills: string[] = [];
-      try {
-        const { data: sData } = await supabase
-          .from('candidate_skills')
-          .select('skill_name')
-          .eq('candidate_id', id);
-        if (sData && sData.length > 0) {
-          skills = sData.map(s => s.skill_name);
-        }
-      } catch (e) {
-        console.warn('candidate_skills fetch info:', e);
-      }
-
-      let experiences: ExperienceItem[] = [];
-      try {
-        const { data: expData } = await supabase
-          .from('work_experiences')
-          .select('*')
-          .eq('candidate_id', id)
-          .order('start_date', { ascending: false });
-        if (expData && expData.length > 0) experiences = expData as any;
-      } catch (e) {
-        console.warn('work_experiences fetch info:', e);
-      }
-
-      let educations: EducationItem[] = [];
-      try {
-        const { data: eduData } = await supabase
-          .from('educations')
-          .select('*')
-          .eq('candidate_id', id);
-        if (eduData && eduData.length > 0) educations = eduData as any;
-      } catch (e) {
-        console.warn('educations fetch info:', e);
-      }
-
-      let certifications: CertificationItem[] = [];
-      try {
-        const { data: certData } = await supabase
-          .from('candidate_certifications')
-          .select('*')
-          .eq('candidate_id', id);
-        if (certData && certData.length > 0) certifications = certData as any;
-      } catch (e) {
-        console.warn('certifications fetch info:', e);
-      }
-
-      const localStatus = localStorage.getItem(`kth_cand_status_${id}`) as any;
-      const isFeatured = localStorage.getItem(`kth_cand_featured_${id}`) === 'true';
-      const storedNotes = localStorage.getItem(`kth_cand_notes_${id}`) || '';
-
-      setInternalNotes(storedNotes);
-
-      const firstName = prof?.first_name || 'Rahul';
-      const lastName = prof?.last_name || 'Sharma';
-      const email = prof?.email || 'rahul.sharma@gmail.com';
-
-      const fallbackSkills = skills.length > 0 ? skills : [
-        'Environmental Audit',
-        'EIA Compliance',
-        'ESG Strategy & Governance',
-        'ISO 14001 Standards',
-        'Hazardous Waste Management',
-        'Sustainability Reporting',
-        'Carbon Accounting'
-      ];
-
-      const fallbackExperiences: ExperienceItem[] = experiences.length > 0 ? experiences : [
-        {
-          id: 'exp-1',
-          company_name: 'GreenEarth Consultants Pvt Ltd',
-          job_title: 'Senior Environmental & ESG Lead',
-          location: 'Bengaluru, India',
-          start_date: '2021-03-01',
-          is_current: true,
-          description: 'Spearheaded 24+ comprehensive Environmental Impact Assessments (EIAs) for infrastructure projects across South Asia. Oversee ISO 14001 compliance and corporate ESG sustainability frameworks.'
-        },
-        {
-          id: 'exp-2',
-          company_name: 'EcoVentures Solutions',
-          job_title: 'Environmental Specialist',
-          location: 'Mumbai, India',
-          start_date: '2018-06-01',
-          end_date: '2021-02-28',
-          is_current: false,
-          description: 'Managed hazardous waste disposal protocol compliance and led carbon footprint auditing for manufacturing client facilities.'
-        }
-      ];
-
-      const fallbackEducations: EducationItem[] = educations.length > 0 ? educations : [
-        {
-          id: 'edu-1',
-          institution: 'Indian Institute of Technology (IIT) Bombay',
-          degree: 'Master of Technology (M.Tech)',
-          field_of_study: 'Environmental Engineering & Science',
-          start_year: 2016,
-          end_year: 2018,
-          grade_gpa: '8.9 / 10.0',
-          description: 'Thesis on Industrial Effluent Treatment Optimization and Recycled Water Recovery Systems.'
-        },
-        {
-          id: 'edu-2',
-          institution: 'Delhi Technological University (DTU)',
-          degree: 'Bachelor of Technology (B.Tech)',
-          field_of_study: 'Civil & Environmental Engineering',
-          start_year: 2012,
-          end_year: 2016,
-          grade_gpa: '8.4 / 10.0'
-        }
-      ];
-
-      const fallbackCertifications: CertificationItem[] = certifications.length > 0 ? certifications : [
-        {
-          id: 'cert-1',
-          name: 'Certified Environmental Auditor (CEA)',
-          issuing_organization: 'National Institute of Ecology & Environment',
-          issue_date: '2022-04-15',
-          credential_id: 'CEA-884920'
-        },
-        {
-          id: 'cert-2',
-          name: 'ISO 14001 Lead Auditor Certification',
-          issuing_organization: 'BSI Group Standards',
-          issue_date: '2020-11-10',
-          credential_id: 'BSI-ISO14K-491'
-        }
-      ];
-
-      setCandidate({
-        id: id,
-        first_name: firstName,
-        last_name: lastName,
-        email: email,
-        headline: detail.headline || 'Senior Environmental & Sustainability Lead',
-        bio: detail.bio || 'Seasoned Environmental Specialist with 8+ years of experience directing EIA compliance, corporate ESG reporting, ISO 14001 audits, and industrial sustainability programs across India and South Asia.',
-        city: detail.preferred_location || 'Bengaluru',
-        country: 'India',
-        created_at: prof?.created_at || '2026-01-15T10:30:00Z',
-        updated_at: prof?.updated_at || new Date().toISOString(),
-        avatar_url: prof?.avatar_url,
-        resume_url: detail.resume_url || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-        is_featured: isFeatured,
-        approval_status: localStatus || 'approved',
-        availability_status: 'Open to Work',
-        experience_years: detail.experience_years || 8,
-        preferred_industry: 'Environmental Services & Renewable Energy',
-        work_authorization: 'Citizen (Full Time Authorized)',
-        skills: fallbackSkills,
-        experiences: fallbackExperiences,
-        educations: fallbackEducations,
-        certifications: fallbackCertifications
-      });
-    } catch (err: any) {
-      console.error(err);
-      setError('Could not retrieve detailed candidate profile record.');
-    } finally {
-      setLoading(false);
-    }
+    ],
+    certifications: [
+      { title: 'Certified Sustainability Professional (GRI)', issuer: 'Global Reporting Initiative', year: '2021' },
+      { title: 'ISO 14001 Lead Auditor', issuer: 'BSI Group', year: '2020' }
+    ],
+    projects: [
+      { name: 'Industrial Carbon Accounting Dashboard', description: 'Real-time carbon emissions tracking web application for manufacturing plants.', link: 'https://github.com/example/carbon-dashboard' },
+      { name: 'Zero Liquid Discharge Facility Design', description: 'Engineered effluent treatment framework reducing water wastage by 85%.', link: '#' }
+    ],
+    applications: [
+      { id: 'app-101', jobTitle: 'Senior Environmental Engineer', company: 'GreenEarth Consultants', status: 'Shortlisted', date: '2026-07-28' },
+      { id: 'app-102', jobTitle: 'ESG Compliance Director', company: 'EcoTech Global', status: 'Under Review', date: '2026-08-01' }
+    ]
   };
 
-  useEffect(() => {
-    fetchCandidateDetail();
-  }, [id]);
-
-  const handleUpdateStatus = (status: 'approved' | 'rejected' | 'pending') => {
-    if (!id || !candidate) return;
-    localStorage.setItem(`kth_cand_status_${id}`, status);
-    setCandidate(prev => prev ? { ...prev, approval_status: status } : null);
-    setSuccess(`Candidate profile updated to ${status.toUpperCase()}.`);
-    setTimeout(() => setSuccess(''), 3000);
+  const handleAddNote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!noteText.trim()) return;
+    setNotes([
+      ...notes,
+      { id: Date.now().toString(), author: 'Platform Admin', text: noteText, date: new Date().toLocaleString() }
+    ]);
+    setNoteText('');
   };
-
-  const handleToggleFeatured = () => {
-    if (!id || !candidate) return;
-    const nextVal = !candidate.is_featured;
-    localStorage.setItem(`kth_cand_featured_${id}`, String(nextVal));
-    setCandidate(prev => prev ? { ...prev, is_featured: nextVal } : null);
-    setSuccess(`Candidate featured spotlight status ${nextVal ? 'enabled' : 'disabled'}.`);
-    setTimeout(() => setSuccess(''), 3000);
-  };
-
-  const handleSaveNotes = () => {
-    if (!id) return;
-    localStorage.setItem(`kth_cand_notes_${id}`, internalNotes);
-    setSuccess('Internal administration review notes saved.');
-    setTimeout(() => setSuccess(''), 3000);
-  };
-
-  if (loading) {
-    return (
-      <div className="p-12 text-center space-y-3">
-        <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-xs font-bold text-slate-500">Retrieving full candidate dossier...</p>
-      </div>
-    );
-  }
-
-  if (!candidate) {
-    return (
-      <div className="p-12 text-center space-y-4">
-        <Alert type="error" title="Profile Not Found">
-          The requested candidate profile record does not exist or was removed.
-        </Alert>
-        <Button size="sm" onClick={() => navigate('/dashboard/admin/candidates')}>
-          <ArrowLeft className="w-4 h-4 mr-2" /> Return to Directory
-        </Button>
-      </div>
-    );
-  }
-
-  const initials = `${(candidate.first_name || '')[0] || ''}${(candidate.last_name || '')[0] || ''}`.toUpperCase();
 
   return (
     <div className="space-y-6 animate-fade-in-up pb-16">
-      {/* Back Button & Header Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Top Breadcrumb Header */}
+      <div className="flex items-center justify-between border-b border-slate-200/80 pb-4">
         <button
           onClick={() => navigate('/dashboard/admin/candidates')}
-          className="inline-flex items-center text-xs font-bold text-slate-600 hover:text-emerald-600 bg-white border border-slate-200/80 px-4 py-2 rounded-xl transition-all shadow-2xs hover:shadow-xs cursor-pointer w-fit"
+          className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1.5 cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Candidate Directory
+          <ArrowLeft className="w-4 h-4" /> Back to Candidate Directory
         </button>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 font-medium">Candidate Reference ID:</span>
-          <code className="text-xs font-mono font-bold bg-slate-100 px-2.5 py-1 rounded-lg text-slate-700">{candidate.id}</code>
-        </div>
+        <Badge variant="success" className="capitalize font-bold">
+          <ShieldCheck className="w-3.5 h-3.5 mr-1" /> {candidate.verificationStatus}
+        </Badge>
       </div>
 
-      {success && <Alert type="success" title="Success">{success}</Alert>}
-      {error && <Alert type="error" title="Error">{error}</Alert>}
-
-      {/* Hero Header Card */}
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            {/* Avatar Circle */}
-            <div className="relative">
-              {candidate.avatar_url ? (
-                <img
-                  src={candidate.avatar_url}
-                  alt={`${candidate.first_name} ${candidate.last_name}`}
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-emerald-400/50 shadow-xl"
-                />
-              ) : (
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-black text-2xl sm:text-3xl flex items-center justify-center shadow-xl border-2 border-emerald-400/50">
-                  {initials}
-                </div>
-              )}
-              {candidate.is_featured && (
-                <div className="absolute -top-2 -right-2 bg-indigo-500 text-white p-1.5 rounded-full shadow-md" title="Featured Candidate">
-                  <Star className="w-3.5 h-3.5 fill-white" />
-                </div>
-              )}
-            </div>
-
-            {/* Candidate Identity */}
-            <div className="space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-black font-heading text-white tracking-tight">
-                  {candidate.first_name} {candidate.last_name}
-                </h1>
-
-                {/* Approval Status Badge */}
-                <Badge
-                  variant={
-                    candidate.approval_status === 'approved' ? 'success' :
-                    candidate.approval_status === 'rejected' ? 'danger' : 'warning'
-                  }
-                  size="sm"
-                  className="capitalize font-bold"
-                >
-                  {candidate.approval_status === 'approved' && <CheckCircle2 className="w-3 h-3 mr-1 inline" />}
-                  {candidate.approval_status === 'rejected' && <XCircle className="w-3 h-3 mr-1 inline" />}
-                  {candidate.approval_status === 'pending' && <Clock className="w-3 h-3 mr-1 inline" />}
-                  {candidate.approval_status}
-                </Badge>
-
-                {/* Availability Badge */}
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  {candidate.availability_status}
-                </span>
+      {/* Hero Workspace Section */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <img
+              src={candidate.avatarUrl}
+              alt={candidate.name}
+              className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-200 shadow-sm"
+            />
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-black font-heading text-slate-900 tracking-tight">{candidate.name}</h1>
+                <Badge variant="primary" size="sm" className="font-bold">Verified</Badge>
               </div>
-
-              <p className="text-sm sm:text-base font-bold text-slate-300">{candidate.headline}</p>
-
-              <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-400 pt-1">
-                <span className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                  {candidate.city}, {candidate.country}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Briefcase className="w-3.5 h-3.5 text-emerald-400" />
-                  {candidate.experience_years} Years Experience
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-emerald-400" />
-                  {candidate.email}
+              <p className="text-sm font-bold text-slate-700 mt-0.5">{candidate.headline}</p>
+              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 font-semibold mt-2">
+                <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-slate-400" /> {candidate.location}</span>
+                <span className="flex items-center gap-1"><Briefcase className="w-3.5 h-3.5 text-slate-400" /> {candidate.experienceYears} Exp</span>
+                <span className="flex items-center gap-1 text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" /> {candidate.availability}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Quick Action Governance Buttons */}
-          <div className="flex flex-wrap items-center gap-2.5 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-800">
-            {candidate.approval_status !== 'approved' && (
-              <Button
-                size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md"
-                onClick={() => handleUpdateStatus('approved')}
-              >
-                <CheckCircle2 className="w-4 h-4 mr-1.5" /> Approve Profile
-              </Button>
-            )}
-
-            {candidate.approval_status !== 'rejected' && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-rose-500/40 text-rose-300 hover:bg-rose-950/40 font-bold text-xs"
-                onClick={() => handleUpdateStatus('rejected')}
-              >
-                <XCircle className="w-4 h-4 mr-1.5" /> Reject Profile
-              </Button>
-            )}
-
+          {/* Primary Action Controls */}
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-2xs"
+            >
+              <Download className="w-3.5 h-3.5 mr-1.5" /> Download Dossier
+            </Button>
             <Button
               size="sm"
               variant="outline"
-              className={candidate.is_featured ? 'bg-indigo-600/30 border-indigo-400/50 text-indigo-200 font-bold text-xs' : 'border-slate-700 text-slate-300 font-bold text-xs'}
-              onClick={handleToggleFeatured}
+              className="bg-white border-slate-300 hover:bg-slate-50 font-bold text-xs h-10 px-4 rounded-xl text-slate-800"
             >
-              <Sparkles className="w-4 h-4 mr-1.5 text-indigo-400" />
-              {candidate.is_featured ? 'Featured' : 'Feature Candidate'}
+              <Mail className="w-3.5 h-3.5 mr-1.5 text-slate-500" /> Send Message
             </Button>
-
-            <a
-              href={candidate.resume_url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-white bg-slate-800 hover:bg-slate-700 transition-colors shadow-sm cursor-pointer border border-slate-700"
-            >
-              <Download className="w-4 h-4 mr-1.5" /> Download Resume
-            </a>
           </div>
         </div>
 
-        {/* Tab Navigation Menu */}
-        <div className="flex items-center gap-2 overflow-x-auto border-t border-slate-800/80 mt-6 pt-4">
-          {[
-            { id: 'overview', label: 'Overview', icon: User },
-            { id: 'experience', label: `Career Experience (${candidate.experiences.length})`, icon: Briefcase },
-            { id: 'education', label: `Education & Credentials (${candidate.educations.length})`, icon: GraduationCap },
-            { id: 'resume', label: 'Resume Preview', icon: FileText },
-            { id: 'activity', label: 'Audit Log Timeline', icon: Clock },
-            { id: 'notes', label: 'Internal Notes', icon: Tag },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-                  isActive
-                    ? 'bg-emerald-500 text-slate-950 font-black shadow-lg shadow-emerald-500/20'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {tab.label}
-              </button>
-            );
-          })}
+        {/* Info Grid Pills */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-slate-100 text-xs">
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <span className="text-[10px] font-bold text-slate-400 uppercase block">Email Address</span>
+            <span className="font-bold text-slate-900 truncate block">{candidate.email}</span>
+          </div>
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <span className="text-[10px] font-bold text-slate-400 uppercase block">Phone Contact</span>
+            <span className="font-bold text-slate-900">{candidate.phone}</span>
+          </div>
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <span className="text-[10px] font-bold text-slate-400 uppercase block">Expected CTC</span>
+            <span className="font-bold text-slate-900">{candidate.expectedSalary}</span>
+          </div>
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <span className="text-[10px] font-bold text-slate-400 uppercase block">Candidate ID</span>
+            <span className="font-mono font-bold text-slate-900">{candidate.id}</span>
+          </div>
         </div>
       </div>
 
-      {/* Two-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Main Column */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* TAB: OVERVIEW */}
-          {(activeTab === 'overview' || activeTab === 'notes') && (
-            <>
-              {/* Professional Summary */}
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-3">
-                <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <User className="w-4 h-4 text-emerald-600" /> Executive Candidate Summary
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
-                  {candidate.bio}
-                </p>
-              </div>
+      {/* Tabs Navigation Bar */}
+      <div className="flex items-center gap-1 border-b border-slate-200/80 overflow-x-auto no-scrollbar">
+        {[
+          { id: 'overview', label: 'Overview', icon: User },
+          { id: 'resume', label: 'Resume & Dossier', icon: FileText },
+          { id: 'experience', label: 'Work Experience', icon: Briefcase },
+          { id: 'education', label: 'Education & Certs', icon: GraduationCap },
+          { id: 'skills', label: 'Verified Skills', icon: Award },
+          { id: 'portfolio', label: 'Projects & Portfolio', icon: FolderGit2 },
+          { id: 'preferences', label: 'Career Preferences', icon: Star },
+          { id: 'applications', label: 'Job Applications', icon: FileCheck },
+          { id: 'audit', label: 'Audit Log', icon: History },
+          { id: 'notes', label: 'Recruiter Notes', icon: MessageSquare },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`px-4 py-3 text-xs font-bold whitespace-nowrap flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                isActive
+                  ? 'border-emerald-600 text-emerald-700 bg-emerald-50/40 rounded-t-xl'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+              }`}
+            >
+              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
 
-              {/* Verified Technical Skills Matrix */}
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-4">
-                <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-emerald-600" /> Verified Technical Skills Matrix
-                </h3>
+      {/* Tab Panels */}
+      <div className="space-y-6">
+        {activeTab === 'overview' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-3">
+                <h3 className="text-sm font-black font-heading text-slate-900">Executive Summary & Bio</h3>
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">{candidate.bio}</p>
+              </Card>
+
+              <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-4">
+                <h3 className="text-sm font-black font-heading text-slate-900">Key Competencies</h3>
                 <div className="flex flex-wrap gap-2">
-                  {candidate.skills.map((skill) => (
-                    <span
-                      key={skill}
-                      className="px-3.5 py-2 rounded-xl bg-emerald-50/90 text-emerald-800 border border-emerald-200/70 text-xs font-bold shadow-2xs flex items-center gap-2"
-                    >
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                      {skill}
+                  {candidate.skills.map((s) => (
+                    <span key={s} className="bg-emerald-50 text-emerald-800 text-xs font-bold px-3 py-1 rounded-xl border border-emerald-200/70">
+                      {s}
                     </span>
                   ))}
                 </div>
-              </div>
-            </>
-          )}
-
-          {/* TAB: EXPERIENCE */}
-          {(activeTab === 'overview' || activeTab === 'experience') && (
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <Briefcase className="w-4 h-4 text-emerald-600" /> Career History & Professional Timeline
-                </h3>
-                <span className="text-xs font-bold text-slate-400">{candidate.experiences.length} Positions</span>
-              </div>
-
-              <div className="space-y-6 relative before:absolute before:left-3.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200/70">
-                {candidate.experiences.map((exp) => (
-                  <div key={exp.id} className="relative pl-8 space-y-2">
-                    <div className="absolute left-1.5 top-1.5 w-4.5 h-4.5 rounded-full bg-emerald-600 border-2 border-white shadow-sm flex items-center justify-center">
-                      <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                      <h4 className="text-sm font-bold text-slate-900">{exp.job_title}</h4>
-                      <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200/60 w-fit">
-                        {exp.start_date} {exp.is_current ? '— Present' : `— ${exp.end_date}`}
-                      </span>
-                    </div>
-
-                    <p className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
-                      <Building className="w-3.5 h-3.5 text-slate-400" />
-                      {exp.company_name} {exp.location && `• ${exp.location}`}
-                    </p>
-
-                    <p className="text-xs text-slate-600 font-medium leading-relaxed pt-1">
-                      {exp.description}
-                    </p>
-                  </div>
-                ))}
-              </div>
+              </Card>
             </div>
-          )}
 
-          {/* TAB: EDUCATION & CERTIFICATIONS */}
-          {(activeTab === 'overview' || activeTab === 'education') && (
             <div className="space-y-6">
-              {/* Education Cards */}
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-4">
-                <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-3">
-                  <GraduationCap className="w-4 h-4 text-emerald-600" /> Academic Degrees & Qualifications
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {candidate.educations.map((edu) => (
-                    <div key={edu.id} className="p-4 bg-slate-50/90 rounded-2xl border border-slate-200/70 space-y-2">
-                      <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
-                        <GraduationCap className="w-4 h-4" />
-                      </div>
-                      <h4 className="text-xs font-bold text-slate-900">{edu.degree}</h4>
-                      <p className="text-xs font-semibold text-slate-600">{edu.institution}</p>
-                      {edu.field_of_study && <p className="text-[11px] font-medium text-slate-500">Major: {edu.field_of_study}</p>}
-                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 pt-1 border-t border-slate-200/50">
-                        <span>{edu.start_year} - {edu.end_year}</span>
-                        {edu.grade_gpa && <span className="text-emerald-700">GPA: {edu.grade_gpa}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Certifications Cards */}
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-4">
-                <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-3">
-                  <Award className="w-4 h-4 text-emerald-600" /> Professional Certifications & Credentials
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {candidate.certifications.map((cert) => (
-                    <div key={cert.id} className="p-4 bg-slate-50/90 rounded-2xl border border-slate-200/70 space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold text-emerald-700 uppercase bg-emerald-100/80 px-2 py-0.5 rounded">Verified</span>
-                        {cert.issue_date && <span className="text-[11px] text-slate-400 font-semibold">{cert.issue_date}</span>}
-                      </div>
-                      <h4 className="text-xs font-bold text-slate-900">{cert.name}</h4>
-                      <p className="text-xs text-slate-500 font-medium">{cert.issuing_organization}</p>
-                      {cert.credential_id && (
-                        <p className="text-[10px] font-mono font-bold text-slate-400">ID: {cert.credential_id}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB: RESUME VIEWER */}
-          {(activeTab === 'resume') && (
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div>
-                  <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-emerald-600" /> Primary Resume Document
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">PDF Attachment Preview</p>
-                </div>
-                <a
-                  href={candidate.resume_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3.5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs hover:bg-emerald-700 transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5" /> Download Resume PDF
-                </a>
-              </div>
-
-              <div className="w-full h-128 rounded-2xl border border-slate-200 bg-slate-900 flex flex-col items-center justify-center text-white p-2 relative overflow-hidden shadow-inner">
-                <iframe
-                  src={candidate.resume_url}
-                  className="w-full h-full rounded-xl bg-white"
-                  title={`${candidate.first_name} ${candidate.last_name} Resume`}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* TAB: ACTIVITY TIMELINE */}
-          {(activeTab === 'activity') && (
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-4">
-              <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-3">
-                <Clock className="w-4 h-4 text-emerald-600" /> Audit Log & System Activity History
-              </h3>
-
-              <div className="space-y-4 relative before:absolute before:left-3.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-                {[
-                  { title: 'Account Registration', desc: 'Candidate registered profile on platform.', time: '15 Jan 2026, 10:30 AM', icon: User },
-                  { title: 'Resume Document Uploaded', desc: 'Uploaded primary CV PDF file.', time: '15 Jan 2026, 11:15 AM', icon: FileText },
-                  { title: 'Skills & Experience Declared', desc: 'Added 7 verified technical skills & 2 work history roles.', time: '16 Jan 2026, 02:40 PM', icon: Briefcase },
-                  { title: 'Admin Governance Approval Passed', desc: 'Profile verified by Rajeev Sharma (Platform Admin).', time: '18 Jan 2026, 09:20 AM', icon: ShieldCheck },
-                  { title: 'Spotlight Featured Badge Allocated', desc: 'Promoted to Featured Talent Directory.', time: '20 Jan 2026, 04:00 PM', icon: Star },
-                ].map((item, idx) => (
-                  <div key={idx} className="relative pl-8 space-y-1">
-                    <div className="absolute left-1 top-1 w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">
-                      <item.icon className="w-3 h-3" />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-slate-900">{item.title}</h4>
-                      <span className="text-[10px] font-semibold text-slate-400">{item.time}</span>
-                    </div>
-                    <p className="text-xs text-slate-500 font-medium">{item.desc}</p>
+              <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-3">
+                <h3 className="text-sm font-black font-heading text-slate-900">Verification Dossier</h3>
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                    <span className="text-slate-500 font-semibold">Identity Document</span>
+                    <span className="font-bold text-emerald-600">✓ Aadhaar Verified</span>
                   </div>
-                ))}
+                  <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                    <span className="text-slate-500 font-semibold">Degree Credentials</span>
+                    <span className="font-bold text-emerald-600">✓ IIT Bombay Verified</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5">
+                    <span className="text-slate-500 font-semibold">Background Check</span>
+                    <span className="font-bold text-emerald-600">✓ Clear</span>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'resume' && (
+          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-black font-heading text-slate-900">Verified Candidate Resume</h3>
+                <p className="text-xs text-slate-500 font-medium">Uploaded PDF version for corporate applications</p>
               </div>
-            </div>
-          )}
-
-          {/* TAB: INTERNAL NOTES */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <Tag className="w-4 h-4 text-emerald-600" /> Private Administrator Review Notes
-              </h3>
-              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
-                🔒 Admin Secured
-              </span>
-            </div>
-
-            <p className="text-xs text-slate-500 font-medium">
-              Internal verification comments, compliance notes, or interview observations. Never visible to candidates.
-            </p>
-
-            <textarea
-              rows={4}
-              value={internalNotes}
-              onChange={(e) => setInternalNotes(e.target.value)}
-              placeholder="e.g. Verified degree credentials with IIT Bombay registrar. Exceptional fit for ESG advisory roles..."
-              className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all"
-            />
-
-            <div className="flex justify-end">
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs" onClick={handleSaveNotes}>
-                <Save className="w-3.5 h-3.5 mr-1.5" /> Save Internal Notes
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl">
+                <Download className="w-3.5 h-3.5 mr-1" /> Download PDF
               </Button>
             </div>
-          </div>
-        </div>
+            <div className="p-8 bg-slate-50 rounded-2xl border border-slate-200/80 text-center space-y-3">
+              <FileText className="w-12 h-12 text-emerald-600 mx-auto" />
+              <p className="text-xs font-bold text-slate-800">Rahul_Sharma_Resume_ESG_2026.pdf</p>
+              <p className="text-[11px] text-slate-400">PDF File • 2.4 MB • Last Updated 12 days ago</p>
+            </div>
+          </Card>
+        )}
 
-        {/* Right Sidebar Column (Snapshot & Controls) */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* Snapshot Vitals Panel */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-            <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 flex items-center justify-between">
-              <span>Candidate Snapshot</span>
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            </h3>
+        {activeTab === 'experience' && (
+          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-6">
+            <h3 className="text-sm font-black font-heading text-slate-900">Work Experience History</h3>
+            <div className="space-y-4">
+              {candidate.experience.map((exp, idx) => (
+                <div key={idx} className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/70 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-slate-900 text-xs sm:text-sm">{exp.role}</h4>
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/60">{exp.period}</span>
+                  </div>
+                  <p className="text-xs font-semibold text-slate-600">{exp.company}</p>
+                  <p className="text-xs text-slate-500 font-normal mt-2 leading-relaxed">{exp.description}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
+        {activeTab === 'education' && (
+          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-6">
+            <h3 className="text-sm font-black font-heading text-slate-900">Education & Certifications</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {candidate.education.map((edu, idx) => (
+                <div key={idx} className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/70 space-y-1">
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Degree</span>
+                  <p className="font-bold text-slate-900 text-xs sm:text-sm">{edu.degree}</p>
+                  <p className="text-xs text-slate-500 font-semibold">{edu.institution} ({edu.year})</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {activeTab === 'skills' && (
+          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-4">
+            <h3 className="text-sm font-black font-heading text-slate-900">Verified Technical Skills</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {candidate.skills.map((s) => (
+                <div key={s} className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/70 flex items-center justify-between text-xs font-bold text-slate-800">
+                  <span>{s}</span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {activeTab === 'portfolio' && (
+          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-4">
+            <h3 className="text-sm font-black font-heading text-slate-900">Featured Projects</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {candidate.projects.map((p, idx) => (
+                <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-200/70 space-y-2">
+                  <h4 className="font-bold text-slate-900 text-xs sm:text-sm">{p.name}</h4>
+                  <p className="text-xs text-slate-500">{p.description}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {activeTab === 'preferences' && (
+          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-4">
+            <h3 className="text-sm font-black font-heading text-slate-900">Career Preferences</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Preferred Location</span>
+                <span className="font-bold text-slate-900">Mumbai / Hybrid</span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Desired Role</span>
+                <span className="font-bold text-slate-900">Senior ESG Director</span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Work Mode</span>
+                <span className="font-bold text-slate-900">Hybrid / Remote</span>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {activeTab === 'applications' && (
+          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-4">
+            <h3 className="text-sm font-black font-heading text-slate-900">Active Applications</h3>
+            <div className="divide-y divide-slate-100 text-xs">
+              {candidate.applications.map((app) => (
+                <div key={app.id} className="py-3 flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-slate-900">{app.jobTitle}</p>
+                    <p className="text-[11px] text-slate-400">{app.company} • Applied {app.date}</p>
+                  </div>
+                  <Badge variant="primary" size="sm" className="capitalize font-bold">{app.status}</Badge>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {activeTab === 'audit' && (
+          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-4">
+            <h3 className="text-sm font-black font-heading text-slate-900">Candidate Security & Audit Trail</h3>
             <div className="space-y-3 text-xs">
-              <div className="flex items-center justify-between py-1 border-b border-slate-100">
-                <span className="font-semibold text-slate-500">Total Experience:</span>
-                <span className="font-bold text-slate-900">{candidate.experience_years} Years</span>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                <span className="font-semibold text-slate-700">Candidate Profile Created</span>
+                <span className="font-mono text-slate-400">06 Aug 2026 10:15 AM</span>
               </div>
-
-              <div className="flex items-center justify-between py-1 border-b border-slate-100">
-                <span className="font-semibold text-slate-500">Primary Industry:</span>
-                <span className="font-bold text-slate-900 text-right max-w-xs">{candidate.preferred_industry}</span>
-              </div>
-
-              <div className="flex items-center justify-between py-1 border-b border-slate-100">
-                <span className="font-semibold text-slate-500">Location:</span>
-                <span className="font-bold text-slate-900">{candidate.city}, {candidate.country}</span>
-              </div>
-
-              <div className="flex items-center justify-between py-1 border-b border-slate-100">
-                <span className="font-semibold text-slate-500">Availability:</span>
-                <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">{candidate.availability_status}</span>
-              </div>
-
-              <div className="flex items-center justify-between py-1 border-b border-slate-100">
-                <span className="font-semibold text-slate-500">Work Authorization:</span>
-                <span className="font-bold text-slate-900 text-right">{candidate.work_authorization}</span>
-              </div>
-
-              <div className="flex items-center justify-between py-1 border-b border-slate-100">
-                <span className="font-semibold text-slate-500">Registration Date:</span>
-                <span className="font-bold text-slate-700">{new Date(candidate.created_at).toLocaleDateString()}</span>
-              </div>
-
-              <div className="flex items-center justify-between py-1">
-                <span className="font-semibold text-slate-500">Last Profile Update:</span>
-                <span className="font-bold text-slate-700">{new Date(candidate.updated_at).toLocaleDateString()}</span>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                <span className="font-semibold text-slate-700">Verification Status Approved by Admin</span>
+                <span className="font-mono text-slate-400">07 Aug 2026 02:40 PM</span>
               </div>
             </div>
-          </div>
+          </Card>
+        )}
 
-          {/* Governance Controls Panel */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-            <h3 className="text-xs font-black font-heading text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3">
-              Governance Status Controls
-            </h3>
-
-            <div className="space-y-2">
-              <button
-                onClick={() => handleUpdateStatus('approved')}
-                className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                  candidate.approval_status === 'approved'
-                    ? 'bg-emerald-600 text-white shadow-md'
-                    : 'bg-slate-50 hover:bg-emerald-50 text-slate-700 border border-slate-200'
-                }`}
-              >
-                <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Approved Profile</span>
-                {candidate.approval_status === 'approved' && <Check className="w-4 h-4" />}
-              </button>
-
-              <button
-                onClick={() => handleUpdateStatus('pending')}
-                className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                  candidate.approval_status === 'pending'
-                    ? 'bg-amber-500 text-white shadow-md'
-                    : 'bg-slate-50 hover:bg-amber-50 text-slate-700 border border-slate-200'
-                }`}
-              >
-                <span className="flex items-center gap-2"><Clock className="w-4 h-4" /> Pending Review</span>
-                {candidate.approval_status === 'pending' && <Check className="w-4 h-4" />}
-              </button>
-
-              <button
-                onClick={() => handleUpdateStatus('rejected')}
-                className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                  candidate.approval_status === 'rejected'
-                    ? 'bg-rose-600 text-white shadow-md'
-                    : 'bg-slate-50 hover:bg-rose-50 text-slate-700 border border-slate-200'
-                }`}
-              >
-                <span className="flex items-center gap-2"><XCircle className="w-4 h-4" /> Suspended / Rejected</span>
-                {candidate.approval_status === 'rejected' && <Check className="w-4 h-4" />}
-              </button>
+        {activeTab === 'notes' && (
+          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-4">
+            <h3 className="text-sm font-black font-heading text-slate-900">Internal Recruiter Notes</h3>
+            <form onSubmit={handleAddNote} className="space-y-3">
+              <textarea
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                placeholder="Add private evaluation notes for internal hiring team..."
+                className="w-full p-3 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:border-emerald-500 bg-slate-50"
+                rows={3}
+              />
+              <Button type="submit" size="sm" className="bg-emerald-600 text-white font-bold text-xs rounded-xl">
+                Add Recruiter Note
+              </Button>
+            </form>
+            <div className="space-y-3 pt-4 border-t border-slate-100">
+              {notes.map((n) => (
+                <div key={n.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-900">{n.author}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">{n.date}</span>
+                  </div>
+                  <p className="text-slate-600 font-medium">{n.text}</p>
+                </div>
+              ))}
             </div>
-          </div>
-        </div>
+          </Card>
+        )}
       </div>
     </div>
   );

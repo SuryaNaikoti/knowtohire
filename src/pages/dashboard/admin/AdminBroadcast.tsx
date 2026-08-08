@@ -266,12 +266,12 @@ export const AdminBroadcast: React.FC = () => {
             <Button
               type="button"
               size="sm"
-              onClick={() => setShowConfirmModal(true)}
-              disabled={!title || !body}
+              onClick={handleExecuteBroadcast}
+              disabled={!title || !body || sending}
               className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-2xs"
             >
               <Send className="w-3.5 h-3.5 mr-1" />
-              Send Broadcast
+              {sending ? 'Dispatching...' : 'Send Broadcast'}
             </Button>
           </div>
         </Card>
@@ -336,43 +336,6 @@ export const AdminBroadcast: React.FC = () => {
           </Card>
         </div>
       </div>
-
-      {/* CONFIRMATION MODAL (Framer Motion Modal) */}
-      <MotionModal
-        isOpen={showConfirmModal}
-        onClose={() => setShowConfirmModal(false)}
-        title="Confirm System Broadcast"
-        maxWidth="max-w-md"
-      >
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 text-purple-600 p-3 bg-purple-50 rounded-xl border border-purple-100">
-            <AlertTriangle className="w-5 h-5 shrink-0" />
-            <p className="text-xs font-bold text-purple-900">
-              Target Audience: Approximately {estimatedReach} {targetAudience} users across {deliveryMode} channels.
-            </p>
-          </div>
-
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
-            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Announcement Title</p>
-            <p className="text-xs font-bold text-slate-900">{title}</p>
-            <p className="text-[11px] font-medium text-slate-600 mt-2 line-clamp-3">{body}</p>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-            <Button size="sm" variant="outline" onClick={() => setShowConfirmModal(false)}>
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleExecuteBroadcast}
-              disabled={sending}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs"
-            >
-              {sending ? 'Dispatching...' : 'Confirm & Dispatch'}
-            </Button>
-          </div>
-        </div>
-      </MotionModal>
     </div>
   );
 };

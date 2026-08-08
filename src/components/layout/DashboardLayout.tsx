@@ -7,7 +7,7 @@ import { notificationService } from '../../lib/services/notificationService';
 import { useNotifications } from '../../lib/services/notifications';
 import { ToastContainer } from '../common/ToastContainer';
 import { GlobalCommandSearch } from '../ui/GlobalCommandSearch';
-import { Search, Sun, Moon, LayoutDashboard } from 'lucide-react';
+import { Search, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const DashboardLayout: React.FC = () => {
@@ -15,15 +15,9 @@ export const DashboardLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [isDark, setIsDark] = useState(false);
   const profileDropdownRef = React.useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
-
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-    document.documentElement.classList.toggle('dark');
-  };
 
   const { unreadCount, setUnreadCount, toasts, dismissToast } = useNotifications(profile?.id);
 
@@ -369,21 +363,11 @@ export const DashboardLayout: React.FC = () => {
             {/* Global Search Button */}
             <button
               onClick={() => setSearchOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-solid border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50 cursor-pointer text-xs font-semibold"
-              aria-label="Open Command Search"
+              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors"
             >
               <Search className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Search...</span>
               <kbd className="hidden sm:inline px-1.5 py-0.5 bg-slate-100 rounded text-[9px] font-mono font-bold text-slate-500">Ctrl K</kbd>
-            </button>
-
-            {/* Theme Toggle Button */}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-50 cursor-pointer"
-              aria-label="Toggle Dark Theme"
-            >
-              {isDark ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-slate-600" />}
             </button>
 
             {/* Notifications Button */}

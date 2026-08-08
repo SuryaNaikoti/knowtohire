@@ -94,11 +94,15 @@ const AdminCMS = React.lazy(() => import('./pages/dashboard/admin/AdminCMS'));
 const Users = React.lazy(() => import('./pages/dashboard/admin/Users').then((m) => ({ default: m.Users })));
 const Roles = React.lazy(() => import('./pages/dashboard/admin/Roles').then((m) => ({ default: m.Roles })));
 const AuditLogs = React.lazy(() => import('./pages/dashboard/admin/AuditLogs').then((m) => ({ default: m.AuditLogs })));
+const AuditLogDetail = React.lazy(() => import('./pages/dashboard/admin/AuditLogDetail').then((m) => ({ default: m.AuditLogDetail })));
 const PlatformSettings = React.lazy(() => import('./pages/dashboard/admin/PlatformSettings').then((m) => ({ default: m.PlatformSettings })));
 const Candidates = React.lazy(() => import('./pages/dashboard/admin/Candidates').then((m) => ({ default: m.Candidates })));
 const CandidateDetail = React.lazy(() => import('./pages/dashboard/admin/CandidateDetail').then((m) => ({ default: m.CandidateDetail })));
 const Employers = React.lazy(() => import('./pages/dashboard/admin/Employers').then((m) => ({ default: m.Employers })));
+const EmployerDetail = React.lazy(() => import('./pages/dashboard/admin/EmployerDetail').then((m) => ({ default: m.EmployerDetail })));
 const Applications = React.lazy(() => import('./pages/dashboard/admin/Applications').then((m) => ({ default: m.Applications })));
+const ApplicationDetail = React.lazy(() => import('./pages/dashboard/admin/ApplicationDetail').then((m) => ({ default: m.ApplicationDetail })));
+const JobDetail = React.lazy(() => import('./pages/dashboard/admin/JobDetail').then((m) => ({ default: m.JobDetail })));
 const Resources = React.lazy(() => import('./pages/dashboard/admin/Resources').then((m) => ({ default: m.Resources })));
 const Templates = React.lazy(() => import('./pages/dashboard/admin/Templates').then((m) => ({ default: m.Templates })));
 const AdminBlog = React.lazy(() => import('./pages/dashboard/admin/Blog').then((m) => ({ default: m.Blog })));
@@ -472,6 +476,14 @@ export const App: React.FC = () => {
                 }
               />
               <Route
+                path="audit-logs/:id"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <AuditLogDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="settings"
                 element={
                   <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
@@ -504,10 +516,34 @@ export const App: React.FC = () => {
                 }
               />
               <Route
+                path="employers/:id"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <EmployerDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="applications"
                 element={
                   <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
                     <Applications />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="applications/:id"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <ApplicationDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="moderation/:id"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <JobDetail />
                   </ProtectedRoute>
                 }
               />

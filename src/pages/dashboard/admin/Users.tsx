@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Alert } from '../../../components/ui/Alert';
-import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { StaggerGrid, StaggerItem, MotionCard } from '../../../components/ui/Motion';
 import { supabase } from '../../../lib/supabase';
@@ -469,6 +468,14 @@ export const Users: React.FC = () => {
     setSortBy('newest');
     setCurrentPage(1);
     setSelectedUserIds([]);
+  };
+
+  const handleViewProfile = (user: User) => {
+    if (user.role === 'employer') {
+      navigate(`/dashboard/admin/employers/${user.id}`);
+    } else {
+      navigate(`/dashboard/admin/candidates/${user.id}`);
+    }
   };
 
   // Label Mappings for Custom Minimalist Select Dropdowns
@@ -1007,199 +1014,6 @@ export const Users: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL 1: VIEW USER PROFILE MODAL */}
-      {viewingUser && (
-        <Modal isOpen={!!viewingUser} onClose={() => setViewingUser(null)} title="User Profile Summary" size="md">
-          <div className="space-y-4">
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 flex items-center gap-4">
-              <div className={`w-14 h-14 rounded-full border-2 border-white shadow-md flex items-center justify-center font-black text-lg ${getAvatarBg(viewingUser.role)}`}>
-                {getInitials(viewingUser.first_name, viewingUser.last_name, viewingUser.email)}
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-900 text-base">{viewingUser.first_name} {viewingUser.last_name}</h4>
-                <p className="text-xs text-slate-500 font-medium">{viewingUser.email}</p>
-                <div className="mt-1 flex items-center gap-2">
-                  {renderRoleBadge(viewingUser.role)}
-                  {renderStatusBadge(viewingUser.is_active !== false)}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2 text-xs font-medium text-slate-600">
-              <div className="flex justify-between py-2 border-b border-slate-100">
-                <span className="text-slate-400 font-semibold">User ID</span>
-                <span className="font-mono text-slate-900">{viewingUser.id}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-slate-100">
-                <span className="text-slate-400 font-semibold">Joined Date</span>
-                <span className="text-slate-900">{formatDate(viewingUser.created_at)}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-slate-400 font-semibold">Last Login Activity</span>
-                <span className="text-slate-900">{viewingUser.last_login || 'Recently'}</span>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-slate-100 flex justify-end">
-              <Button onClick={() => setViewingUser(null)} size="sm" variant="outline" className="text-xs font-bold rounded-xl bg-white border-slate-300">
-                Close
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* MODAL 2: EDIT USER MODAL */}
-      {editingUser && (
-        <Modal isOpen={!!editingUser} onClose={() => setEditingUser(null)} title="Edit User Information" size="md">
-          <form onSubmit={handleSaveEditUser} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                label="First Name"
-                required
-                value={editFirstName}
-                onChange={(e) => setEditFirstName(e.target.value)}
-                className="text-xs"
-              />
-              <Input
-                label="Last Name"
-                required
-                value={editLastName}
-                onChange={(e) => setEditLastName(e.target.value)}
-                className="text-xs"
-              />
-            </div>
-
-            <Input
-              label="Email Address"
-              type="email"
-              required
-              value={editEmail}
-              onChange={(e) => setEditEmail(e.target.value)}
-              className="text-xs"
-            />
-
-            <div className="flex flex-col space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Platform Access Role</label>
-              <select
-                value={editRole}
-                onChange={(e) => setEditRole(e.target.value as any)}
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:border-emerald-500 outline-none"
-              >
-                <option value="candidate">Candidate</option>
-                <option value="employer">Employer</option>
-                <option value="admin">Administrator</option>
-                <option value="super_admin">Super Administrator</option>
-              </select>
-            </div>
-
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
-              <Button type="button" onClick={() => setEditingUser(null)} variant="outline" size="sm" className="text-xs font-bold rounded-xl bg-white border-slate-300">
-                Cancel
-              </Button>
-              <Button type="submit" size="sm" className="text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white">
-                Save Changes
-              </Button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
-      {/* MODAL 3: SUSPEND / ACTIVATE CONFIRMATION MODAL */}
-      {suspendingUser && (
-        <Modal
-          isOpen={!!suspendingUser}
-          onClose={() => setSuspendingUser(null)}
-          title={suspendingUser.targetActive ? 'Confirm Account Reactivation' : 'Confirm Account Suspension'}
-          size="sm"
-        >
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3.5 bg-amber-50 rounded-xl border border-amber-200/80 text-amber-900">
-              <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0" />
-              <p className="text-xs font-semibold leading-relaxed">
-                Are you sure you want to {suspendingUser.targetActive ? 'reactivate' : 'suspend'}{' '}
-                <strong className="text-slate-900">{suspendingUser.user.first_name} {suspendingUser.user.last_name}</strong> ({suspendingUser.user.email})?
-              </p>
-            </div>
-
-            <div className="pt-2 flex items-center justify-end gap-2">
-              <Button type="button" onClick={() => setSuspendingUser(null)} variant="outline" size="sm" className="text-xs font-bold rounded-xl bg-white border-slate-300">
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={handleConfirmToggleActive}
-                size="sm"
-                className={`text-xs font-bold rounded-xl ${
-                  suspendingUser.targetActive
-                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                    : 'bg-rose-600 hover:bg-rose-700 text-white'
-                }`}
-              >
-                {suspendingUser.targetActive ? 'Reactivate Account' : 'Suspend Account'}
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* MODAL 4: RESET PASSWORD MODAL */}
-      {resettingUser && (
-        <Modal
-          isOpen={!!resettingUser}
-          onClose={() => setResettingUser(null)}
-          title="Reset User Password"
-          size="sm"
-        >
-          <div className="space-y-4">
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-1">
-              <p className="text-xs font-bold text-slate-900">
-                {resettingUser.first_name} {resettingUser.last_name}
-              </p>
-              <p className="text-xs text-slate-500 font-medium">{resettingUser.email}</p>
-            </div>
-
-            {resetSent ? (
-              <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200/80 text-emerald-900 space-y-1.5">
-                <p className="text-xs font-bold flex items-center gap-1.5 text-emerald-800">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  Password Reset Instructions Sent!
-                </p>
-                <p className="text-[11px] text-emerald-700 font-medium leading-relaxed">
-                  An automated recovery email with reset credentials has been dispatched to <strong>{resettingUser.email}</strong>.
-                </p>
-              </div>
-            ) : (
-              <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                Dispatch a secure, time-limited password recovery link to the user's registered email address. The user can click the link to establish new login credentials.
-              </p>
-            )}
-
-            <div className="pt-2 flex items-center justify-end gap-2">
-              <Button
-                type="button"
-                onClick={() => setResettingUser(null)}
-                variant="outline"
-                size="sm"
-                className="text-xs font-bold rounded-xl bg-white border-slate-300"
-              >
-                {resetSent ? 'Close' : 'Cancel'}
-              </Button>
-              {!resetSent && (
-                <Button
-                  type="button"
-                  onClick={handleSendResetEmail}
-                  isLoading={isResettingPassword}
-                  size="sm"
-                  className="text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  <KeyRound className="w-3.5 h-3.5 mr-1.5" /> Dispatch Reset Link
-                </Button>
-              )}
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 };

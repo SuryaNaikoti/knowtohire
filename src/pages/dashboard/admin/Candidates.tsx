@@ -463,7 +463,11 @@ export const Candidates: React.FC = () => {
             {filteredCandidates.map((c) => {
               const initials = getInitials(c.first_name, c.last_name);
               return (
-                <div key={c.id} className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs space-y-3">
+                <div
+                  key={c.id}
+                  onClick={() => navigate(`/dashboard/admin/candidates/${c.id}`)}
+                  className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs space-y-3 cursor-pointer hover:border-emerald-300 transition-colors"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {c.avatar_url ? (
@@ -629,7 +633,11 @@ export const Candidates: React.FC = () => {
                       {filteredCandidates.map((c) => {
                         const initials = getInitials(c.first_name, c.last_name);
                         return (
-                          <tr key={c.id} className="hover:bg-slate-50/80 transition-colors group">
+                          <tr
+                        key={c.id}
+                        className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                        onClick={() => navigate(`/dashboard/admin/candidates/${c.id}`)}
+                      >
                             <td className="py-4 px-5">
                               <div className="flex items-center gap-3">
                                 {c.avatar_url ? (

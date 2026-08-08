@@ -527,12 +527,12 @@ export const AdminDashboard: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setShowConfirmModal(true)}
-              disabled={!title || !body}
+              onClick={handleExecuteBroadcast}
+              disabled={!title || !body || sending}
               className="px-5 py-2.5 bg-purple-600 text-white rounded-xl text-xs font-bold hover:bg-purple-700 flex items-center gap-1.5 shadow-xs transition-all disabled:opacity-40 cursor-pointer"
             >
               <Send className="w-3.5 h-3.5" />
-              Send Broadcast
+              {sending ? 'Dispatching...' : 'Send Broadcast'}
             </button>
           </div>
         </Card>
@@ -772,39 +772,6 @@ export const AdminDashboard: React.FC = () => {
           </button>
         </div>
       </Card>
-
-      {/* Confirmation Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
-            <div className="flex items-center gap-3 text-purple-600">
-              <Radio className="w-6 h-6" />
-              <h3 className="text-base font-bold text-slate-900">Confirm Platform Broadcast</h3>
-            </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              You are about to dispatch <strong>"{title}"</strong> to approximately{' '}
-              <strong>{estimatedReach} {targetAudience} users</strong> across <strong>{deliveryMode}</strong> channels.
-            </p>
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowConfirmModal(false)}
-                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-200 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleExecuteBroadcast}
-                disabled={sending}
-                className="px-4 py-2 bg-purple-600 text-white rounded-xl text-xs font-bold hover:bg-purple-700 flex items-center gap-1.5 cursor-pointer"
-              >
-                {sending ? 'Dispatching...' : 'Confirm & Dispatch'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Execution Report */}
       {lastReport && (

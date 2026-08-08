@@ -455,76 +455,84 @@ export const Resources: React.FC = () => {
         </>
       )}
 
-      {/* CREATE / EDIT ASSET MODAL (Framer Motion Modal) */}
-      <MotionModal
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        title={selectedResource ? 'Edit Resource Asset' : 'Publish New Resource Asset'}
-        maxWidth="max-w-xl"
-      >
-        <form onSubmit={handleSave} className="space-y-4">
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Resource Title *</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. ESG Reporting & BRSR Implementation Manual"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 outline-none"
-              required
-            />
+      {/* INLINE CREATE / EDIT ASSET FORM CARD */}
+      {isFormOpen && (
+        <Card className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-md space-y-4 animate-fade-in-up my-6">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 className="text-base font-black font-heading text-slate-900">
+              {selectedResource ? 'Edit Resource Asset' : 'Publish New Resource Asset'}
+            </h3>
+            <button
+              onClick={() => setIsFormOpen(false)}
+              className="text-xs font-bold text-slate-400 hover:text-slate-700 cursor-pointer"
+            >
+              Close
+            </button>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
+          <form onSubmit={handleSave} className="space-y-4">
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Asset Category</label>
-              <Select
-                value={type}
-                onChange={(val) => setType(val)}
-                options={[
-                  { value: 'Guide', label: '📖 Guide' },
-                  { value: 'Whitepaper', label: '📄 Whitepaper' },
-                  { value: 'Lead Magnet', label: '🧲 Lead Magnet' },
-                  { value: 'Ebook', label: '📚 Ebook' },
-                ]}
+              <label className="text-xs font-bold text-slate-700 block mb-1">Resource Title *</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. ESG Reporting & BRSR Implementation Manual"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-800 focus:border-emerald-500 outline-none"
+                required
               />
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Asset Category</label>
+                <Select
+                  value={type}
+                  onChange={(val) => setType(val)}
+                  options={[
+                    { value: 'Guide', label: '📖 Guide' },
+                    { value: 'Whitepaper', label: '📄 Whitepaper' },
+                    { value: 'Lead Magnet', label: '🧲 Lead Magnet' },
+                    { value: 'Ebook', label: '📚 Ebook' },
+                  ]}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Publishing Status</label>
+                <Select
+                  value={status}
+                  onChange={(val) => setStatus(val as any)}
+                  options={[
+                    { value: 'published', label: '🟢 Published' },
+                    { value: 'draft', label: '🟡 Draft' },
+                    { value: 'scheduled', label: '🔵 Scheduled' },
+                  ]}
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Publishing Status</label>
-              <Select
-                value={status}
-                onChange={(val) => setStatus(val as any)}
-                options={[
-                  { value: 'published', label: '🟢 Published' },
-                  { value: 'draft', label: '🟡 Draft' },
-                  { value: 'scheduled', label: '🔵 Scheduled' },
-                ]}
+              <label className="text-xs font-bold text-slate-700 block mb-1">SEO Description</label>
+              <textarea
+                value={seoDesc}
+                onChange={(e) => setSeoDesc(e.target.value)}
+                placeholder="Meta description for search engine indexing..."
+                rows={3}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-800 focus:border-emerald-500 outline-none resize-none"
               />
             </div>
-          </div>
 
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">SEO Description</label>
-            <textarea
-              value={seoDesc}
-              onChange={(e) => setSeoDesc(e.target.value)}
-              placeholder="Meta description for search engine indexing..."
-              rows={3}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 outline-none resize-none"
-            />
-          </div>
-
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
-            <Button size="sm" variant="outline" type="button" onClick={() => setIsFormOpen(false)}>
-              Cancel
-            </Button>
-            <Button size="sm" type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">
-              <Save className="w-3.5 h-3.5 mr-1" /> {selectedResource ? 'Save Changes' : 'Publish Asset'}
-            </Button>
-          </div>
-        </form>
-      </MotionModal>
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+              <Button size="sm" variant="outline" type="button" onClick={() => setIsFormOpen(false)} className="text-xs font-bold rounded-xl">
+                Cancel
+              </Button>
+              <Button size="sm" type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl">
+                <Save className="w-3.5 h-3.5 mr-1" /> {selectedResource ? 'Save Changes' : 'Publish Asset'}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      )}
     </div>
   );
 };

@@ -455,64 +455,72 @@ export const Templates: React.FC = () => {
         </>
       )}
 
-      {/* CREATE / EDIT TEMPLATE MODAL (Framer Motion Modal) */}
-      <MotionModal
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        title={selectedTemplate ? 'Edit Marketplace Template' : 'Publish New Template'}
-        maxWidth="max-w-md"
-      >
-        <form onSubmit={handleSave} className="space-y-4">
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Template Title *</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Patent Specification Drafting Template"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 outline-none"
-              required
-            />
+      {/* INLINE CREATE / EDIT TEMPLATE FORM CARD */}
+      {isFormOpen && (
+        <Card className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-md space-y-4 animate-fade-in-up my-6">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 className="text-base font-black font-heading text-slate-900">
+              {selectedTemplate ? 'Edit Marketplace Template' : 'Publish New Template'}
+            </h3>
+            <button
+              onClick={() => setIsFormOpen(false)}
+              className="text-xs font-bold text-slate-400 hover:text-slate-700 cursor-pointer"
+            >
+              Close
+            </button>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
+          <form onSubmit={handleSave} className="space-y-4">
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Category</label>
-              <Select
-                value={category}
-                onChange={(val) => setCategory(val)}
-                options={[
-                  { value: 'Resume', label: '📄 Resume' },
-                  { value: 'Cover Letter', label: '✉️ Cover Letter' },
-                  { value: 'Portfolio', label: '💼 Portfolio' },
-                  { value: 'Contract', label: '⚖️ Legal Contract' },
-                ]}
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Price ($ USD)</label>
+              <label className="text-xs font-bold text-slate-700 block mb-1">Template Title *</label>
               <input
-                type="number"
-                min="0"
-                value={price}
-                onChange={(e) => setPrice(Number(e.target.value))}
-                placeholder="0 for Free"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-bold text-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 outline-none"
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Patent Specification Drafting Template"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-800 focus:border-emerald-500 outline-none"
+                required
               />
             </div>
-          </div>
 
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
-            <Button size="sm" variant="outline" type="button" onClick={() => setIsFormOpen(false)}>
-              Cancel
-            </Button>
-            <Button size="sm" type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">
-              <Save className="w-3.5 h-3.5 mr-1" /> {selectedTemplate ? 'Save Template' : 'Publish Template'}
-            </Button>
-          </div>
-        </form>
-      </MotionModal>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Category</label>
+                <Select
+                  value={category}
+                  onChange={(val) => setCategory(val)}
+                  options={[
+                    { value: 'Resume', label: '📄 Resume' },
+                    { value: 'Cover Letter', label: '✉️ Cover Letter' },
+                    { value: 'Portfolio', label: '💼 Portfolio' },
+                    { value: 'Contract', label: '⚖️ Legal Contract' },
+                  ]}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Price ($ USD)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={price}
+                  onChange={(e) => setPrice(Number(e.target.value))}
+                  placeholder="0 for Free"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-bold text-slate-800 focus:border-emerald-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+              <Button size="sm" variant="outline" type="button" onClick={() => setIsFormOpen(false)} className="text-xs font-bold rounded-xl">
+                Cancel
+              </Button>
+              <Button size="sm" type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl">
+                <Save className="w-3.5 h-3.5 mr-1" /> {selectedTemplate ? 'Save Template' : 'Publish Template'}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      )}
     </div>
   );
 };

@@ -528,10 +528,10 @@ export const Applications: React.FC = () => {
                         <td className="py-4 px-5 text-right whitespace-nowrap">
                           <Button
                             size="sm"
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs hover:shadow-md transition-all"
-                            onClick={() => setSelectedApp(a)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs hover:shadow-md transition-all cursor-pointer"
+                            onClick={() => navigate(`/dashboard/admin/applications/${a.id}`)}
                           >
-                            Inspect <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                            View Application <ChevronRight className="w-3.5 h-3.5 ml-1" />
                           </Button>
                         </td>
                       </tr>
@@ -543,133 +543,6 @@ export const Applications: React.FC = () => {
           </div>
         </>
       )}
-
-      {/* APPLICATION DOSSIER INSPECTOR MODAL (Framer Motion Modal) */}
-      <MotionModal
-        isOpen={!!selectedApp}
-        onClose={() => setSelectedApp(null)}
-        title="Application Funnel Inspector"
-        maxWidth="max-w-2xl"
-      >
-        {selectedApp && (
-          <div className="space-y-6">
-            {/* Candidate & Job Header */}
-            <div className="flex items-start justify-between p-4 bg-slate-50/80 rounded-2xl border border-slate-100">
-              <div className="flex items-center gap-3">
-                {selectedApp.avatar_url ? (
-                  <img src={selectedApp.avatar_url} alt={selectedApp.candidate_name} className="w-12 h-12 rounded-2xl object-cover border border-slate-200 shadow-xs" />
-                ) : (
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-black text-sm flex items-center justify-center shadow-xs">
-                    {getInitials(selectedApp.candidate_name)}
-                  </div>
-                )}
-                <div>
-                  <h3 className="text-base font-black font-heading text-slate-900">{selectedApp.candidate_name}</h3>
-                  <p className="text-xs font-semibold text-slate-500">{selectedApp.candidate_email}</p>
-                </div>
-              </div>
-
-              <Badge
-                variant={
-                  selectedApp.status === 'shortlisted' || selectedApp.status === 'offered' ? 'success' :
-                  selectedApp.status === 'interview_scheduled' ? 'secondary' :
-                  selectedApp.status === 'rejected' ? 'danger' : 'warning'
-                }
-                size="sm"
-                className="capitalize font-bold"
-              >
-                {selectedApp.status.replace('_', ' ')}
-              </Badge>
-            </div>
-
-            {/* Target Job Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 bg-white rounded-xl border border-slate-200/80 space-y-1">
-                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Target Role</p>
-                <p className="text-xs font-bold text-slate-900">{selectedApp.job_title}</p>
-                <p className="text-[11px] font-medium text-slate-500">{selectedApp.company_name}</p>
-              </div>
-
-              <div className="p-4 bg-white rounded-xl border border-slate-200/80 space-y-1">
-                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Submission Date</p>
-                <p className="text-xs font-bold text-slate-900">{new Date(selectedApp.created_at).toLocaleString()}</p>
-                <p className="text-[11px] font-medium text-emerald-600 font-bold">✓ Verified RLS Access</p>
-              </div>
-            </div>
-
-            {/* Skills */}
-            <div className="space-y-2">
-              <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Verified Candidate Credentials</p>
-              <div className="flex flex-wrap gap-1.5">
-                {selectedApp.skills.map((skill) => (
-                  <span key={skill} className="bg-emerald-50 text-emerald-800 text-xs font-bold px-3 py-1 rounded-lg border border-emerald-200/80">
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Stage Action Controls */}
-            <div className="space-y-3 pt-3 border-t border-slate-100">
-              <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Hiring Governance Actions</p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => handleUpdateStage('shortlisted')}
-                  className={`text-xs font-bold ${selectedApp.status === 'shortlisted' ? 'bg-teal-700 text-white' : 'bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200'}`}
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Shortlist Candidate
-                </Button>
-
-                <Button
-                  size="sm"
-                  onClick={() => handleUpdateStage('interview_scheduled')}
-                  className={`text-xs font-bold ${selectedApp.status === 'interview_scheduled' ? 'bg-indigo-700 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'}`}
-                >
-                  <Calendar className="w-3.5 h-3.5 mr-1" /> Schedule Interview
-                </Button>
-
-                <Button
-                  size="sm"
-                  onClick={() => handleUpdateStage('offered')}
-                  className={`text-xs font-bold ${selectedApp.status === 'offered' ? 'bg-amber-700 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'}`}
-                >
-                  <Award className="w-3.5 h-3.5 mr-1" /> Extend Job Offer
-                </Button>
-
-                <Button
-                  size="sm"
-                  onClick={() => handleUpdateStage('rejected')}
-                  className={`text-xs font-bold ${selectedApp.status === 'rejected' ? 'bg-rose-700 text-white' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'}`}
-                >
-                  <XCircle className="w-3.5 h-3.5 mr-1" /> Reject Application
-                </Button>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-              <Button size="sm" variant="outline" onClick={() => setSelectedApp(null)}>
-                Close Inspector
-              </Button>
-
-              {selectedApp.candidate_id && (
-                <Button
-                  size="sm"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
-                  onClick={() => {
-                    const cid = selectedApp.candidate_id;
-                    setSelectedApp(null);
-                    window.location.href = `/dashboard/admin/candidates/${cid}`;
-                  }}
-                >
-                  View Candidate Profile <ExternalLink className="w-3.5 h-3.5 ml-1" />
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-      </MotionModal>
     </div>
   );
 };
