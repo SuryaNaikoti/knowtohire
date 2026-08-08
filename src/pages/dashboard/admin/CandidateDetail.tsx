@@ -1,9 +1,8 @@
+// KnowToHire V1.0 — Candidate Profile (Admin View) — Full Responsive Redesign
 import React, { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Card } from '../../../components/ui/Card';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
-import { StaggerGrid, StaggerItem } from '../../../components/ui/Motion';
 import {
   User,
   Mail,
@@ -12,89 +11,88 @@ import {
   Briefcase,
   GraduationCap,
   Award,
-  Calendar,
   DollarSign,
   FileText,
-  ExternalLink,
-  ShieldCheck,
   CheckCircle2,
   Clock,
   ArrowLeft,
   Download,
   Building2,
-  FolderGit2,
-  Globe,
-  Sparkles,
   MessageSquare,
-  FileCheck,
-  History,
-  Lock,
-  Layers,
-  Star
+  ChevronRight,
+  Send,
+  XCircle
 } from 'lucide-react';
+
+type TabId = 'overview' | 'experience' | 'education' | 'skills' | 'applications' | 'notes';
 
 export const CandidateDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<
-    'overview' | 'resume' | 'experience' | 'education' | 'skills' | 'portfolio' | 'preferences' | 'applications' | 'audit' | 'notes'
-  >('overview');
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [noteText, setNoteText] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState<'approved' | 'pending' | 'rejected'>('approved');
   const [notes, setNotes] = useState([
-    { id: '1', author: 'Rajeev Sharma (Admin)', text: 'Verified degree certificates from IIT Bombay. Strong ESG background.', date: '2026-08-05 14:30' }
+    { id: '1', author: 'Rajeev Nair (Admin)', text: 'Verified degree certificates from IIT Bombay. Strong ESG background. Recommend for featured spotlight.', date: '2026-08-05 14:30' }
   ]);
 
   const candidate = {
-    id: id || 'usr_c1',
+    id: id || 'cand-1',
     name: 'Rahul Sharma',
     headline: 'Senior Environmental & ESG Consultant',
     email: 'rahul.sharma@gmail.com',
     phone: '+91 98765 43210',
     location: 'Mumbai, Maharashtra',
     availability: 'Immediate (15 days notice)',
-    expectedSalary: '₹24,00,000 / year ($28,000 USD)',
+    expectedSalary: '₹24,00,000 / year',
     experienceYears: '7.5 Years',
     verificationStatus: 'Verified Candidate',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256',
-    bio: 'Results-driven Senior Environmental Engineer and ESG Analyst with over 7 years of expertise in industrial compliance, carbon footprint reduction, ISO 14001 audits, and sustainability disclosures.',
-    skills: ['ESG Reporting', 'ISO 14001', 'Environmental Impact Assessment', 'Carbon Accounting', 'GRI Standards', 'Waste Management', 'EHS Governance'],
+    bio: 'Results-driven Senior Environmental Engineer and ESG Analyst with over 7 years of expertise in industrial compliance, carbon footprint reduction, ISO 14001 audits, and sustainability disclosures. Strong track record delivering net-zero roadmaps for Fortune 500 manufacturers.',
+    skills: ['ESG Reporting', 'ISO 14001', 'Environmental Impact Assessment', 'Carbon Accounting', 'GRI Standards', 'Waste Management', 'EHS Governance', 'BRSR Compliance'],
     experience: [
       {
         company: 'GreenEarth Consultants',
         role: 'Lead ESG Specialist',
-        period: '2022 - Present',
-        description: 'Led ESG auditing and sustainability reporting for 12 enterprise clients across manufacturing and energy sectors.'
+        period: '2022 – Present',
+        description: 'Led ESG auditing and sustainability reporting for 12 enterprise clients across manufacturing and energy sectors. Delivered BRSR and GRI-aligned reports for 3 NSE-listed companies.'
       },
       {
         company: 'SustainEdge Solutions',
         role: 'Environmental Compliance Engineer',
-        period: '2019 - 2022',
-        description: 'Managed environmental safety disclosures and pollution abatement programs.'
+        period: '2019 – 2022',
+        description: 'Managed environmental safety disclosures and pollution abatement programs. Reduced industrial effluent output by 40% through ZLD implementation.'
+      },
+      {
+        company: 'EcoSystems India',
+        role: 'Junior EIA Analyst',
+        period: '2017 – 2019',
+        description: 'Conducted environmental impact assessments for large infrastructure and industrial projects across Maharashtra and Gujarat.'
       }
     ],
     education: [
       {
         degree: 'M.Tech in Environmental Engineering',
         institution: 'Indian Institute of Technology (IIT) Bombay',
-        year: '2019'
+        year: '2019',
+        grade: 'CGPA 9.1 / 10'
       },
       {
         degree: 'B.E. in Chemical Engineering',
-        institution: 'Mumbai University',
-        year: '2017'
+        institution: 'University of Mumbai',
+        year: '2017',
+        grade: 'First Class with Distinction'
       }
     ],
     certifications: [
       { title: 'Certified Sustainability Professional (GRI)', issuer: 'Global Reporting Initiative', year: '2021' },
-      { title: 'ISO 14001 Lead Auditor', issuer: 'BSI Group', year: '2020' }
-    ],
-    projects: [
-      { name: 'Industrial Carbon Accounting Dashboard', description: 'Real-time carbon emissions tracking web application for manufacturing plants.', link: 'https://github.com/example/carbon-dashboard' },
-      { name: 'Zero Liquid Discharge Facility Design', description: 'Engineered effluent treatment framework reducing water wastage by 85%.', link: '#' }
+      { title: 'ISO 14001 Lead Auditor', issuer: 'BSI Group', year: '2020' },
+      { title: 'NEBOSH International General Certificate', issuer: 'NEBOSH', year: '2022' }
     ],
     applications: [
       { id: 'app-101', jobTitle: 'Senior Environmental Engineer', company: 'GreenEarth Consultants', status: 'Shortlisted', date: '2026-07-28' },
-      { id: 'app-102', jobTitle: 'ESG Compliance Director', company: 'EcoTech Global', status: 'Under Review', date: '2026-08-01' }
+      { id: 'app-102', jobTitle: 'ESG Compliance Director', company: 'EcoTech Global', status: 'Under Review', date: '2026-08-01' },
+      { id: 'app-103', jobTitle: 'Head of Sustainability', company: 'PatentNexus', status: 'Applied', date: '2026-08-05' }
     ]
   };
 
@@ -103,329 +101,419 @@ export const CandidateDetail: React.FC = () => {
     if (!noteText.trim()) return;
     setNotes([
       ...notes,
-      { id: Date.now().toString(), author: 'Platform Admin', text: noteText, date: new Date().toLocaleString() }
+      { id: Date.now().toString(), author: 'Platform Admin (You)', text: noteText, date: new Date().toLocaleString() }
     ]);
     setNoteText('');
   };
 
+  const handleCopyEmail = () => {
+    navigator.clipboard.writeText(candidate.email).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
+    { id: 'overview', label: 'Overview', icon: <User className="w-3.5 h-3.5" /> },
+    { id: 'experience', label: 'Work Experience', icon: <Briefcase className="w-3.5 h-3.5" /> },
+    { id: 'education', label: 'Education & Certs', icon: <GraduationCap className="w-3.5 h-3.5" /> },
+    { id: 'skills', label: 'Verified Skills', icon: <Award className="w-3.5 h-3.5" /> },
+    { id: 'applications', label: `Applications (${candidate.applications.length})`, icon: <FileText className="w-3.5 h-3.5" /> },
+    { id: 'notes', label: `Admin Notes (${notes.length})`, icon: <MessageSquare className="w-3.5 h-3.5" /> },
+  ];
+
+  const getApprovalBadge = (status: string) => {
+    if (status === 'approved') return <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200/70"><CheckCircle2 className="w-3.5 h-3.5" /> Verified Candidate</span>;
+    if (status === 'rejected') return <span className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-700 bg-rose-50 px-3 py-1.5 rounded-full border border-rose-200/70"><XCircle className="w-3.5 h-3.5" /> Rejected</span>;
+    return <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200/70"><Clock className="w-3.5 h-3.5" /> Pending Review</span>;
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in-up pb-16">
-      {/* Top Breadcrumb Header */}
-      <div className="flex items-center justify-between border-b border-slate-200/80 pb-4">
+    <div className="space-y-5 animate-fade-in-up pb-16 w-full max-w-full overflow-x-hidden">
+
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
         <button
           onClick={() => navigate('/dashboard/admin/candidates')}
-          className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1.5 cursor-pointer"
+          className="text-xs font-bold text-slate-500 hover:text-slate-900 flex items-center gap-1.5 cursor-pointer transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Candidate Directory
+          <ArrowLeft className="w-4 h-4" />
+          Candidate Directory
         </button>
-
-        <Badge variant="success" className="capitalize font-bold">
-          <ShieldCheck className="w-3.5 h-3.5 mr-1" /> {candidate.verificationStatus}
-        </Badge>
+        <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+        <span className="text-slate-900 font-bold truncate">{candidate.name}</span>
       </div>
 
-      {/* Hero Workspace Section */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <img
-              src={candidate.avatarUrl}
-              alt={candidate.name}
-              className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-200 shadow-sm"
-            />
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-black font-heading text-slate-900 tracking-tight">{candidate.name}</h1>
-                <Badge variant="primary" size="sm" className="font-bold">Verified</Badge>
+      {/* Hero Profile Header */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        {/* Accent gradient bar */}
+        <div className="h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-500" />
+
+        <div className="p-5 sm:p-7">
+          {/* Top Row: Avatar + Info + Actions */}
+          <div className="flex flex-col sm:flex-row sm:items-start gap-5">
+            {/* Avatar */}
+            <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 text-emerald-700 flex items-center justify-center font-black text-xl shrink-0 border-2 border-slate-200 shadow-sm select-none">
+              {candidate.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+            </div>
+
+            {/* Name + Meta */}
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-start gap-3 justify-between">
+                <div className="min-w-0">
+                  {/* Clickable name copies email */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={handleCopyEmail}
+                      className="text-xl sm:text-2xl font-black font-heading text-slate-900 tracking-tight hover:text-emerald-600 transition-colors cursor-pointer text-left"
+                      title={copied ? 'Email copied!' : 'Click to copy email'}
+                    >
+                      {candidate.name}
+                    </button>
+                    {copied && (
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 animate-fade-in-up">
+                        Email copied!
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm font-semibold text-slate-500 mt-0.5">{candidate.headline}</p>
+
+                  <div className="flex flex-wrap items-center gap-3 mt-2">
+                    {getApprovalBadge(approvalStatus)}
+                    <span className="text-xs font-medium text-slate-400 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> {candidate.location}
+                    </span>
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Open to Work
+                    </span>
+                  </div>
+                </div>
+
+                {/* Admin Action Buttons */}
+                <div className="flex items-center gap-2 flex-wrap shrink-0">
+                  <Button
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 px-3 rounded-xl gap-1.5"
+                    onClick={() => setApprovalStatus('approved')}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Verify
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs h-9 px-3 rounded-xl gap-1.5"
+                    onClick={() => setApprovalStatus('rejected')}
+                  >
+                    <XCircle className="w-3.5 h-3.5" /> Reject
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs h-9 px-3 rounded-xl gap-1.5"
+                    onClick={() => {
+                      const csv = `Name,${candidate.name}\nEmail,${candidate.email}\nHeadline,${candidate.headline}`;
+                      const a = document.createElement('a');
+                      a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+                      a.download = `candidate_${candidate.id}.csv`;
+                      a.click();
+                    }}
+                  >
+                    <Download className="w-3.5 h-3.5" /> Export
+                  </Button>
+                </div>
               </div>
-              <p className="text-sm font-bold text-slate-700 mt-0.5">{candidate.headline}</p>
-              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 font-semibold mt-2">
-                <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-slate-400" /> {candidate.location}</span>
-                <span className="flex items-center gap-1"><Briefcase className="w-3.5 h-3.5 text-slate-400" /> {candidate.experienceYears} Exp</span>
-                <span className="flex items-center gap-1 text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600" /> {candidate.availability}
-                </span>
+
+              {/* Quick Info Pills */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-5 pt-5 border-t border-slate-100">
+                {[
+                  { icon: <Mail className="w-3.5 h-3.5 text-slate-400" />, label: 'Email', value: candidate.email, clickable: true },
+                  { icon: <Phone className="w-3.5 h-3.5 text-slate-400" />, label: 'Phone', value: candidate.phone },
+                  { icon: <Briefcase className="w-3.5 h-3.5 text-slate-400" />, label: 'Experience', value: candidate.experienceYears },
+                  { icon: <DollarSign className="w-3.5 h-3.5 text-slate-400" />, label: 'Expected CTC', value: candidate.expectedSalary },
+                ].map((item) => (
+                  <div key={item.label} className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      {item.icon}
+                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">{item.label}</span>
+                    </div>
+                    {item.clickable ? (
+                      <button
+                        onClick={handleCopyEmail}
+                        className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 transition-colors cursor-pointer truncate block w-full text-left"
+                        title="Click to copy"
+                      >
+                        {item.value}
+                      </button>
+                    ) : (
+                      <span className="text-[11px] font-bold text-slate-800 leading-tight">{item.value}</span>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-
-          {/* Primary Action Controls */}
-          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            <Button
-              size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-2xs"
-            >
-              <Download className="w-3.5 h-3.5 mr-1.5" /> Download Dossier
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="bg-white border-slate-300 hover:bg-slate-50 font-bold text-xs h-10 px-4 rounded-xl text-slate-800"
-            >
-              <Mail className="w-3.5 h-3.5 mr-1.5 text-slate-500" /> Send Message
-            </Button>
-          </div>
-        </div>
-
-        {/* Info Grid Pills */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-slate-100 text-xs">
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <span className="text-[10px] font-bold text-slate-400 uppercase block">Email Address</span>
-            <span className="font-bold text-slate-900 truncate block">{candidate.email}</span>
-          </div>
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <span className="text-[10px] font-bold text-slate-400 uppercase block">Phone Contact</span>
-            <span className="font-bold text-slate-900">{candidate.phone}</span>
-          </div>
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <span className="text-[10px] font-bold text-slate-400 uppercase block">Expected CTC</span>
-            <span className="font-bold text-slate-900">{candidate.expectedSalary}</span>
-          </div>
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <span className="text-[10px] font-bold text-slate-400 uppercase block">Candidate ID</span>
-            <span className="font-mono font-bold text-slate-900">{candidate.id}</span>
-          </div>
         </div>
       </div>
 
-      {/* Tabs Navigation Bar */}
-      <div className="flex items-center gap-1 border-b border-slate-200/80 overflow-x-auto no-scrollbar">
-        {[
-          { id: 'overview', label: 'Overview', icon: User },
-          { id: 'resume', label: 'Resume & Dossier', icon: FileText },
-          { id: 'experience', label: 'Work Experience', icon: Briefcase },
-          { id: 'education', label: 'Education & Certs', icon: GraduationCap },
-          { id: 'skills', label: 'Verified Skills', icon: Award },
-          { id: 'portfolio', label: 'Projects & Portfolio', icon: FolderGit2 },
-          { id: 'preferences', label: 'Career Preferences', icon: Star },
-          { id: 'applications', label: 'Job Applications', icon: FileCheck },
-          { id: 'audit', label: 'Audit Log', icon: History },
-          { id: 'notes', label: 'Recruiter Notes', icon: MessageSquare },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
+      {/* Tab Navigation + Content */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        {/* Tabs — scrollable on mobile, no horizontal page overflow */}
+        <div className="flex overflow-x-auto border-b border-slate-100 scrollbar-none">
+          {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`px-4 py-3 text-xs font-bold whitespace-nowrap flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
-                isActive
-                  ? 'border-emerald-600 text-emerald-700 bg-emerald-50/40 rounded-t-xl'
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-1.5 px-4 py-3.5 text-xs font-bold whitespace-nowrap border-b-2 transition-all cursor-pointer shrink-0 ${
+                activeTab === tab.id
+                  ? 'border-emerald-500 text-emerald-700 bg-emerald-50/40'
                   : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'
               }`}
             >
-              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
+              {tab.icon}
               {tab.label}
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
 
-      {/* Tab Panels */}
-      <div className="space-y-6">
-        {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-3">
-                <h3 className="text-sm font-black font-heading text-slate-900">Executive Summary & Bio</h3>
-                <p className="text-xs text-slate-600 leading-relaxed font-medium">{candidate.bio}</p>
-              </Card>
+        <div className="p-5 sm:p-7">
 
-              <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-4">
-                <h3 className="text-sm font-black font-heading text-slate-900">Key Competencies</h3>
+          {/* OVERVIEW */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900 font-heading mb-2">Professional Summary</h3>
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">{candidate.bio}</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* Verification Dossier */}
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900 font-heading mb-3">Verification Dossier</h3>
+                  <div className="space-y-2">
+                    {[
+                      { label: 'Identity Document', value: '✓ Aadhaar Verified', ok: true },
+                      { label: 'Degree Credentials', value: '✓ IIT Bombay Verified', ok: true },
+                      { label: 'Background Check', value: '✓ Clear', ok: true },
+                      { label: 'Employment History', value: '✓ Confirmed via References', ok: true },
+                    ].map(item => (
+                      <div key={item.label} className="flex items-center justify-between py-2 border-b border-slate-50">
+                        <span className="text-xs font-semibold text-slate-500">{item.label}</span>
+                        <span className={`text-xs font-bold ${item.ok ? 'text-emerald-600' : 'text-rose-500'}`}>{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Career Preferences */}
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900 font-heading mb-3">Career Preferences</h3>
+                  <div className="space-y-2">
+                    {[
+                      { label: 'Availability', value: candidate.availability },
+                      { label: 'Preferred Location', value: 'Mumbai / Hybrid' },
+                      { label: 'Desired Role', value: 'Senior ESG Director' },
+                      { label: 'Work Mode', value: 'Hybrid / Remote' },
+                    ].map(item => (
+                      <div key={item.label} className="flex items-center justify-between py-2 border-b border-slate-50">
+                        <span className="text-xs font-semibold text-slate-500">{item.label}</span>
+                        <span className="text-xs font-bold text-slate-800">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Top Skills Preview */}
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900 font-heading mb-3">Core Competencies</h3>
                 <div className="flex flex-wrap gap-2">
-                  {candidate.skills.map((s) => (
-                    <span key={s} className="bg-emerald-50 text-emerald-800 text-xs font-bold px-3 py-1 rounded-xl border border-emerald-200/70">
+                  {candidate.skills.slice(0, 6).map((s) => (
+                    <span key={s} className="bg-emerald-50 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-xl border border-emerald-200/70">
                       {s}
                     </span>
                   ))}
+                  {candidate.skills.length > 6 && (
+                    <button
+                      onClick={() => setActiveTab('skills')}
+                      className="text-xs font-bold text-slate-500 hover:text-emerald-600 px-3 py-1.5 rounded-xl border border-dashed border-slate-300 hover:border-emerald-300 transition-colors cursor-pointer"
+                    >
+                      +{candidate.skills.length - 6} more
+                    </button>
+                  )}
                 </div>
-              </Card>
-            </div>
-
-            <div className="space-y-6">
-              <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-3">
-                <h3 className="text-sm font-black font-heading text-slate-900">Verification Dossier</h3>
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
-                    <span className="text-slate-500 font-semibold">Identity Document</span>
-                    <span className="font-bold text-emerald-600">✓ Aadhaar Verified</span>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
-                    <span className="text-slate-500 font-semibold">Degree Credentials</span>
-                    <span className="font-bold text-emerald-600">✓ IIT Bombay Verified</span>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5">
-                    <span className="text-slate-500 font-semibold">Background Check</span>
-                    <span className="font-bold text-emerald-600">✓ Clear</span>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'resume' && (
-          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-black font-heading text-slate-900">Verified Candidate Resume</h3>
-                <p className="text-xs text-slate-500 font-medium">Uploaded PDF version for corporate applications</p>
               </div>
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl">
-                <Download className="w-3.5 h-3.5 mr-1" /> Download PDF
-              </Button>
             </div>
-            <div className="p-8 bg-slate-50 rounded-2xl border border-slate-200/80 text-center space-y-3">
-              <FileText className="w-12 h-12 text-emerald-600 mx-auto" />
-              <p className="text-xs font-bold text-slate-800">Rahul_Sharma_Resume_ESG_2026.pdf</p>
-              <p className="text-[11px] text-slate-400">PDF File • 2.4 MB • Last Updated 12 days ago</p>
-            </div>
-          </Card>
-        )}
+          )}
 
-        {activeTab === 'experience' && (
-          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-6">
-            <h3 className="text-sm font-black font-heading text-slate-900">Work Experience History</h3>
+          {/* WORK EXPERIENCE */}
+          {activeTab === 'experience' && (
             <div className="space-y-4">
-              {candidate.experience.map((exp, idx) => (
-                <div key={idx} className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/70 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-slate-900 text-xs sm:text-sm">{exp.role}</h4>
-                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/60">{exp.period}</span>
+              <h3 className="text-sm font-extrabold text-slate-900 font-heading">Work Experience</h3>
+              <div className="relative pl-6">
+                <div className="absolute left-0 top-1 bottom-1 w-px bg-slate-200" />
+                {candidate.experience.map((exp, idx) => (
+                  <div key={idx} className="relative mb-6 last:mb-0">
+                    <div className="absolute -left-[25px] top-1.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm" />
+                    <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-1">
+                        <h4 className="text-sm font-bold text-slate-900">{exp.role}</h4>
+                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60 shrink-0">
+                          {exp.period}
+                        </span>
+                      </div>
+                      <p className="text-xs font-semibold text-slate-600 flex items-center gap-1 mb-2">
+                        <Building2 className="w-3 h-3 text-slate-400" /> {exp.company}
+                      </p>
+                      <p className="text-xs text-slate-500 font-medium leading-relaxed">{exp.description}</p>
+                    </div>
                   </div>
-                  <p className="text-xs font-semibold text-slate-600">{exp.company}</p>
-                  <p className="text-xs text-slate-500 font-normal mt-2 leading-relaxed">{exp.description}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
-
-        {activeTab === 'education' && (
-          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-6">
-            <h3 className="text-sm font-black font-heading text-slate-900">Education & Certifications</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {candidate.education.map((edu, idx) => (
-                <div key={idx} className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/70 space-y-1">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Degree</span>
-                  <p className="font-bold text-slate-900 text-xs sm:text-sm">{edu.degree}</p>
-                  <p className="text-xs text-slate-500 font-semibold">{edu.institution} ({edu.year})</p>
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
-
-        {activeTab === 'skills' && (
-          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-4">
-            <h3 className="text-sm font-black font-heading text-slate-900">Verified Technical Skills</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {candidate.skills.map((s) => (
-                <div key={s} className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/70 flex items-center justify-between text-xs font-bold text-slate-800">
-                  <span>{s}</span>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
-
-        {activeTab === 'portfolio' && (
-          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-4">
-            <h3 className="text-sm font-black font-heading text-slate-900">Featured Projects</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {candidate.projects.map((p, idx) => (
-                <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-200/70 space-y-2">
-                  <h4 className="font-bold text-slate-900 text-xs sm:text-sm">{p.name}</h4>
-                  <p className="text-xs text-slate-500">{p.description}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
-
-        {activeTab === 'preferences' && (
-          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-4">
-            <h3 className="text-sm font-black font-heading text-slate-900">Career Preferences</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Preferred Location</span>
-                <span className="font-bold text-slate-900">Mumbai / Hybrid</span>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Desired Role</span>
-                <span className="font-bold text-slate-900">Senior ESG Director</span>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Work Mode</span>
-                <span className="font-bold text-slate-900">Hybrid / Remote</span>
+                ))}
               </div>
             </div>
-          </Card>
-        )}
+          )}
 
-        {activeTab === 'applications' && (
-          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-4">
-            <h3 className="text-sm font-black font-heading text-slate-900">Active Applications</h3>
-            <div className="divide-y divide-slate-100 text-xs">
-              {candidate.applications.map((app) => (
-                <div key={app.id} className="py-3 flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-slate-900">{app.jobTitle}</p>
-                    <p className="text-[11px] text-slate-400">{app.company} • Applied {app.date}</p>
+          {/* EDUCATION & CERTIFICATIONS */}
+          {activeTab === 'education' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900 font-heading mb-4">Education</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {candidate.education.map((edu, idx) => (
+                    <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center shrink-0">
+                          <GraduationCap className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-900">{edu.degree}</p>
+                          <p className="text-[11px] text-slate-500 font-medium mt-0.5">{edu.institution}</p>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <span className="text-[10px] font-bold text-slate-400">{edu.year}</span>
+                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/60">{edu.grade}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900 font-heading mb-4">Professional Certifications</h3>
+                <div className="space-y-3">
+                  {candidate.certifications.map((cert, idx) => (
+                    <div key={idx} className="flex items-center gap-3 p-3.5 bg-amber-50/50 rounded-xl border border-amber-100">
+                      <div className="w-7 h-7 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center shrink-0">
+                        <Award className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-900">{cert.title}</p>
+                        <p className="text-[11px] text-slate-500 font-medium mt-0.5">{cert.issuer} · {cert.year}</p>
+                      </div>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60 shrink-0">
+                        Verified
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VERIFIED SKILLS */}
+          {activeTab === 'skills' && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-extrabold text-slate-900 font-heading">Verified Technical Skills</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {candidate.skills.map((s) => (
+                  <div key={s} className="p-3.5 bg-emerald-50/60 rounded-xl border border-emerald-200/70 flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800">{s}</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                   </div>
-                  <Badge variant="primary" size="sm" className="capitalize font-bold">{app.status}</Badge>
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
-
-        {activeTab === 'audit' && (
-          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-4">
-            <h3 className="text-sm font-black font-heading text-slate-900">Candidate Security & Audit Trail</h3>
-            <div className="space-y-3 text-xs">
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
-                <span className="font-semibold text-slate-700">Candidate Profile Created</span>
-                <span className="font-mono text-slate-400">06 Aug 2026 10:15 AM</span>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
-                <span className="font-semibold text-slate-700">Verification Status Approved by Admin</span>
-                <span className="font-mono text-slate-400">07 Aug 2026 02:40 PM</span>
+                ))}
               </div>
             </div>
-          </Card>
-        )}
+          )}
 
-        {activeTab === 'notes' && (
-          <Card className="rounded-2xl border border-slate-200/80 p-6 bg-white space-y-4">
-            <h3 className="text-sm font-black font-heading text-slate-900">Internal Recruiter Notes</h3>
-            <form onSubmit={handleAddNote} className="space-y-3">
-              <textarea
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                placeholder="Add private evaluation notes for internal hiring team..."
-                className="w-full p-3 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:border-emerald-500 bg-slate-50"
-                rows={3}
-              />
-              <Button type="submit" size="sm" className="bg-emerald-600 text-white font-bold text-xs rounded-xl">
-                Add Recruiter Note
-              </Button>
-            </form>
-            <div className="space-y-3 pt-4 border-t border-slate-100">
-              {notes.map((n) => (
-                <div key={n.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900">{n.author}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">{n.date}</span>
+          {/* APPLICATIONS */}
+          {activeTab === 'applications' && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-extrabold text-slate-900 font-heading">Active Job Applications</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      <th className="py-3 px-4">Job Title</th>
+                      <th className="py-3 px-4">Company</th>
+                      <th className="py-3 px-4">Applied Date</th>
+                      <th className="py-3 px-4 text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {candidate.applications.map((app) => (
+                      <tr key={app.id} className="hover:bg-slate-50/80 transition-colors cursor-pointer" onClick={() => navigate(`/dashboard/admin/applications/${app.id}`)}>
+                        <td className="py-3.5 px-4 font-bold text-slate-900">{app.jobTitle}</td>
+                        <td className="py-3.5 px-4 text-slate-500 font-medium flex items-center gap-1">
+                          <Building2 className="w-3 h-3 text-slate-400 shrink-0" /> {app.company}
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-400 font-medium">{app.date}</td>
+                        <td className="py-3.5 px-4 text-right">
+                          <Badge
+                            variant={app.status === 'Shortlisted' ? 'success' : app.status === 'Under Review' ? 'warning' : 'secondary'}
+                            size="sm"
+                            className="font-bold"
+                          >
+                            {app.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ADMIN NOTES */}
+          {activeTab === 'notes' && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-extrabold text-slate-900 font-heading">Internal Admin Notes</h3>
+
+              <div className="space-y-3">
+                {notes.map((n) => (
+                  <div key={n.id} className="p-4 bg-amber-50 rounded-xl border border-amber-100">
+                    <p className="text-xs font-semibold text-slate-700 leading-relaxed">{n.text}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="w-4 h-4 rounded-full bg-amber-300 text-amber-900 flex items-center justify-center text-[8px] font-black">
+                        {n.author[0]}
+                      </div>
+                      <span className="text-[10px] font-bold text-amber-700">{n.author}</span>
+                      <span className="text-[10px] text-slate-400 font-medium ml-auto">{n.date}</span>
+                    </div>
                   </div>
-                  <p className="text-slate-600 font-medium">{n.text}</p>
-                </div>
-              ))}
+                ))}
+              </div>
+
+              <form onSubmit={handleAddNote} className="flex gap-3 pt-3 border-t border-slate-100">
+                <textarea
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  rows={2}
+                  placeholder="Add an internal admin note about this candidate..."
+                  className="flex-1 px-4 py-3 rounded-xl border border-slate-200/90 bg-slate-50 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 outline-none transition-all resize-none"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 px-4 rounded-xl gap-1.5 self-end shrink-0"
+                  disabled={!noteText.trim()}
+                >
+                  <Send className="w-3.5 h-3.5" /> Add Note
+                </Button>
+              </form>
             </div>
-          </Card>
-        )}
+          )}
+
+        </div>
       </div>
     </div>
   );

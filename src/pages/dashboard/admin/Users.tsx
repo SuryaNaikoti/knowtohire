@@ -459,7 +459,7 @@ export const Users: React.FC = () => {
     setSelectedUserIds([]);
   };
 
-  const handleViewProfile = (user: User) => {
+  const handleViewProfile = (user: PlatformUser) => {
     if (user.role === 'employer') {
       navigate(`/dashboard/admin/employers/${user.id}`);
     } else {
@@ -767,6 +767,7 @@ export const Users: React.FC = () => {
                       return (
                         <tr
                           key={u.id}
+                          onClick={() => handleViewProfile(u)}
                           className={`hover:bg-slate-50/80 transition-colors duration-150 cursor-pointer ${isSelected ? 'bg-emerald-50/40' : ''}`}
                         >
                           <td className="py-4 px-6 text-center" onClick={(e) => e.stopPropagation()}>
@@ -778,13 +779,13 @@ export const Users: React.FC = () => {
                             />
                           </td>
 
-                          <td className="py-4 px-6" onClick={() => handleViewProfile(u)}>
+                          <td className="py-4 px-6">
                             <div className="flex items-center gap-3.5">
                               <div className={`w-10 h-10 rounded-full border border-white flex items-center justify-center font-black text-xs shrink-0 ${getAvatarBg(u.role)}`}>
                                 {initials}
                               </div>
                               <div className="min-w-0">
-                                <p className="font-bold text-slate-900 text-sm leading-snug tracking-tight truncate">{fullName}</p>
+                                <p className="font-bold text-slate-900 text-sm leading-snug tracking-tight truncate hover:text-emerald-600 transition-colors">{fullName}</p>
                                 <p className="text-xs text-slate-400 font-normal leading-normal truncate">{u.email}</p>
                               </div>
                             </div>
