@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-kth-slate-50 text-kth-slate-700 font-sans antialiased text-[14px] leading-relaxed selection:bg-kth-primary-100 selection:text-kth-primary-900;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display text-kth-slate-900 font-bold tracking-tight text-balance;
+  }
+
+  /* Display & Header Typography Hierarchy */
+  h1 {
+    @apply text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-[1.15];
+  }
+
+  h2 {
+    @apply text-xl sm:text-2xl md:text-3xl font-bold tracking-tight leading-[1.2];
+  }
+
+  h3 {
+    @apply text-lg sm:text-xl font-bold tracking-tight leading-snug;
+  }
+
+  h4 {
+    @apply text-base font-bold tracking-tight;
+  }
+
+  p {
+    @apply text-sm leading-relaxed text-kth-slate-600 text-pretty;
+  }
+}
+
+@layer components {
+  /* Subtle Card Hover & Surface Utilities */
+  .kth-card-interactive {
+    @apply transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md hover:border-kth-slate-300;
+  }
+
+  .kth-button-interactive {
+    @apply active:scale-[0.98] transition-all duration-150 ease-out;
+  }
+
+  .kth-glass-surface {
+    @apply bg-white/90 backdrop-blur-md border border-white/40 shadow-xs;
+  }
+}
+
+@layer utilities {
+  .pulse-dot-ring {
+    animation: pulse-ring 2s infinite cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 1; }
+  50% { transform: scale(1.25); opacity: 0.6; }
+  100% { transform: scale(0.95); opacity: 1; }
+}
+
+/* Strict Accessibility: Respect Reduced Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
