@@ -54,9 +54,9 @@ export const Step5OnlinePresence: React.FC<Step5OnlinePresenceProps> = ({
         />
 
         <div className="p-4 rounded-xl bg-kth-slate-50 border border-kth-slate-200 text-xs text-kth-slate-600 space-y-1">
-          <p className="font-semibold text-kth-slate-800">Verification Boundary Note:</p>
+          <p className="font-semibold text-kth-slate-800">Company Verification Process:</p>
           <p>
-            KnowToHire performs manual and automated domain checks. Verification status begins as <span className="font-semibold text-amber-700">Unverified</span> and will be reviewed by platform compliance without delaying your initial account onboarding.
+            KnowToHire performs standard domain validation. Your organization profile is created immediately and reviewed by our verification team without delaying job postings.
           </p>
         </div>
       </div>
