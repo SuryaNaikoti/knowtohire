@@ -75,10 +75,12 @@ import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import { AdminEmployersPage } from '@/pages/admin/AdminEmployersPage';
 import { AdminJobsPage } from '@/pages/admin/AdminJobsPage';
+import { AdminApplicationsPage } from '@/pages/admin/AdminApplicationsPage';
 import { AdminResourcesPage } from '@/pages/admin/AdminResourcesPage';
 import { AdminTemplatesPage } from '@/pages/admin/AdminTemplatesPage';
 import { AdminRequestsPage } from '@/pages/admin/AdminRequestsPage';
 import { AdminBlogPage } from '@/pages/admin/AdminBlogPage';
+import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
 
 export function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
@@ -123,10 +125,12 @@ export function App() {
       else if (path === '/admin/users') adminComponent = <AdminUsersPage />;
       else if (path === '/admin/employers') adminComponent = <AdminEmployersPage />;
       else if (path === '/admin/jobs') adminComponent = <AdminJobsPage />;
+      else if (path === '/admin/applications') adminComponent = <AdminApplicationsPage />;
       else if (path === '/admin/resources') adminComponent = <AdminResourcesPage />;
       else if (path === '/admin/templates') adminComponent = <AdminTemplatesPage />;
       else if (path === '/admin/requests') adminComponent = <AdminRequestsPage />;
       else if (path === '/admin/blog') adminComponent = <AdminBlogPage />;
+      else if (path === '/admin/settings') adminComponent = <AdminSettingsPage />;
 
       return (
         <ProtectedRoute currentPath={currentPath} onNavigate={navigateTo}>
@@ -220,7 +224,7 @@ export function App() {
         const jobId = path.replace('/candidate/jobs/', '');
         pageComponent = <CandidateJobDetailsPage jobId={jobId} />;
       }
-      else if (path === '/candidate/saved-jobs') pageComponent = <CandidateSavedJobsPage />;
+      else if (path === '/candidate/saved-jobs' || path === '/candidate/saved') pageComponent = <CandidateSavedJobsPage />;
       else if (path === '/candidate/applications') pageComponent = <CandidateApplicationsPage />;
       else if (path.startsWith('/candidate/applications/')) {
         const appId = path.replace('/candidate/applications/', '');

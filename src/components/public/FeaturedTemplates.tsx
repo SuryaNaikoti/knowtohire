@@ -23,7 +23,7 @@ export const FeaturedTemplates: React.FC = () => {
   }, []);
 
   return (
-    <section className="py-16 bg-kth-slate-50 border-b border-kth-slate-200">
+    <section className="py-10 sm:py-14 md:py-16 bg-kth-slate-50 border-b border-kth-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeader
           badgeText="Professional Resources"
@@ -42,7 +42,7 @@ export const FeaturedTemplates: React.FC = () => {
             <Loader2 className="w-6 h-6 text-kth-primary-600 animate-spin" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {templates.map((tmpl) => (
               <TemplateCard
                 key={tmpl.id}

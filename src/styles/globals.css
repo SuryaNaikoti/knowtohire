@@ -11,10 +11,15 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 
   body {
     @apply bg-kth-slate-50 text-kth-slate-700 font-sans antialiased text-[14px] leading-relaxed selection:bg-kth-primary-100 selection:text-kth-primary-900;
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
   }
 
   h1, h2, h3, h4, h5, h6 {

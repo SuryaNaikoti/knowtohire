@@ -78,63 +78,118 @@ export const AdminUsersPage: React.FC = () => {
               No users matching the specified search criteria.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-kth-slate-50 border-b border-kth-slate-200 text-kth-slate-500 uppercase tracking-wider font-bold text-[10px]">
-                  <tr>
-                    <th className="p-4">User</th>
-                    <th className="p-4">Role</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4">Registered Date</th>
-                    <th className="p-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-kth-slate-100">
-                  {users.map((u) => (
-                    <tr key={u.id} className="hover:bg-kth-slate-50/60 transition-colors">
-                      <td className="p-4">
-                        <div className="font-bold text-kth-slate-900">{u.full_name}</div>
-                        <div className="text-kth-slate-500 text-[11px] font-mono">{u.email}</div>
-                      </td>
-                      <td className="p-4">
-                        <Badge
-                          variant={u.role === 'admin' ? 'rose' : u.role === 'employer' ? 'indigo' : 'cyan'}
-                          className="capitalize font-mono"
-                        >
-                          {u.role}
-                        </Badge>
-                      </td>
-                      <td className="p-4">
+            <>
+              {/* Mobile Card List View (< md) */}
+              <div className="md:hidden divide-y divide-kth-slate-100">
+                {users.map((u) => (
+                  <div key={u.id} className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h4 className="font-bold text-sm text-kth-slate-900">{u.full_name}</h4>
+                        <p className="text-xs text-kth-slate-500 font-mono break-all">{u.email}</p>
+                      </div>
+                      <Badge
+                        variant={u.role === 'admin' ? 'rose' : u.role === 'employer' ? 'indigo' : 'cyan'}
+                        className="capitalize font-mono text-[10px] shrink-0"
+                      >
+                        {u.role}
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-kth-slate-500">
+                      <div className="flex items-center gap-1.5">
+                        <span>Status:</span>
                         <Badge
                           variant={u.status === 'active' ? 'emerald' : u.status === 'suspended' ? 'rose' : 'amber'}
-                          className="capitalize"
+                          className="capitalize text-[10px]"
                         >
                           {u.status}
                         </Badge>
-                      </td>
-                      <td className="p-4 text-kth-slate-500 font-mono text-[11px]">
+                      </div>
+                      <span className="font-mono text-[11px]">
                         {new Date(u.created_at).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric',
                         })}
-                      </td>
-                      <td className="p-4 text-right">
-                        {u.role !== 'admin' && (
-                          <Button
-                            variant={u.status === 'active' ? 'destructive' : 'secondary'}
-                            size="sm"
-                            onClick={() => handleToggleStatus(u)}
-                          >
-                            {u.status === 'active' ? 'Suspend' : 'Activate'}
-                          </Button>
-                        )}
-                      </td>
+                      </span>
+                    </div>
+
+                    {u.role !== 'admin' && (
+                      <div className="pt-1">
+                        <Button
+                          variant={u.status === 'active' ? 'destructive' : 'secondary'}
+                          size="sm"
+                          className="w-full min-h-[38px]"
+                          onClick={() => handleToggleStatus(u)}
+                        >
+                          {u.status === 'active' ? 'Suspend Account' : 'Activate Account'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View (>= md) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-kth-slate-50 border-b border-kth-slate-200 text-kth-slate-500 uppercase tracking-wider font-bold text-[10px]">
+                    <tr>
+                      <th className="p-4">User</th>
+                      <th className="p-4">Role</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4">Registered Date</th>
+                      <th className="p-4 text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-kth-slate-100">
+                    {users.map((u) => (
+                      <tr key={u.id} className="hover:bg-kth-slate-50/60 transition-colors">
+                        <td className="p-4">
+                          <div className="font-bold text-kth-slate-900">{u.full_name}</div>
+                          <div className="text-kth-slate-500 text-[11px] font-mono">{u.email}</div>
+                        </td>
+                        <td className="p-4">
+                          <Badge
+                            variant={u.role === 'admin' ? 'rose' : u.role === 'employer' ? 'indigo' : 'cyan'}
+                            className="capitalize font-mono"
+                          >
+                            {u.role}
+                          </Badge>
+                        </td>
+                        <td className="p-4">
+                          <Badge
+                            variant={u.status === 'active' ? 'emerald' : u.status === 'suspended' ? 'rose' : 'amber'}
+                            className="capitalize"
+                          >
+                            {u.status}
+                          </Badge>
+                        </td>
+                        <td className="p-4 text-kth-slate-500 font-mono text-[11px]">
+                          {new Date(u.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </td>
+                        <td className="p-4 text-right">
+                          {u.role !== 'admin' && (
+                            <Button
+                              variant={u.status === 'active' ? 'destructive' : 'secondary'}
+                              size="sm"
+                              onClick={() => handleToggleStatus(u)}
+                            >
+                              {u.status === 'active' ? 'Suspend' : 'Activate'}
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </Card>
       </div>

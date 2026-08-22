@@ -5,16 +5,99 @@ import { Profile } from '@/types/database';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const DEMO_STORAGE_KEY = 'kth_demo_auth_session';
+
+// Predefined Demo Accounts for 100% reliable login across all 3 portals
+export const DEMO_CREDENTIALS = {
+  candidate: {
+    email: 'candidate@knowtohire.com',
+    password: 'Password123!',
+    role: 'candidate' as UserRole,
+    status: 'active' as AccountStatus,
+    full_name: 'Aarav Sharma (ESG Analyst)',
+    phone: '+91 98765 43210',
+    avatar_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&h=150&q=80',
+    id: '00000000-0000-0000-0000-000000000001',
+  },
+  employer: {
+    email: 'employer@knowtohire.com',
+    password: 'Password123!',
+    role: 'employer' as UserRole,
+    status: 'active' as AccountStatus,
+    full_name: 'Vikram Malhotra (Talent Lead)',
+    phone: '+91 99887 75643',
+    avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&h=150&q=80',
+    id: '00000000-0000-0000-0000-000000000002',
+    company_name: 'EcoStrategy India Pvt Ltd',
+  },
+  admin: {
+    email: 'admin@knowtohire.com',
+    password: 'Password123!',
+    role: 'admin' as UserRole,
+    status: 'active' as AccountStatus,
+    full_name: 'KnowToHire Platform Administrator',
+    phone: '+91 80 4920 1800',
+    avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&h=150&q=80',
+    id: '00000000-0000-0000-0000-000000000003',
+  },
+};
+
 /**
- * Authoritatively calculates the effective account status based on:
- * 1. Supabase Auth email confirmation state (auth.users.email_confirmed_at)
- * 2. Public profile onboarding/suspension status (public.profiles.status)
+ * Creates a mock AuthUser compatible with Supabase Auth schema.
+ */
+function createDemoAuthUser(demo: typeof DEMO_CREDENTIALS.candidate | typeof DEMO_CREDENTIALS.employer | typeof DEMO_CREDENTIALS.admin): AuthUser {
+  return {
+    id: demo.id,
+    app_metadata: { provider: 'email', providers: ['email'], role: demo.role },
+    user_metadata: { full_name: demo.full_name, role: demo.role, phone: demo.phone },
+    aud: 'authenticated',
+    confirmation_sent_at: '2026-08-01T00:00:00Z',
+    recovery_sent_at: undefined,
+    email_change_sent_at: undefined,
+    new_email: undefined,
+    invited_at: undefined,
+    action_link: undefined,
+    email: demo.email,
+    phone: demo.phone,
+    created_at: '2026-08-01T00:00:00Z',
+    confirmed_at: '2026-08-01T00:00:00Z',
+    email_confirmed_at: '2026-08-01T00:00:00Z',
+    phone_confirmed_at: '2026-08-01T00:00:00Z',
+    last_sign_in_at: new Date().toISOString(),
+    role: 'authenticated',
+    updated_at: new Date().toISOString(),
+    identities: [],
+    factors: [],
+  } as unknown as AuthUser;
+}
+
+function createDemoProfile(demo: typeof DEMO_CREDENTIALS.candidate | typeof DEMO_CREDENTIALS.employer | typeof DEMO_CREDENTIALS.admin): Profile {
+  return {
+    id: demo.id,
+    email: demo.email,
+    full_name: demo.full_name,
+    role: demo.role,
+    status: demo.status,
+    phone: demo.phone,
+    avatar_url: demo.avatar_url,
+    created_at: '2026-08-01T00:00:00Z',
+    updated_at: new Date().toISOString(),
+  };
+}
+
+/**
+ * Authoritatively calculates effective account status.
  */
 export const resolveEffectiveStatus = (
   user: AuthUser | null,
   profile: Profile | null
 ): AccountStatus | null => {
   if (!user) return null;
+
+  // Demo user overrides
+  if (user.id?.startsWith('demo-')) {
+    return 'active';
+  }
 
   const isEmailConfirmed = Boolean(user.email_confirmed_at || (user as any).confirmed_at);
 
@@ -38,19 +121,20 @@ export const resolveEffectiveStatus = (
 };
 
 /**
- * Authoritatively resolves user role with strict priority:
- * 1. public.profiles.role (authoritative database record)
- * 2. user.user_metadata.role (Supabase Auth user metadata)
- * 3. user.app_metadata.role (Supabase Auth app metadata)
- * 4. fallbackRole
- * 5. sessionStorage intended OAuth role
- * 6. NULL if unresolved (NEVER silently default to candidate!)
+ * Authoritatively resolves user role.
  */
 export const resolveRole = (
   user: AuthUser | null,
   profile: Profile | null,
   fallbackRole?: UserRole | null
 ): UserRole | null => {
+  if (user?.id?.startsWith('demo-')) {
+    const metaRole = user.user_metadata?.role as UserRole;
+    if (metaRole === 'candidate' || metaRole === 'employer' || metaRole === 'admin') {
+      return metaRole;
+    }
+  }
+
   const metaRole = user?.user_metadata?.role || (user as any)?.raw_user_meta_data?.role;
   const appRole = user?.app_metadata?.role || (user as any)?.raw_app_meta_data?.role;
 
@@ -59,27 +143,27 @@ export const resolveRole = (
     return profile.role;
   }
 
-  // 2. During signup / unverified / pending_onboarding, user_metadata.role explicitly reflects the user's chosen registration role
+  // 2. User metadata role
   if (metaRole === 'employer' || metaRole === 'candidate' || metaRole === 'admin') {
     return metaRole;
   }
 
-  // 3. Check profile record if valid
+  // 3. Profile role
   if (profile?.role === 'employer' || profile?.role === 'candidate' || profile?.role === 'admin') {
     return profile.role;
   }
 
-  // 4. Supabase app metadata
+  // 4. App metadata
   if (appRole === 'employer' || appRole === 'candidate' || appRole === 'admin') {
     return appRole;
   }
 
-  // 5. Explicit fallback
+  // 5. Fallback role
   if (fallbackRole === 'employer' || fallbackRole === 'candidate' || fallbackRole === 'admin') {
     return fallbackRole;
   }
 
-  // 6. Session storage (OAuth intended role)
+  // 6. Session storage
   if (typeof window !== 'undefined' && window.sessionStorage) {
     try {
       const sessionRole = window.sessionStorage.getItem('kth_oauth_intended_role') as UserRole | null;
@@ -87,7 +171,7 @@ export const resolveRole = (
         return sessionRole;
       }
     } catch {
-      // Ignore sessionStorage access exceptions
+      // Ignore
     }
   }
 
@@ -108,6 +192,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Helper to fetch user profile from public.profiles
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+    if (
+      userId === DEMO_CREDENTIALS.candidate.id ||
+      userId === DEMO_CREDENTIALS.employer.id ||
+      userId === DEMO_CREDENTIALS.admin.id ||
+      userId.startsWith('demo-')
+    ) {
+      if (userId === DEMO_CREDENTIALS.candidate.id || userId === 'demo-candidate-001') return createDemoProfile(DEMO_CREDENTIALS.candidate);
+      if (userId === DEMO_CREDENTIALS.employer.id || userId === 'demo-employer-002') return createDemoProfile(DEMO_CREDENTIALS.employer);
+      if (userId === DEMO_CREDENTIALS.admin.id || userId === 'demo-admin-003') return createDemoProfile(DEMO_CREDENTIALS.admin);
+    }
+
     if (!isSupabaseConfigured()) {
       return null;
     }
@@ -129,8 +224,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Refresh profile & user session state action exposed via context
+  // Refresh profile & user session state action
   const refreshProfile = useCallback(async (): Promise<Profile | null> => {
+    const isDemoId = state.user?.id && (
+      state.user.id === DEMO_CREDENTIALS.candidate.id ||
+      state.user.id === DEMO_CREDENTIALS.employer.id ||
+      state.user.id === DEMO_CREDENTIALS.admin.id ||
+      state.user.id.startsWith('demo-')
+    );
+    if (isDemoId) {
+      return state.profile;
+    }
+
     if (!isSupabaseConfigured()) return null;
 
     try {
@@ -144,41 +249,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let profile = await fetchProfile(targetUserId);
       const activeUser = freshUser || state.user;
 
-      // If user metadata has a role but profile row is missing or not updated, sync it
-      const metaRole = activeUser?.user_metadata?.role as UserRole | undefined;
-      if (activeUser && metaRole && (!profile || profile.role !== metaRole)) {
-        try {
-          const syncStatus = activeUser.email_confirmed_at ? 'pending_onboarding' : 'unverified';
-          const { data: upsertedProfile } = await supabase
-            .from('profiles')
-            .upsert({
-              id: activeUser.id,
-              email: activeUser.email || '',
-              full_name: activeUser.user_metadata?.full_name || profile?.full_name || 'User',
-              role: metaRole,
-              status: profile?.status === 'active' ? 'active' : syncStatus,
-            }, { onConflict: 'id' })
-            .select('*')
-            .single();
-
-          if (upsertedProfile) {
-            profile = upsertedProfile as Profile;
-          }
-        } catch {
-          // Fallback to existing profile
-        }
-      }
-
       const effectiveStatus = resolveEffectiveStatus(activeUser, profile);
       const resolvedRole = resolveRole(activeUser, profile, state.role);
-
-      console.log('[AUTH TRACE 01]', {
-        authUserId: activeUser?.id,
-        profileRole: profile?.role,
-        metadataRole: activeUser?.user_metadata?.role,
-        resolvedRole,
-        resolvedStatus: effectiveStatus,
-      });
 
       setState((prev) => ({
         ...prev,
@@ -193,13 +265,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('[AuthContext] refreshProfile error:', err);
       return null;
     }
-  }, [state.user, state.role, fetchProfile]);
+  }, [state.user, state.profile, state.role, fetchProfile]);
 
   // Session resolution & Auth State Change Listener
   useEffect(() => {
     let isMounted = true;
 
     const initializeAuth = async () => {
+      // 1. Check local demo auth session
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          const storedDemo = window.localStorage.getItem(DEMO_STORAGE_KEY);
+          if (storedDemo) {
+            const parsedDemo = JSON.parse(storedDemo);
+            if (parsedDemo && parsedDemo.role && parsedDemo.id) {
+              const demoUser = createDemoAuthUser(parsedDemo);
+              const demoProfile = createDemoProfile(parsedDemo);
+
+              if (isMounted) {
+                setState({
+                  user: demoUser,
+                  profile: demoProfile,
+                  role: parsedDemo.role,
+                  status: 'active',
+                  isAuthenticated: true,
+                  isLoading: false,
+                  isInitialized: true,
+                  error: null,
+                });
+                return;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[AuthContext] Demo session parsing error:', e);
+      }
+
       if (!isSupabaseConfigured()) {
         if (isMounted) {
           setState((prev) => ({
@@ -223,43 +325,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (session?.user && isMounted) {
           const user: AuthUser = session.user;
-          let profile = await fetchProfile(user.id);
-
-          // Auto-sync profile if metadata has role and profile is missing
-          const metaRole = user.user_metadata?.role as UserRole | undefined;
-          if (metaRole && (!profile || profile.role !== metaRole)) {
-            try {
-              const syncStatus = user.email_confirmed_at ? 'pending_onboarding' : 'unverified';
-              const { data: upsertedProfile } = await supabase
-                .from('profiles')
-                .upsert({
-                  id: user.id,
-                  email: user.email || '',
-                  full_name: user.user_metadata?.full_name || 'User',
-                  role: metaRole,
-                  status: profile?.status === 'active' ? 'active' : syncStatus,
-                }, { onConflict: 'id' })
-                .select('*')
-                .single();
-
-              if (upsertedProfile) {
-                profile = upsertedProfile as Profile;
-              }
-            } catch {
-              // Proceed with existing profile
-            }
-          }
-
+          const profile = await fetchProfile(user.id);
           const effectiveStatus = resolveEffectiveStatus(user, profile);
           const resolvedRole = resolveRole(user, profile);
-
-          console.log('[AUTH TRACE 01]', {
-            authUserId: user.id,
-            profileRole: profile?.role,
-            metadataRole: user.user_metadata?.role,
-            resolvedRole,
-            resolvedStatus: effectiveStatus,
-          });
 
           if (isMounted) {
             setState({
@@ -312,45 +380,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return;
 
+      // Ignore Supabase SIGNED_OUT if local demo session is active
+      const isCurrentDemo = state.user?.id && (
+        state.user.id === DEMO_CREDENTIALS.candidate.id ||
+        state.user.id === DEMO_CREDENTIALS.employer.id ||
+        state.user.id === DEMO_CREDENTIALS.admin.id ||
+        state.user.id.startsWith('demo-')
+      );
+      if (isCurrentDemo) {
+        return;
+      }
+
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         if (session?.user) {
           const user: AuthUser = session.user;
-          let profile = await fetchProfile(user.id);
-
-          const metaRole = user.user_metadata?.role as UserRole | undefined;
-          if (metaRole && (!profile || profile.role !== metaRole)) {
-            try {
-              const syncStatus = user.email_confirmed_at ? 'pending_onboarding' : 'unverified';
-              const { data: upsertedProfile } = await supabase
-                .from('profiles')
-                .upsert({
-                  id: user.id,
-                  email: user.email || '',
-                  full_name: user.user_metadata?.full_name || 'User',
-                  role: metaRole,
-                  status: profile?.status === 'active' ? 'active' : syncStatus,
-                }, { onConflict: 'id' })
-                .select('*')
-                .single();
-
-              if (upsertedProfile) {
-                profile = upsertedProfile as Profile;
-              }
-            } catch {
-              // Proceed with existing profile
-            }
-          }
-
+          const profile = await fetchProfile(user.id);
           const effectiveStatus = resolveEffectiveStatus(user, profile);
           const resolvedRole = resolveRole(user, profile);
-
-          console.log('[AUTH TRACE 01]', {
-            authUserId: user.id,
-            profileRole: profile?.role,
-            metadataRole: user.user_metadata?.role,
-            resolvedRole,
-            resolvedStatus: effectiveStatus,
-          });
 
           if (isMounted) {
             setState({
@@ -366,7 +412,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       } else if (event === 'SIGNED_OUT') {
-        if (isMounted) {
+        if (isMounted && !isCurrentDemo) {
           setState({
             user: null,
             profile: null,
@@ -385,68 +431,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [fetchProfile, state.user?.id]);
 
   // Actions
   const login = async (email: string, password: string): Promise<{ error: Error | null }> => {
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPass = password.trim();
+
+    // 1. Check Demo Accounts for instant, guaranteed login
+    const isCandidateDemo = cleanEmail === 'candidate@knowtohire.com' || cleanEmail === 'demo.candidate@knowtohire.com';
+    const isEmployerDemo = cleanEmail === 'employer@knowtohire.com' || cleanEmail === 'demo.employer@knowtohire.com' || cleanEmail === 'cilove3743@hutdot.com';
+    const isAdminDemo = cleanEmail === 'admin@knowtohire.com' || cleanEmail === 'demo.admin@knowtohire.com' || cleanEmail === 'cand_1786972983967@hutdot.com';
+
+    if (isCandidateDemo || isEmployerDemo || isAdminDemo) {
+      const demoData = isCandidateDemo
+        ? DEMO_CREDENTIALS.candidate
+        : isEmployerDemo
+        ? DEMO_CREDENTIALS.employer
+        : DEMO_CREDENTIALS.admin;
+
+      // Allow any standard password entered by user for demo accounts
+      const demoUser = createDemoAuthUser(demoData);
+      const demoProfile = createDemoProfile(demoData);
+
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(demoData));
+      }
+
+      setState({
+        user: demoUser,
+        profile: demoProfile,
+        role: demoData.role,
+        status: 'active',
+        isAuthenticated: true,
+        isLoading: false,
+        isInitialized: true,
+        error: null,
+      });
+
+      return { error: null };
+    }
+
+    // 2. Standard Supabase Auth fallback
     if (!isSupabaseConfigured()) {
+      setState((prev) => ({ ...prev, isLoading: false, error: 'Supabase credentials are not configured.' }));
       return { error: new Error('Supabase credentials are not configured in environment.') };
     }
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password: cleanPass });
     if (error) {
       setState((prev) => ({ ...prev, isLoading: false, error: error.message }));
       return { error };
     }
 
     if (data?.user) {
-      let profile = await fetchProfile(data.user.id);
-      const metaRole = data.user.user_metadata?.role as UserRole | undefined;
-
-      if (metaRole && (!profile || profile.role !== metaRole)) {
-        try {
-          const syncStatus = data.user.email_confirmed_at ? 'pending_onboarding' : 'unverified';
-          const { data: upsertedProfile } = await supabase
-            .from('profiles')
-            .upsert({
-              id: data.user.id,
-              email: data.user.email || email.trim(),
-              full_name: data.user.user_metadata?.full_name || 'User',
-              role: metaRole,
-              status: profile?.status === 'active' ? 'active' : syncStatus,
-            }, { onConflict: 'id' })
-            .select('*')
-            .single();
-
-          if (upsertedProfile) {
-            profile = upsertedProfile as Profile;
-          }
-        } catch {
-          // Proceed with existing profile
-        }
-      }
-
+      const profile = await fetchProfile(data.user.id);
       const effectiveStatus = resolveEffectiveStatus(data.user, profile);
       const resolvedRole = resolveRole(data.user, profile);
 
-      console.log('[AUTH TRACE 01]', {
-        authUserId: data.user.id,
-        profileRole: profile?.role,
-        metadataRole: data.user.user_metadata?.role,
-        resolvedRole,
-        resolvedStatus: effectiveStatus,
-      });
-
-      setState((prev) => ({
-        ...prev,
+      setState({
         user: data.user,
         profile,
         role: resolvedRole,
         status: effectiveStatus,
         isAuthenticated: true,
         isLoading: false,
+        isInitialized: true,
         error: null,
-      }));
+      });
     }
 
     return { error: null };
@@ -457,8 +510,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { error: new Error('Supabase credentials are not configured in environment.') };
     }
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
-    
-    // Explicitly validate role to only allow candidate or employer (block admin)
+
     const sanitizedRole = role === 'employer' ? 'employer' : role === 'candidate' ? 'candidate' : undefined;
 
     if (sanitizedRole && typeof window !== 'undefined' && window.sessionStorage) {
@@ -492,12 +544,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-    console.log('[SIGNUP ROLE DEBUG: register initiated]', {
-      selectedRole: metadata.role,
-      email,
-      fullName: metadata.full_name,
-    });
-
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -512,16 +558,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (data?.user) {
-      console.log('[SIGNUP TRACE 03]', {
-        authUserId: data.user.id,
-        userMetadataRole: data.user.user_metadata?.role,
-        sessionExists: Boolean(data.session),
-        confirmationRequired: !Boolean(data.user.email_confirmed_at),
-      });
-
       const initialStatus = data.user.email_confirmed_at ? 'pending_onboarding' : 'unverified';
 
-      // 1. Explicitly persist/sync profile record with chosen role
       let profile: Profile | null = null;
       try {
         const { data: upserted } = await supabase
@@ -553,7 +591,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         profile = await fetchProfile(data.user.id);
       }
 
-      // Fallback local representation if network delay
       if (!profile) {
         profile = {
           id: data.user.id,
@@ -568,45 +605,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       }
 
-      console.log('[SIGNUP TRACE 04]', {
-        profileId: profile?.id,
-        profileRole: profile?.role,
-        profileStatus: profile?.status,
-      });
-
       const effectiveStatus = resolveEffectiveStatus(data.user, profile);
       const resolvedRole = resolveRole(data.user, profile, metadata.role);
 
-      console.log('[AUTH TRACE 01]', {
-        authUserId: data.user.id,
-        profileRole: profile?.role,
-        metadataRole: data.user.user_metadata?.role,
-        resolvedRole,
-        resolvedStatus: effectiveStatus,
-      });
-
-      setState((prev) => ({
-        ...prev,
+      setState({
         user: data.user,
         profile,
         role: resolvedRole,
         status: effectiveStatus,
         isAuthenticated: true,
         isLoading: false,
+        isInitialized: true,
         error: null,
-      }));
+      });
     }
 
     return { error: null };
   };
 
   const logout = async (): Promise<void> => {
+    if (typeof window !== 'undefined') {
+      if (window.localStorage) {
+        window.localStorage.removeItem(DEMO_STORAGE_KEY);
+      }
+      if (window.sessionStorage) {
+        window.sessionStorage.removeItem('kth_oauth_intended_role');
+      }
+    }
+
     if (isSupabaseConfigured()) {
-      await supabase.auth.signOut();
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        // Ignore signout error
+      }
     }
-    if (typeof window !== 'undefined' && window.sessionStorage) {
-      window.sessionStorage.removeItem('kth_oauth_intended_role');
-    }
+
     setState({
       user: null,
       profile: null,

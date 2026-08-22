@@ -11,10 +11,12 @@ import {
   HelpCircle,
   Newspaper,
   ShieldAlert,
+  Settings,
   LogOut,
   Menu,
-  X,
 } from 'lucide-react';
+
+import { Drawer } from '@/components/ui/Drawer';
 
 export interface AdminShellProps {
   title?: string;
@@ -35,10 +37,12 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     { path: '/admin/users', label: 'User Directory', icon: Users },
     { path: '/admin/employers', label: 'Employer Verification', icon: Building2 },
     { path: '/admin/jobs', label: 'Job Moderation', icon: Briefcase },
+    { path: '/admin/applications', label: 'Application Management', icon: FileCheck },
     { path: '/admin/resources', label: 'Knowledge Hub CMS', icon: BookOpen },
-    { path: '/admin/templates', label: 'Templates Marketplace', icon: FileCheck },
-    { path: '/admin/requests', label: 'Content Requests', icon: HelpCircle },
+    { path: '/admin/templates', label: 'Templates Marketplace', icon: HelpCircle },
+    { path: '/admin/requests', label: 'Content Requests', icon: ShieldAlert },
     { path: '/admin/blog', label: 'Editorial Blog CMS', icon: Newspaper },
+    { path: '/admin/settings', label: 'Admin Settings', icon: Settings },
   ];
 
   const handleLogout = async () => {
@@ -46,16 +50,41 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     window.location.href = '/login';
   };
 
+  const renderNavLinks = () => (
+    <nav className="space-y-1">
+      {navItems.map((item) => {
+        const Icon = item.icon;
+        const isActive = currentPath === item.path;
+        return (
+          <a
+            key={item.path}
+            href={item.path}
+            onClick={() => setMobileMenuOpen(false)}
+            className={cn(
+              'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors no-underline',
+              isActive
+                ? 'bg-kth-slate-900 text-white font-bold'
+                : 'text-kth-slate-600 hover:bg-kth-slate-100 hover:text-kth-slate-900'
+            )}
+          >
+            <Icon className={cn('w-4 h-4', isActive ? 'text-amber-400' : 'text-kth-slate-400')} />
+            <span>{item.label}</span>
+          </a>
+        );
+      })}
+    </nav>
+  );
+
   return (
     <div className="min-h-screen bg-kth-slate-100 flex flex-col font-sans">
       {/* Top Admin Warning Bar */}
-      <div className="bg-kth-slate-900 text-white px-4 py-1.5 text-xs flex justify-between items-center border-b border-kth-slate-800">
+      <div className="bg-kth-slate-900 text-white px-3 sm:px-4 py-1.5 text-xs flex flex-wrap justify-between items-center gap-2 border-b border-kth-slate-800">
         <div className="flex items-center gap-2">
-          <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-          <span className="font-semibold tracking-wide">KNOWTOHIRE MASTER ADMINISTRATION CONSOLE</span>
+          <ShieldAlert className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <span className="font-semibold tracking-wide text-[11px] sm:text-xs truncate">KNOWTOHIRE MASTER ADMIN</span>
         </div>
-        <div className="text-[11px] text-kth-slate-400 font-mono">
-          Logged in as: <strong className="text-white">{profile?.email || user?.email}</strong>
+        <div className="text-[10px] sm:text-[11px] text-kth-slate-400 font-mono truncate">
+          <strong className="text-white">{profile?.email || user?.email}</strong>
         </div>
       </div>
 
@@ -73,27 +102,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
               </div>
             </div>
 
-            <nav className="space-y-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = currentPath === item.path;
-                return (
-                  <a
-                    key={item.path}
-                    href={item.path}
-                    className={cn(
-                      'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors no-underline',
-                      isActive
-                        ? 'bg-kth-slate-900 text-white font-bold'
-                        : 'text-kth-slate-600 hover:bg-kth-slate-100 hover:text-kth-slate-900'
-                    )}
-                  >
-                    <Icon className={cn('w-4 h-4', isActive ? 'text-amber-400' : 'text-kth-slate-400')} />
-                    <span>{item.label}</span>
-                  </a>
-                );
-              })}
-            </nav>
+            {renderNavLinks()}
           </div>
 
           <div className="pt-4 border-t border-kth-slate-200 space-y-2">
@@ -114,21 +123,59 @@ export const AdminShell: React.FC<AdminShellProps> = ({
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-          <header className="h-16 bg-white border-b border-kth-slate-200 px-6 flex items-center justify-between shrink-0">
+          <header className="h-16 bg-white border-b border-kth-slate-200 px-4 sm:px-6 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-2 rounded-lg text-kth-slate-600 hover:bg-kth-slate-100"
+                onClick={() => setMobileMenuOpen(true)}
+                className="lg:hidden p-2 rounded-lg text-kth-slate-600 hover:bg-kth-slate-100 cursor-pointer"
+                aria-label="Open Admin Menu"
               >
-                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                <Menu className="w-5 h-5" />
               </button>
-              <h1 className="font-display font-extrabold text-lg text-kth-slate-900">{title}</h1>
+              <h1 className="font-display font-extrabold text-base sm:text-lg text-kth-slate-900 truncate">{title}</h1>
             </div>
+            <a
+              href="/"
+              className="text-xs font-medium text-kth-slate-500 hover:text-kth-slate-900 hidden sm:inline-block no-underline"
+            >
+              Exit to Site
+            </a>
           </header>
 
-          <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">{children}</main>
+          <main className="flex-1 p-3 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">{children}</main>
         </div>
       </div>
+
+      {/* Mobile Navigation Drawer */}
+      <Drawer
+        isOpen={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        title="Admin Navigation"
+        width="max-w-xs"
+      >
+        <div className="flex flex-col justify-between h-full space-y-6">
+          <div>
+            <div className="px-1 mb-4">
+              <span className="text-[11px] font-bold text-kth-slate-400 uppercase tracking-wider">Administration Console</span>
+            </div>
+            {renderNavLinks()}
+          </div>
+          <div className="pt-4 border-t border-kth-slate-200 space-y-2">
+            <a
+              href="/"
+              className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-kth-slate-600 hover:text-kth-slate-900 rounded-lg hover:bg-kth-slate-100 no-underline"
+            >
+              Public Homepage
+            </a>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" /> Sign Out
+            </button>
+          </div>
+        </div>
+      </Drawer>
     </div>
   );
 };

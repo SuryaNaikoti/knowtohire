@@ -131,34 +131,43 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
         </div>
 
-        {/* Right Desktop Action Buttons */}
-        <div className="flex items-center gap-3">
+        {/* Right Action Buttons */}
+        <div className="flex items-center gap-1.5 sm:gap-3">
+          {/* Quick Search Shortcut */}
           <button
             onClick={onSearchClick}
-            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md bg-kth-slate-100 border border-kth-slate-200 text-xs text-kth-slate-500 hover:bg-kth-slate-200/60 transition-colors"
+            aria-label="Search platform"
+            className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-md bg-kth-slate-100 border border-kth-slate-200 text-xs text-kth-slate-500 hover:bg-kth-slate-200/60 transition-colors"
           >
             <Search className="w-3.5 h-3.5" />
-            <span>Search platform...</span>
-            <kbd className="font-mono text-[10px] bg-white px-1.5 py-0.5 rounded border border-kth-slate-200">Cmd+K</kbd>
+            <span className="hidden sm:inline">Search platform...</span>
+            <kbd className="hidden sm:inline font-mono text-[10px] bg-white px-1.5 py-0.5 rounded border border-kth-slate-200">Cmd+K</kbd>
           </button>
 
-          <Button
-            variant={isAuthenticated ? "secondary" : "ghost"}
-            size="sm"
-            onClick={handleSignIn}
-            leftIcon={isAuthenticated ? <UserIcon className="w-3.5 h-3.5 text-kth-primary-600" /> : undefined}
-          >
-            {isAuthenticated ? "My Dashboard" : "Sign In"}
-          </Button>
+          {/* Sign In / Dashboard CTA (Hidden on mobile < sm, available in mobile drawer) */}
+          <div className="hidden sm:block">
+            <Button
+              variant={isAuthenticated ? "secondary" : "ghost"}
+              size="sm"
+              onClick={handleSignIn}
+              leftIcon={isAuthenticated ? <UserIcon className="w-3.5 h-3.5 text-kth-primary-600" /> : undefined}
+            >
+              {isAuthenticated ? "My Dashboard" : "Sign In"}
+            </Button>
+          </div>
 
-          <Button variant="primary" size="sm" onClick={handlePostJob}>
-            + Post a Job
-          </Button>
+          {/* Post Job CTA (Hidden on mobile < sm, available in mobile drawer) */}
+          <div className="hidden sm:block">
+            <Button variant="primary" size="sm" onClick={handlePostJob}>
+              + Post a Job
+            </Button>
+          </div>
 
           {/* Mobile Menu Hamburger Toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-md text-kth-slate-600 hover:bg-kth-slate-100"
+            aria-label="Toggle mobile menu"
+            className="lg:hidden p-2 rounded-lg text-kth-slate-700 hover:bg-kth-slate-100 active:bg-kth-slate-200 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -170,63 +179,87 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Navigation Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 w-full bg-white border-b border-kth-slate-200 p-4 shadow-lg flex flex-col space-y-3 z-50">
-          <a
-            href="/jobs"
-            onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/jobs'); }}
-            className="text-sm font-semibold text-kth-slate-800 py-1"
-          >
-            Find Jobs
-          </a>
-          <a
-            href="/careers"
-            onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/careers'); }}
-            className="text-sm font-semibold text-kth-slate-800 py-1"
-          >
-            Careers
-          </a>
-          <a
-            href="/knowledge"
-            onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/knowledge'); }}
-            className="text-sm font-semibold text-kth-slate-800 py-1"
-          >
-            Knowledge Hub
-          </a>
-          <a
-            href="/templates"
-            onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/templates'); }}
-            className="text-sm font-semibold text-kth-slate-800 py-1"
-          >
-            Templates
-          </a>
-          <a
-            href="/blog"
-            onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/blog'); }}
-            className="text-sm font-semibold text-kth-slate-800 py-1"
-          >
-            Blog
-          </a>
-          <a
-            href="/pricing"
-            onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/pricing'); }}
-            className="text-sm font-semibold text-kth-slate-800 py-1"
-          >
-            Pricing
-          </a>
-          <a
-            href="/about"
-            onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/about'); }}
-            className="text-sm font-semibold text-kth-slate-800 py-1"
-          >
-            About Us
-          </a>
-          <a
-            href="/contact"
-            onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/contact'); }}
-            className="text-sm font-semibold text-kth-slate-800 py-1"
-          >
-            Contact Support
-          </a>
+        <div className="lg:hidden absolute top-full left-0 w-full bg-white border-b border-kth-slate-200 p-4 shadow-xl flex flex-col space-y-3 z-50 animate-in slide-in-from-top-2 duration-150 max-h-[80vh] overflow-y-auto">
+          {/* Mobile Quick Action Buttons (< sm) */}
+          <div className="sm:hidden grid grid-cols-2 gap-2 pb-2 border-b border-kth-slate-100">
+            <Button
+              variant="primary"
+              size="md"
+              className="w-full font-bold text-xs"
+              onClick={() => { setMobileMenuOpen(false); handlePostJob(); }}
+            >
+              + Post a Job
+            </Button>
+            <Button
+              variant={isAuthenticated ? "secondary" : "outline"}
+              size="md"
+              className="w-full font-bold text-xs"
+              onClick={() => { setMobileMenuOpen(false); handleSignIn(); }}
+              leftIcon={isAuthenticated ? <UserIcon className="w-3.5 h-3.5 text-kth-primary-600" /> : undefined}
+            >
+              {isAuthenticated ? "My Dashboard" : "Sign In"}
+            </Button>
+          </div>
+
+          {/* Mobile Navigation Links */}
+          <div className="grid grid-cols-2 gap-1 py-1">
+            <a
+              href="/jobs"
+              onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/jobs'); }}
+              className="text-xs font-bold text-kth-slate-800 hover:text-kth-primary-600 p-2 rounded-lg hover:bg-kth-slate-50 transition-colors"
+            >
+              Find Jobs
+            </a>
+            <a
+              href="/careers"
+              onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/careers'); }}
+              className="text-xs font-bold text-kth-slate-800 hover:text-kth-primary-600 p-2 rounded-lg hover:bg-kth-slate-50 transition-colors"
+            >
+              Career Categories
+            </a>
+            <a
+              href="/knowledge"
+              onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/knowledge'); }}
+              className="text-xs font-bold text-kth-slate-800 hover:text-kth-primary-600 p-2 rounded-lg hover:bg-kth-slate-50 transition-colors"
+            >
+              Knowledge Hub
+            </a>
+            <a
+              href="/templates"
+              onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/templates'); }}
+              className="text-xs font-bold text-kth-slate-800 hover:text-kth-primary-600 p-2 rounded-lg hover:bg-kth-slate-50 transition-colors"
+            >
+              Templates Store
+            </a>
+            <a
+              href="/blog"
+              onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/blog'); }}
+              className="text-xs font-bold text-kth-slate-800 hover:text-kth-primary-600 p-2 rounded-lg hover:bg-kth-slate-50 transition-colors"
+            >
+              Editorial Blog
+            </a>
+            <a
+              href="/pricing"
+              onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/pricing'); }}
+              className="text-xs font-bold text-kth-slate-800 hover:text-kth-primary-600 p-2 rounded-lg hover:bg-kth-slate-50 transition-colors"
+            >
+              Pricing & ATS
+            </a>
+            <a
+              href="/about"
+              onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/about'); }}
+              className="text-xs font-bold text-kth-slate-800 hover:text-kth-primary-600 p-2 rounded-lg hover:bg-kth-slate-50 transition-colors"
+            >
+              About Us
+            </a>
+            <a
+              href="/contact"
+              onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/contact'); }}
+              className="text-xs font-bold text-kth-slate-800 hover:text-kth-primary-600 p-2 rounded-lg hover:bg-kth-slate-50 transition-colors"
+            >
+              Contact Support
+            </a>
+          </div>
         </div>
       )}
     </header>

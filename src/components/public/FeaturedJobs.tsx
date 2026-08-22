@@ -39,7 +39,7 @@ export const FeaturedJobs: React.FC = () => {
   };
 
   return (
-    <section className="py-16 bg-kth-slate-50 border-b border-kth-slate-200 font-sans">
+    <section className="py-10 sm:py-14 md:py-16 bg-kth-slate-50 border-b border-kth-slate-200 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeader
           badgeText="Verified Opportunities"
@@ -47,16 +47,16 @@ export const FeaturedJobs: React.FC = () => {
           title="Featured Career Opportunities"
           subtitle="Top sustainability, ESG, patent, and research consulting roles from verified Indian enterprises."
           action={
-            <Button variant="secondary" size="sm" onClick={() => handleNavigate('/jobs')}>
+            <Button variant="secondary" size="sm" onClick={() => handleNavigate('/jobs')} className="font-bold text-xs">
               Explore All Jobs <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           }
         />
 
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
             {Array.from({ length: 3 }).map((_, idx) => (
-              <div key={idx} className="bg-white rounded-2xl border border-kth-slate-200 p-6 space-y-4 animate-pulse">
+              <div key={idx} className="bg-white rounded-2xl border border-kth-slate-200 p-5 space-y-4 animate-pulse">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-md bg-kth-slate-200" />
                   <div className="space-y-2 flex-1">

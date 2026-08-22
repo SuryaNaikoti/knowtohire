@@ -185,7 +185,7 @@ export const CandidateDashboardPage: React.FC = () => {
           isLoading={isLoading}
           onApplicationsClick={() => handleNavigate('/candidate/applications')}
           onInterviewsClick={() => handleNavigate('/candidate/interviews')}
-          onSavedJobsClick={() => handleNavigate('/candidate/saved')}
+          onSavedJobsClick={() => handleNavigate('/candidate/saved-jobs')}
           onProfileClick={() => handleNavigate('/candidate/profile')}
         />
 

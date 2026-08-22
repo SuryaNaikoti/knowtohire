@@ -1,0 +1,629 @@
+import React, { useState, useEffect } from 'react';
+import { AdminShell } from '@/components/admin/AdminShell';
+import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import {
+  adminSettingsService,
+  MasterAdminSettings,
+} from '@/services/adminSettingsService';
+import {
+  User,
+  Shield,
+  Lock,
+  Bell,
+  CheckCircle2,
+  AlertCircle,
+  Save,
+  Loader2,
+  ShieldCheck,
+  Globe,
+} from 'lucide-react';
+
+type TabKey = 'profile' | 'platform' | 'governance' | 'security' | 'notifications';
+
+export const AdminSettingsPage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<TabKey>('profile');
+  const [settings, setSettings] = useState<MasterAdminSettings | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    adminSettingsService.getSettings().then((res) => {
+      if (!isMounted) return;
+      if (res.data) {
+        setSettings(res.data);
+      }
+      setIsLoading(false);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!settings) return;
+
+    setIsSaving(true);
+    setSaveSuccess(false);
+    setErrorMessage(null);
+
+    const res = await adminSettingsService.updateSettings(settings);
+    setIsSaving(false);
+
+    if (res.error) {
+      setErrorMessage(res.error.message);
+    } else {
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3500);
+    }
+  };
+
+  if (isLoading || !settings) {
+    return (
+      <AdminShell title="Platform Administration Settings" currentPath="/admin/settings">
+        <div className="py-24 flex flex-col items-center justify-center">
+          <Loader2 className="w-8 h-8 text-kth-primary-600 animate-spin mb-3" />
+          <p className="text-xs text-kth-slate-500 font-medium">Loading administrative settings...</p>
+        </div>
+      </AdminShell>
+    );
+  }
+
+  return (
+    <AdminShell title="Platform Administration Settings" currentPath="/admin/settings">
+      <div className="space-y-6 font-sans max-w-6xl mx-auto">
+        {/* Header with Save Status */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-2xl border border-kth-slate-200 shadow-xs">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Badge variant="indigo">Superuser Governance</Badge>
+              <Badge variant="slate">Multi-Tenant Engine</Badge>
+            </div>
+            <h2 className="font-display text-xl font-extrabold text-kth-slate-900">
+              Master Platform Configuration
+            </h2>
+            <p className="text-xs text-kth-slate-500">
+              Manage administrator credentials, global operational policies, role permissions, and system notification preferences.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {saveSuccess && (
+              <span className="text-xs font-bold text-emerald-600 flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 animate-fade-in">
+                <CheckCircle2 className="w-4 h-4" /> Settings Saved!
+              </span>
+            )}
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={<Save className="w-4 h-4" />}
+              isLoading={isSaving}
+              onClick={() => handleSave()}
+            >
+              Save Changes
+            </Button>
+          </div>
+        </div>
+
+        {errorMessage && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          {/* Settings Tabs Sidebar */}
+          <div className="md:col-span-3 space-y-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab('profile')}
+              className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                activeTab === 'profile'
+                  ? 'bg-kth-slate-900 text-white shadow-xs'
+                  : 'bg-white text-kth-slate-600 hover:bg-kth-slate-50 border border-kth-slate-200'
+              }`}
+            >
+              <User className="w-4 h-4" />
+              <span>Admin Profile</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('platform')}
+              className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                activeTab === 'platform'
+                  ? 'bg-kth-slate-900 text-white shadow-xs'
+                  : 'bg-white text-kth-slate-600 hover:bg-kth-slate-50 border border-kth-slate-200'
+              }`}
+            >
+              <Globe className="w-4 h-4" />
+              <span>Platform Config</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('governance')}
+              className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                activeTab === 'governance'
+                  ? 'bg-kth-slate-900 text-white shadow-xs'
+                  : 'bg-white text-kth-slate-600 hover:bg-kth-slate-50 border border-kth-slate-200'
+              }`}
+            >
+              <Shield className="w-4 h-4" />
+              <span>Role Governance</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('security')}
+              className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                activeTab === 'security'
+                  ? 'bg-kth-slate-900 text-white shadow-xs'
+                  : 'bg-white text-kth-slate-600 hover:bg-kth-slate-50 border border-kth-slate-200'
+              }`}
+            >
+              <Lock className="w-4 h-4" />
+              <span>Security & Session</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('notifications')}
+              className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                activeTab === 'notifications'
+                  ? 'bg-kth-slate-900 text-white shadow-xs'
+                  : 'bg-white text-kth-slate-600 hover:bg-kth-slate-50 border border-kth-slate-200'
+              }`}
+            >
+              <Bell className="w-4 h-4" />
+              <span>Notifications</span>
+            </button>
+          </div>
+
+          {/* Active Settings Panel */}
+          <div className="md:col-span-9">
+            <Card className="p-6 bg-white border-kth-slate-200">
+              {/* 1. ADMIN PROFILE TAB */}
+              {activeTab === 'profile' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-base font-extrabold text-kth-slate-900">Administrator Profile & Contact</h3>
+                    <p className="text-xs text-kth-slate-500">Superuser identification and emergency platform escalation details.</p>
+                  </div>
+
+                  <div className="flex items-center gap-4 p-4 bg-kth-slate-50 rounded-xl border border-kth-slate-200">
+                    <div className="w-12 h-12 rounded-xl bg-kth-slate-900 text-amber-400 flex items-center justify-center text-lg font-extrabold shadow-xs">
+                      A
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-kth-slate-900">{settings.profile.fullName}</div>
+                      <div className="text-xs text-kth-slate-500 font-mono">{settings.profile.email}</div>
+                      <Badge variant="amber" className="mt-1">Master Superuser</Badge>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      label="Full Administrator Name"
+                      value={settings.profile.fullName}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          profile: { ...settings.profile, fullName: e.target.value },
+                        })
+                      }
+                      required
+                    />
+
+                    <Input
+                      label="Administrator Email (Read-Only Identity)"
+                      value={settings.profile.email}
+                      disabled
+                      helperText="Platform Superuser authentication email"
+                    />
+
+                    <Input
+                      label="Support & Escalation Phone"
+                      value={settings.profile.phone}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          profile: { ...settings.profile, phone: e.target.value },
+                        })
+                      }
+                      placeholder="+91 80 4920 1800"
+                    />
+
+                    <Input
+                      label="Designation / Role Title"
+                      value={settings.profile.designation}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          profile: { ...settings.profile, designation: e.target.value },
+                        })
+                      }
+                      placeholder="Master Superuser & Governance Lead"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 2. PLATFORM CONFIG TAB */}
+              {activeTab === 'platform' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-base font-extrabold text-kth-slate-900">Platform & Regional Settings</h3>
+                    <p className="text-xs text-kth-slate-500">Core operational branding, support routing, and currency configuration.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <Input
+                        label="Platform Brand Name"
+                        value={settings.platform.platformName}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            platform: { ...settings.platform, platformName: e.target.value },
+                          })
+                        }
+                      />
+                    </div>
+
+                    <Input
+                      label="Customer Support Contact Email"
+                      value={settings.platform.supportEmail}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          platform: { ...settings.platform, supportEmail: e.target.value },
+                        })
+                      }
+                    />
+
+                    <Select
+                      label="Operational Currency"
+                      value={settings.platform.operationalCurrency}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          platform: { ...settings.platform, operationalCurrency: e.target.value },
+                        })
+                      }
+                      options={[
+                        { value: 'INR (₹ Indian Rupee)', label: 'INR (₹ Indian Rupee) — Primary' },
+                        { value: 'USD ($ US Dollar)', label: 'USD ($ US Dollar) — Global' },
+                      ]}
+                    />
+
+                    <Select
+                      label="Job Posting Moderation Policy"
+                      value={settings.platform.jobModerationMode}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          platform: {
+                            ...settings.platform,
+                            jobModerationMode: e.target.value as 'auto_publish' | 'manual_review',
+                          },
+                        })
+                      }
+                      options={[
+                        { value: 'auto_publish', label: 'Auto-Publish for Verified Employers' },
+                        { value: 'manual_review', label: 'Mandatory Admin Review Before Publishing' },
+                      ]}
+                    />
+
+                    <div className="flex items-center justify-between p-4 bg-kth-slate-50 rounded-xl border border-kth-slate-200">
+                      <div>
+                        <span className="text-xs font-bold text-kth-slate-900 block">Maintenance Mode</span>
+                        <span className="text-[11px] text-kth-slate-500">Restrict public access for system upgrades</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settings.platform.maintenanceMode}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            platform: { ...settings.platform, maintenanceMode: e.target.checked },
+                          })
+                        }
+                        className="w-4 h-4 text-kth-primary-600 rounded border-kth-slate-300 focus:ring-kth-primary-500 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. ROLE GOVERNANCE TAB */}
+              {activeTab === 'governance' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-base font-extrabold text-kth-slate-900">Role & User Lifecycle Governance</h3>
+                    <p className="text-xs text-kth-slate-500">Set onboarding default states, corporate verification rules, and upload quotas.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Select
+                      label="Default Candidate Account Status"
+                      value={settings.governance.defaultCandidateStatus}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          governance: {
+                            ...settings.governance,
+                            defaultCandidateStatus: e.target.value as 'active' | 'pending_onboarding',
+                          },
+                        })
+                      }
+                      options={[
+                        { value: 'active', label: 'Active (Immediate Portal Access)' },
+                        { value: 'pending_onboarding', label: 'Pending Onboarding (Mandatory Step)' },
+                      ]}
+                    />
+
+                    <Select
+                      label="Default Employer Enterprise Status"
+                      value={settings.governance.defaultEmployerStatus}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          governance: {
+                            ...settings.governance,
+                            defaultEmployerStatus: e.target.value as 'unverified' | 'pending_review' | 'verified',
+                          },
+                        })
+                      }
+                      options={[
+                        { value: 'verified', label: 'Verified (Instant Job Posting)' },
+                        { value: 'pending_review', label: 'Pending Review (Admin Verification Queue)' },
+                        { value: 'unverified', label: 'Unverified (Strict Sandbox)' },
+                      ]}
+                    />
+
+                    <Select
+                      label="Maximum Resume Document Upload Size"
+                      value={String(settings.governance.maxResumeFileSizeMB)}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          governance: {
+                            ...settings.governance,
+                            maxResumeFileSizeMB: Number(e.target.value),
+                          },
+                        })
+                      }
+                      options={[
+                        { value: '5', label: '5 MB (Standard PDF/DOCX)' },
+                        { value: '10', label: '10 MB (Recommended)' },
+                        { value: '25', label: '25 MB (Heavy Portfolios)' },
+                      ]}
+                    />
+
+                    <div className="flex items-center justify-between p-4 bg-kth-slate-50 rounded-xl border border-kth-slate-200">
+                      <div>
+                        <span className="text-xs font-bold text-kth-slate-900 block">Corporate Email Requirement</span>
+                        <span className="text-[11px] text-kth-slate-500">Block public domain emails (gmail, yahoo) for employers</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settings.governance.requireCorporateEmailForEmployers}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            governance: {
+                              ...settings.governance,
+                              requireCorporateEmailForEmployers: e.target.checked,
+                            },
+                          })
+                        }
+                        className="w-4 h-4 text-kth-primary-600 rounded border-kth-slate-300 focus:ring-kth-primary-500 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. SECURITY & SESSION TAB */}
+              {activeTab === 'security' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-base font-extrabold text-kth-slate-900">Security Policies & Session Controls</h3>
+                    <p className="text-xs text-kth-slate-500">Row Level Security status, inactivity auto-logout, and multi-factor enforcement.</p>
+                  </div>
+
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                      <div>
+                        <span className="text-xs font-bold text-emerald-900 block">PostgreSQL Row-Level Security (RLS)</span>
+                        <span className="text-[11px] text-emerald-700">All tenant queries strictly scoped by auth.uid() in Supabase</span>
+                      </div>
+                    </div>
+                    <Badge variant="emerald">Active & Enforced</Badge>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Select
+                      label="Admin Session Inactivity Timeout"
+                      value={String(settings.security.sessionTimeoutMinutes)}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          security: {
+                            ...settings.security,
+                            sessionTimeoutMinutes: Number(e.target.value),
+                          },
+                        })
+                      }
+                      options={[
+                        { value: '30', label: '30 Minutes (High Security)' },
+                        { value: '60', label: '60 Minutes (Standard)' },
+                        { value: '240', label: '4 Hours (Extended Session)' },
+                        { value: '1440', label: '24 Hours (Full Day)' },
+                      ]}
+                    />
+
+                    <div className="flex items-center justify-between p-4 bg-kth-slate-50 rounded-xl border border-kth-slate-200">
+                      <div>
+                        <span className="text-xs font-bold text-kth-slate-900 block">Multi-Factor Authentication (MFA)</span>
+                        <span className="text-[11px] text-kth-slate-500">Require OTP confirmation for superuser actions</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settings.security.enforceMFA}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            security: { ...settings.security, enforceMFA: e.target.checked },
+                          })
+                        }
+                        className="w-4 h-4 text-kth-primary-600 rounded border-kth-slate-300 focus:ring-kth-primary-500 cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-kth-slate-50 rounded-xl border border-kth-slate-200">
+                      <div>
+                        <span className="text-xs font-bold text-kth-slate-900 block">Audit Activity Logging</span>
+                        <span className="text-[11px] text-kth-slate-500">Log all job moderation, verification, and CMS operations</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settings.security.auditLoggingEnabled}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            security: { ...settings.security, auditLoggingEnabled: e.target.checked },
+                          })
+                        }
+                        className="w-4 h-4 text-kth-primary-600 rounded border-kth-slate-300 focus:ring-kth-primary-500 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 5. NOTIFICATIONS TAB */}
+              {activeTab === 'notifications' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-base font-extrabold text-kth-slate-900">Administrative Notifications & Alerts</h3>
+                    <p className="text-xs text-kth-slate-500">Choose when the platform sends administrative event notifications.</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-4 bg-kth-slate-50 rounded-xl border border-kth-slate-200">
+                      <div>
+                        <span className="text-xs font-bold text-kth-slate-900 block">New Employer Enterprise Registration</span>
+                        <span className="text-[11px] text-kth-slate-500">Send email notification when an employer organization signs up</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settings.notifications.emailOnNewEmployerRegistration}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            notifications: {
+                              ...settings.notifications,
+                              emailOnNewEmployerRegistration: e.target.checked,
+                            },
+                          })
+                        }
+                        className="w-4 h-4 text-kth-primary-600 rounded border-kth-slate-300 focus:ring-kth-primary-500 cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-kth-slate-50 rounded-xl border border-kth-slate-200">
+                      <div>
+                        <span className="text-xs font-bold text-kth-slate-900 block">New Job Post Submission</span>
+                        <span className="text-[11px] text-kth-slate-500">Alert admin team when a new job requisition is created</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settings.notifications.emailOnNewJobPost}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            notifications: {
+                              ...settings.notifications,
+                              emailOnNewJobPost: e.target.checked,
+                            },
+                          })
+                        }
+                        className="w-4 h-4 text-kth-primary-600 rounded border-kth-slate-300 focus:ring-kth-primary-500 cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-kth-slate-50 rounded-xl border border-kth-slate-200">
+                      <div>
+                        <span className="text-xs font-bold text-kth-slate-900 block">On-Demand Content Request</span>
+                        <span className="text-[11px] text-kth-slate-500">Notify editorial team when a user requests custom research or templates</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settings.notifications.emailOnContentRequest}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            notifications: {
+                              ...settings.notifications,
+                              emailOnContentRequest: e.target.checked,
+                            },
+                          })
+                        }
+                        className="w-4 h-4 text-kth-primary-600 rounded border-kth-slate-300 focus:ring-kth-primary-500 cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-kth-slate-50 rounded-xl border border-kth-slate-200">
+                      <div>
+                        <span className="text-xs font-bold text-kth-slate-900 block">Daily Platform Metrics Digest</span>
+                        <span className="text-[11px] text-kth-slate-500">Receive summary email of daily applications, registrations, and downloads</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settings.notifications.dailyPlatformMetricsDigest}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            notifications: {
+                              ...settings.notifications,
+                              dailyPlatformMetricsDigest: e.target.checked,
+                            },
+                          })
+                        }
+                        className="w-4 h-4 text-kth-primary-600 rounded border-kth-slate-300 focus:ring-kth-primary-500 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Bottom Card Save Button */}
+              <div className="mt-8 pt-4 border-t border-kth-slate-200 flex justify-end">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  leftIcon={<Save className="w-4 h-4" />}
+                  isLoading={isSaving}
+                  onClick={() => handleSave()}
+                >
+                  Save Settings
+                </Button>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </AdminShell>
+  );
+};

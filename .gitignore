@@ -31,9 +31,14 @@ dist-ssr
 *.key
 *.cert
 
-# Temporary test scripts & scrap files
+# Temporary test scripts, build caches & scrap files
 scratch/
 scripts/temp_*
 scripts/retest_*
 supabase/.temp/
+.next/
+*.mjs
+*.cjs
+cross_role_e2e.cjs
+next-env.d.ts
 

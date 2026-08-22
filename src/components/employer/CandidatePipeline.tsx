@@ -15,6 +15,7 @@ export const CandidatePipeline: React.FC<CandidatePipelineProps> = ({
   showArchives = false,
 }) => {
   const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null);
+  const [mobileActiveStage, setMobileActiveStage] = useState<ApplicationStage>('new');
 
   const activeStages: { stage: ApplicationStage; label: string }[] = [
     { stage: 'new', label: 'New Applicants' },
@@ -39,9 +40,67 @@ export const CandidatePipeline: React.FC<CandidatePipelineProps> = ({
     }
   };
 
+  const mobileFilteredApps = applications.filter((a) => a.stage === mobileActiveStage);
+
   return (
     <>
-      <div className="flex gap-4 overflow-x-auto pb-4 pt-1 font-sans">
+      {/* Mobile Stage Selector Tabs (< sm) */}
+      <div className="sm:hidden space-y-3">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          {stagesToRender.map(({ stage, label }) => {
+            const count = applications.filter((a) => a.stage === stage).length;
+            const isActive = mobileActiveStage === stage;
+            return (
+              <button
+                key={stage}
+                onClick={() => setMobileActiveStage(stage)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap border transition-all ${
+                  isActive
+                    ? 'bg-kth-primary-600 text-white border-kth-primary-700 shadow-sm'
+                    : 'bg-white text-kth-slate-700 border-kth-slate-200 hover:bg-kth-slate-50'
+                }`}
+              >
+                <span>{label}</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${isActive ? 'bg-white/20 text-white' : 'bg-kth-slate-100 text-kth-slate-600'}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Mobile Single Column Cards List */}
+        <div className="bg-kth-slate-100/90 p-3.5 rounded-2xl border border-kth-slate-200 space-y-3">
+          <div className="flex justify-between items-center px-1">
+            <span className="font-bold text-xs uppercase tracking-wider text-kth-slate-800">
+              {stagesToRender.find((s) => s.stage === mobileActiveStage)?.label}
+            </span>
+            <span className="text-xs text-kth-slate-500 font-mono">
+              {mobileFilteredApps.length} candidates
+            </span>
+          </div>
+
+          <div className="space-y-2.5">
+            {mobileFilteredApps.length > 0 ? (
+              mobileFilteredApps.map((app) => (
+                <CandidatePipelineCard
+                  key={app.id}
+                  application={app}
+                  onQuickView={(a) => setSelectedApplication(a)}
+                  onAdvanceStage={handleAdvanceStage}
+                />
+              ))
+            ) : (
+              <div className="p-6 text-center text-xs text-kth-slate-400 border border-dashed border-kth-slate-200 rounded-xl bg-white">
+                No candidates currently in this stage
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop & Tablet Multi-Column Kanban (>= sm) */}
+      <div className="hidden sm:flex gap-4 overflow-x-auto pb-4 pt-1 font-sans">
         {stagesToRender.map(({ stage, label }) => {
           const stageApps = applications.filter((a) => a.stage === stage);
 

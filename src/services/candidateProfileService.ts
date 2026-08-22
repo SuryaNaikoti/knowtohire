@@ -167,6 +167,79 @@ export const candidateProfileService = {
    */
   async getMyCandidateProfile(): Promise<ServiceResult<CandidateFullProfile>> {
     try {
+      // Check for demo auth session
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const storedDemo = window.localStorage.getItem('kth_demo_auth_session');
+        if (storedDemo) {
+          const parsed = JSON.parse(storedDemo);
+          if (parsed?.role === 'candidate') {
+            const demoFull: CandidateFullProfile = {
+              id: parsed.id || 'demo-candidate-001',
+              email: parsed.email || 'candidate@knowtohire.com',
+              fullName: parsed.full_name || 'Aarav Sharma',
+              phone: parsed.phone || '+91 98765 43210',
+              avatarUrl: parsed.avatar_url || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&h=150&q=80',
+              headline: 'Senior Environmental & ESG Consultant',
+              bio: 'Environmental consultant with 5+ years of experience leading SEBI BRSR compliance, ISO 14001 audits, and corporate decarbonization strategies across renewable energy and manufacturing sectors in India.',
+              location: 'Hyderabad, Telangana',
+              domainSpecialization: 'Sustainability & ESG Advisory',
+              skills: ['ESG Reporting', 'SEBI BRSR', 'ISO 14001', 'Carbon Accounting', 'EIA Assessment', 'GRI Standards', 'Hazardous Waste Compliance'],
+              experience: [
+                {
+                  title: 'Senior ESG Consultant',
+                  company: 'EcoStrategy India Pvt Ltd',
+                  period: '2023 - Present',
+                  location: 'Hyderabad',
+                  description: 'Led BRSR mandatory reporting readiness and Scope 1 & 2 carbon accounting for top 500 listed Indian corporate clients.',
+                },
+                {
+                  title: 'Environmental Compliance Specialist',
+                  company: 'GreenTech Infrastructure',
+                  period: '2021 - 2023',
+                  location: 'Bengaluru',
+                  description: 'Secured MoEFCC environmental clearances and SPCB consent to operate (CTO) for commercial clean energy projects.',
+                },
+              ],
+              education: [
+                {
+                  qualification: 'M.Sc in Environmental Science & Technology',
+                  degree: 'M.Sc in Environmental Science & Technology',
+                  institution: 'Indian Institute of Technology (IIT) Bombay',
+                  graduation_year: '2021',
+                  year: '2021',
+                },
+                {
+                  qualification: 'B.Tech in Chemical Engineering',
+                  degree: 'B.Tech in Chemical Engineering',
+                  institution: 'National Institute of Technology (NIT) Warangal',
+                  graduation_year: '2019',
+                  year: '2019',
+                },
+              ],
+              certifications: [
+                'GRI Certified Sustainability Professional (2024)',
+                'Lead Auditor ISO 14001:2015 Environmental Management',
+              ],
+              careerPreferences: {
+                preferredLocations: ['Hyderabad', 'Bengaluru', 'Remote'],
+                targetRoles: ['Senior ESG Consultant', 'Lead Sustainability Manager'],
+              },
+              preferredSalaryMin: 2200000,
+              preferredSalaryMax: 3200000,
+              employmentPreference: 'Full-Time / Hybrid',
+              noticePeriodDays: 15,
+              resumeUrl: 'https://knowtohire.com/resumes/aarav_sharma_esg_resume.pdf',
+              profileCompletionPct: 92,
+              status: 'active',
+              role: 'candidate',
+              createdAt: '2026-08-01T00:00:00Z',
+              updatedAt: new Date().toISOString(),
+            };
+            return { data: demoFull, error: null };
+          }
+        }
+      }
+
       const { data: authData, error: authError } = await supabase.auth.getUser();
       if (authError || !authData?.user) {
         return {
