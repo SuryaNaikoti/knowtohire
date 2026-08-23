@@ -34,10 +34,10 @@ export const HeroSection: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
         {/* Live Intelligence Badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 backdrop-blur-md mb-4 sm:mb-6 shadow-sm">
-          <span className="w-2 h-2 rounded-full bg-kth-accent-emerald pulse-dot-ring" />
-          <span className="text-[11px] sm:text-xs font-semibold text-kth-slate-200 tracking-wide">
-            Career Intelligence & Verified Sustainability Platform
+        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/[0.07] border border-white/10 backdrop-blur-md mb-4 sm:mb-5 shadow-xs">
+          <span className="w-1.5 h-1.5 rounded-full bg-kth-accent-emerald pulse-dot-ring" />
+          <span className="text-[11px] sm:text-xs font-medium text-kth-slate-300 tracking-wide">
+            Career Intelligence & Verified Sustainability
           </span>
         </div>
 
@@ -98,12 +98,11 @@ export const HeroSection: React.FC = () => {
         </form>
 
         {/* Trending Tags & Micro Value Props */}
-        <div className="mt-5 sm:mt-6 flex items-center justify-center gap-2 flex-wrap text-xs text-kth-slate-400">
-          <span className="font-semibold text-kth-slate-300 text-[11px] sm:text-xs">Trending:</span>
-          <a href="/jobs?q=Sustainability" className="px-2.5 py-1 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors no-underline text-[11px] sm:text-xs">Sustainability</a>
-          <a href="/jobs?q=ESG" className="px-2.5 py-1 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors no-underline text-[11px] sm:text-xs">ESG Analyst</a>
-          <a href="/knowledge?search=BRSR" className="px-2.5 py-1 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors no-underline text-[11px] sm:text-xs">BRSR Guide</a>
-          <a href="/templates?search=Resume" className="px-2.5 py-1 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors no-underline text-[11px] sm:text-xs">ATS Resume</a>
+        <div className="mt-4 sm:mt-5 flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap text-xs text-kth-slate-400">
+          <span className="text-kth-slate-400 text-[11px] sm:text-xs">Trending:</span>
+          <a href="/jobs?q=Sustainability" className="px-2 py-0.5 rounded-md bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-kth-slate-300 transition-colors no-underline text-[11px]">Sustainability</a>
+          <a href="/jobs?q=ESG" className="px-2 py-0.5 rounded-md bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-kth-slate-300 transition-colors no-underline text-[11px]">ESG Analyst</a>
+          <a href="/knowledge?search=BRSR" className="px-2 py-0.5 rounded-md bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-kth-slate-300 transition-colors no-underline text-[11px]">BRSR Guide</a>
         </div>
       </div>
     </section>

@@ -22,25 +22,25 @@ export const EmployerCTA: React.FC = () => {
             </h2>
             
             <p className="text-kth-slate-300 text-xs sm:text-base leading-relaxed font-normal text-pretty">
-              Access verified sustainability consultants, carbon accounting leads, and compliance specialists across India. Streamline candidate screening with intelligent semantic match scores and full ATS stage tracking.
+              Access verified sustainability and compliance specialists across India. Screen candidates with semantic skill matching and real-time ATS pipeline tracking.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="text-xs text-kth-slate-200 font-medium">Semantic skill match scoring</span>
+                <span className="text-xs text-kth-slate-200 font-medium">Semantic skill matching</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="text-xs text-kth-slate-200 font-medium">Visual Kanban applicant workflow</span>
+                <span className="text-xs text-kth-slate-200 font-medium">Visual ATS Kanban pipeline</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="text-xs text-kth-slate-200 font-medium">Side-by-side candidate comparison</span>
+                <span className="text-xs text-kth-slate-200 font-medium">Candidate comparison matrix</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="text-xs text-kth-slate-200 font-medium">Transparent INR salary benchmarking</span>
+                <span className="text-xs text-kth-slate-200 font-medium">INR salary benchmarking</span>
               </div>
             </div>
 

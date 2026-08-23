@@ -30,7 +30,6 @@ export const JobCard: React.FC<JobCardProps> = ({
   companyLogo,
   location,
   isRemote = false,
-  isVerified = true,
   employmentType,
   minSalaryINR,
   maxSalaryINR,
@@ -52,10 +51,7 @@ export const JobCard: React.FC<JobCardProps> = ({
               {companyLogo || company.charAt(0)}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs font-bold text-kth-slate-800 truncate max-w-[140px] sm:max-w-[180px]">{company}</span>
-                {isVerified && <Badge variant="cyan" className="py-0.5 px-1.5 text-[9px] shrink-0 font-bold">Verified</Badge>}
-              </div>
+              <span className="text-xs font-bold text-kth-slate-800 truncate block">{company}</span>
               <div className="flex items-center gap-1 text-xs text-kth-slate-500 mt-0.5 truncate">
                 <MapPin className="w-3.5 h-3.5 shrink-0 text-kth-slate-400" />
                 <span className="truncate">{location}</span>
