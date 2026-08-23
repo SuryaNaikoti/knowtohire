@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Dialog } from '@/components/ui/Dialog';
 import { jobService, Job } from '@/services';
 import { useAuth } from '@/context/AuthContext';
-import { MapPin, Building2, CheckCircle2, Bookmark, ArrowLeft, Briefcase, AlertTriangle } from 'lucide-react';
+import { MapPin, Building2, CheckCircle2, Bookmark, ArrowLeft, Briefcase, AlertTriangle, Check, Share2 } from 'lucide-react';
 import { formatINR } from '@/design-system/tokens';
 
 export interface JobDetailsPageProps {
@@ -22,6 +22,7 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isApplyNoticeOpen, setIsApplyNoticeOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
     const loadJobDetails = async () => {
@@ -68,6 +69,14 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
     setIsApplyNoticeOpen(true);
   };
 
+  const handleShare = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
+
   const formatPublishDate = (dateStr?: string | null) => {
     if (!dateStr) return 'Recently posted';
     try {
@@ -81,15 +90,15 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
     }
   };
 
-  // Loading State
+  // Loading Skeleton State
   if (isLoading) {
     return (
-      <div className="py-12 bg-kth-slate-50 min-h-screen font-sans">
+      <div className="py-8 sm:py-12 bg-kth-slate-50 min-h-screen font-sans">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-          <div className="h-6 w-32 bg-kth-slate-200 rounded animate-pulse" />
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-8 bg-white p-8 rounded-2xl border border-kth-slate-200 space-y-6 animate-pulse">
-              <div className="h-8 bg-kth-slate-200 rounded w-2/3" />
+          <div className="h-5 w-32 bg-kth-slate-200 rounded animate-pulse" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+            <div className="lg:col-span-8 bg-white p-6 sm:p-8 rounded-2xl border border-kth-slate-200 space-y-6 animate-pulse">
+              <div className="h-7 bg-kth-slate-200 rounded w-2/3" />
               <div className="h-4 bg-kth-slate-100 rounded w-1/3" />
               <div className="h-20 bg-kth-slate-100 rounded-xl" />
               <div className="space-y-3">
@@ -109,16 +118,16 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
     return (
       <div className="py-16 bg-kth-slate-50 min-h-screen font-sans">
         <div className="max-w-lg mx-auto px-4 text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-kth-slate-100 text-kth-slate-400 flex items-center justify-center mx-auto">
-            {errorMessage ? <AlertTriangle className="w-8 h-8 text-amber-500" /> : <Briefcase className="w-8 h-8" />}
+          <div className="w-14 h-14 rounded-full bg-kth-slate-100 text-kth-slate-400 flex items-center justify-center mx-auto">
+            {errorMessage ? <AlertTriangle className="w-7 h-7 text-amber-500" /> : <Briefcase className="w-7 h-7" />}
           </div>
           <h2 className="font-display font-extrabold text-2xl text-kth-slate-900">
             {errorMessage ? 'Unable to Load Position' : 'Position Not Found'}
           </h2>
-          <p className="text-xs text-kth-slate-500 leading-relaxed">
+          <p className="text-xs sm:text-sm text-kth-slate-500 leading-relaxed max-w-sm mx-auto">
             {errorMessage || 'This job opening does not exist, has expired, or is currently closed by the hiring enterprise.'}
           </p>
-          <div className="pt-4">
+          <div className="pt-3">
             <Button variant="primary" size="md" onClick={handleBackToJobs} leftIcon={<ArrowLeft className="w-4 h-4" />}>
               Browse All Jobs
             </Button>
@@ -128,102 +137,137 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
     );
   }
 
-  const salaryText = `${formatINR(job.min_salary_inr)} - ${formatINR(job.max_salary_inr, true)}`;
+  const isSalaryValid = (job.min_salary_inr && job.min_salary_inr > 0) || (job.max_salary_inr && job.max_salary_inr > 0);
+  const salaryText = isSalaryValid
+    ? `${formatINR(job.min_salary_inr)} - ${formatINR(job.max_salary_inr, true)}`
+    : 'Salary not disclosed';
+
+  const companyName = job.company?.name || (job as any).company_name || 'EcoStrategy India';
   const responsibilities = Array.isArray(job.responsibilities) ? job.responsibilities : [];
   const requirements = Array.isArray(job.requirements) ? job.requirements : [];
   const skills = Array.isArray(job.skills) ? job.skills : [];
   const benefits = Array.isArray(job.benefits) ? job.benefits : [];
 
   return (
-    <div className="py-12 bg-kth-slate-50 min-h-screen font-sans">
+    <div className="py-8 sm:py-12 bg-kth-slate-50 min-h-screen font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
         {/* Breadcrumb / Back Link */}
-        <div className="mb-6">
+        <div className="mb-5 sm:mb-6">
           <button
             type="button"
             onClick={handleBackToJobs}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-kth-slate-500 hover:text-kth-slate-900 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-kth-slate-500 hover:text-kth-slate-900 transition-colors p-1 -ml-1 rounded-md min-h-[36px]"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Job Listings</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+          
           {/* Main Content Column */}
-          <div className="lg:col-span-8">
-            <Card className="mb-6 p-6 sm:p-8 space-y-6">
-              <div className="flex justify-between items-start">
-                <div className="space-y-2">
+          <div className="lg:col-span-8 space-y-6">
+            <Card className="p-5 sm:p-7 md:p-8 bg-white border border-kth-slate-200/90 rounded-2xl shadow-xs space-y-6">
+              
+              {/* Job Header */}
+              <div className="flex justify-between items-start gap-4">
+                <div className="space-y-2.5 min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    {(job.is_verified || job.company?.verification_status === 'verified') && (
-                      <Badge variant="cyan">Verified Opportunity</Badge>
-                    )}
-                    <Badge variant="indigo" className="capitalize">
+                    <Badge variant="indigo" className="capitalize text-[11px] sm:text-xs font-semibold">
                       {(job.employment_type || 'full_time').replace('_', '-')}
                     </Badge>
-                    <Badge variant="slate" className="capitalize">
+                    <Badge variant="slate" className="capitalize text-[11px] sm:text-xs">
                       {(job.work_mode || 'hybrid').replace('_', '-')}
                     </Badge>
+                    {job.category && (
+                      <Badge variant="cyan" className="text-[11px] sm:text-xs">
+                        {job.category}
+                      </Badge>
+                    )}
                   </div>
+
                   <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-kth-slate-900 leading-tight">
                     {job.title}
                   </h1>
-                  <div className="flex items-center gap-4 text-xs sm:text-sm text-kth-slate-600 flex-wrap">
-                    <span className="font-semibold text-kth-slate-800 flex items-center gap-1.5">
-                      <Building2 className="w-4 h-4 text-kth-slate-400" />
-                      {job.company?.name || 'Verified Enterprise'}
-                    </span>
-                    <span className="flex items-center gap-1 text-kth-slate-500">
-                      <MapPin className="w-4 h-4 text-kth-slate-400" />
-                      {job.location}
-                      {job.is_remote && ' (Remote)'}
-                    </span>
+
+                  <div className="flex items-center gap-3 text-xs sm:text-sm text-kth-slate-600 flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                      <Building2 className="w-4 h-4 text-kth-primary-600 shrink-0" />
+                      <span className="font-bold text-kth-slate-900">{companyName}</span>
+                      {(job.is_verified || job.company?.verification_status === 'verified') && (
+                        <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-full shrink-0 ml-1">
+                          <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> Verified
+                        </span>
+                      )}
+                    </div>
+                    
+                    <span className="text-kth-slate-300">•</span>
+                    
+                    <div className="flex items-center gap-1 text-kth-slate-500">
+                      <MapPin className="w-3.5 h-3.5 text-kth-slate-400 shrink-0" />
+                      <span>{job.location}</span>
+                      {job.is_remote && <span className="font-semibold text-kth-primary-600 text-[11px] sm:text-xs ml-0.5">(Remote)</span>}
+                    </div>
                   </div>
                 </div>
 
+                {/* Bookmark Action */}
                 <button
                   type="button"
                   aria-label={isSaved ? "Remove from bookmarks" : "Save job"}
                   onClick={() => setIsSaved(!isSaved)}
-                  className={`p-2.5 rounded-lg border transition-colors ${
+                  className={`p-2.5 rounded-xl border transition-all shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center ${
                     isSaved
-                      ? 'bg-kth-primary-50 text-kth-primary-600 border-kth-primary-200'
-                      : 'bg-white text-kth-slate-500 border-kth-slate-200 hover:bg-kth-slate-50'
+                      ? 'bg-kth-primary-50 text-kth-primary-600 border-kth-primary-200 scale-105'
+                      : 'bg-white text-kth-slate-400 border-kth-slate-200 hover:text-kth-slate-700 hover:bg-kth-slate-50'
                   }`}
                 >
-                  <Bookmark className="w-5 h-5 fill-current" />
+                  <Bookmark className="w-4.5 h-4.5 fill-current" />
                 </button>
               </div>
 
-              {/* Salary & Primary CTA Banner */}
-              <div className="bg-kth-slate-50 p-4 sm:p-5 rounded-xl border border-kth-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              {/* Salary & Single Primary CTA Banner */}
+              <div className="bg-kth-slate-50/80 p-4 sm:p-5 rounded-xl border border-kth-slate-200/90 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                  <span className="text-[10px] font-bold text-kth-slate-500 uppercase tracking-wider block mb-0.5">
+                  <span className="text-[10px] font-bold text-kth-slate-500 uppercase tracking-wider block mb-1">
                     OFFERED ANNUAL SALARY BAND
                   </span>
-                  <div className="font-mono text-xl font-extrabold text-kth-primary-600">
+                  <div className={`font-mono text-xl sm:text-2xl font-extrabold ${isSalaryValid ? 'text-kth-primary-600' : 'text-kth-slate-700 text-lg sm:text-xl font-sans font-bold'}`}>
                     {salaryText}
                   </div>
                 </div>
-                <Button variant="primary" size="md" className="w-full sm:w-auto font-bold px-6" onClick={handleApplyClick}>
+
+                <Button
+                  variant="primary"
+                  size="md"
+                  className="w-full sm:w-auto font-bold px-7 h-11 text-xs sm:text-sm shadow-xs shrink-0"
+                  onClick={handleApplyClick}
+                >
                   Apply for Position
                 </Button>
               </div>
 
               {/* Job Details Sections */}
               <div className="space-y-6 text-sm text-kth-slate-700 leading-relaxed pt-2">
+                
+                {/* Role Overview */}
                 <div>
-                  <h2 className="font-display font-bold text-lg text-kth-slate-900 mb-2">Role Overview</h2>
+                  <h2 className="font-display font-bold text-base sm:text-lg text-kth-slate-900 mb-2">
+                    Role Overview
+                  </h2>
                   <p className="whitespace-pre-line text-xs sm:text-sm text-kth-slate-600 leading-relaxed font-normal">
                     {job.description || 'No description provided for this opening.'}
                   </p>
                 </div>
 
+                {/* Key Responsibilities */}
                 {responsibilities.length > 0 && (
                   <div>
-                    <h2 className="font-display font-bold text-lg text-kth-slate-900 mb-3">Key Responsibilities</h2>
-                    <ul className="space-y-2.5 list-none pl-0">
+                    <h2 className="font-display font-bold text-base sm:text-lg text-kth-slate-900 mb-3">
+                      Key Responsibilities
+                    </h2>
+                    <ul className="space-y-2 list-none pl-0">
                       {responsibilities.map((resp, idx) => (
                         <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-kth-slate-700">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
@@ -234,10 +278,13 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
                   </div>
                 )}
 
+                {/* Requirements & Qualifications */}
                 {requirements.length > 0 && (
                   <div>
-                    <h2 className="font-display font-bold text-lg text-kth-slate-900 mb-3">Requirements & Qualifications</h2>
-                    <ul className="space-y-2.5 list-none pl-0">
+                    <h2 className="font-display font-bold text-base sm:text-lg text-kth-slate-900 mb-3">
+                      Requirements & Qualifications
+                    </h2>
+                    <ul className="space-y-2 list-none pl-0">
                       {requirements.map((req, idx) => (
                         <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-kth-slate-700">
                           <CheckCircle2 className="w-4 h-4 text-kth-primary-600 shrink-0 mt-0.5" />
@@ -248,9 +295,12 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
                   </div>
                 )}
 
+                {/* Required Skills & Keywords */}
                 {skills.length > 0 && (
                   <div>
-                    <h2 className="font-display font-bold text-lg text-kth-slate-900 mb-3">Required Skills & Keywords</h2>
+                    <h2 className="font-display font-bold text-base sm:text-lg text-kth-slate-900 mb-3">
+                      Required Skills & Keywords
+                    </h2>
                     <div className="flex gap-2 flex-wrap">
                       {skills.map((skill, idx) => (
                         <span key={idx} className="px-3 py-1 rounded-md bg-kth-slate-100 text-kth-slate-700 text-xs font-semibold border border-kth-slate-200">
@@ -261,9 +311,12 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
                   </div>
                 )}
 
+                {/* Benefits & Perks */}
                 {benefits.length > 0 && (
                   <div>
-                    <h2 className="font-display font-bold text-lg text-kth-slate-900 mb-3">Benefits & Perks</h2>
+                    <h2 className="font-display font-bold text-base sm:text-lg text-kth-slate-900 mb-3">
+                      Benefits & Perks
+                    </h2>
                     <div className="flex gap-2 flex-wrap">
                       {benefits.map((b, idx) => (
                         <Badge key={idx} variant="slate" className="py-1 px-3 normal-case text-xs font-medium">
@@ -277,49 +330,86 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
             </Card>
           </div>
 
-          {/* Sidebar Column */}
+          {/* Sticky Sidebar Column (Desktop sticky, Mobile single-column) */}
           <div className="lg:col-span-4 space-y-6">
-            <Card className="p-6">
-              <h3 className="font-display font-bold text-base text-kth-slate-900 mb-4 border-b border-kth-slate-100 pb-3">
-                Company & Role Summary
-              </h3>
-              <div className="space-y-3.5 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-kth-slate-500">Enterprise:</span>
-                  <span className="font-semibold text-kth-slate-900">{job.company?.name || 'Verified Enterprise'}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-kth-slate-500">Department:</span>
-                  <span className="font-semibold text-kth-slate-900">{job.department}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-kth-slate-500">Category:</span>
-                  <span className="font-semibold text-kth-slate-900">{job.category}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-kth-slate-500">Location:</span>
-                  <span className="font-semibold text-kth-slate-900">{job.location}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-kth-slate-500">Experience:</span>
-                  <span className="font-semibold text-kth-slate-900 capitalize">{(job.experience_level || 'mid_level').replace('_', ' ')}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-kth-slate-500">Posted:</span>
-                  <span className="font-semibold text-kth-slate-900">{formatPublishDate(job.published_at || job.created_at)}</span>
-                </div>
-                {job.application_deadline && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-kth-slate-500">Deadline:</span>
-                    <span className="font-semibold text-amber-600">{formatPublishDate(job.application_deadline)}</span>
-                  </div>
-                )}
-              </div>
+            <div className="lg:sticky lg:top-24 space-y-4">
+              
+              {/* Company & Role Summary Card */}
+              <Card className="p-5 sm:p-6 bg-white border border-kth-slate-200/90 rounded-2xl shadow-xs">
+                <h3 className="font-display font-bold text-sm sm:text-base text-kth-slate-900 mb-4 border-b border-kth-slate-100 pb-3 flex items-center justify-between">
+                  <span>Company & Role Summary</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" title="Active Requisition" />
+                </h3>
 
-              <Button variant="primary" className="w-full mt-6 font-bold" onClick={handleApplyClick}>
-                Apply Now
-              </Button>
-            </Card>
+                <div className="space-y-3 text-xs">
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-kth-slate-500 font-medium">Enterprise:</span>
+                    <span className="font-bold text-kth-slate-900 text-right truncate max-w-[160px]">{companyName}</span>
+                  </div>
+
+                  {job.department && (
+                    <div className="flex justify-between items-center py-0.5">
+                      <span className="text-kth-slate-500 font-medium">Department:</span>
+                      <span className="font-semibold text-kth-slate-900 text-right truncate max-w-[160px]">{job.department}</span>
+                    </div>
+                  )}
+
+                  {job.category && (
+                    <div className="flex justify-between items-center py-0.5">
+                      <span className="text-kth-slate-500 font-medium">Category:</span>
+                      <span className="font-semibold text-kth-slate-900 text-right">{job.category}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-kth-slate-500 font-medium">Location:</span>
+                    <span className="font-semibold text-kth-slate-900 text-right truncate max-w-[160px]">{job.location}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-kth-slate-500 font-medium">Experience:</span>
+                    <span className="font-semibold text-kth-slate-900 capitalize text-right">
+                      {(job.experience_level || 'mid_level').replace('_', ' ')}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-kth-slate-500 font-medium">Posted:</span>
+                    <span className="font-semibold text-kth-slate-900 text-right">{formatPublishDate(job.published_at || job.created_at)}</span>
+                  </div>
+
+                  {job.application_deadline && (
+                    <div className="flex justify-between items-center py-0.5">
+                      <span className="text-kth-slate-500 font-medium">Deadline:</span>
+                      <span className="font-semibold text-amber-600 text-right">{formatPublishDate(job.application_deadline)}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-4 mt-4 border-t border-kth-slate-100 flex items-center justify-between gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="w-full text-xs font-semibold"
+                    onClick={handleShare}
+                    leftIcon={<Share2 className="w-3.5 h-3.5" />}
+                  >
+                    {isCopied ? 'Link Copied!' : 'Share Position'}
+                  </Button>
+                </div>
+              </Card>
+
+              {/* Verified Trust Card */}
+              <div className="p-4 rounded-xl bg-white border border-kth-slate-200/90 text-xs text-kth-slate-500 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-bold text-kth-slate-800 block">Direct Requisition</span>
+                  <span className="text-[11px] text-kth-slate-500">Verified through KnowToHire employer screening.</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -328,7 +418,7 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
       <Dialog
         isOpen={isApplyNoticeOpen}
         onClose={() => setIsApplyNoticeOpen(false)}
-        title={`Apply to ${job.company?.name || 'Enterprise'}`}
+        title={`Apply to ${companyName}`}
         description={`Position: ${job.title}`}
       >
         {isAuthenticated && role === 'employer' ? (
@@ -365,6 +455,7 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
             </p>
             <div className="p-3 bg-kth-slate-50 rounded-lg border border-kth-slate-200 text-xs text-kth-slate-700 space-y-1">
               <div><strong>Job Title:</strong> {job.title}</div>
+              <div><strong>Company:</strong> {companyName}</div>
               <div><strong>Location:</strong> {job.location}</div>
               <div><strong>Offered Band:</strong> {salaryText}</div>
             </div>

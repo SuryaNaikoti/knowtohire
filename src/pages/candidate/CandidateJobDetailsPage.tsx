@@ -126,7 +126,12 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
     );
   }
 
-  const salaryText = `${formatINR(job.min_salary_inr)} - ${formatINR(job.max_salary_inr, true)}`;
+  const isSalaryValid = (job.min_salary_inr && job.min_salary_inr > 0) || (job.max_salary_inr && job.max_salary_inr > 0);
+  const salaryText = isSalaryValid
+    ? `${formatINR(job.min_salary_inr)} - ${formatINR(job.max_salary_inr, true)}`
+    : 'Salary not disclosed';
+
+  const companyName = job.company?.name || (job as any).company_name || 'EcoStrategy India';
   const responsibilities = Array.isArray(job.responsibilities) ? job.responsibilities : [];
   const requirements = Array.isArray(job.requirements) ? job.requirements : [];
   const skills = Array.isArray(job.skills) ? job.skills : [];
@@ -151,7 +156,9 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
             <div>
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 {(job.is_verified || job.company?.verification_status === 'verified') && (
-                  <Badge variant="cyan">Verified Role</Badge>
+                  <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-full shrink-0">
+                    <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> Verified
+                  </span>
                 )}
                 <Badge variant="indigo" className="capitalize">
                   {(job.employment_type || 'full_time').replace('_', '-')}
@@ -162,7 +169,7 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
               <div className="flex items-center gap-3 text-xs sm:text-sm text-kth-slate-600 mt-1">
                 <span className="font-semibold text-kth-slate-800 flex items-center gap-1">
                   <Building2 className="w-3.5 h-3.5 text-kth-slate-400" />
-                  {job.company?.name || 'Verified Enterprise'}
+                  {companyName}
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
