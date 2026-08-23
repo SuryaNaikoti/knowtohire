@@ -75,13 +75,13 @@ export const FeaturedJobs: React.FC = () => {
             ))}
           </div>
         ) : jobs.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-4.5 mb-8">
             {jobs.map((job) => (
               <JobCard
                 key={job.id}
                 id={job.id}
                 title={job.title}
-                company={job.company?.name || 'Verified Enterprise'}
+                company={job.company?.name || (job as any).company_name || 'EcoStrategy India'}
                 companyLogo={job.company?.logo_url || undefined}
                 location={job.location}
                 isRemote={job.is_remote}

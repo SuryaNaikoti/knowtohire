@@ -382,7 +382,7 @@ export const JobsPage: React.FC = () => {
 
         {/* 7. Job Cards Grid (3 Columns on Desktop, 2 on Tablet, 1 on Mobile) */}
         {!isLoading && !errorMessage && jobs.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-4.5 mb-10 sm:mb-12">
             {jobs.map((job) => (
               <JobCard
                 key={job.id}
