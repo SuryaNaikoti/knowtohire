@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Sparkles, Bell } from 'lucide-react';
+import { MapPin, Sparkles } from 'lucide-react';
 
 export interface QuickAlertsNavBarProps {
   className?: string;
@@ -7,15 +7,15 @@ export interface QuickAlertsNavBarProps {
 }
 
 const CATEGORY_ITEMS = [
-  { label: 'Home', path: '/' },
-  { label: 'All India Jobs', path: '/jobs', isHighlight: true },
-  { label: 'ESG & Sustainability', path: '/jobs?category=sustainability' },
-  { label: 'Renewable Energy', path: '/jobs?category=renewables' },
-  { label: 'Climate Tech & Carbon', path: '/jobs?category=carbon' },
-  { label: 'Engineering Jobs', path: '/jobs?category=engineering' },
-  { label: 'EHS & Compliance', path: '/jobs?category=ehs' },
-  { label: 'Green Finance & CSR', path: '/jobs?category=finance' },
-  { label: 'Job Alerts & Mobile', path: '/careers', isAlert: true },
+  { label: 'All Jobs', path: '/jobs', isHighlight: true },
+  { label: 'General', path: '/jobs?category=General' },
+  { label: 'Environmental', path: '/jobs?category=Environmental' },
+  { label: 'ESG', path: '/jobs?category=ESG' },
+  { label: 'Sustainability', path: '/jobs?category=Sustainability' },
+  { label: 'Patent', path: '/jobs?category=Patent' },
+  { label: 'IPR', path: '/jobs?category=IPR' },
+  { label: 'Research', path: '/jobs?category=Research' },
+  { label: 'Consulting', path: '/jobs?category=Consulting' },
 ];
 
 const STATE_ITEMS = [
@@ -68,13 +68,10 @@ export const QuickAlertsNavBar: React.FC<QuickAlertsNavBarProps> = ({
                 className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md whitespace-nowrap transition-all duration-150 shrink-0 ${
                   item.isHighlight
                     ? 'text-kth-primary-700 bg-kth-primary-50 font-bold hover:bg-kth-primary-100/80'
-                    : item.isAlert
-                    ? 'text-emerald-700 bg-emerald-50/70 font-semibold hover:bg-emerald-100/70'
                     : 'text-kth-slate-600 hover:text-kth-slate-900 hover:bg-kth-slate-100 font-medium'
                 }`}
               >
                 {item.isHighlight && <Sparkles className="w-3 h-3 text-kth-primary-600 shrink-0" />}
-                {item.isAlert && <Bell className="w-3 h-3 text-emerald-600 shrink-0" />}
                 <span>{item.label}</span>
               </button>
             );

@@ -1,14 +1,52 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { SectionHeader } from '@/components/public/SectionHeader';
 import { JobCard } from '@/components/cards/JobCard';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
 import { jobService, Job, EmploymentType, WorkMode } from '@/services';
 import { useAuth } from '@/context/AuthContext';
-import { Search, Briefcase, RefreshCw, XCircle } from 'lucide-react';
+import { Search, Briefcase, RefreshCw, XCircle, ShieldCheck, Banknote } from 'lucide-react';
+
+const CAREER_CATEGORIES = [
+  { value: 'all', label: 'All Categories' },
+  { value: 'General', label: 'General Careers' },
+  { value: 'Environmental', label: 'Environmental Careers' },
+  { value: 'ESG', label: 'ESG Careers' },
+  { value: 'Sustainability', label: 'Sustainability Careers' },
+  { value: 'Patent', label: 'Patent Careers' },
+  { value: 'IPR', label: 'IPR Careers' },
+  { value: 'Research', label: 'Research Careers' },
+  { value: 'Consulting', label: 'Consulting Careers' },
+];
+
+const LOCATION_OPTIONS = [
+  { value: 'all', label: 'All Locations (India)' },
+  { value: 'Bengaluru', label: 'Bengaluru, KA' },
+  { value: 'Hyderabad', label: 'Hyderabad, TS' },
+  { value: 'Mumbai', label: 'Mumbai, MH' },
+  { value: 'Delhi', label: 'Delhi NCR' },
+  { value: 'Pune', label: 'Pune, MH' },
+  { value: 'Chennai', label: 'Chennai, TN' },
+  { value: 'Kolkata', label: 'Kolkata, WB' },
+  { value: 'Remote', label: 'Remote Only' },
+];
+
+const EMPLOYMENT_TYPE_OPTIONS = [
+  { value: 'all', label: 'All Employment Types' },
+  { value: 'full_time', label: 'Full-Time' },
+  { value: 'hybrid', label: 'Hybrid' },
+  { value: 'contract', label: 'Contract' },
+  { value: 'part_time', label: 'Part-Time' },
+  { value: 'internship', label: 'Internship' },
+];
+
+const SORT_OPTIONS = [
+  { value: 'latest', label: 'Sort: Most Recent' },
+  { value: 'salary_high', label: 'Sort: Highest Salary' },
+  { value: 'salary_low', label: 'Sort: Lowest Salary' },
+  { value: 'deadline', label: 'Sort: Closing Soon' },
+];
 
 export const JobsPage: React.FC = () => {
   // Read initial query parameters from URL
@@ -16,6 +54,7 @@ export const JobsPage: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     return {
       keyword: params.get('q') || '',
+      category: params.get('category') || 'all',
       location: params.get('location') || 'all',
       type: params.get('type') || 'all',
       workMode: params.get('work_mode') || 'all',
@@ -28,6 +67,7 @@ export const JobsPage: React.FC = () => {
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState(initial.keyword);
+  const [selectedCategory, setSelectedCategory] = useState(initial.category);
   const [selectedLocation, setSelectedLocation] = useState(initial.location);
   const [selectedType, setSelectedType] = useState(initial.type);
   const [selectedWorkMode, setSelectedWorkMode] = useState(initial.workMode);
@@ -61,6 +101,7 @@ export const JobsPage: React.FC = () => {
 
     const { data, error } = await jobService.getPublishedJobs({
       keyword: searchTerm.trim() || undefined,
+      category: selectedCategory !== 'all' ? selectedCategory : undefined,
       location: selectedLocation !== 'all' ? selectedLocation : undefined,
       employment_type: selectedType !== 'all' ? (selectedType as EmploymentType) : undefined,
       work_mode: selectedWorkMode !== 'all' ? (selectedWorkMode as WorkMode) : undefined,
@@ -81,24 +122,26 @@ export const JobsPage: React.FC = () => {
     }
 
     setIsLoading(false);
-  }, [searchTerm, selectedLocation, selectedType, selectedWorkMode, sortBy, currentPage]);
+  }, [searchTerm, selectedCategory, selectedLocation, selectedType, selectedWorkMode, sortBy, currentPage]);
 
   useEffect(() => {
     loadJobs();
     updateUrlParams({
       q: searchTerm,
+      category: selectedCategory,
       location: selectedLocation,
       type: selectedType,
       work_mode: selectedWorkMode,
       sort: sortBy,
       page: currentPage,
     });
-  }, [loadJobs, updateUrlParams, searchTerm, selectedLocation, selectedType, selectedWorkMode, sortBy, currentPage]);
+  }, [loadJobs, updateUrlParams, searchTerm, selectedCategory, selectedLocation, selectedType, selectedWorkMode, sortBy, currentPage]);
 
   const { isAuthenticated, role } = useAuth();
 
   const handleClearFilters = () => {
     setSearchTerm('');
+    setSelectedCategory('all');
     setSelectedLocation('all');
     setSelectedType('all');
     setSelectedWorkMode('all');
@@ -124,94 +167,156 @@ export const JobsPage: React.FC = () => {
   };
 
   return (
-    <div className="py-12 bg-kth-slate-50 min-h-screen font-sans">
+    <div className="py-8 sm:py-12 bg-kth-slate-50 min-h-screen font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <SectionHeader
-          badgeText="Job Discovery Feed"
-          badgeVariant="indigo"
-          title="Find Your Next Opportunity"
-          subtitle="Explore verified roles in sustainability, ESG, renewable energy, and environmental engineering across India."
-        />
+        
+        {/* 1. Page Header */}
+        <div className="mb-6 sm:mb-8 text-left">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-kth-primary-50 border border-kth-primary-200/80 mb-2.5 shadow-2xs">
+            <span className="text-[10px] font-bold text-kth-primary-700 uppercase tracking-wider">
+              Job Discovery
+            </span>
+          </div>
+          <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-extrabold text-kth-slate-900 tracking-tight leading-tight">
+            Find Your Next Opportunity
+          </h1>
+          <p className="text-xs sm:text-sm md:text-base text-kth-slate-600 mt-2 max-w-3xl leading-relaxed font-normal">
+            Explore verified career opportunities across sustainability, ESG, environmental, research, IPR and related professional domains across India.
+          </p>
+        </div>
 
-        {/* Filter Toolbar */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-kth-slate-200 shadow-xs mb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-            {/* Keyword Search */}
+        {/* 2. Unified Search & Filter Container */}
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-kth-slate-200 shadow-xs mb-6 sm:mb-8 space-y-2.5 sm:space-y-0">
+          
+          {/* Desktop & Tablet Flex Layout (Largest search field + Category + Location + Type + Sort) */}
+          <div className="hidden lg:flex items-center gap-2.5">
+            <div className="flex-1 min-w-[220px]">
+              <Input
+                placeholder="Search job title, skills, keywords..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                leftIcon={<Search className="w-4 h-4 text-kth-slate-400" />}
+              />
+            </div>
+
+            <div className="w-48 shrink-0">
+              <Select
+                value={selectedCategory}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  setCurrentPage(1);
+                }}
+                options={CAREER_CATEGORIES}
+              />
+            </div>
+
+            <div className="w-48 shrink-0">
+              <Select
+                value={selectedLocation}
+                onChange={(e) => {
+                  setSelectedLocation(e.target.value);
+                  setCurrentPage(1);
+                }}
+                options={LOCATION_OPTIONS}
+              />
+            </div>
+
+            <div className="w-52 shrink-0">
+              <Select
+                value={selectedType}
+                onChange={(e) => {
+                  setSelectedType(e.target.value);
+                  setCurrentPage(1);
+                }}
+                options={EMPLOYMENT_TYPE_OPTIONS}
+              />
+            </div>
+
+            <div className="w-48 shrink-0">
+              <Select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
+                  setCurrentPage(1);
+                }}
+                options={SORT_OPTIONS}
+              />
+            </div>
+          </div>
+
+          {/* Mobile & Tablet Responsive Filter Layout */}
+          <div className="flex lg:hidden flex-col gap-2.5">
             <Input
-              placeholder="Search by job title, skill, department..."
+              placeholder="Search job title, skills, keywords..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              leftIcon={<Search className="w-4 h-4" />}
+              leftIcon={<Search className="w-4 h-4 text-kth-slate-400" />}
             />
 
-            {/* Location Selector */}
-            <Select
-              value={selectedLocation}
-              onChange={(e) => {
-                setSelectedLocation(e.target.value);
-                setCurrentPage(1);
-              }}
-              options={[
-                { value: 'all', label: 'All Locations (India)' },
-                { value: 'Bengaluru', label: 'Bengaluru, KA' },
-                { value: 'Hyderabad', label: 'Hyderabad, TS' },
-                { value: 'Mumbai', label: 'Mumbai, MH' },
-                { value: 'Delhi', label: 'Delhi NCR' },
-                { value: 'Pune', label: 'Pune, MH' },
-                { value: 'Chennai', label: 'Chennai, TN' },
-                { value: 'Kolkata', label: 'Kolkata, WB' },
-              ]}
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <Select
+                value={selectedCategory}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  setCurrentPage(1);
+                }}
+                options={CAREER_CATEGORIES}
+              />
+              <Select
+                value={selectedLocation}
+                onChange={(e) => {
+                  setSelectedLocation(e.target.value);
+                  setCurrentPage(1);
+                }}
+                options={LOCATION_OPTIONS}
+              />
+            </div>
 
-            {/* Employment Type */}
-            <Select
-              value={selectedType}
-              onChange={(e) => {
-                setSelectedType(e.target.value);
-                setCurrentPage(1);
-              }}
-              options={[
-                { value: 'all', label: 'All Employment Types' },
-                { value: 'full_time', label: 'Full-Time' },
-                { value: 'hybrid', label: 'Hybrid' },
-                { value: 'contract', label: 'Contract' },
-                { value: 'part_time', label: 'Part-Time' },
-                { value: 'internship', label: 'Internship' },
-              ]}
-            />
-
-            {/* Sort Order */}
-            <Select
-              value={sortBy}
-              onChange={(e) => {
-                setSortBy(e.target.value);
-                setCurrentPage(1);
-              }}
-              options={[
-                { value: 'latest', label: 'Sort: Most Recent' },
-                { value: 'salary_high', label: 'Sort: Highest Salary' },
-                { value: 'salary_low', label: 'Sort: Lowest Salary' },
-                { value: 'deadline', label: 'Sort: Closing Soon' },
-              ]}
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <Select
+                value={selectedType}
+                onChange={(e) => {
+                  setSelectedType(e.target.value);
+                  setCurrentPage(1);
+                }}
+                options={EMPLOYMENT_TYPE_OPTIONS}
+              />
+              <Select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
+                  setCurrentPage(1);
+                }}
+                options={SORT_OPTIONS}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Results Metadata Bar */}
+        {/* 3. Results Header with Subtle Trust Badges */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-          <span className="text-xs font-semibold text-kth-slate-600">
-            Showing <strong className="text-kth-slate-900 font-mono">{isLoading ? '...' : totalCount}</strong> active verified listings
+          <span className="text-xs sm:text-sm font-semibold text-kth-slate-700">
+            Showing <strong className="text-kth-slate-900 font-mono font-bold">{isLoading ? '...' : totalCount}</strong> verified opportunities
           </span>
-          <div className="flex items-center gap-2">
-            <Badge variant="indigo">Verified Employers</Badge>
-            <Badge variant="emerald">INR ₹ Salary Bands</Badge>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-kth-slate-600 bg-kth-slate-100/90 border border-kth-slate-200/80 px-2.5 py-1 rounded-full">
+              <ShieldCheck className="w-3 h-3 text-kth-primary-600" />
+              Verified Employers
+            </span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50/80 border border-emerald-200/80 px-2.5 py-1 rounded-full">
+              <Banknote className="w-3 h-3 text-emerald-600" />
+              INR Salary Bands
+            </span>
           </div>
         </div>
 
-        {/* Error Alert with Retry */}
+        {/* 4. Error Alert with Retry */}
         {errorMessage && (
           <div className="mb-8">
             <Alert variant="error" title="Failed to Load Job Listings">
@@ -225,13 +330,13 @@ export const JobsPage: React.FC = () => {
           </div>
         )}
 
-        {/* Loading Skeletons */}
+        {/* 5. Loading Skeletons */}
         {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 mb-12">
             {Array.from({ length: 6 }).map((_, idx) => (
-              <div key={idx} className="bg-white rounded-2xl border border-kth-slate-200 p-6 space-y-4 animate-pulse">
+              <div key={idx} className="bg-white rounded-2xl border border-kth-slate-200 p-5 sm:p-6 space-y-4 animate-pulse">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-md bg-kth-slate-200" />
+                  <div className="w-10 h-10 rounded-xl bg-kth-slate-200" />
                   <div className="space-y-2 flex-1">
                     <div className="h-3.5 bg-kth-slate-200 rounded w-1/3" />
                     <div className="h-3 bg-kth-slate-100 rounded w-1/2" />
@@ -255,33 +360,35 @@ export const JobsPage: React.FC = () => {
           </div>
         )}
 
-        {/* Empty State */}
+        {/* 6. Premium Empty State */}
         {!isLoading && !errorMessage && jobs.length === 0 && (
-          <div className="bg-white rounded-2xl border border-kth-slate-200 p-12 text-center max-w-lg mx-auto my-8 space-y-4">
-            <div className="w-14 h-14 rounded-full bg-kth-slate-100 text-kth-slate-400 flex items-center justify-center mx-auto">
-              <Briefcase className="w-7 h-7" />
+          <div className="bg-white rounded-2xl border border-kth-slate-200 p-10 sm:p-14 text-center max-w-lg mx-auto my-8 space-y-4 shadow-xs">
+            <div className="w-12 h-12 rounded-xl bg-kth-slate-100 text-kth-slate-400 flex items-center justify-center mx-auto">
+              <Briefcase className="w-6 h-6" />
             </div>
-            <h3 className="font-display font-bold text-lg text-kth-slate-900">No Job Openings Found</h3>
-            <p className="text-xs text-kth-slate-500 leading-relaxed">
-              We couldn&apos;t find any active listings matching your filter criteria. Try adjusting your keyword or clearing filters.
+            <h3 className="font-display font-bold text-lg text-kth-slate-900">
+              No matching opportunities
+            </h3>
+            <p className="text-xs text-kth-slate-500 leading-relaxed max-w-sm mx-auto">
+              Try adjusting your category, location or employment filters.
             </p>
             <div className="pt-2">
               <Button variant="secondary" size="sm" onClick={handleClearFilters} leftIcon={<XCircle className="w-4 h-4" />}>
-                Clear All Filters
+                Clear Filters
               </Button>
             </div>
           </div>
         )}
 
-        {/* Job Cards Grid */}
+        {/* 7. Job Cards Grid (3 Columns on Desktop, 2 on Tablet, 1 on Mobile) */}
         {!isLoading && !errorMessage && jobs.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 mb-12">
             {jobs.map((job) => (
               <JobCard
                 key={job.id}
                 id={job.id}
                 title={job.title}
-                company={job.company?.name || 'Verified Enterprise'}
+                company={job.company?.name || (job as any).company_name || 'EcoStrategy India'}
                 companyLogo={job.company?.logo_url || undefined}
                 location={job.location}
                 isRemote={job.is_remote}
@@ -297,7 +404,7 @@ export const JobsPage: React.FC = () => {
           </div>
         )}
 
-        {/* Pagination Controls */}
+        {/* 8. Pagination Controls */}
         {!isLoading && !errorMessage && totalPages > 1 && (
           <div className="flex justify-center items-center gap-2 py-4">
             <Button

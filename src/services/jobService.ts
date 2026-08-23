@@ -178,8 +178,9 @@ export const jobService = {
       }
 
       // 4. Category / Domain filter
-      if (filters.category && filters.category.trim()) {
-        query = query.eq('category', filters.category.trim());
+      if (filters.category && filters.category.trim() && filters.category !== 'all') {
+        const catTerm = filters.category.trim();
+        query = query.or(`category.ilike.%${catTerm}%,title.ilike.%${catTerm}%,department.ilike.%${catTerm}%`);
       }
 
       // 5. Employment Type filter

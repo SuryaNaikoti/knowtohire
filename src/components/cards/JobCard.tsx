@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Bookmark, MapPin } from 'lucide-react';
+import { Bookmark, MapPin, Check, ArrowRight } from 'lucide-react';
 import { formatINR } from '@/design-system/tokens';
 
 export interface JobCardProps {
@@ -30,6 +30,7 @@ export const JobCard: React.FC<JobCardProps> = ({
   companyLogo,
   location,
   isRemote = false,
+  isVerified = true,
   employmentType,
   minSalaryINR,
   maxSalaryINR,
@@ -40,18 +41,32 @@ export const JobCard: React.FC<JobCardProps> = ({
   onSaveToggle,
   onApply,
 }) => {
-  const salaryText = `${formatINR(minSalaryINR)} - ${formatINR(maxSalaryINR, true)}`;
+  const isSalaryValid = (minSalaryINR && minSalaryINR > 0) || (maxSalaryINR && maxSalaryINR > 0);
+  const salaryText = isSalaryValid
+    ? `${formatINR(minSalaryINR)} - ${formatINR(maxSalaryINR, true)}`
+    : 'Salary not disclosed';
 
   return (
-    <Card variant="interactive" className="flex flex-col justify-between h-full p-4 sm:p-5 bg-white border border-kth-slate-200/90 hover:border-kth-primary-300 rounded-xl">
+    <Card variant="interactive" className="flex flex-col justify-between h-full p-4 sm:p-5 bg-white border border-kth-slate-200/90 hover:border-kth-primary-300 rounded-2xl shadow-xs hover:shadow-md transition-all duration-200">
       <div>
         <CardHeader className="mb-3">
           <div className="flex items-center gap-3 min-w-0 flex-1 pr-2">
             <div className="w-10 h-10 rounded-xl bg-kth-primary-50 border border-kth-primary-100 text-kth-primary-700 font-display font-extrabold flex items-center justify-center text-sm sm:text-base shrink-0 shadow-2xs">
-              {companyLogo || company.charAt(0)}
+              {companyLogo ? (
+                <img src={companyLogo} alt={company} className="w-full h-full object-cover rounded-xl" />
+              ) : (
+                company.charAt(0)
+              )}
             </div>
             <div className="min-w-0 flex-1">
-              <span className="text-xs font-bold text-kth-slate-800 truncate block">{company}</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-bold text-kth-slate-900 truncate max-w-[140px] sm:max-w-[180px]">{company}</span>
+                {isVerified && (
+                  <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-full shrink-0">
+                    <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> Verified
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-1 text-xs text-kth-slate-500 mt-0.5 truncate">
                 <MapPin className="w-3.5 h-3.5 shrink-0 text-kth-slate-400" />
                 <span className="truncate">{location}</span>
@@ -63,7 +78,7 @@ export const JobCard: React.FC<JobCardProps> = ({
             type="button"
             aria-label={isSaved ? "Remove from bookmarks" : "Save job"}
             onClick={(e) => { e.stopPropagation(); onSaveToggle?.(); }}
-            className={`p-2 rounded-lg transition-colors shrink-0 min-h-[36px] min-w-[36px] flex items-center justify-center ${isSaved ? 'text-kth-primary-600 bg-kth-primary-50' : 'text-kth-slate-400 hover:text-kth-slate-700 hover:bg-kth-slate-100'}`}
+            className={`p-2 rounded-lg transition-all shrink-0 min-h-[36px] min-w-[36px] flex items-center justify-center ${isSaved ? 'text-kth-primary-600 bg-kth-primary-50 scale-105' : 'text-kth-slate-400 hover:text-kth-slate-700 hover:bg-kth-slate-100'}`}
           >
             <Bookmark className="w-4 h-4 fill-current" />
           </button>
@@ -75,7 +90,7 @@ export const JobCard: React.FC<JobCardProps> = ({
           </h3>
 
           <div className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4 flex-wrap">
-            <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50/90 border border-emerald-200/90 px-2 py-0.5 rounded-md">
+            <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded-md ${isSalaryValid ? 'text-emerald-700 bg-emerald-50/90 border border-emerald-200/90' : 'text-kth-slate-600 bg-kth-slate-100 border border-kth-slate-200/80'}`}>
               {salaryText}
             </span>
             <Badge variant="indigo" className="capitalize text-[11px] sm:text-xs font-semibold">{employmentType.replace('_', '-')}</Badge>
@@ -101,7 +116,7 @@ export const JobCard: React.FC<JobCardProps> = ({
           {postedDate || 'Active Opening'}
         </span>
         <Button variant="primary" size="sm" onClick={onApply} className="shrink-0 font-bold text-xs">
-          View Details
+          View Job <ArrowRight className="w-3.5 h-3.5 ml-1" />
         </Button>
       </CardFooter>
     </Card>
