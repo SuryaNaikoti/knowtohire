@@ -1,6 +1,15 @@
 /**
  * KnowToHire Application Service
  * Handles Candidate job applications, ATS pipeline stage transitions, and audit trail lookups.
+ *
+ * ARCHITECTURE NOTE:
+ * This service supports two modes:
+ * 1. REAL MODE: Supabase auth is active, all operations go through the database with RLS.
+ * 2. DEMO MODE: Demo credentials are used (localStorage session). Since demo users don't
+ *    have real Supabase auth sessions (auth.uid() = NULL), database operations will fail
+ *    due to RLS policies. In demo mode, localStorage serves as a shared application store
+ *    that is accessible to both candidate and employer demo sessions in the same browser.
+ *    This allows the full Candidate → Apply → Employer Pipeline flow to work in demo mode.
  */
 
 import { supabase } from '@/lib/supabase';
@@ -15,9 +24,28 @@ import {
   normalizeServiceError,
 } from './types';
 
-const DEMO_APPLICATIONS_KEY = 'kth_candidate_applications_cache';
+// ============================================================================
+// DEMO MODE — SHARED APPLICATION STORE
+// Both candidate and employer demo sessions read/write the same localStorage key.
+// ============================================================================
 
-function getLocalApplications(): JobApplication[] {
+const DEMO_APPLICATIONS_KEY = 'kth_demo_applications';
+
+/** Check if the current session is a demo session (no real Supabase auth). */
+function isDemoSession(): boolean {
+  if (typeof window === 'undefined' || !window.localStorage) return false;
+  try {
+    const stored = window.localStorage.getItem('kth_demo_auth_session');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return Boolean(parsed?.id && parsed?.role);
+    }
+  } catch { /* ignore */ }
+  return false;
+}
+
+/** Read all demo applications from localStorage. */
+function getDemoApplications(): JobApplication[] {
   if (typeof window === 'undefined' || !window.localStorage) return [];
   try {
     const raw = window.localStorage.getItem(DEMO_APPLICATIONS_KEY);
@@ -27,21 +55,28 @@ function getLocalApplications(): JobApplication[] {
   }
 }
 
-function saveLocalApplication(app: JobApplication) {
+/** Save a demo application to localStorage. */
+function saveDemoApplication(app: JobApplication) {
   if (typeof window === 'undefined' || !window.localStorage) return;
   try {
-    const existing = getLocalApplications().filter((a) => a.id !== app.id && a.job_id !== app.job_id);
+    const existing = getDemoApplications().filter(
+      (a) => !(a.job_id === app.job_id && a.candidate_id === app.candidate_id)
+    );
     existing.unshift(app);
     window.localStorage.setItem(DEMO_APPLICATIONS_KEY, JSON.stringify(existing));
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
 }
 
+// ============================================================================
+// AUTH HELPERS
+// ============================================================================
+
 async function getCandidateAuthId(): Promise<string | null> {
+  // 1. Try real Supabase auth
   const { data: userData } = await supabase.auth.getUser();
   if (userData?.user?.id) return userData.user.id;
 
+  // 2. Fallback to demo session
   if (typeof window !== 'undefined' && window.localStorage) {
     const storedDemo = window.localStorage.getItem('kth_demo_auth_session');
     if (storedDemo) {
@@ -50,17 +85,59 @@ async function getCandidateAuthId(): Promise<string | null> {
         if (parsed?.role === 'candidate' && parsed?.id) {
           return parsed.id;
         }
-      } catch {
-        // ignore
-      }
+      } catch { /* ignore */ }
     }
   }
   return null;
 }
 
+async function getEmployerCompanyId(): Promise<string | null> {
+  // 1. Try real Supabase auth
+  const { data: userData } = await supabase.auth.getUser();
+  if (userData?.user?.id) {
+    const { data: employerProfile } = await supabase
+      .from('employer_profiles')
+      .select('company_id')
+      .eq('profile_id', userData.user.id)
+      .maybeSingle();
+
+    if (employerProfile?.company_id) return employerProfile.company_id;
+    // Fallback company for real authenticated employers without a profile row
+    return 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+  }
+
+  // 2. Fallback to demo session
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const storedDemo = window.localStorage.getItem('kth_demo_auth_session');
+    if (storedDemo) {
+      try {
+        const parsed = JSON.parse(storedDemo);
+        if (parsed?.role === 'employer') {
+          return 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+        }
+      } catch { /* ignore */ }
+    }
+  }
+  return null;
+}
+
+// ============================================================================
+// APPLICATION SERVICE
+// ============================================================================
+
 export const applicationService = {
   /**
    * Submit an application for a published job opening (Candidate).
+   *
+   * Flow:
+   * 1. Validates candidate authentication.
+   * 2. Fetches the job to verify it exists and is published.
+   * 3. Checks for duplicate applications (DB first, then demo store).
+   * 4. Attempts Supabase INSERT.
+   * 5. If INSERT succeeds → returns real application record.
+   * 6. If INSERT fails AND we're in demo mode → creates a demo application
+   *    in localStorage so the full flow works in demo mode.
+   * 7. If INSERT fails AND NOT in demo mode → returns the actual error.
    */
   async applyToJob(input: ApplicationSubmitInput): Promise<ServiceResult<JobApplication>> {
     try {
@@ -93,19 +170,7 @@ export const applicationService = {
         };
       }
 
-      // 2. Check for duplicate application (in Supabase and local cache)
-      const localDuplicate = getLocalApplications().find((a) => a.job_id === input.job_id && a.candidate_id === candidateId);
-      if (localDuplicate) {
-        return {
-          data: null,
-          error: {
-            message: 'You have already submitted an application for this job opening.',
-            code: 'DUPLICATE_APPLICATION',
-            status: 409,
-          },
-        };
-      }
-
+      // 2. Check for duplicate application in Supabase
       const { data: existingApp } = await supabase
         .from('job_applications')
         .select('id')
@@ -124,7 +189,22 @@ export const applicationService = {
         };
       }
 
-      // 3. Prepare candidate profile snapshot and resume if not explicitly provided
+      // 2b. Check for duplicate in demo store
+      const demoDuplicate = getDemoApplications().find(
+        (a) => a.job_id === input.job_id && a.candidate_id === candidateId
+      );
+      if (demoDuplicate) {
+        return {
+          data: null,
+          error: {
+            message: 'You have already submitted an application for this job opening.',
+            code: 'DUPLICATE_APPLICATION',
+            status: 409,
+          },
+        };
+      }
+
+      // 3. Prepare candidate profile snapshot
       let snapshot = input.candidate_snapshot;
       let activeResumeUrl = input.resume_url;
       if (!snapshot || !activeResumeUrl) {
@@ -156,7 +236,7 @@ export const applicationService = {
         }
       }
 
-      // 4. Insert Application to Supabase
+      // 4. Attempt Supabase INSERT
       const { data, error } = await supabase
         .from('job_applications')
         .insert({
@@ -164,37 +244,45 @@ export const applicationService = {
           candidate_id: candidateId,
           company_id: job.company_id,
           stage: 'new',
-          resume_url: activeResumeUrl || 'https://knowtohire.com/resumes/aarav_sharma_esg_resume.pdf',
+          resume_url: activeResumeUrl || 'https://knowtohire.com/resumes/candidate_resume.pdf',
           cover_letter: input.cover_letter ? input.cover_letter.trim() : null,
           candidate_snapshot: snapshot,
         })
         .select('*, job:jobs(*, company:company_profiles(*))')
         .maybeSingle();
 
-      if (error || !data) {
-        // Construct standard fallback application record for demo session / RLS
+      // 5. SUCCESS — real database record created
+      if (!error && data) {
+        return { data: data as JobApplication, error: null };
+      }
+
+      // 6. INSERT FAILED — determine if this is demo mode
+      if (isDemoSession()) {
+        // Create a demo application record in localStorage.
+        // This allows the employer demo session to see it in the pipeline.
         const demoApp: JobApplication = {
-          id: `app-${input.job_id}-${Date.now()}`,
+          id: `demo-app-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           job_id: input.job_id,
           candidate_id: candidateId,
           company_id: job.company_id,
           stage: 'new',
-          resume_url: activeResumeUrl || 'https://knowtohire.com/resumes/aarav_sharma_esg_resume.pdf',
+          resume_url: activeResumeUrl || 'https://knowtohire.com/resumes/candidate_resume.pdf',
           cover_letter: input.cover_letter ? input.cover_letter.trim() : null,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           candidate_snapshot: (snapshot as any) || {},
           applied_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           job: (job as any) || undefined,
         };
 
-        saveLocalApplication(demoApp);
+        saveDemoApplication(demoApp);
         return { data: demoApp, error: null };
       }
 
-      saveLocalApplication(data as JobApplication);
-      return { data: data as JobApplication, error: null };
+      // 7. INSERT FAILED — NOT demo mode. Return actual error.
+      return {
+        data: null,
+        error: normalizeServiceError(error || { message: 'Failed to submit application. Please try again.' }),
+      };
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }
@@ -202,6 +290,7 @@ export const applicationService = {
 
   /**
    * Check whether the authenticated candidate has already applied to a job.
+   * Checks Supabase first, then demo store.
    */
   async hasCandidateApplied(jobId: string): Promise<ServiceResult<boolean>> {
     try {
@@ -210,31 +299,36 @@ export const applicationService = {
         return { data: false, error: null };
       }
 
-      // Check local cache first
-      const localApp = getLocalApplications().find((a) => a.job_id === jobId && a.candidate_id === candidateId);
-      if (localApp) {
-        return { data: true, error: null };
-      }
-
-      const { data, error } = await supabase
+      // Check Supabase
+      const { data } = await supabase
         .from('job_applications')
         .select('id')
         .eq('job_id', jobId)
         .eq('candidate_id', candidateId)
         .maybeSingle();
 
-      if (error) {
-        return { data: false, error: null };
+      if (data) {
+        return { data: true, error: null };
       }
 
-      return { data: Boolean(data), error: null };
-    } catch (err) {
+      // Check demo store
+      const demoApp = getDemoApplications().find(
+        (a) => a.job_id === jobId && a.candidate_id === candidateId
+      );
+      if (demoApp) {
+        return { data: true, error: null };
+      }
+
+      return { data: false, error: null };
+    } catch {
       return { data: false, error: null };
     }
   },
 
   /**
    * Fetch all applications submitted by the authenticated candidate.
+   * Returns ONLY the candidate's own applications — never falls back to showing
+   * all applications in the database.
    */
   async getMyApplications(): Promise<ServiceResult<JobApplication[]>> {
     try {
@@ -246,42 +340,27 @@ export const applicationService = {
         };
       }
 
-      const localApps = getLocalApplications().filter((a) => a.candidate_id === candidateId);
-
+      // 1. Query Supabase for candidate's own applications
       const { data, error } = await supabase
         .from('job_applications')
         .select('*, job:jobs(*, company:company_profiles(*))')
         .eq('candidate_id', candidateId)
         .order('applied_at', { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        // Merge database and local applications, prioritizing local uniqueness
-        const dbApps = data as JobApplication[];
-        const combined = [...localApps];
-        for (const dbApp of dbApps) {
-          if (!combined.some((a) => a.id === dbApp.id || a.job_id === dbApp.job_id)) {
-            combined.push(dbApp);
-          }
+      const dbApps: JobApplication[] = (!error && data) ? (data as JobApplication[]) : [];
+
+      // 2. Get demo applications for this candidate
+      const demoApps = getDemoApplications().filter((a) => a.candidate_id === candidateId);
+
+      // 3. Merge: demo apps first, then DB apps (dedup by job_id)
+      const combined = [...demoApps];
+      for (const dbApp of dbApps) {
+        if (!combined.some((a) => a.id === dbApp.id || a.job_id === dbApp.job_id)) {
+          combined.push(dbApp);
         }
-        return { data: combined, error: null };
       }
 
-      if (localApps.length > 0) {
-        return { data: localApps, error: null };
-      }
-
-      // Check all applications in database for rich demo display
-      const { data: allApps } = await supabase
-        .from('job_applications')
-        .select('*, job:jobs(*, company:company_profiles(*))')
-        .order('applied_at', { ascending: false })
-        .limit(4);
-
-      if (allApps && allApps.length > 0) {
-        return { data: allApps as JobApplication[], error: null };
-      }
-
-      return { data: (data as JobApplication[]) || [], error: null };
+      return { data: combined, error: null };
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }
@@ -292,9 +371,10 @@ export const applicationService = {
    */
   async getMyApplicationById(applicationId: string): Promise<ServiceResult<JobApplication>> {
     try {
-      const localApp = getLocalApplications().find((a) => a.id === applicationId);
-      if (localApp) {
-        return { data: localApp, error: null };
+      // Check demo store first (demo IDs start with "demo-app-")
+      const demoApp = getDemoApplications().find((a) => a.id === applicationId);
+      if (demoApp) {
+        return { data: demoApp, error: null };
       }
 
       const { data, error } = await supabase
@@ -325,6 +405,19 @@ export const applicationService = {
    */
   async withdrawApplication(applicationId: string): Promise<ServiceResult<JobApplication>> {
     try {
+      // Handle demo applications
+      if (applicationId.startsWith('demo-app-')) {
+        const allDemo = getDemoApplications();
+        const idx = allDemo.findIndex((a) => a.id === applicationId);
+        if (idx !== -1) {
+          allDemo[idx].stage = 'withdrawn';
+          allDemo[idx].withdrawn_at = new Date().toISOString();
+          allDemo[idx].updated_at = new Date().toISOString();
+          window.localStorage.setItem(DEMO_APPLICATIONS_KEY, JSON.stringify(allDemo));
+          return { data: allDemo[idx], error: null };
+        }
+      }
+
       const { data, error } = await supabase
         .from('job_applications')
         .update({
@@ -348,6 +441,7 @@ export const applicationService = {
 
   /**
    * Fetch applicants for a specific job requisition (Employer ATS).
+   * Queries Supabase AND merges demo applications for the same job.
    */
   async getJobApplicants(jobId: string, filters: ApplicationFilters = {}): Promise<ServiceResult<PaginatedResult<JobApplication>>> {
     try {
@@ -369,16 +463,28 @@ export const applicationService = {
 
       const { data, count, error } = await query;
 
-      if (error) {
-        return { data: null, error: normalizeServiceError(error) };
+      let dbApps: JobApplication[] = (!error && data) ? (data as JobApplication[]) : [];
+
+      // Merge demo applications for this job
+      let demoApps = getDemoApplications().filter((a) => a.job_id === jobId);
+      if (filters.stage) {
+        demoApps = demoApps.filter((a) => a.stage === filters.stage);
       }
 
-      const totalCount = count || 0;
+      // Combine: demo first, then DB (dedup)
+      const combined = [...demoApps];
+      for (const dbApp of dbApps) {
+        if (!combined.some((a) => a.id === dbApp.id)) {
+          combined.push(dbApp);
+        }
+      }
+
+      const totalCount = (count || 0) + demoApps.length;
       const totalPages = Math.ceil(totalCount / pageSize);
 
       return {
         data: {
-          data: (data as JobApplication[]) || [],
+          data: combined,
           count: totalCount,
           page,
           pageSize,
@@ -393,9 +499,13 @@ export const applicationService = {
 
   /**
    * Fetch all applicants across all company job postings (Employer Candidate Pipeline).
+   * Scoped by company_id to ensure employers only see their own applicants.
+   * Also merges demo applications for the employer's company.
    */
   async getCompanyApplicants(filters: ApplicationFilters = {}): Promise<ServiceResult<PaginatedResult<JobApplication>>> {
     try {
+      const companyId = await getEmployerCompanyId();
+
       const page = filters.page && filters.page > 0 ? filters.page : 1;
       const pageSize = filters.pageSize && filters.pageSize > 0 ? filters.pageSize : 50;
       const from = (page - 1) * pageSize;
@@ -405,6 +515,11 @@ export const applicationService = {
         .from('job_applications')
         .select('*, candidate:profiles(*), job:jobs(title, department, location)', { count: 'exact' });
 
+      // CRITICAL FIX: Scope by company_id so employers only see their own applicants
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
+
       if (filters.stage) {
         query = query.eq('stage', filters.stage);
       }
@@ -413,16 +528,31 @@ export const applicationService = {
 
       const { data, count, error } = await query;
 
-      if (error) {
-        return { data: null, error: normalizeServiceError(error) };
+      let dbApps: JobApplication[] = (!error && data) ? (data as JobApplication[]) : [];
+
+      // Merge demo applications scoped to this company
+      let demoApps = getDemoApplications();
+      if (companyId) {
+        demoApps = demoApps.filter((a) => a.company_id === companyId);
+      }
+      if (filters.stage) {
+        demoApps = demoApps.filter((a) => a.stage === filters.stage);
       }
 
-      const totalCount = count || 0;
+      // Combine: demo first, then DB (dedup)
+      const combined = [...demoApps];
+      for (const dbApp of dbApps) {
+        if (!combined.some((a) => a.id === dbApp.id)) {
+          combined.push(dbApp);
+        }
+      }
+
+      const totalCount = (count || 0) + demoApps.length;
       const totalPages = Math.ceil(totalCount / pageSize);
 
       return {
         data: {
-          data: (data as JobApplication[]) || [],
+          data: combined,
           count: totalCount,
           page,
           pageSize,
@@ -440,6 +570,12 @@ export const applicationService = {
    */
   async getEmployerApplicationById(applicationId: string): Promise<ServiceResult<JobApplication>> {
     try {
+      // Check demo store first
+      const demoApp = getDemoApplications().find((a) => a.id === applicationId);
+      if (demoApp) {
+        return { data: demoApp, error: null };
+      }
+
       const { data, error } = await supabase
         .from('job_applications')
         .select('*, candidate:profiles(*), job:jobs(*)')
@@ -465,7 +601,6 @@ export const applicationService = {
 
   /**
    * Update candidate application stage (e.g. from 'screening' to 'interview').
-   * Automatically triggers an audit log in application_status_history via database trigger.
    */
   async updateApplicationStage(
     applicationId: string,
@@ -473,6 +608,21 @@ export const applicationService = {
     rejectionReason?: string
   ): Promise<ServiceResult<JobApplication>> {
     try {
+      // Handle demo applications
+      if (applicationId.startsWith('demo-app-')) {
+        const allDemo = getDemoApplications();
+        const idx = allDemo.findIndex((a) => a.id === applicationId);
+        if (idx !== -1) {
+          allDemo[idx].stage = stage;
+          allDemo[idx].updated_at = new Date().toISOString();
+          if (rejectionReason) {
+            allDemo[idx].rejection_reason = rejectionReason;
+          }
+          window.localStorage.setItem(DEMO_APPLICATIONS_KEY, JSON.stringify(allDemo));
+          return { data: allDemo[idx], error: null };
+        }
+      }
+
       const updates: Record<string, unknown> = {
         stage,
         updated_at: new Date().toISOString(),
@@ -508,6 +658,21 @@ export const applicationService = {
     employerRating?: number
   ): Promise<ServiceResult<JobApplication>> {
     try {
+      // Handle demo applications
+      if (applicationId.startsWith('demo-app-')) {
+        const allDemo = getDemoApplications();
+        const idx = allDemo.findIndex((a) => a.id === applicationId);
+        if (idx !== -1) {
+          allDemo[idx].employer_notes = employerNotes;
+          allDemo[idx].updated_at = new Date().toISOString();
+          if (employerRating !== undefined) {
+            allDemo[idx].employer_rating = employerRating;
+          }
+          window.localStorage.setItem(DEMO_APPLICATIONS_KEY, JSON.stringify(allDemo));
+          return { data: allDemo[idx], error: null };
+        }
+      }
+
       const updates: Record<string, unknown> = {
         employer_notes: employerNotes,
         updated_at: new Date().toISOString(),
@@ -539,6 +704,11 @@ export const applicationService = {
    */
   async getApplicationStatusHistory(applicationId: string): Promise<ServiceResult<ApplicationStatusHistory[]>> {
     try {
+      // Demo applications have no history
+      if (applicationId.startsWith('demo-app-')) {
+        return { data: [], error: null };
+      }
+
       const { data, error } = await supabase
         .from('application_status_history')
         .select('*')

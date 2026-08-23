@@ -288,9 +288,11 @@ export const jobService = {
 
   /**
    * Fetch all jobs belonging to the authenticated employer's company (all statuses).
+   * Scoped by company_id to ensure employers only see their own jobs.
    */
   async getEmployerJobs(filters: { status?: JobStatus; page?: number; pageSize?: number } = {}): Promise<ServiceResult<PaginatedResult<Job>>> {
     try {
+      const authCtx = await getEmployerAuthContext();
       const page = filters.page && filters.page > 0 ? filters.page : 1;
       const pageSize = filters.pageSize && filters.pageSize > 0 ? filters.pageSize : 20;
       const from = (page - 1) * pageSize;
@@ -299,6 +301,11 @@ export const jobService = {
       let query = supabase
         .from('jobs')
         .select('*, company:company_profiles(*)', { count: 'exact' });
+
+      // CRITICAL FIX: Scope by company_id so employers only see their own jobs
+      if (authCtx?.companyId) {
+        query = query.eq('company_id', authCtx.companyId);
+      }
 
       if (filters.status) {
         query = query.eq('status', filters.status);
