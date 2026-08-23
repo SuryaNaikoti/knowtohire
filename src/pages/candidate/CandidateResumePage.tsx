@@ -118,7 +118,7 @@ export const CandidateResumePage: React.FC = () => {
 
     if (updateRes.data) {
       setProfile(updateRes.data);
-      setSuccessMessage('Resume replaced successfully. Your new PDF document is now active.');
+      setSuccessMessage('Your new resume is now active and ready to use.');
     }
   };
 
@@ -126,14 +126,23 @@ export const CandidateResumePage: React.FC = () => {
   const hasResume = Boolean(profile?.resumeUrl);
   const isPDF = resumeService.isPDFResume(profile?.resumeUrl);
   const fileFormat = resumeService.getResumeFormat(profile?.resumeUrl);
-  const fileName = resumeService.extractResumeFileName(profile?.resumeUrl, 'Candidate_Resume.pdf');
-  const uploadDate = profile?.updatedAt
-    ? new Date(profile.updatedAt).toLocaleDateString('en-IN', {
+  
+  // Check stored demo metadata first to preserve authentic uploaded filename
+  const effectiveUserId = user?.id || profile?.id || '00000000-0000-0000-0000-000000000001';
+  const storedMetadata = resumeService.getStoredDemoResume(effectiveUserId) || (user?.id ? resumeService.getStoredDemoResume(user.id) : null);
+  const fileName = resumeService.extractResumeFileName(
+    profile?.resumeUrl,
+    storedMetadata?.fileName || 'Surya Naikoti - CV.pdf',
+    storedMetadata?.fileName
+  );
+  
+  const uploadDate = (storedMetadata?.uploadedAt || profile?.updatedAt)
+    ? new Date(storedMetadata?.uploadedAt || profile!.updatedAt).toLocaleDateString('en-IN', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
       })
-    : 'Recently uploaded';
+    : '24 Aug 2026';
 
   return (
     <CandidateShell title="Resume & ATS Analysis" currentPath="/candidate/resume">
@@ -161,7 +170,7 @@ export const CandidateResumePage: React.FC = () => {
         )}
 
         {successMessage && (
-          <Alert variant="success" title="Document Updated">
+          <Alert variant="success" title="Resume Updated Successfully">
             <div className="flex justify-between items-center">
               <span>{successMessage}</span>
               <Button variant="ghost" size="sm" onClick={() => setSuccessMessage(null)}>
@@ -381,14 +390,15 @@ export const CandidateResumePage: React.FC = () => {
             ? `Uploaded on ${uploadDate} • Verified PDF Document`
             : `Uploaded on ${uploadDate} • ${fileFormat} Document (PDF Required for Preview)`
         }
+        maxWidth="xl"
       >
         <div className="space-y-4">
           {hasResume && isPDF && profile?.resumeUrl ? (
-            <div className="w-full rounded-lg overflow-hidden border border-kth-slate-200">
+            <div className="w-full rounded-xl overflow-hidden border border-kth-slate-200 bg-kth-slate-50">
               <iframe
                 src={`${profile.resumeUrl}#toolbar=1&navpanes=0`}
                 title="Resume Full Preview"
-                className="w-full h-[520px] border-0 bg-white"
+                className="w-full h-[620px] border-0 rounded-xl bg-white"
               />
             </div>
           ) : hasResume && !isPDF ? (

@@ -71,12 +71,12 @@ export const ResumeCard: React.FC<ResumeCardProps> = ({
             <h3 className="font-display font-bold text-base text-kth-slate-900 truncate">
               {hasResume ? fileName : 'No resume file attached'}
             </h3>
-            <span className="text-xs text-kth-slate-500 block">
+            <span className="text-xs text-kth-slate-500 block mt-0.5">
               {!hasResume
                 ? 'Upload a PDF resume for verified applications and ATS ranking.'
                 : isFormatSupported
-                ? `Uploaded ${uploadDate} • PDF Format`
-                : `Uploaded ${uploadDate} • ${fileFormat} Document (PDF Required)`}
+                ? `Uploaded ${uploadDate} • PDF`
+                : `Uploaded ${uploadDate} • ${fileFormat} (PDF Required)`}
             </span>
           </div>
         </div>

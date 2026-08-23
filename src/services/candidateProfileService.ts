@@ -251,9 +251,12 @@ export const candidateProfileService = {
           if (parsed?.role === 'candidate') {
             const candidateId = parsed.id || '00000000-0000-0000-0000-000000000001';
             if (input.resumeUrl !== undefined) {
+              const existingStored = resumeService.getStoredDemoResume(candidateId);
               resumeService.saveStoredDemoResume(candidateId, {
                 url: input.resumeUrl || '',
-                fileName: resumeService.extractResumeFileName(input.resumeUrl, 'Candidate_Resume.pdf'),
+                fileName: existingStored?.fileName || resumeService.extractResumeFileName(input.resumeUrl, 'Candidate_Resume.pdf'),
+                fileSize: existingStored?.fileSize,
+                uploadedAt: existingStored?.uploadedAt || new Date().toISOString(),
               });
             }
             return this.getMyCandidateProfile();

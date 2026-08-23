@@ -16,10 +16,17 @@ const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
 const DEMO_RESUME_STORAGE_KEY_PREFIX = 'kth_candidate_resume_';
 
+export interface StoredResumeMetadata {
+  url: string;
+  fileName: string;
+  fileSize?: number;
+  uploadedAt?: string;
+}
+
 /**
  * Helper to store and retrieve demo candidate resume data across reloads.
  */
-export function getStoredDemoResume(userId: string): { url: string; fileName: string; fileSize?: number } | null {
+export function getStoredDemoResume(userId: string): StoredResumeMetadata | null {
   if (typeof window === 'undefined' || !window.localStorage) return null;
   try {
     const raw = window.localStorage.getItem(`${DEMO_RESUME_STORAGE_KEY_PREFIX}${userId}`);
@@ -29,7 +36,7 @@ export function getStoredDemoResume(userId: string): { url: string; fileName: st
   }
 }
 
-export function saveStoredDemoResume(userId: string, data: { url: string; fileName: string; fileSize?: number }) {
+export function saveStoredDemoResume(userId: string, data: StoredResumeMetadata) {
   if (typeof window === 'undefined' || !window.localStorage) return;
   try {
     window.localStorage.setItem(`${DEMO_RESUME_STORAGE_KEY_PREFIX}${userId}`, JSON.stringify(data));
@@ -126,7 +133,6 @@ export async function validateResumeFile(file: File): Promise<ResumeValidationRe
 export function isPDFResume(url?: string | null): boolean {
   if (!url || typeof url !== 'string' || !url.trim()) return false;
   const cleanUrl = url.split('?')[0].toLowerCase();
-  // Support blob URLs created for local PDF previews and standard .pdf links
   if (cleanUrl.startsWith('blob:') || cleanUrl.startsWith('data:application/pdf')) return true;
   return cleanUrl.endsWith('.pdf');
 }
@@ -145,10 +151,19 @@ export function getResumeFormat(url?: string | null): string {
 }
 
 /**
- * Extracts a human-readable filename from a Supabase storage URL or blob reference.
- * e.g. "https://.../resumes/userId/1723456789_My_Resume.pdf" -> "My_Resume.pdf"
+ * Extracts a clean, human-readable filename from a Supabase storage URL or blob reference.
+ * Never exposes the storage path / user UUID / random token prefix.
+ * e.g. "https://.../resumes/887d603c-b5b1-4057-88e4-a65df2b2cfe9/1787520000000_Surya_Naikoti_-_CV.pdf" -> "Surya Naikoti - CV.pdf"
  */
-export function extractResumeFileName(url?: string | null, fallback = 'Candidate_Resume.pdf'): string {
+export function extractResumeFileName(
+  url?: string | null,
+  fallback = 'Candidate_Resume.pdf',
+  explicitOriginalName?: string | null
+): string {
+  if (explicitOriginalName && explicitOriginalName.trim()) {
+    return explicitOriginalName.trim();
+  }
+
   if (!url || typeof url !== 'string' || !url.trim()) {
     return fallback;
   }
@@ -156,12 +171,37 @@ export function extractResumeFileName(url?: string | null, fallback = 'Candidate
   try {
     const cleanUrl = url.split('?')[0]; // Remove query params
     const lastSegment = cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1);
-    if (!lastSegment || lastSegment.startsWith('blob:')) return fallback;
+    
+    // If last segment is a raw UUID or empty, check if parent path or fallback applies
+    if (!lastSegment || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lastSegment)) {
+      return fallback;
+    }
+
+    if (lastSegment.startsWith('blob:')) {
+      return fallback;
+    }
 
     const decoded = decodeURIComponent(lastSegment);
-    // Strip timestamp prefix if formatted like 1723456789_Filename.ext
-    const stripped = decoded.replace(/^\d+_\s*/, '');
-    return stripped || decoded || fallback;
+    
+    // Strip timestamp prefix if formatted like 1723456789000_Filename.pdf or 1723456789_Filename.pdf
+    let stripped = decoded.replace(/^\d{10,14}_\s*/, '');
+    
+    // If the stripped filename has underscores representing spaces, clean up while preserving extension
+    if (stripped.includes('_') && !stripped.includes(' ')) {
+      const extIndex = stripped.lastIndexOf('.');
+      if (extIndex !== -1) {
+        const namePart = stripped.substring(0, extIndex).replace(/_/g, ' ');
+        const extPart = stripped.substring(extIndex);
+        stripped = `${namePart}${extPart}`;
+      }
+    }
+
+    // Never return a bare UUID as a filename
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(stripped)) {
+      return fallback;
+    }
+
+    return stripped || fallback;
   } catch {
     return fallback;
   }
@@ -171,7 +211,7 @@ export function extractResumeFileName(url?: string | null, fallback = 'Candidate
  * Uploads a candidate resume to Supabase Storage in the 'resumes' bucket.
  * Architecture:
  * - Real Authenticated Sessions: uploads directly to `resumes/${userId}/${timestamp}_${cleanFileName}` with RLS.
- * - Demo Auth Sessions: uses Base64 Data URL or local object URL so the exact uploaded PDF is previewed and persisted reliably without breaking RLS.
+ * - Demo Auth Sessions: uses Blob/Local object URL so the exact uploaded PDF is previewed and persisted reliably without breaking RLS.
  */
 export async function uploadResume(
   userId: string,
@@ -187,18 +227,18 @@ export async function uploadResume(
     };
   }
 
-  // 1. Check if user is in Demo auth mode (e.g. demo candidate ID)
+  // 1. Check if user is in Demo auth mode
   const isDemo = userId === '00000000-0000-0000-0000-000000000001' || userId.startsWith('demo-');
 
   if (isDemo || !isSupabaseConfigured()) {
     try {
-      // Read as base64 or blob URL so PDF can be rendered in iframe preview reliably
       const blobUrl = URL.createObjectURL(file);
       
       saveStoredDemoResume(userId, {
         url: blobUrl,
         fileName: file.name,
         fileSize: file.size,
+        uploadedAt: new Date().toISOString(),
       });
 
       return {
@@ -220,7 +260,6 @@ export async function uploadResume(
   // 2. Real Supabase Storage Upload
   try {
     const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    // Path matches RLS policy: resumes/{userId}/{timestamp}_{cleanFileName}
     const filePath = `${userId}/${Date.now()}_${cleanFileName}`;
 
     const { data, error } = await supabase.storage
@@ -234,14 +273,13 @@ export async function uploadResume(
     if (error) {
       console.warn('[ResumeService] Storage upload error:', error.message);
       
-      // If RLS blocked demo user without real session or bucket missing, provide clean error
       if (error.message?.includes('row-level security') || error.message?.includes('policy')) {
-        // Fallback gracefully to client blob preview if session was unlinked
         const fallbackUrl = URL.createObjectURL(file);
         saveStoredDemoResume(userId, {
           url: fallbackUrl,
           fileName: file.name,
           fileSize: file.size,
+          uploadedAt: new Date().toISOString(),
         });
 
         return {
@@ -264,6 +302,14 @@ export async function uploadResume(
     const { data: publicUrlData } = supabase.storage
       .from('resumes')
       .getPublicUrl(data.path);
+
+    // Save demo cache as backup for instant fast local loading
+    saveStoredDemoResume(userId, {
+      url: publicUrlData.publicUrl,
+      fileName: file.name,
+      fileSize: file.size,
+      uploadedAt: new Date().toISOString(),
+    });
 
     return {
       url: publicUrlData.publicUrl,
