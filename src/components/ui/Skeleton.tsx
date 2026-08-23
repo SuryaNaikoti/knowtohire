@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 
 export const Skeleton: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, ...props }) => (
   <div
-    className={cn("animate-pulse rounded-md bg-kth-slate-200/80", className)}
+    className={cn("rounded-md skeleton-shimmer border border-kth-slate-200/50", className)}
     {...props}
   />
 );

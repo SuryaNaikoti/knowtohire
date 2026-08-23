@@ -146,7 +146,7 @@ export const CandidateDashboardPage: React.FC = () => {
 
   // ── Skeleton ───────────────────────────────────────────────────────────────
   const SkeletonPulse = ({ className = '' }: { className?: string }) => (
-    <div className={`bg-kth-slate-100 animate-pulse rounded ${className}`} />
+    <div className={`skeleton-shimmer rounded ${className}`} />
   );
 
   // ── Render ─────────────────────────────────────────────────────────────────
