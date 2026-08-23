@@ -41,6 +41,73 @@ export type {
 };
 
 // ====================================================================
+// CANDIDATE PROFILE COMPREHENSIVE TYPES
+// ====================================================================
+
+export interface CandidateExperienceItem {
+  title: string;
+  company: string;
+  period: string;
+  location?: string;
+  description?: string;
+}
+
+export interface CandidateEducationItem {
+  qualification?: string;
+  degree?: string;
+  institution: string;
+  graduation_year?: string;
+  year?: string;
+}
+
+export interface CandidateFullProfile {
+  id: string;
+  email: string;
+  fullName: string;
+  phone?: string | null;
+  avatarUrl?: string | null;
+  headline?: string | null;
+  bio?: string | null;
+  location?: string | null;
+  domainSpecialization?: string | null;
+  skills: string[];
+  experience: CandidateExperienceItem[];
+  education: CandidateEducationItem[];
+  certifications: string[];
+  careerPreferences?: Record<string, unknown> | null;
+  preferredSalaryMin?: number | null;
+  preferredSalaryMax?: number | null;
+  employmentPreference?: string | null;
+  noticePeriodDays?: number | null;
+  resumeUrl?: string | null;
+  profileCompletionPct: number;
+  status: string;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CandidateProfileUpdateInput {
+  fullName?: string;
+  phone?: string | null;
+  avatarUrl?: string | null;
+  headline?: string | null;
+  bio?: string | null;
+  location?: string | null;
+  domainSpecialization?: string | null;
+  skills?: string[];
+  experience?: CandidateExperienceItem[];
+  education?: CandidateEducationItem[];
+  certifications?: string[];
+  careerPreferences?: Record<string, unknown> | null;
+  preferredSalaryMin?: number | null;
+  preferredSalaryMax?: number | null;
+  employmentPreference?: string | null;
+  noticePeriodDays?: number | null;
+  resumeUrl?: string | null;
+}
+
+// ====================================================================
 // SERVICE RESULT & ERROR ABSTRACTION
 // ====================================================================
 

@@ -290,7 +290,7 @@ export const CandidateProfilePage: React.FC = () => {
               </h3>
               {profile.experience && profile.experience.length > 0 ? (
                 <div className="space-y-6">
-                  {profile.experience.map((exp, idx) => {
+                  {profile.experience.map((exp: any, idx: number) => {
                     const periodText =
                       exp.period ||
                       (exp.years ? `${exp.years} year${exp.years > 1 ? 's' : ''}` : '') ||
@@ -341,7 +341,7 @@ export const CandidateProfilePage: React.FC = () => {
                 </h3>
                 {profile.education && profile.education.length > 0 ? (
                   <div className="space-y-4">
-                    {profile.education.map((edu, idx) => {
+                    {profile.education.map((edu: any, idx: number) => {
                       const degreeTitle = edu.degree || edu.qualification || 'Degree / Qualification';
                       const yearVal = edu.graduation_year || edu.year;
                       const fieldVal = edu.field_of_study || edu.fieldOfStudy;
@@ -387,7 +387,7 @@ export const CandidateProfilePage: React.FC = () => {
                     </span>
                     {profile.skills && profile.skills.length > 0 ? (
                       <div className="flex gap-2 flex-wrap">
-                        {profile.skills.map((skill, idx) => (
+                        {profile.skills.map((skill: string, idx: number) => (
                           <Badge key={idx} variant="indigo">
                             {skill}
                           </Badge>
@@ -403,7 +403,7 @@ export const CandidateProfilePage: React.FC = () => {
                     </span>
                     {profile.certifications && profile.certifications.length > 0 ? (
                       <ul className="space-y-2 text-xs text-kth-slate-700 list-none pl-0">
-                        {profile.certifications.map((cert, idx) => (
+                        {profile.certifications.map((cert: string, idx: number) => (
                           <li key={idx} className="flex items-center gap-2">
                             <CheckCircle2 className="w-4 h-4 text-kth-accent-emerald shrink-0" />
                             <span>{cert}</span>

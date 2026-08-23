@@ -1,155 +1,58 @@
-/**
- * KnowToHire Candidate Profile Service
- * Production Supabase abstraction for candidate profile operations,
- * onboarding data integration, profile updates, and deterministic completion scoring.
- */
-
 import { supabase } from '@/lib/supabase';
 import {
-  CandidateProfile,
+  CandidateFullProfile,
+  CandidateExperienceItem,
+  CandidateEducationItem,
+  CandidateProfileUpdateInput,
   ServiceResult,
   normalizeServiceError,
 } from './types';
+import { resumeService } from './resumeService';
 
 // ====================================================================
-// TYPES
+// PROFILE COMPLETION ALGORITHM (Calculated in Service Layer)
 // ====================================================================
 
-export interface CandidateExperienceItem {
-  title: string;
-  company: string;
-  period?: string;
-  total_experience_band?: string;
-  years?: number;
-  location?: string;
-  description?: string;
-}
-
-export interface CandidateEducationItem {
-  qualification?: string;
-  degree?: string;
-  institution: string;
-  field_of_study?: string;
-  fieldOfStudy?: string;
-  graduation_year?: string;
-  year?: string;
-}
-
-export interface CandidateFullProfile {
-  id: string; // Auth User ID / Profile ID
-  email: string;
-  fullName: string;
-  phone: string | null;
-  avatarUrl: string | null;
-  headline: string | null;
-  bio: string | null;
-  location: string | null;
-  domainSpecialization: string | null;
-  skills: string[];
-  experience: CandidateExperienceItem[];
-  education: CandidateEducationItem[];
-  certifications: string[];
-  careerPreferences: Record<string, unknown> | null;
-  preferredSalaryMin: number | null;
-  preferredSalaryMax: number | null;
-  employmentPreference: string | null;
-  noticePeriodDays: number | null;
-  resumeUrl: string | null;
-  profileCompletionPct: number;
-  status: string;
-  role: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CandidateProfileUpdateInput {
-  fullName?: string;
-  phone?: string | null;
-  avatarUrl?: string | null;
-  headline?: string | null;
-  bio?: string | null;
-  location?: string | null;
-  domainSpecialization?: string | null;
-  skills?: string[];
-  experience?: CandidateExperienceItem[];
-  education?: CandidateEducationItem[];
-  certifications?: string[];
-  careerPreferences?: Record<string, unknown> | null;
-  preferredSalaryMin?: number | null;
-  preferredSalaryMax?: number | null;
-  employmentPreference?: string | null;
-  noticePeriodDays?: number | null;
-  resumeUrl?: string | null;
-}
-
-/**
- * Deterministically calculates candidate profile completion percentage (0-100%)
- * based on live profile fields.
- * Weights:
- * - Basic Info (Full Name, Headline, Location): 15%
- * - Summary & Specialization (Bio >= 50 chars, Domain): 15%
- * - Skills (>= 3 skills): 15%
- * - Experience (At least 1 experience item or fresher indicated): 15%
- * - Education (At least 1 education item with institution): 15%
- * - Certifications (>= 1 certification): 5%
- * - Career Preferences (Job titles, Locations, Remote/Type): 15%
- * - Resume Upload (Valid Resume URL): 5%
- */
 export function calculateProfileCompletionPct(
-  profile: { full_name?: string | null },
-  candidate: Partial<CandidateProfile>
+  profile: Record<string, unknown>,
+  candidate: Record<string, unknown>
 ): number {
   let score = 0;
 
-  // 1. Basic Info (15%)
-  if (profile.full_name?.trim() && candidate.headline?.trim() && candidate.location?.trim()) {
-    score += 15;
-  }
+  // 1. Basic Identity (20%)
+  if (profile.full_name && String(profile.full_name).trim()) score += 10;
+  if (profile.phone && String(profile.phone).trim()) score += 5;
+  if (profile.avatar_url && String(profile.avatar_url).trim()) score += 5;
 
-  // 2. Summary & Specialization (15%)
-  const hasBio = Boolean(candidate.bio && candidate.bio.trim().length >= 30);
-  const hasDomain = Boolean(candidate.domain_specialization?.trim());
-  if (hasBio && hasDomain) {
-    score += 15;
-  } else if (hasBio || hasDomain) {
-    score += 8;
-  }
+  // 2. Headline & Bio (15%)
+  if (candidate.headline && String(candidate.headline).trim()) score += 10;
+  if (candidate.bio && String(candidate.bio).trim().length >= 30) score += 5;
 
-  // 3. Skills (15%)
-  if (candidate.skills && candidate.skills.length >= 3) {
-    score += 15;
-  } else if (candidate.skills && candidate.skills.length > 0) {
-    score += 5 * candidate.skills.length;
-  }
+  // 3. Location & Specialization (15%)
+  if (candidate.location && String(candidate.location).trim()) score += 5;
+  if (candidate.domain_specialization && String(candidate.domain_specialization).trim()) score += 10;
 
-  // 4. Experience (15%)
-  const exp = Array.isArray(candidate.experience) ? candidate.experience : [];
-  if (exp.length > 0) {
-    score += 15;
-  } else if (candidate.employment_preference) {
-    score += 8;
-  }
+  // 4. Skills Matrix (15%)
+  const skills = Array.isArray(candidate.skills) ? candidate.skills : [];
+  if (skills.length >= 5) score += 15;
+  else if (skills.length >= 3) score += 10;
+  else if (skills.length >= 1) score += 5;
 
-  // 5. Education (15%)
-  const edu = Array.isArray(candidate.education) ? candidate.education : [];
-  if (edu.length > 0) {
-    score += 15;
-  }
+  // 5. Work Experience (15%)
+  const experience = Array.isArray(candidate.experience) ? candidate.experience : [];
+  if (experience.length >= 2) score += 15;
+  else if (experience.length === 1) score += 10;
 
-  // 6. Certifications (5%)
-  if (candidate.certifications && candidate.certifications.length > 0) {
-    score += 5;
-  }
+  // 6. Education (10%)
+  const education = Array.isArray(candidate.education) ? candidate.education : [];
+  if (education.length >= 1) score += 10;
 
-  // 7. Career Preferences (15%)
-  if (candidate.career_preferences && Object.keys(candidate.career_preferences).length > 0) {
-    score += 15;
-  } else if (candidate.preferred_salary_min || candidate.preferred_salary_max) {
-    score += 8;
-  }
+  // 7. Certifications (5%)
+  const certs = Array.isArray(candidate.certifications) ? candidate.certifications : [];
+  if (certs.length >= 1) score += 5;
 
   // 8. Resume Upload (5%)
-  if (candidate.resume_url?.trim()) {
+  if (candidate.resume_url && String(candidate.resume_url).trim()) {
     score += 5;
   }
 
@@ -167,16 +70,19 @@ export const candidateProfileService = {
    */
   async getMyCandidateProfile(): Promise<ServiceResult<CandidateFullProfile>> {
     try {
-      // Check for demo auth session
+      // 1. Check for demo auth session
       if (typeof window !== 'undefined' && window.localStorage) {
         const storedDemo = window.localStorage.getItem('kth_demo_auth_session');
         if (storedDemo) {
           const parsed = JSON.parse(storedDemo);
           if (parsed?.role === 'candidate') {
+            const candidateId = parsed.id || '00000000-0000-0000-0000-000000000001';
+            const storedResume = resumeService.getStoredDemoResume(candidateId);
+
             const demoFull: CandidateFullProfile = {
-              id: parsed.id || 'demo-candidate-001',
+              id: candidateId,
               email: parsed.email || 'candidate@knowtohire.com',
-              fullName: parsed.full_name || 'Aarav Sharma',
+              fullName: parsed.full_name || 'Aarav Sharma (ESG Analyst)',
               phone: parsed.phone || '+91 98765 43210',
               avatarUrl: parsed.avatar_url || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&h=150&q=80',
               headline: 'Senior Environmental & ESG Consultant',
@@ -228,8 +134,9 @@ export const candidateProfileService = {
               preferredSalaryMax: 3200000,
               employmentPreference: 'Full-Time / Hybrid',
               noticePeriodDays: 15,
-              resumeUrl: 'https://knowtohire.com/resumes/aarav_sharma_esg_resume.pdf',
-              profileCompletionPct: 92,
+              // Only load resumeUrl if the candidate has actually uploaded one
+              resumeUrl: storedResume?.url || null,
+              profileCompletionPct: storedResume?.url ? 92 : 87,
               status: 'active',
               role: 'candidate',
               createdAt: '2026-08-01T00:00:00Z',
@@ -240,6 +147,7 @@ export const candidateProfileService = {
         }
       }
 
+      // 2. Real Supabase Session
       const { data: authData, error: authError } = await supabase.auth.getUser();
       if (authError || !authData?.user) {
         return {
@@ -335,6 +243,25 @@ export const candidateProfileService = {
     input: CandidateProfileUpdateInput
   ): Promise<ServiceResult<CandidateFullProfile>> {
     try {
+      // 1. Handle Demo Auth Session
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const storedDemo = window.localStorage.getItem('kth_demo_auth_session');
+        if (storedDemo) {
+          const parsed = JSON.parse(storedDemo);
+          if (parsed?.role === 'candidate') {
+            const candidateId = parsed.id || '00000000-0000-0000-0000-000000000001';
+            if (input.resumeUrl !== undefined) {
+              resumeService.saveStoredDemoResume(candidateId, {
+                url: input.resumeUrl || '',
+                fileName: resumeService.extractResumeFileName(input.resumeUrl, 'Candidate_Resume.pdf'),
+              });
+            }
+            return this.getMyCandidateProfile();
+          }
+        }
+      }
+
+      // 2. Real Supabase Session
       const { data: authData, error: authError } = await supabase.auth.getUser();
       if (authError || !authData?.user) {
         return {
