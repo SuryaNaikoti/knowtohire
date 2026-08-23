@@ -33,14 +33,12 @@ export const HeroSection: React.FC = () => {
       <div className="absolute -bottom-32 left-1/4 w-[300px] sm:w-[400px] h-[300px] sm:h-[400px] bg-kth-accent-cyan/10 rounded-full blur-[100px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-        {/* Dual Discovery Tabs Header */}
-        <div className="mb-4 sm:mb-6 inline-block max-w-full overflow-x-auto">
-          <Tabs
-            items={discoveryTabs}
-            activeId={activeTab}
-            onChange={setActiveTab}
-            variant="discovery"
-          />
+        {/* Live Intelligence Badge */}
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 backdrop-blur-md mb-4 sm:mb-6 shadow-sm">
+          <span className="w-2 h-2 rounded-full bg-kth-accent-emerald pulse-dot-ring" />
+          <span className="text-[11px] sm:text-xs font-semibold text-kth-slate-200 tracking-wide">
+            Career Intelligence & Verified Sustainability Platform
+          </span>
         </div>
 
         {/* Primary Headline */}
@@ -49,9 +47,19 @@ export const HeroSection: React.FC = () => {
         </h1>
 
         {/* Supporting Subtitle */}
-        <p className="text-xs sm:text-base md:text-lg text-kth-slate-300 max-w-2xl mx-auto mb-6 sm:mb-10 leading-relaxed font-normal text-pretty px-2">
+        <p className="text-xs sm:text-base md:text-lg text-kth-slate-300 max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed font-normal text-pretty px-2">
           The unified career ecosystem connecting candidates with top job opportunities, verified study material, and professional document templates in India.
         </p>
+
+        {/* Dual Discovery Tabs Header */}
+        <div className="mb-4 inline-block max-w-full overflow-x-auto">
+          <Tabs
+            items={discoveryTabs}
+            activeId={activeTab}
+            onChange={setActiveTab}
+            variant="discovery"
+          />
+        </div>
 
         {/* Prominent Discovery Search Bar */}
         <form onSubmit={handleSearchSubmit} className="max-w-3xl mx-auto bg-white rounded-2xl p-2 sm:p-2.5 shadow-2xl flex flex-col sm:flex-row gap-2 border border-kth-slate-200/90 text-left">
@@ -61,7 +69,7 @@ export const HeroSection: React.FC = () => {
               type="text"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder={activeTab === 'jobs' ? "Job title, skill, or enterprise..." : "Search e-books, research guides, or templates..."}
+              placeholder={activeTab === 'jobs' ? "Job title, specialization, or enterprise..." : "Search e-books, research guides, or templates..."}
               className="w-full font-sans text-xs sm:text-sm text-kth-slate-900 placeholder:text-kth-slate-400 bg-transparent outline-none min-w-0"
             />
           </div>
@@ -89,9 +97,9 @@ export const HeroSection: React.FC = () => {
           </Button>
         </form>
 
-        {/* Trending Tags */}
-        <div className="mt-5 sm:mt-6 flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap text-xs text-kth-slate-400">
-          <span className="font-semibold text-kth-slate-300 text-[11px] sm:text-xs">Popular:</span>
+        {/* Trending Tags & Micro Value Props */}
+        <div className="mt-5 sm:mt-6 flex items-center justify-center gap-2 flex-wrap text-xs text-kth-slate-400">
+          <span className="font-semibold text-kth-slate-300 text-[11px] sm:text-xs">Trending:</span>
           <a href="/jobs?q=Sustainability" className="px-2.5 py-1 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors no-underline text-[11px] sm:text-xs">Sustainability</a>
           <a href="/jobs?q=ESG" className="px-2.5 py-1 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors no-underline text-[11px] sm:text-xs">ESG Analyst</a>
           <a href="/knowledge?search=BRSR" className="px-2.5 py-1 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors no-underline text-[11px] sm:text-xs">BRSR Guide</a>
