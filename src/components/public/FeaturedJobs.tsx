@@ -3,11 +3,13 @@ import { SectionHeader } from './SectionHeader';
 import { JobCard } from '@/components/cards/JobCard';
 import { Button } from '@/components/ui/Button';
 import { jobService, Job } from '@/services';
+import { useAuth } from '@/context/AuthContext';
 import { ArrowRight } from 'lucide-react';
 
 export const FeaturedJobs: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated, role } = useAuth();
 
   useEffect(() => {
     const fetchFeaturedJobs = async () => {
@@ -89,7 +91,10 @@ export const FeaturedJobs: React.FC = () => {
                 maxSalaryINR={job.max_salary_inr}
                 skills={job.skills || []}
                 postedDate={formatRelativeDate(job.published_at || job.created_at)}
-                onApply={() => handleNavigate(`/jobs/${job.id}`)}
+                onApply={() => {
+                  const targetPath = isAuthenticated && role === 'candidate' ? `/candidate/jobs/${job.id}` : `/jobs/${job.id}`;
+                  handleNavigate(targetPath);
+                }}
               />
             ))}
           </div>

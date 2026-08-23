@@ -25,6 +25,7 @@ export const GuestRoute: React.FC<GuestRouteProps> = ({
   useEffect(() => {
     // Only execute guest redirect when authenticated and role is genuinely resolved
     if (isInitialized && !isLoading && isAuthenticated && role !== null) {
+      const redirectParam = new URLSearchParams(window.location.search).get('redirect');
       let destination = '/';
 
       if (status === 'unverified') {
@@ -32,7 +33,15 @@ export const GuestRoute: React.FC<GuestRouteProps> = ({
       } else if (status === 'pending_onboarding') {
         destination = role === 'employer' ? '/onboarding/employer' : '/onboarding/candidate';
       } else if (status === 'active') {
-        destination = role === 'employer' ? '/employer' : role === 'admin' ? '/admin' : '/candidate';
+        if (redirectParam && (
+          (role === 'candidate' && (redirectParam.startsWith('/candidate') || redirectParam.startsWith('/jobs') || redirectParam.startsWith('/knowledge') || redirectParam.startsWith('/templates'))) ||
+          (role === 'employer' && redirectParam.startsWith('/employer')) ||
+          (role === 'admin' && redirectParam.startsWith('/admin'))
+        )) {
+          destination = redirectParam;
+        } else {
+          destination = role === 'employer' ? '/employer' : role === 'admin' ? '/admin' : '/candidate';
+        }
       } else {
         destination = '/verify-email';
       }

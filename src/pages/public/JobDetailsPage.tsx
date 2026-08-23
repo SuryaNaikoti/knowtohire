@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Dialog } from '@/components/ui/Dialog';
 import { jobService, Job } from '@/services';
+import { useAuth } from '@/context/AuthContext';
 import { MapPin, Building2, CheckCircle2, Bookmark, ArrowLeft, Briefcase, AlertTriangle } from 'lucide-react';
 import { formatINR } from '@/design-system/tokens';
 
@@ -14,6 +15,7 @@ export interface JobDetailsPageProps {
 export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId }) => {
   // Extract Job ID from prop or window location pathname (/jobs/:id)
   const resolvedJobId = propJobId || window.location.pathname.split('/jobs/')[1] || '';
+  const { isAuthenticated, role, logout } = useAuth();
 
   const [job, setJob] = useState<Job | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,6 +60,11 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
   };
 
   const handleApplyClick = () => {
+    if (isAuthenticated && role === 'candidate') {
+      window.history.pushState({}, '', `/candidate/jobs/${resolvedJobId}`);
+      window.dispatchEvent(new Event('popstate'));
+      return;
+    }
     setIsApplyNoticeOpen(true);
   };
 
@@ -324,32 +331,61 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
         title={`Apply to ${job.company?.name || 'Enterprise'}`}
         description={`Position: ${job.title}`}
       >
-        <div className="space-y-4 text-left">
-          <p className="text-xs text-kth-slate-600 leading-relaxed">
-            You are viewing a verified job requisition on KnowToHire. To submit your official candidate profile and resume, please ensure you are signed in to your candidate account.
-          </p>
-          <div className="p-3 bg-kth-slate-50 rounded-lg border border-kth-slate-200 text-xs text-kth-slate-700 space-y-1">
-            <div><strong>Job Title:</strong> {job.title}</div>
-            <div><strong>Location:</strong> {job.location}</div>
-            <div><strong>Offered Band:</strong> {salaryText}</div>
+        {isAuthenticated && role === 'employer' ? (
+          <div className="space-y-4 text-left font-sans">
+            <p className="text-xs text-kth-slate-600 leading-relaxed">
+              You are currently signed in with an <strong>Employer</strong> account. Job applications must be submitted from a verified <strong>Candidate</strong> account.
+            </p>
+            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900 space-y-1">
+              <div><strong>Current Session:</strong> Employer</div>
+              <div><strong>Selected Requisition:</strong> {job.title}</div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="secondary" size="sm" onClick={() => setIsApplyNoticeOpen(false)}>
+                Close
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={async () => {
+                  setIsApplyNoticeOpen(false);
+                  await logout();
+                  window.history.pushState({}, '', `/login?role=candidate&redirect=/candidate/jobs/${job.id}`);
+                  window.dispatchEvent(new Event('popstate'));
+                }}
+              >
+                Sign In as Candidate
+              </Button>
+            </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" size="sm" onClick={() => setIsApplyNoticeOpen(false)}>
-              Close
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                setIsApplyNoticeOpen(false);
-                window.history.pushState({}, '', `/login?redirect=/jobs/${job.id}`);
-                window.dispatchEvent(new Event('popstate'));
-              }}
-            >
-              Sign In to Apply
-            </Button>
+        ) : (
+          <div className="space-y-4 text-left font-sans">
+            <p className="text-xs text-kth-slate-600 leading-relaxed">
+              You are viewing a verified job requisition on KnowToHire. To submit your official candidate profile and resume, please sign in to your candidate account.
+            </p>
+            <div className="p-3 bg-kth-slate-50 rounded-lg border border-kth-slate-200 text-xs text-kth-slate-700 space-y-1">
+              <div><strong>Job Title:</strong> {job.title}</div>
+              <div><strong>Location:</strong> {job.location}</div>
+              <div><strong>Offered Band:</strong> {salaryText}</div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="secondary" size="sm" onClick={() => setIsApplyNoticeOpen(false)}>
+                Close
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setIsApplyNoticeOpen(false);
+                  window.history.pushState({}, '', `/login?redirect=/candidate/jobs/${job.id}`);
+                  window.dispatchEvent(new Event('popstate'));
+                }}
+              >
+                Sign In to Apply
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </Dialog>
     </div>
   );

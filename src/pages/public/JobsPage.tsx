@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
 import { jobService, Job, EmploymentType, WorkMode } from '@/services';
+import { useAuth } from '@/context/AuthContext';
 import { Search, Briefcase, RefreshCw, XCircle } from 'lucide-react';
 
 export const JobsPage: React.FC = () => {
@@ -94,6 +95,8 @@ export const JobsPage: React.FC = () => {
     });
   }, [loadJobs, updateUrlParams, searchTerm, selectedLocation, selectedType, selectedWorkMode, sortBy, currentPage]);
 
+  const { isAuthenticated, role } = useAuth();
+
   const handleClearFilters = () => {
     setSearchTerm('');
     setSelectedLocation('all');
@@ -104,7 +107,8 @@ export const JobsPage: React.FC = () => {
   };
 
   const handleJobClick = (jobId: string) => {
-    window.history.pushState({}, '', `/jobs/${jobId}`);
+    const targetPath = isAuthenticated && role === 'candidate' ? `/candidate/jobs/${jobId}` : `/jobs/${jobId}`;
+    window.history.pushState({}, '', targetPath);
     window.dispatchEvent(new Event('popstate'));
   };
 
