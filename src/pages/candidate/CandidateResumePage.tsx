@@ -171,10 +171,14 @@ export const CandidateResumePage: React.FC = () => {
       if (parsedData.headline) updatePayload.headline = parsedData.headline;
       if (parsedData.bio) updatePayload.bio = parsedData.bio;
       if (parsedData.domainSpecialization) updatePayload.domainSpecialization = parsedData.domainSpecialization;
-      if (parsedData.skills && parsedData.skills.length > 0) updatePayload.skills = parsedData.skills;
-      if (parsedData.experience && parsedData.experience.length > 0) updatePayload.experience = parsedData.experience;
-      if (parsedData.education && parsedData.education.length > 0) updatePayload.education = parsedData.education;
-      if (parsedData.certifications && parsedData.certifications.length > 0) updatePayload.certifications = parsedData.certifications;
+      if (parsedData.phone) updatePayload.phone = parsedData.phone;
+      if (parsedData.location) updatePayload.location = parsedData.location;
+      
+      // Replace resume-derived arrays cleanly without retaining stale records
+      updatePayload.skills = parsedData.skills;
+      updatePayload.experience = parsedData.experience;
+      updatePayload.education = parsedData.education;
+      updatePayload.certifications = parsedData.certifications;
 
       // Update state immediately
       setAtsScore(parsedData.atsScore);

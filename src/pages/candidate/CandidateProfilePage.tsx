@@ -345,9 +345,9 @@ export const CandidateProfilePage: React.FC = () => {
               ) : (
                 <div className="bg-kth-slate-50 p-4 rounded-xl border border-kth-slate-200 text-center py-6">
                   <Briefcase className="w-8 h-8 text-kth-slate-300 mx-auto mb-2" />
-                  <p className="text-xs font-semibold text-kth-slate-600">No work experience added yet.</p>
+                  <p className="text-xs font-semibold text-kth-slate-600">No work experience detected from your current resume.</p>
                   <p className="text-[11px] text-kth-slate-400 mt-0.5">
-                    Your professional experience will appear here once added during onboarding.
+                    Your professional experience will appear here once extracted from your resume or added manually.
                   </p>
                 </div>
               )}
@@ -388,7 +388,7 @@ export const CandidateProfilePage: React.FC = () => {
                 ) : (
                   <div className="bg-kth-slate-50 p-4 rounded-xl border border-kth-slate-200 text-center py-6">
                     <GraduationCap className="w-8 h-8 text-kth-slate-300 mx-auto mb-2" />
-                    <p className="text-xs font-semibold text-kth-slate-600">No education details added yet.</p>
+                    <p className="text-xs font-semibold text-kth-slate-600">No education details detected from your current resume.</p>
                     <p className="text-[11px] text-kth-slate-400 mt-0.5">
                       Your degrees and qualifications will be listed here.
                     </p>
@@ -415,7 +415,7 @@ export const CandidateProfilePage: React.FC = () => {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-kth-slate-400 italic">No skills listed yet.</p>
+                      <p className="text-xs text-kth-slate-400 italic">No skills detected from your current resume.</p>
                     )}
                   </div>
                   <div className="pt-2 border-t border-kth-slate-100">
@@ -432,7 +432,7 @@ export const CandidateProfilePage: React.FC = () => {
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-xs text-kth-slate-400 italic">No certifications added yet.</p>
+                      <p className="text-xs text-kth-slate-400 italic">No certifications detected from your current resume.</p>
                     )}
                   </div>
                 </div>
