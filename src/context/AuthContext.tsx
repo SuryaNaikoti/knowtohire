@@ -72,16 +72,28 @@ function createDemoAuthUser(demo: typeof DEMO_CREDENTIALS.candidate | typeof DEM
 }
 
 function createDemoProfile(demo: typeof DEMO_CREDENTIALS.candidate | typeof DEMO_CREDENTIALS.employer | typeof DEMO_CREDENTIALS.admin): Profile {
+  let customOverrides: Partial<Profile> = {};
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const stored = window.localStorage.getItem(`kth_demo_profile_custom_${demo.id}`);
+      if (stored) {
+        customOverrides = JSON.parse(stored);
+      }
+    } catch {
+      // Ignore parse error
+    }
+  }
+
   return {
     id: demo.id,
-    email: demo.email,
-    full_name: demo.full_name,
+    email: customOverrides.email || demo.email,
+    full_name: customOverrides.full_name || demo.full_name,
     role: demo.role,
     status: demo.status,
-    phone: demo.phone,
-    avatar_url: demo.avatar_url,
+    phone: customOverrides.phone !== undefined ? customOverrides.phone : demo.phone,
+    avatar_url: customOverrides.avatar_url || demo.avatar_url,
     created_at: '2026-08-01T00:00:00Z',
-    updated_at: new Date().toISOString(),
+    updated_at: customOverrides.updated_at || new Date().toISOString(),
   };
 }
 
@@ -158,15 +170,16 @@ export const resolveRole = (
     return appRole;
   }
 
-  // 5. Fallback role
-  if (fallbackRole === 'employer' || fallbackRole === 'candidate' || fallbackRole === 'admin') {
+  // 5. Explicit fallback role
+  if (fallbackRole) {
     return fallbackRole;
   }
 
-  // 6. Session storage
-  if (typeof window !== 'undefined' && window.sessionStorage) {
+  // 6. Inspect localStorage demo session as graceful fallback
+  if (typeof window !== 'undefined' && window.localStorage) {
     try {
-      const sessionRole = window.sessionStorage.getItem('kth_oauth_intended_role') as UserRole | null;
+      const stored = window.localStorage.getItem(DEMO_STORAGE_KEY);
+      const sessionRole = stored ? JSON.parse(stored)?.role : null;
       if (sessionRole === 'employer' || sessionRole === 'candidate' || sessionRole === 'admin') {
         return sessionRole;
       }
@@ -232,8 +245,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       state.user.id === DEMO_CREDENTIALS.admin.id ||
       state.user.id.startsWith('demo-')
     );
-    if (isDemoId) {
-      return state.profile;
+    if (isDemoId && state.user?.id) {
+      const updatedProfile = await fetchProfile(state.user.id);
+      if (updatedProfile) {
+        setState((prev) => ({
+          ...prev,
+          profile: updatedProfile,
+        }));
+      }
+      return updatedProfile;
     }
 
     if (!isSupabaseConfigured()) return null;

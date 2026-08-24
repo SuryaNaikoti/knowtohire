@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import {
   candidateProfileService,
   CandidateFullProfile,
+  resumeService,
 } from '@/services';
 import {
   MapPin,
@@ -153,6 +154,25 @@ export const CandidateProfilePage: React.FC = () => {
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
+
+  // ─── Derived Resume Metadata (Synchronized with Resume & ATS) ──────────────
+  const hasResume = Boolean(profile?.resumeUrl);
+  const isResumePDF = resumeService.isPDFResume(profile?.resumeUrl);
+  const resumeFormat = resumeService.getResumeFormat(profile?.resumeUrl);
+  const effectiveUserId = profile?.id || '00000000-0000-0000-0000-000000000001';
+  const storedResumeMetadata = resumeService.getStoredDemoResume(effectiveUserId);
+  const resumeFileName = resumeService.extractResumeFileName(
+    profile?.resumeUrl,
+    storedResumeMetadata?.fileName || 'Surya Naikoti - CV.pdf',
+    storedResumeMetadata?.fileName
+  );
+  const resumeUploadDate = (storedResumeMetadata?.uploadedAt || profile?.updatedAt)
+    ? new Date(storedResumeMetadata?.uploadedAt || profile!.updatedAt).toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '24 Aug 2026';
 
   return (
     <CandidateShell title="My Candidate Profile" currentPath="/candidate/profile">
@@ -418,39 +438,48 @@ export const CandidateProfilePage: React.FC = () => {
               </Card>
             </div>
 
-            {/* Resume Reference if Available */}
-            {profile.resumeUrl && (
-              <Card className="p-5 bg-gradient-to-r from-white to-kth-slate-50 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-kth-primary-50 text-kth-primary-600 flex items-center justify-center font-bold shrink-0">
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="font-display font-bold text-sm text-kth-slate-900 truncate">
-                      {profile.resumeUrl.toLowerCase().endsWith('.pdf')
-                        ? 'Verified Resume Document (PDF)'
-                        : 'Uploaded Resume Document (DOCX)'}
-                    </h4>
-                    <p className="text-xs text-kth-slate-500">
-                      {profile.resumeUrl.toLowerCase().endsWith('.pdf')
-                        ? 'Your PDF resume is active and attached to job applications.'
-                        : 'Word document attached. Upload a PDF in Resume & ATS to enable interactive preview.'}
-                    </p>
-                  </div>
+            {/* Resume Reference Card */}
+            <Card className="p-5 bg-gradient-to-r from-white to-kth-slate-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold shrink-0 ${
+                  hasResume
+                    ? isResumePDF
+                      ? 'bg-kth-primary-50 text-kth-primary-600'
+                      : 'bg-amber-50 text-amber-600'
+                    : 'bg-kth-slate-100 text-kth-slate-400'
+                }`}>
+                  <FileText className="w-5 h-5" />
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    window.history.pushState({}, '', '/candidate/resume');
-                    window.dispatchEvent(new Event('popstate'));
-                  }}
-                  className="shrink-0"
-                >
-                  Manage Resume
-                </Button>
-              </Card>
-            )}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-display font-bold text-sm text-kth-slate-900 truncate">
+                      {hasResume ? resumeFileName : 'No Resume Uploaded'}
+                    </h4>
+                    <Badge variant={!hasResume ? 'mono' : isResumePDF ? 'emerald' : 'rose'}>
+                      {!hasResume ? 'Not Uploaded' : resumeFormat}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-kth-slate-500 mt-0.5">
+                    {!hasResume
+                      ? 'Upload your PDF resume in Resume & ATS to unlock one-click applications.'
+                      : isResumePDF
+                      ? `Uploaded on ${resumeUploadDate} • Active PDF resume attached to job applications.`
+                      : `Uploaded on ${resumeUploadDate} • ${resumeFormat} document attached. Replace with a PDF in Resume & ATS to enable interactive preview.`}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant={hasResume ? 'outline' : 'primary'}
+                size="sm"
+                onClick={() => {
+                  window.history.pushState({}, '', '/candidate/resume');
+                  window.dispatchEvent(new Event('popstate'));
+                }}
+                className="shrink-0"
+              >
+                {hasResume ? 'Manage Resume' : 'Upload Resume'}
+              </Button>
+            </Card>
           </>
         )}
       </div>
