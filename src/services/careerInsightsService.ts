@@ -682,13 +682,15 @@ export const careerInsightsService = {
         }
       }
 
-      // Verified Skill Strengths: Skills from the candidate profile that matched requirements in the target role / domain
+      // Verified Skill Strengths: Candidate verified skills that directly match target role requirements
       const targetMatchedSkills = best.matchedSkills;
-      const otherDomainMatchedSkills = candidateSkills.filter((cs) =>
+      const otherDomainSkills = candidateSkills.filter((cs) =>
         !targetMatchedSkills.some((ms) => matchesSkill(cs, ms)) &&
         Object.keys(skillDemandCounts).some((ds) => matchesSkill(cs, ds))
       );
-      const displayStrengths = Array.from(new Set([...targetMatchedSkills, ...otherDomainMatchedSkills]));
+      const displayStrengths = targetMatchedSkills.length > 0
+        ? Array.from(new Set([...targetMatchedSkills, ...otherDomainSkills]))
+        : candidateSkills.filter((cs) => Object.keys(skillDemandCounts).some((ds) => matchesSkill(cs, ds)));
 
       // Identified Skill Gaps: (Target Job Requirements MINUS Candidate Skills) + Domain Market Gaps
       const targetJobMissing = cleanSkillArray(best.missingSkills).filter(

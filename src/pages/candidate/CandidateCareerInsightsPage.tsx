@@ -389,7 +389,7 @@ export const CandidateCareerInsightsPage: React.FC = () => {
                       ))
                     ) : (
                       <p className="text-xs text-kth-slate-600 p-4 bg-kth-slate-50 rounded-lg border border-kth-slate-200 leading-relaxed">
-                        Your verified profile already covers the primary requirements of your current target roles.
+                        No significant skill gaps identified for this opportunity.
                       </p>
                     )}
                   </div>
