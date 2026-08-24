@@ -21,6 +21,12 @@ export interface StoredResumeMetadata {
   fileName: string;
   fileSize?: number;
   uploadedAt?: string;
+  atsScore?: number;
+  atsRecommendations?: Array<{
+    type: 'positive' | 'suggestion';
+    title: string;
+    description: string;
+  }>;
 }
 
 /**

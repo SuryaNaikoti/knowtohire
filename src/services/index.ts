@@ -20,4 +20,5 @@ export * from './requestService';
 export * from './paymentService';
 export * from './adminService';
 export * from './candidateDiscoveryService';
+export * from './resumeParserService';
 

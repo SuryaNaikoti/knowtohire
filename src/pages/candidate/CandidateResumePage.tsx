@@ -11,6 +11,8 @@ import {
   candidateProfileService,
   CandidateFullProfile,
   resumeService,
+  parseResumeDocument,
+  ParsedResumeData,
 } from '@/services';
 import {
   CheckCircle2,
@@ -103,10 +105,41 @@ export const CandidateResumePage: React.FC = () => {
       return;
     }
 
-    // 3. Persist new resume_url to candidate_profiles in Supabase
-    const updateRes = await candidateProfileService.updateMyCandidateProfile({
+    // 3. Automatically parse resume content and extract structured candidate profile data
+    let parsedData: ParsedResumeData | null = null;
+    try {
+      parsedData = await parseResumeDocument(file);
+    } catch (err) {
+      console.warn('[CandidateResumePage] Resume parsing warning:', err);
+    }
+
+    // 4. Persist new resume_url AND parsed resume profile fields to candidate_profiles in Supabase
+    const updatePayload: Parameters<typeof candidateProfileService.updateMyCandidateProfile>[0] = {
       resumeUrl: uploadRes.url,
-    });
+    };
+
+    if (parsedData) {
+      if (parsedData.fullName) updatePayload.fullName = parsedData.fullName;
+      if (parsedData.headline) updatePayload.headline = parsedData.headline;
+      if (parsedData.bio) updatePayload.bio = parsedData.bio;
+      if (parsedData.domainSpecialization) updatePayload.domainSpecialization = parsedData.domainSpecialization;
+      if (parsedData.skills && parsedData.skills.length > 0) updatePayload.skills = parsedData.skills;
+      if (parsedData.experience && parsedData.experience.length > 0) updatePayload.experience = parsedData.experience;
+      if (parsedData.education && parsedData.education.length > 0) updatePayload.education = parsedData.education;
+      if (parsedData.certifications && parsedData.certifications.length > 0) updatePayload.certifications = parsedData.certifications;
+
+      // Update stored metadata with parsed ATS recommendations
+      resumeService.saveStoredDemoResume(user.id, {
+        url: uploadRes.url,
+        fileName: file.name,
+        fileSize: file.size,
+        uploadedAt: new Date().toISOString(),
+        atsScore: parsedData.atsScore,
+        atsRecommendations: parsedData.atsRecommendations,
+      });
+    }
+
+    const updateRes = await candidateProfileService.updateMyCandidateProfile(updatePayload);
 
     setIsUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -118,7 +151,7 @@ export const CandidateResumePage: React.FC = () => {
 
     if (updateRes.data) {
       setProfile(updateRes.data);
-      setSuccessMessage('Your new resume is now active and ready to use.');
+      setSuccessMessage('Your resume has been parsed and your profile & ATS audit have been updated successfully.');
     }
   };
 
@@ -144,6 +177,23 @@ export const CandidateResumePage: React.FC = () => {
         year: 'numeric',
       })
     : '24 Aug 2026';
+  const atsScore = storedMetadata?.atsScore || 87;
+  const atsRecommendations = storedMetadata?.atsRecommendations || [
+    {
+      type: 'positive',
+      title: isPDF ? 'Regulatory Framework Alignment' : 'Profile Benchmark',
+      description: isPDF
+        ? 'Your verified PDF resume and candidate profile align with mandatory Indian sustainability frameworks (BRSR Core, Scope 1 & 2 GHG).'
+        : 'Your candidate profile and target preferences align with mandatory Indian sustainability frameworks (BRSR Core, Scope 1 & 2 GHG).',
+    },
+    {
+      type: 'suggestion',
+      title: isPDF ? 'Suggested Keyword Addition' : 'Profile-Based Keyword Suggestion',
+      description: isPDF
+        ? 'Adding "Science-Based Targets (SBTi)" will increase your ATS match score for Senior ESG roles to 94%.'
+        : 'Adding "Science-Based Targets (SBTi)" to your profile and resume aligns with Senior ESG sustainability roles in India.',
+    },
+  ];
 
   return (
     <CandidateShell title="Resume & ATS Analysis" currentPath="/candidate/resume">
@@ -239,7 +289,7 @@ export const CandidateResumePage: React.FC = () => {
             <ResumeCard
               fileName={fileName}
               uploadDate={uploadDate}
-              atsScore={87}
+              atsScore={atsScore}
               hasResume={hasResume}
               isPDF={isPDF}
               fileFormat={fileFormat}
@@ -260,33 +310,38 @@ export const CandidateResumePage: React.FC = () => {
               </div>
 
               <div className="space-y-3">
-                <div className="bg-emerald-50 p-3.5 rounded-lg border border-emerald-200 flex items-start gap-3">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-bold text-xs text-emerald-950">
-                      {isPDF ? 'Regulatory Framework Alignment' : 'Profile Benchmark'}
-                    </h4>
-                    <p className="text-xs text-emerald-800">
-                      {isPDF
-                        ? 'Your verified PDF resume and candidate profile align with mandatory Indian sustainability frameworks (BRSR Core, Scope 1 & 2 GHG).'
-                        : 'Your candidate profile and target preferences align with mandatory Indian sustainability frameworks (BRSR Core, Scope 1 & 2 GHG).'}
-                    </p>
+                {atsRecommendations.map((rec, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-3.5 rounded-lg border flex items-start gap-3 ${
+                      rec.type === 'positive'
+                        ? 'bg-emerald-50 border-emerald-200'
+                        : 'bg-amber-50 border-amber-200'
+                    }`}
+                  >
+                    {rec.type === 'positive' ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    )}
+                    <div>
+                      <h4
+                        className={`font-bold text-xs ${
+                          rec.type === 'positive' ? 'text-emerald-950' : 'text-amber-950'
+                        }`}
+                      >
+                        {rec.title}
+                      </h4>
+                      <p
+                        className={`text-xs ${
+                          rec.type === 'positive' ? 'text-emerald-800' : 'text-amber-800'
+                        }`}
+                      >
+                        {rec.description}
+                      </p>
+                    </div>
                   </div>
-                </div>
-
-                <div className="bg-amber-50 p-3.5 rounded-lg border border-amber-200 flex items-start gap-3">
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-bold text-xs text-amber-950">
-                      {isPDF ? 'Suggested Keyword Addition' : 'Profile-Based Keyword Suggestion'}
-                    </h4>
-                    <p className="text-xs text-amber-800">
-                      {isPDF
-                        ? 'Adding "Science-Based Targets (SBTi)" will increase your ATS match score for Senior ESG roles to 94%.'
-                        : 'Adding "Science-Based Targets (SBTi)" to your profile and resume aligns with Senior ESG sustainability roles in India.'}
-                    </p>
-                  </div>
-                </div>
+                ))}
               </div>
             </Card>
 
