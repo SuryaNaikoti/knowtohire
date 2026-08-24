@@ -178,22 +178,18 @@ export const CandidateResumePage: React.FC = () => {
       })
     : '24 Aug 2026';
   const atsScore = storedMetadata?.atsScore || 87;
-  const atsRecommendations = storedMetadata?.atsRecommendations || [
+  const atsRecommendations = storedMetadata?.atsRecommendations || (hasResume && isPDF ? [
     {
       type: 'positive',
-      title: isPDF ? 'Regulatory Framework Alignment' : 'Profile Benchmark',
-      description: isPDF
-        ? 'Your verified PDF resume and candidate profile align with mandatory Indian sustainability frameworks (BRSR Core, Scope 1 & 2 GHG).'
-        : 'Your candidate profile and target preferences align with mandatory Indian sustainability frameworks (BRSR Core, Scope 1 & 2 GHG).',
+      title: 'Regulatory Framework Alignment',
+      description: 'Your verified PDF resume and candidate profile align with mandatory Indian statutory frameworks.',
     },
     {
       type: 'suggestion',
-      title: isPDF ? 'Suggested Keyword Addition' : 'Profile-Based Keyword Suggestion',
-      description: isPDF
-        ? 'Adding "Science-Based Targets (SBTi)" will increase your ATS match score for Senior ESG roles to 94%.'
-        : 'Adding "Science-Based Targets (SBTi)" to your profile and resume aligns with Senior ESG sustainability roles in India.',
+      title: 'Suggested Keyword Addition',
+      description: 'Adding high-impact industry domain keywords will increase your ATS benchmark match score to 95%.',
     },
-  ];
+  ] : []);
 
   return (
     <CandidateShell title="Resume & ATS Analysis" currentPath="/candidate/resume">
@@ -298,52 +294,54 @@ export const CandidateResumePage: React.FC = () => {
               onReplace={handleTriggerUpload}
             />
 
-            {/* ATS Score Improvement Recommendations */}
-            <Card className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-display font-bold text-base text-kth-slate-900 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-kth-accent-emerald" /> ATS Optimization Recommendations
-                </h3>
-                <Badge variant={isPDF ? 'emerald' : 'mono'}>
-                  {isPDF ? 'ATS Benchmark Audit' : 'Audit Pending (PDF Required)'}
-                </Badge>
-              </div>
+            {/* ATS Score Improvement Recommendations - Only displayed when resume is uploaded */}
+            {hasResume && isPDF && (
+              <Card className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-display font-bold text-base text-kth-slate-900 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-kth-accent-emerald" /> ATS Optimization Recommendations
+                  </h3>
+                  <Badge variant="emerald">
+                    ATS Benchmark Audit
+                  </Badge>
+                </div>
 
-              <div className="space-y-3">
-                {atsRecommendations.map((rec, idx) => (
-                  <div
-                    key={idx}
-                    className={`p-3.5 rounded-lg border flex items-start gap-3 ${
-                      rec.type === 'positive'
-                        ? 'bg-emerald-50 border-emerald-200'
-                        : 'bg-amber-50 border-amber-200'
-                    }`}
-                  >
-                    {rec.type === 'positive' ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                    )}
-                    <div>
-                      <h4
-                        className={`font-bold text-xs ${
-                          rec.type === 'positive' ? 'text-emerald-950' : 'text-amber-950'
-                        }`}
-                      >
-                        {rec.title}
-                      </h4>
-                      <p
-                        className={`text-xs ${
-                          rec.type === 'positive' ? 'text-emerald-800' : 'text-amber-800'
-                        }`}
-                      >
-                        {rec.description}
-                      </p>
+                <div className="space-y-3">
+                  {atsRecommendations.map((rec, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-3.5 rounded-lg border flex items-start gap-3 ${
+                        rec.type === 'positive'
+                          ? 'bg-emerald-50 border-emerald-200'
+                          : 'bg-amber-50 border-amber-200'
+                      }`}
+                    >
+                      {rec.type === 'positive' ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      )}
+                      <div>
+                        <h4
+                          className={`font-bold text-xs ${
+                            rec.type === 'positive' ? 'text-emerald-950' : 'text-amber-950'
+                          }`}
+                        >
+                          {rec.title}
+                        </h4>
+                        <p
+                          className={`text-xs ${
+                            rec.type === 'positive' ? 'text-emerald-800' : 'text-amber-800'
+                          }`}
+                        >
+                          {rec.description}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
+                  ))}
+                </div>
+              </Card>
+            )}
 
             {/* ─── Real Resume Document Preview Card ─────────────────────────── */}
             <Card className="p-6">

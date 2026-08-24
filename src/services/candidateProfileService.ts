@@ -104,12 +104,12 @@ export const candidateProfileService = {
             const fullName = (authCustom.full_name as string) || (parsed.full_name as string) || 'Aarav Sharma (ESG Analyst)';
             const phone = authCustom.phone !== undefined ? (authCustom.phone as string) : (parsed.phone as string) || '+91 98765 43210';
             const avatarUrl = (authCustom.avatar_url as string) || parsed.avatar_url || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&h=150&q=80';
-            const headline = customOverrides.headline !== undefined ? customOverrides.headline : 'Senior Environmental & ESG Consultant';
-            const bio = customOverrides.bio !== undefined ? customOverrides.bio : 'Environmental consultant with 5+ years of experience leading SEBI BRSR compliance, ISO 14001 audits, and corporate decarbonization strategies across renewable energy and manufacturing sectors in India.';
-            const location = customOverrides.location !== undefined ? customOverrides.location : 'Hyderabad, Telangana';
-            const domainSpecialization = customOverrides.domainSpecialization !== undefined ? customOverrides.domainSpecialization : 'Sustainability & ESG Advisory';
-            const skills = customOverrides.skills !== undefined ? customOverrides.skills : ['ESG Reporting', 'SEBI BRSR', 'ISO 14001', 'Carbon Accounting', 'EIA Assessment', 'GRI Standards', 'Hazardous Waste Compliance'];
-            const experience = customOverrides.experience !== undefined ? customOverrides.experience : [
+            const headline = customOverrides.headline !== undefined ? (customOverrides.headline || null) : 'Senior Environmental & ESG Consultant';
+            const bio = customOverrides.bio !== undefined ? (customOverrides.bio || null) : 'Environmental consultant with 5+ years of experience leading SEBI BRSR compliance, ISO 14001 audits, and corporate decarbonization strategies across renewable energy and manufacturing sectors in India.';
+            const location = customOverrides.location !== undefined ? (customOverrides.location || null) : 'Hyderabad, Telangana';
+            const domainSpecialization = customOverrides.domainSpecialization !== undefined ? (customOverrides.domainSpecialization || null) : 'Sustainability & ESG Advisory';
+            const skills = customOverrides.skills !== undefined ? (Array.isArray(customOverrides.skills) ? customOverrides.skills : []) : ['ESG Reporting', 'SEBI BRSR', 'ISO 14001', 'Carbon Accounting', 'EIA Assessment', 'GRI Standards', 'Hazardous Waste Compliance'];
+            const experience = customOverrides.experience !== undefined ? (Array.isArray(customOverrides.experience) ? customOverrides.experience : []) : [
               {
                 title: 'Senior ESG Consultant',
                 company: 'EcoStrategy India Pvt Ltd',
@@ -125,7 +125,7 @@ export const candidateProfileService = {
                 description: 'Secured MoEFCC environmental clearances and SPCB consent to operate (CTO) for commercial clean energy projects.',
               },
             ];
-            const education = customOverrides.education !== undefined ? customOverrides.education : [
+            const education = customOverrides.education !== undefined ? (Array.isArray(customOverrides.education) ? customOverrides.education : []) : [
               {
                 qualification: 'M.Sc in Environmental Science & Technology',
                 degree: 'M.Sc in Environmental Science & Technology',
@@ -141,7 +141,7 @@ export const candidateProfileService = {
                 year: '2019',
               },
             ];
-            const certifications = customOverrides.certifications !== undefined ? customOverrides.certifications : [
+            const certifications = customOverrides.certifications !== undefined ? (Array.isArray(customOverrides.certifications) ? customOverrides.certifications : []) : [
               'GRI Certified Sustainability Professional (2024)',
               'Lead Auditor ISO 14001:2015 Environmental Management',
             ];
