@@ -123,6 +123,18 @@ export const CandidateDashboardPage: React.FC = () => {
     };
 
     loadDashboardData();
+
+    const handleSync = () => {
+      loadDashboardData();
+    };
+
+    window.addEventListener('kth_applications_changed', handleSync);
+    window.addEventListener('kth_saved_jobs_changed', handleSync);
+
+    return () => {
+      window.removeEventListener('kth_applications_changed', handleSync);
+      window.removeEventListener('kth_saved_jobs_changed', handleSync);
+    };
   }, [profile?.id]);
 
   // ── Derived Data ───────────────────────────────────────────────────────────
@@ -141,7 +153,7 @@ export const CandidateDashboardPage: React.FC = () => {
   // ── Navigation ─────────────────────────────────────────────────────────────
   const handleNavigate = (path: string) => {
     window.history.pushState({}, '', path);
-    window.dispatchEvent(new Event('popstate'));
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   // ── Skeleton ───────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
-import { savedJobService } from '@/services';
+import { savedJobService, applicationService } from '@/services';
 import {
   LayoutDashboard,
   User,
@@ -47,10 +47,7 @@ function useSidebarCounts() {
       if (!userId) userId = '00000000-0000-0000-0000-000000000001';
 
       const [appsResult, savedResult, interviewResult, notifResult] = await Promise.all([
-        supabase
-          .from('job_applications')
-          .select('*', { count: 'exact', head: true })
-          .eq('candidate_id', userId),
+        applicationService.getMyApplications(),
         savedJobService.getMySavedJobs(),
         supabase
           .from('interviews')
@@ -66,7 +63,7 @@ function useSidebarCounts() {
 
       if (!cancelled) {
         setCounts({
-          applications: appsResult.count ?? 0,
+          applications: appsResult.data ? appsResult.data.length : 0,
           savedJobs: savedResult.data ? savedResult.data.length : 0,
           interviews: interviewResult.count ?? 0,
           notifications: notifResult.count ?? 0,
@@ -76,14 +73,16 @@ function useSidebarCounts() {
 
     fetchCounts();
 
-    const handleSavedChanged = () => {
+    const handleSync = () => {
       fetchCounts();
     };
-    window.addEventListener('kth_saved_jobs_changed', handleSavedChanged);
+    window.addEventListener('kth_saved_jobs_changed', handleSync);
+    window.addEventListener('kth_applications_changed', handleSync);
 
     return () => {
       cancelled = true;
-      window.removeEventListener('kth_saved_jobs_changed', handleSavedChanged);
+      window.removeEventListener('kth_saved_jobs_changed', handleSync);
+      window.removeEventListener('kth_applications_changed', handleSync);
     };
   }, []);
 

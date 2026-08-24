@@ -55,6 +55,12 @@ function getDemoApplications(): JobApplication[] {
   }
 }
 
+function notifyApplicationsChanged() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('kth_applications_changed'));
+  }
+}
+
 /** Save a demo application to localStorage. */
 function saveDemoApplication(app: JobApplication) {
   if (typeof window === 'undefined' || !window.localStorage) return;
@@ -64,6 +70,7 @@ function saveDemoApplication(app: JobApplication) {
     );
     existing.unshift(app);
     window.localStorage.setItem(DEMO_APPLICATIONS_KEY, JSON.stringify(existing));
+    notifyApplicationsChanged();
   } catch { /* ignore */ }
 }
 
@@ -253,6 +260,7 @@ export const applicationService = {
 
       // 5. SUCCESS — real database record created
       if (!error && data) {
+        notifyApplicationsChanged();
         return { data: data as JobApplication, error: null };
       }
 
@@ -414,6 +422,7 @@ export const applicationService = {
           allDemo[idx].withdrawn_at = new Date().toISOString();
           allDemo[idx].updated_at = new Date().toISOString();
           window.localStorage.setItem(DEMO_APPLICATIONS_KEY, JSON.stringify(allDemo));
+          notifyApplicationsChanged();
           return { data: allDemo[idx], error: null };
         }
       }
@@ -433,6 +442,7 @@ export const applicationService = {
         return { data: null, error: normalizeServiceError(error) };
       }
 
+      notifyApplicationsChanged();
       return { data: data as JobApplication, error: null };
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };

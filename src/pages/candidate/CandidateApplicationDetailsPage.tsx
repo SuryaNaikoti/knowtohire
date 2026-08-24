@@ -86,7 +86,7 @@ export const CandidateApplicationDetailsPage: React.FC<CandidateApplicationDetai
 
   const handleBack = () => {
     window.history.pushState({}, '', '/candidate/applications');
-    window.dispatchEvent(new Event('popstate'));
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   // Build timeline steps based on stage and history
@@ -197,9 +197,14 @@ export const CandidateApplicationDetailsPage: React.FC<CandidateApplicationDetai
   }
 
   const job = application.job;
-  const salaryText = job
+  const isSalaryValid = job && ((job.min_salary_inr && job.min_salary_inr > 0) || (job.max_salary_inr && job.max_salary_inr > 0));
+  const salaryText = isSalaryValid
     ? `${formatINR(job.min_salary_inr)} - ${formatINR(job.max_salary_inr, true)}`
-    : 'Salary specified by enterprise';
+    : 'Salary not disclosed';
+
+  const year = new Date(application.applied_at).getFullYear() || 2026;
+  const cleanId = application.id.replace(/^(demo-app-|app-)/, '').slice(0, 5).toUpperCase();
+  const applicationRef = `KTH-${year}-${cleanId}`;
 
   const isWithdrawable = application.stage !== 'withdrawn' && application.stage !== 'hired' && application.stage !== 'rejected';
 
@@ -236,7 +241,7 @@ export const CandidateApplicationDetailsPage: React.FC<CandidateApplicationDetai
               <div className="flex items-center gap-2 mb-2">
                 {getStageBadge(application.stage)}
                 <span className="text-xs text-kth-slate-400 font-mono">
-                  ID: {application.id.slice(0, 8)}
+                  App #{applicationRef}
                 </span>
               </div>
               <h1 className="font-display text-2xl font-extrabold text-kth-slate-900">{job?.title}</h1>

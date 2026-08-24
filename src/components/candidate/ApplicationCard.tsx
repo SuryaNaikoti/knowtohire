@@ -37,9 +37,10 @@ export const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, o
 
   const stageMeta = getStageMeta(application.stage);
   const job = application.job;
-  const salaryText = job
+  const isSalaryValid = job && ((job.min_salary_inr && job.min_salary_inr > 0) || (job.max_salary_inr && job.max_salary_inr > 0));
+  const salaryText = isSalaryValid
     ? `${formatINR(job.min_salary_inr)} - ${formatINR(job.max_salary_inr, true)}`
-    : 'Competitive Salary';
+    : 'Salary not disclosed';
 
   const formattedDate = new Date(application.applied_at).toLocaleDateString('en-IN', {
     month: 'short',
@@ -47,12 +48,16 @@ export const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, o
     year: 'numeric',
   });
 
+  const year = new Date(application.applied_at).getFullYear() || 2026;
+  const cleanId = application.id.replace(/^(demo-app-|app-)/, '').slice(0, 5).toUpperCase();
+  const applicationRef = `KTH-${year}-${cleanId}`;
+
   const handleDetailsClick = () => {
     if (onViewDetails) {
       onViewDetails();
     } else {
       window.history.pushState({}, '', `/candidate/applications/${application.id}`);
-      window.dispatchEvent(new Event('popstate'));
+      window.dispatchEvent(new PopStateEvent('popstate'));
     }
   };
 
@@ -103,7 +108,7 @@ export const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, o
 
       <div className="pt-3 border-t border-kth-slate-100 flex items-center justify-between">
         <span className="text-[11px] text-kth-slate-400 font-medium">
-          ID: <span className="font-mono">{application.id.slice(0, 8)}</span>
+          App <span className="font-mono text-kth-slate-600 font-semibold">#{applicationRef}</span>
         </span>
         <Button variant="secondary" size="sm" onClick={handleDetailsClick}>
           View Tracker <ArrowRight className="w-3.5 h-3.5" />

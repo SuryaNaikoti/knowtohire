@@ -31,6 +31,15 @@ export const CandidateApplicationsPage: React.FC = () => {
 
   useEffect(() => {
     loadApplications();
+
+    const handleApplicationsChanged = () => {
+      loadApplications();
+    };
+
+    window.addEventListener('kth_applications_changed', handleApplicationsChanged);
+    return () => {
+      window.removeEventListener('kth_applications_changed', handleApplicationsChanged);
+    };
   }, [loadApplications]);
 
   // Derived KPIs
@@ -41,7 +50,7 @@ export const CandidateApplicationsPage: React.FC = () => {
 
   const handleNavigateJobs = () => {
     window.history.pushState({}, '', '/candidate/jobs');
-    window.dispatchEvent(new Event('popstate'));
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   return (
