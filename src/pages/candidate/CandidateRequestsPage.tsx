@@ -7,20 +7,36 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Dialog } from '@/components/ui/Dialog';
 import { requestService, ContentRequest, RequestStatus } from '@/services/requestService';
-import { HelpCircle, Plus, AlertCircle, Download, Loader2 } from 'lucide-react';
+import {
+  FileText,
+  Plus,
+  AlertCircle,
+  ExternalLink,
+  Loader2,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  BookOpen,
+  Info,
+  Calendar,
+} from 'lucide-react';
 
 export const CandidateRequestsPage: React.FC = () => {
   const [requests, setRequests] = useState<ContentRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<ContentRequest | null>(null);
 
   // Form State
+  const [type, setType] = useState('Study Material');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Environmental & ESG');
-  const [type, setType] = useState('guide');
+  const [category, setCategory] = useState('Technology');
+  const [preferredFormat, setPreferredFormat] = useState('PDF');
+  const [additionalRequirements, setAdditionalRequirements] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
 
   const fetchRequests = async () => {
     setIsLoading(true);
@@ -33,12 +49,41 @@ export const CandidateRequestsPage: React.FC = () => {
 
   useEffect(() => {
     fetchRequests();
+
+    const handleStorageChange = () => {
+      fetchRequests();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('kth_requests_changed', handleStorageChange);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('kth_requests_changed', handleStorageChange);
+      }
+    };
   }, []);
+
+  const handleOpenCreateModal = () => {
+    setTitle('');
+    setDescription('');
+    setType('Study Material');
+    setCategory('Technology');
+    setPreferredFormat('PDF');
+    setAdditionalRequirements('');
+    setSubmitError(null);
+    setIsModalOpen(true);
+  };
 
   const handleCreateRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !description.trim()) {
-      setSubmitError('Please provide both a title and description for your request.');
+    if (!title.trim()) {
+      setSubmitError('Please provide a title for your request.');
+      return;
+    }
+    if (!description.trim()) {
+      setSubmitError('Please describe the scope and requirements of the content you need.');
       return;
     }
 
@@ -50,6 +95,8 @@ export const CandidateRequestsPage: React.FC = () => {
       description: description.trim(),
       category,
       type,
+      preferred_format: preferredFormat,
+      additional_requirements: additionalRequirements.trim() || undefined,
     });
 
     setIsSubmitting(false);
@@ -58,8 +105,8 @@ export const CandidateRequestsPage: React.FC = () => {
       setSubmitError(res.error.message);
     } else {
       setIsModalOpen(false);
-      setTitle('');
-      setDescription('');
+      setSuccessToast('Your content request has been submitted to the editorial queue!');
+      setTimeout(() => setSuccessToast(null), 5000);
       fetchRequests();
     }
   };
@@ -67,96 +114,195 @@ export const CandidateRequestsPage: React.FC = () => {
   const getStatusBadge = (status: RequestStatus) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="amber">Submitted</Badge>;
+        return (
+          <Badge variant="amber" className="flex items-center gap-1">
+            <Clock className="w-3 h-3" /> Submitted
+          </Badge>
+        );
       case 'under_review':
-        return <Badge variant="cyan">Under Review</Badge>;
+        return (
+          <Badge variant="cyan" className="flex items-center gap-1">
+            <Info className="w-3 h-3" /> Under Review
+          </Badge>
+        );
       case 'completed':
-        return <Badge variant="emerald">Completed</Badge>;
+        return (
+          <Badge variant="emerald" className="flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3" /> Fulfilled
+          </Badge>
+        );
       case 'rejected':
-        return <Badge variant="rose">Declined</Badge>;
+        return (
+          <Badge variant="rose" className="flex items-center gap-1">
+            <XCircle className="w-3 h-3" /> Declined
+          </Badge>
+        );
       default:
         return <Badge variant="slate">{status}</Badge>;
     }
   };
 
+  const activeCount = requests.filter((r) => r.status === 'pending' || r.status === 'under_review').length;
+  const completedCount = requests.filter((r) => r.status === 'completed').length;
+
   return (
-    <CandidateShell title="On-Demand Content Requests" currentPath="/candidate/requests">
+    <CandidateShell title="Content Requests" currentPath="/candidate/requests">
       <div className="space-y-6 max-w-5xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-kth-slate-200 shadow-xs">
           <div>
-            <h2 className="font-display text-lg font-bold text-kth-slate-900">Custom Research & Study Material Requests</h2>
-            <p className="text-xs text-kth-slate-500">
-              Request specialized ESG templates, EIA case studies, or regulatory guides created by our domain specialists.
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-kth-primary-50 text-kth-primary-700 border border-kth-primary-200/60 mb-2">
+              Knowledge Hub On-Demand
+            </div>
+            <h1 className="font-display text-xl font-bold text-kth-slate-900">Custom Research & Content Requests</h1>
+            <p className="text-xs text-kth-slate-500 mt-1 max-w-xl leading-relaxed">
+              Request specialized study materials, research documents, white papers, or professional templates from our domain specialists.
             </p>
           </div>
-          <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsModalOpen(true)}>
+          <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />} onClick={handleOpenCreateModal} className="shrink-0">
             New Content Request
           </Button>
         </div>
 
+        {/* Success Toast */}
+        {successToast && (
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center justify-between shadow-xs animate-fadeIn">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span className="font-medium">{successToast}</span>
+            </div>
+            <button
+              onClick={() => setSuccessToast(null)}
+              className="text-emerald-700 hover:text-emerald-900 text-xs font-bold px-2 py-0.5"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Main Content Area */}
         {isLoading ? (
-          <div className="py-20 flex flex-col items-center justify-center">
+          <div className="py-24 flex flex-col items-center justify-center bg-white rounded-2xl border border-kth-slate-200 shadow-xs">
             <Loader2 className="w-8 h-8 text-kth-primary-600 animate-spin mb-3" />
             <p className="text-xs text-kth-slate-500">Loading your content requests...</p>
           </div>
         ) : requests.length === 0 ? (
-          <Card className="p-12 text-center bg-white border-kth-slate-200">
-            <HelpCircle className="w-12 h-12 text-kth-slate-300 mx-auto mb-3" />
-            <h3 className="font-display font-bold text-base text-kth-slate-900 mb-1">No Active Content Requests</h3>
-            <p className="text-xs text-kth-slate-500 max-w-sm mx-auto mb-6">
-              Need a specific regulatory handbook, legal clause template, or state environmental compliance checklist? Submit an on-demand request.
+          <Card className="p-12 text-center bg-white border-kth-slate-200 shadow-xs rounded-2xl">
+            <div className="w-16 h-16 bg-kth-primary-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-kth-primary-100">
+              <FileText className="w-8 h-8 text-kth-primary-600" />
+            </div>
+            <h3 className="font-display font-bold text-lg text-kth-slate-900 mb-1">No Content Requests Yet</h3>
+            <p className="text-xs text-kth-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
+              Need a specific study material, research document, white paper, or professional template? Submit a request and track its progress here.
             </p>
-            <Button variant="primary" onClick={() => setIsModalOpen(true)}>
+            <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />} onClick={handleOpenCreateModal}>
               Create Your First Request
             </Button>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {requests.map((req) => (
-              <Card key={req.id} className="p-6 transition-all hover:border-kth-slate-300">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(req.status)}
-                      <Badge variant="indigo">{req.category}</Badge>
-                      {req.type && <Badge variant="slate">{req.type}</Badge>}
+          <div className="space-y-6">
+            {/* Quick Summary Chips */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="bg-white p-3.5 rounded-xl border border-kth-slate-200 shadow-xs">
+                <span className="text-[11px] font-bold text-kth-slate-500 uppercase tracking-wider block">Total Submissions</span>
+                <span className="text-xl font-bold font-mono text-kth-slate-900">{requests.length}</span>
+              </div>
+              <div className="bg-white p-3.5 rounded-xl border border-kth-slate-200 shadow-xs">
+                <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider block">In Progress / Review</span>
+                <span className="text-xl font-bold font-mono text-amber-700">{activeCount}</span>
+              </div>
+              <div className="bg-white p-3.5 rounded-xl border border-kth-slate-200 shadow-xs col-span-2 sm:col-span-1">
+                <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider block">Fulfilled Deliverables</span>
+                <span className="text-xl font-bold font-mono text-emerald-700">{completedCount}</span>
+              </div>
+            </div>
+
+            {/* Request Cards Feed */}
+            <div className="space-y-4">
+              {requests.map((req) => (
+                <Card
+                  key={req.id}
+                  className="p-5 sm:p-6 bg-white border-kth-slate-200 hover:border-kth-primary-300 transition-all shadow-xs rounded-2xl cursor-pointer"
+                  onClick={() => setSelectedRequest(req)}
+                >
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <div className="space-y-2.5 flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {getStatusBadge(req.status)}
+                        <Badge variant="indigo" className="text-[10px] font-medium">
+                          {req.type || 'Study Material'}
+                        </Badge>
+                        <Badge variant="slate" className="text-[10px]">
+                          {req.category}
+                        </Badge>
+                        {req.preferred_format && (
+                          <span className="text-[10px] text-kth-slate-500 font-mono bg-kth-slate-100 px-2 py-0.5 rounded">
+                            Format: {req.preferred_format}
+                          </span>
+                        )}
+                      </div>
+
+                      <div>
+                        <h3 className="font-display text-base font-bold text-kth-slate-900 group-hover:text-kth-primary-600 transition-colors">
+                          {req.title}
+                        </h3>
+                        <p className="text-xs text-kth-slate-600 leading-relaxed line-clamp-2 mt-1">
+                          {req.description}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-4 text-[11px] text-kth-slate-400 font-mono pt-1">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-kth-slate-400" />
+                          Submitted: {new Date(req.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                        {req.admin_notes && (
+                          <span className="text-kth-primary-700 font-sans font-medium bg-kth-primary-50 px-2 py-0.5 rounded border border-kth-primary-200">
+                            Editor Note: {req.admin_notes}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    <h3 className="font-display text-base font-bold text-kth-slate-900">{req.title}</h3>
-                    <p className="text-xs text-kth-slate-700 leading-relaxed">{req.description}</p>
-
-                    <div className="flex items-center gap-4 text-[11px] text-kth-slate-400 font-mono">
-                      <span>Submitted: {new Date(req.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                      {req.admin_notes && (
-                        <span className="text-kth-primary-700 font-sans font-medium bg-kth-primary-50 px-2 py-0.5 rounded border border-kth-primary-200">
-                          Editor Note: {req.admin_notes}
-                        </span>
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-kth-slate-100">
+                      {req.status === 'completed' && req.completed_resource_id ? (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          leftIcon={<BookOpen className="w-3.5 h-3.5" />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.location.href = `/knowledge/${req.completed_resource_id}`;
+                          }}
+                        >
+                          View Resource
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedRequest(req);
+                          }}
+                        >
+                          View Details
+                        </Button>
                       )}
                     </div>
                   </div>
-
-                  {req.status === 'completed' && req.completed_resource_id && (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      leftIcon={<Download className="w-4 h-4" />}
-                      onClick={() => (window.location.href = `/knowledge/${req.completed_resource_id}`)}
-                    >
-                      Access Deliverable
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Submit Request Dialog */}
+        {/* Create Request Modal */}
         <Dialog
           isOpen={isModalOpen}
           onClose={() => !isSubmitting && setIsModalOpen(false)}
-          title="Submit On-Demand Content Request"
-          description="Specify your research, handbook, or template requirements for our domain editorial team."
+          title="Submit Custom Content Request"
+          description="Specify the exact study guide, research paper, white paper, or template requirements for our editorial desk."
           maxWidth="lg"
         >
           <form onSubmit={handleCreateRequest} className="space-y-4 pt-2">
@@ -167,51 +313,75 @@ export const CandidateRequestsPage: React.FC = () => {
               </div>
             )}
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Select
+                label="Request Type *"
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                options={[
+                  { value: 'Study Material', label: 'Study Material' },
+                  { value: 'Research Document', label: 'Research Document' },
+                  { value: 'White Paper', label: 'White Paper' },
+                  { value: 'Template', label: 'Template' },
+                ]}
+              />
+
+              <Select
+                label="Domain / Subject"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                options={[
+                  { value: 'Technology', label: 'Technology & Cloud Engineering' },
+                  { value: 'Sustainability', label: 'Sustainability & Climate' },
+                  { value: 'Environmental', label: 'Environmental & ESG' },
+                  { value: 'IPR', label: 'Patent & Intellectual Property' },
+                  { value: 'Research', label: 'Public Policy & Empirical Research' },
+                  { value: 'General', label: 'General Career & Professional Guide' },
+                ]}
+              />
+            </div>
+
             <Input
-              label="Request Title"
-              placeholder="e.g. CPCB Consent to Establish (CTE) Step-by-Step Guide for Chemical Units"
+              label="Request Title *"
+              placeholder="e.g. Advanced Kubernetes Deployment & Microservices Architecture Guide"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Select
-                label="Domain Category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                options={[
-                  { value: 'Environmental & ESG', label: 'Environmental & ESG' },
-                  { value: 'Sustainability & Climate', label: 'Sustainability & Climate' },
-                  { value: 'Patent & IPR Law', label: 'Patent & IPR Law' },
-                  { value: 'Clean Energy & Decarbonization', label: 'Clean Energy & Decarbonization' },
-                  { value: 'Career & Resume Guide', label: 'Career & Resume Guide' },
-                ]}
-              />
-
-              <Select
-                label="Deliverable Format Type"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                options={[
-                  { value: 'guide', label: 'Compliance & Research Guide' },
-                  { value: 'template', label: 'Document & Contract Template' },
-                  { value: 'other', label: 'Other Regulatory Resource' },
-                ]}
-              />
-            </div>
-
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-kth-slate-700 uppercase tracking-wider block">
-                Detailed Scope & Objectives
+                Detailed Scope & Objectives *
               </label>
               <textarea
                 rows={4}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Explain the specific regulations, industrial standards, target state, or document requirements..."
+                placeholder="Explain the specific technical frameworks, industry standards, practical blueprints, or document requirements you need..."
                 className="w-full rounded-xl border border-kth-slate-200 p-3 text-xs text-kth-slate-900 bg-white placeholder:text-kth-slate-400 outline-none focus:ring-2 focus:ring-kth-primary-500/20 focus:border-kth-primary-600 transition-colors resize-none"
                 required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Select
+                label="Preferred Format"
+                value={preferredFormat}
+                onChange={(e) => setPreferredFormat(e.target.value)}
+                options={[
+                  { value: 'PDF', label: 'PDF Document' },
+                  { value: 'DOCX', label: 'Word (.docx)' },
+                  { value: 'PPTX', label: 'Presentation (.pptx)' },
+                  { value: 'Excel', label: 'Spreadsheet (.xlsx)' },
+                  { value: 'Other', label: 'Other Format' },
+                ]}
+              />
+
+              <Input
+                label="Additional Instructions / References (Optional)"
+                placeholder="e.g. Include AWS EKS deployment manifests and checklist"
+                value={additionalRequirements}
+                onChange={(e) => setAdditionalRequirements(e.target.value)}
               />
             </div>
 
@@ -225,7 +395,81 @@ export const CandidateRequestsPage: React.FC = () => {
             </div>
           </form>
         </Dialog>
+
+        {/* View Details Modal */}
+        <Dialog
+          isOpen={Boolean(selectedRequest)}
+          onClose={() => setSelectedRequest(null)}
+          title="Content Request Details"
+          description={`Reference ID: ${selectedRequest?.id}`}
+          maxWidth="md"
+        >
+          {selectedRequest && (
+            <div className="space-y-4 pt-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {getStatusBadge(selectedRequest.status)}
+                <Badge variant="indigo">{selectedRequest.type || 'Study Material'}</Badge>
+                <Badge variant="slate">{selectedRequest.category}</Badge>
+                {selectedRequest.preferred_format && (
+                  <Badge variant="slate">Format: {selectedRequest.preferred_format}</Badge>
+                )}
+              </div>
+
+              <div>
+                <h3 className="font-display font-bold text-base text-kth-slate-900">{selectedRequest.title}</h3>
+                <p className="text-xs text-kth-slate-500 font-mono mt-0.5">
+                  Submitted on {new Date(selectedRequest.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-kth-slate-50 border border-kth-slate-200 rounded-xl space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-kth-slate-500 block">Scope Description</span>
+                <p className="text-xs text-kth-slate-700 leading-relaxed whitespace-pre-wrap">{selectedRequest.description}</p>
+              </div>
+
+              {selectedRequest.additional_requirements && (
+                <div className="p-3.5 bg-kth-slate-50 border border-kth-slate-200 rounded-xl space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-kth-slate-500 block">Additional Instructions</span>
+                  <p className="text-xs text-kth-slate-700 leading-relaxed">{selectedRequest.additional_requirements}</p>
+                </div>
+              )}
+
+              {selectedRequest.admin_notes && (
+                <div className="p-3.5 bg-kth-primary-50/70 border border-kth-primary-200 rounded-xl space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-kth-primary-800 block">Editorial Desk Feedback</span>
+                  <p className="text-xs text-kth-primary-950 leading-relaxed">{selectedRequest.admin_notes}</p>
+                </div>
+              )}
+
+              {selectedRequest.status === 'completed' && selectedRequest.completed_resource_id && (
+                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-emerald-900 block">Deliverable Fulfilled & Published</span>
+                    <span className="text-[11px] text-emerald-700">Access the completed document in the Knowledge Hub.</span>
+                  </div>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
+                    onClick={() => {
+                      window.location.href = `/knowledge/${selectedRequest.completed_resource_id}`;
+                    }}
+                  >
+                    Open Deliverable
+                  </Button>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-3 border-t border-kth-slate-100">
+                <Button variant="secondary" size="sm" onClick={() => setSelectedRequest(null)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </Dialog>
       </div>
     </CandidateShell>
   );
 };
+

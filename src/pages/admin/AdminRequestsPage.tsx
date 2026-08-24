@@ -83,7 +83,7 @@ export const AdminRequestsPage: React.FC = () => {
                 <thead className="bg-kth-slate-50 border-b border-kth-slate-200 text-kth-slate-500 uppercase tracking-wider font-bold text-[10px]">
                   <tr>
                     <th className="p-4">Title & Scope</th>
-                    <th className="p-4">Category</th>
+                    <th className="p-4">Type & Category</th>
                     <th className="p-4">Status</th>
                     <th className="p-4">Submission Date</th>
                     <th className="p-4 text-right">Actions</th>
@@ -92,17 +92,25 @@ export const AdminRequestsPage: React.FC = () => {
                 <tbody className="divide-y divide-kth-slate-100">
                   {requests.map((req) => (
                     <tr key={req.id} className="hover:bg-kth-slate-50/60 transition-colors">
-                      <td className="p-4">
+                      <td className="p-4 max-w-sm">
                         <div className="font-bold text-kth-slate-900">{req.title}</div>
                         <div className="text-kth-slate-500 text-[11px] line-clamp-1">{req.description}</div>
+                        {req.additional_requirements && (
+                          <div className="text-[10px] text-kth-slate-400 mt-0.5 italic">
+                            Req: {req.additional_requirements}
+                          </div>
+                        )}
                         {req.admin_notes && (
-                          <div className="text-[10px] text-kth-primary-700 mt-1 font-medium">
+                          <div className="text-[10px] text-kth-primary-700 mt-1 font-medium bg-kth-primary-50 px-2 py-0.5 rounded border border-kth-primary-200 inline-block">
                             Note: {req.admin_notes}
                           </div>
                         )}
                       </td>
                       <td className="p-4">
-                        <Badge variant="indigo">{req.category}</Badge>
+                        <div className="flex flex-col gap-1 items-start">
+                          <Badge variant="indigo">{req.type || 'Study Material'}</Badge>
+                          <span className="text-[11px] text-kth-slate-500">{req.category}</span>
+                        </div>
                       </td>
                       <td className="p-4">
                         <Badge
@@ -117,7 +125,7 @@ export const AdminRequestsPage: React.FC = () => {
                           }
                           className="capitalize font-mono"
                         >
-                          {req.status.replace('_', ' ')}
+                          {req.status === 'completed' ? 'Fulfilled' : req.status.replace('_', ' ')}
                         </Badge>
                       </td>
                       <td className="p-4 text-kth-slate-500 font-mono text-[11px]">
