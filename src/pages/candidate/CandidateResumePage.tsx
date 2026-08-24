@@ -91,6 +91,17 @@ export const CandidateResumePage: React.FC = () => {
       return;
     }
 
+    // Invalidate previous ATS analysis and recommendations immediately
+    resumeService.saveStoredDemoResume(user.id, {
+      url: '',
+      fileName: file.name,
+      fileSize: file.size,
+      uploadedAt: new Date().toISOString(),
+      atsScore: undefined,
+      atsAnalysis: undefined,
+      atsRecommendations: undefined,
+    });
+
     setIsUploading(true);
     setUploadError(null);
     setSuccessMessage(null);
@@ -105,7 +116,7 @@ export const CandidateResumePage: React.FC = () => {
       return;
     }
 
-    // 3. Automatically parse resume content and extract structured candidate profile data
+    // 3. Automatically parse resume content and execute ATS Compatibility Analysis
     let parsedData: ParsedResumeData | null = null;
     try {
       parsedData = await parseResumeDocument(file);
@@ -128,13 +139,14 @@ export const CandidateResumePage: React.FC = () => {
       if (parsedData.education && parsedData.education.length > 0) updatePayload.education = parsedData.education;
       if (parsedData.certifications && parsedData.certifications.length > 0) updatePayload.certifications = parsedData.certifications;
 
-      // Update stored metadata with parsed ATS recommendations
+      // Update stored metadata strictly with newly generated ATS analysis & evidence-based recommendations
       resumeService.saveStoredDemoResume(user.id, {
         url: uploadRes.url,
         fileName: file.name,
         fileSize: file.size,
         uploadedAt: new Date().toISOString(),
         atsScore: parsedData.atsScore,
+        atsAnalysis: parsedData.atsAnalysis,
         atsRecommendations: parsedData.atsRecommendations,
       });
     }
@@ -151,7 +163,7 @@ export const CandidateResumePage: React.FC = () => {
 
     if (updateRes.data) {
       setProfile(updateRes.data);
-      setSuccessMessage('Your resume has been parsed and your profile & ATS audit have been updated successfully.');
+      setSuccessMessage('Your resume has been parsed and your ATS compatibility audit has been updated.');
     }
   };
 
@@ -160,7 +172,7 @@ export const CandidateResumePage: React.FC = () => {
   const isPDF = resumeService.isPDFResume(profile?.resumeUrl);
   const fileFormat = resumeService.getResumeFormat(profile?.resumeUrl);
   
-  // Check stored demo metadata first to preserve authentic uploaded filename
+  // Check stored demo metadata first to preserve authentic uploaded filename and ATS analysis
   const effectiveUserId = user?.id || profile?.id || '00000000-0000-0000-0000-000000000001';
   const storedMetadata = resumeService.getStoredDemoResume(effectiveUserId) || (user?.id ? resumeService.getStoredDemoResume(user.id) : null);
   const defaultCandidateResumeName = `${profile?.fullName?.trim() || user?.user_metadata?.full_name?.trim() || 'Candidate'} - CV.pdf`;
@@ -177,19 +189,9 @@ export const CandidateResumePage: React.FC = () => {
         year: 'numeric',
       })
     : '24 Aug 2026';
-  const atsScore = storedMetadata?.atsScore || 87;
-  const atsRecommendations = storedMetadata?.atsRecommendations || (hasResume && isPDF ? [
-    {
-      type: 'positive',
-      title: 'Regulatory Framework Alignment',
-      description: 'Your verified PDF resume and candidate profile align with mandatory Indian statutory frameworks.',
-    },
-    {
-      type: 'suggestion',
-      title: 'Suggested Keyword Addition',
-      description: 'Adding high-impact industry domain keywords will increase your ATS benchmark match score to 95%.',
-    },
-  ] : []);
+
+  const atsScore = storedMetadata?.atsScore ?? 87;
+  const atsRecommendations = storedMetadata?.atsRecommendations || [];
 
   return (
     <CandidateShell title="Resume & ATS Analysis" currentPath="/candidate/resume">
@@ -262,26 +264,20 @@ export const CandidateResumePage: React.FC = () => {
           </Alert>
         )}
 
-        {/* ─── Loading Skeletons ─────────────────────────────────────────────── */}
-        {isLoading && (
-          <div className="space-y-6 animate-pulse">
-            <div className="bg-white p-6 rounded-2xl border border-kth-slate-200 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg bg-kth-slate-200" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-4 bg-kth-slate-200 rounded w-1/4" />
-                  <div className="h-5 bg-kth-slate-200 rounded w-1/3" />
-                </div>
+        {/* ─── Loading Skeleton / Main Content ─────────────────────────────────── */}
+        {isLoading ? (
+          <div className="space-y-6">
+            <Card className="p-6">
+              <div className="animate-pulse space-y-4">
+                <div className="h-6 bg-kth-slate-100 rounded w-1/4" />
+                <div className="h-4 bg-kth-slate-100 rounded w-1/2" />
+                <div className="h-20 bg-kth-slate-50 rounded" />
               </div>
-              <div className="h-16 bg-kth-slate-100 rounded-xl" />
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-kth-slate-200 h-64" />
+            </Card>
           </div>
-        )}
-
-        {/* ─── Real Database-Backed Resume Card ──────────────────────────────── */}
-        {!isLoading && (
-          <>
+        ) : (
+          <div className="space-y-6">
+            {/* ─── Main Resume Metadata & ATS Score Card ─────────────────────── */}
             <ResumeCard
               fileName={fileName}
               uploadDate={uploadDate}
@@ -294,52 +290,110 @@ export const CandidateResumePage: React.FC = () => {
               onReplace={handleTriggerUpload}
             />
 
-            {/* ATS Score Improvement Recommendations - Only displayed when resume is uploaded */}
+            {/* ATS Score Improvement Recommendations - Evidence-Driven */}
             {hasResume && isPDF && (
               <Card className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-display font-bold text-base text-kth-slate-900 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-kth-accent-emerald" /> ATS Optimization Recommendations
-                  </h3>
-                  <Badge variant="emerald">
-                    ATS Benchmark Audit
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+                  <div>
+                    <h3 className="font-display font-bold text-base text-kth-slate-900 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-kth-accent-emerald" /> ATS Optimization Recommendations
+                    </h3>
+                    <p className="text-xs text-kth-slate-500 mt-0.5">
+                      Evaluated directly from your verified resume text, structure, and machine readability.
+                    </p>
+                  </div>
+                  <Badge variant={isUploading ? 'mono' : 'emerald'}>
+                    {isUploading ? 'Analyzing...' : 'Evidence-Based Audit'}
                   </Badge>
                 </div>
 
-                <div className="space-y-3">
-                  {atsRecommendations.map((rec, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-3.5 rounded-lg border flex items-start gap-3 ${
-                        rec.type === 'positive'
-                          ? 'bg-emerald-50 border-emerald-200'
-                          : 'bg-amber-50 border-amber-200'
-                      }`}
-                    >
-                      {rec.type === 'positive' ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      ) : (
-                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      )}
-                      <div>
-                        <h4
-                          className={`font-bold text-xs ${
-                            rec.type === 'positive' ? 'text-emerald-950' : 'text-amber-950'
-                          }`}
-                        >
-                          {rec.title}
-                        </h4>
-                        <p
-                          className={`text-xs ${
-                            rec.type === 'positive' ? 'text-emerald-800' : 'text-amber-800'
-                          }`}
-                        >
-                          {rec.description}
-                        </p>
+                {isUploading ? (
+                  <div className="p-8 text-center bg-kth-slate-50 rounded-xl border border-kth-slate-200">
+                    <RefreshCw className="w-6 h-6 animate-spin text-kth-primary-600 mx-auto mb-2" />
+                    <p className="text-xs font-bold text-kth-slate-800">Analyzing Document Compatibility & Extracting Evidence...</p>
+                    <p className="text-[11px] text-kth-slate-500 mt-0.5">Generating tailored recommendations for your newly uploaded resume.</p>
+                  </div>
+                ) : atsRecommendations.length > 0 ? (
+                  <div className="space-y-3">
+                    {atsRecommendations.map((rec) => (
+                      <div
+                        key={rec.id}
+                        className={`p-4 rounded-xl border flex items-start gap-3.5 transition-all ${
+                          rec.type === 'positive'
+                            ? 'bg-emerald-50/70 border-emerald-200'
+                            : rec.severity === 'high'
+                            ? 'bg-rose-50/70 border-rose-200'
+                            : 'bg-amber-50/70 border-amber-200'
+                        }`}
+                      >
+                        {rec.type === 'positive' ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        ) : rec.severity === 'high' ? (
+                          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        )}
+                        <div className="space-y-1.5 flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h4
+                              className={`font-bold text-xs ${
+                                rec.type === 'positive'
+                                  ? 'text-emerald-950'
+                                  : rec.severity === 'high'
+                                  ? 'text-rose-950'
+                                  : 'text-amber-950'
+                              }`}
+                            >
+                              {rec.title}
+                            </h4>
+                            <span
+                              className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                                rec.type === 'positive'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : rec.severity === 'high'
+                                  ? 'bg-rose-100 text-rose-800'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}
+                            >
+                              {rec.category}
+                            </span>
+                          </div>
+
+                          <p
+                            className={`text-xs ${
+                              rec.type === 'positive'
+                                ? 'text-emerald-900'
+                                : rec.severity === 'high'
+                                ? 'text-rose-900'
+                                : 'text-amber-900'
+                            }`}
+                          >
+                            {rec.explanation}
+                          </p>
+
+                          {/* Evidence Source & Suggested Action */}
+                          <div className="pt-1.5 mt-1 border-t border-black/5 flex flex-col gap-1 text-[11px]">
+                            <p className="text-kth-slate-600">
+                              <strong className="text-kth-slate-700">Source Evidence:</strong> {rec.evidence}
+                            </p>
+                            {rec.suggestedAction && rec.type !== 'positive' && (
+                              <p className="text-kth-slate-700 font-medium">
+                                <strong className="text-kth-slate-800">Suggested Action:</strong> {rec.suggestedAction}
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center bg-kth-slate-50 rounded-xl border border-kth-slate-200">
+                    <p className="text-xs font-bold text-kth-slate-700">Insufficient Data for Recommendation</p>
+                    <p className="text-xs text-kth-slate-500 mt-1">
+                      Upload a PDF resume with complete experience and educational sections to generate ATS suggestions.
+                    </p>
+                  </div>
+                )}
               </Card>
             )}
 
@@ -430,7 +484,7 @@ export const CandidateResumePage: React.FC = () => {
                 </div>
               )}
             </Card>
-          </>
+          </div>
         )}
       </div>
 

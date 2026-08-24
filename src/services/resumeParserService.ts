@@ -1,4 +1,6 @@
 import { CandidateExperienceItem, CandidateEducationItem } from './types';
+import { ATSAnalysisResult, ATSOptimizationRecommendation } from './atsAnalysisTypes';
+import { performATSAnalysis } from './atsAnalysisService';
 
 export interface ParsedResumeData {
   fullName?: string;
@@ -11,12 +13,9 @@ export interface ParsedResumeData {
   experience: CandidateExperienceItem[];
   education: CandidateEducationItem[];
   certifications: string[];
+  atsAnalysis?: ATSAnalysisResult;
   atsScore: number;
-  atsRecommendations: Array<{
-    type: 'positive' | 'suggestion';
-    title: string;
-    description: string;
-  }>;
+  atsRecommendations: ATSOptimizationRecommendation[];
 }
 
 /**
@@ -219,34 +218,10 @@ export async function parseResumeDocument(file: File): Promise<ParsedResumeData>
     year: '2019',
   });
 
-  // 5. Dynamic ATS Score and Recommendations tailored to uploaded resume
+  // 5. Conduct actual comprehensive ATS Analysis
   const skillsArray = Array.from(detectedSkills);
   const certsArray = Array.from(detectedCerts);
-  const atsScore = skillsArray.length >= 6 ? 94 : skillsArray.length >= 4 ? 89 : 82;
-
-  const recommendations: Array<{ type: 'positive' | 'suggestion'; title: string; description: string }> = [];
-
-  // Recommendation 1: Resume Verification & Framework Alignment
-  recommendations.push({
-    type: 'positive',
-    title: `${domainSpecialization} Framework Match`,
-    description: `Your uploaded resume "${fileName}" demonstrates strong qualification alignment in ${domainSpecialization} with verified industry experience.`,
-  });
-
-  // Recommendation 2: Dynamic Skill / Keyword Optimization
-  if (!combinedSearch.includes('sbti') && !combinedSearch.includes('cloud')) {
-    recommendations.push({
-      type: 'suggestion',
-      title: 'Target Benchmark Keyword Suggestion',
-      description: `Adding high-impact specialized keywords such as "Enterprise System Architecture" or "Advanced Impact Analytics" to your active resume will boost your ATS match score for Senior ${domainSpecialization} roles to 96%.`,
-    });
-  } else {
-    recommendations.push({
-      type: 'suggestion',
-      title: 'Quantified Impact Metric Addition',
-      description: `Adding quantified percentage improvements and commercial efficiency metrics in your experience descriptions will boost your employer shortlisting rate.`,
-    });
-  }
+  const atsAnalysis = await performATSAnalysis(file);
 
   return {
     fullName: targetName !== 'Candidate' ? targetName : undefined,
@@ -258,7 +233,8 @@ export async function parseResumeDocument(file: File): Promise<ParsedResumeData>
     experience: detectedExperience,
     education: detectedEducation,
     certifications: certsArray.length > 0 ? certsArray : ['Certified Industry Practitioner'],
-    atsScore,
-    atsRecommendations: recommendations,
+    atsAnalysis,
+    atsScore: atsAnalysis.overallAtsScore,
+    atsRecommendations: atsAnalysis.recommendations,
   };
 }

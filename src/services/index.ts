@@ -19,6 +19,6 @@ export * from './notificationService';
 export * from './requestService';
 export * from './paymentService';
 export * from './adminService';
-export * from './candidateDiscoveryService';
 export * from './resumeParserService';
-
+export * from './atsAnalysisTypes';
+export * from './atsAnalysisService';

@@ -16,17 +16,16 @@ const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
 const DEMO_RESUME_STORAGE_KEY_PREFIX = 'kth_candidate_resume_';
 
+import { ATSAnalysisResult, ATSOptimizationRecommendation } from './atsAnalysisTypes';
+
 export interface StoredResumeMetadata {
   url: string;
   fileName: string;
   fileSize?: number;
   uploadedAt?: string;
   atsScore?: number;
-  atsRecommendations?: Array<{
-    type: 'positive' | 'suggestion';
-    title: string;
-    description: string;
-  }>;
+  atsAnalysis?: ATSAnalysisResult;
+  atsRecommendations?: ATSOptimizationRecommendation[];
 }
 
 /**
