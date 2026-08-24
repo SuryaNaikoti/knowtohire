@@ -161,9 +161,10 @@ export const CandidateProfilePage: React.FC = () => {
   const resumeFormat = resumeService.getResumeFormat(profile?.resumeUrl);
   const effectiveUserId = profile?.id || '00000000-0000-0000-0000-000000000001';
   const storedResumeMetadata = resumeService.getStoredDemoResume(effectiveUserId);
+  const defaultCandidateResumeName = `${profile?.fullName?.trim() || 'Candidate'} - CV.pdf`;
   const resumeFileName = resumeService.extractResumeFileName(
     profile?.resumeUrl,
-    storedResumeMetadata?.fileName || 'Surya Naikoti - CV.pdf',
+    storedResumeMetadata?.fileName || defaultCandidateResumeName,
     storedResumeMetadata?.fileName
   );
   const resumeUploadDate = (storedResumeMetadata?.uploadedAt || profile?.updatedAt)

@@ -130,9 +130,10 @@ export const CandidateResumePage: React.FC = () => {
   // Check stored demo metadata first to preserve authentic uploaded filename
   const effectiveUserId = user?.id || profile?.id || '00000000-0000-0000-0000-000000000001';
   const storedMetadata = resumeService.getStoredDemoResume(effectiveUserId) || (user?.id ? resumeService.getStoredDemoResume(user.id) : null);
+  const defaultCandidateResumeName = `${profile?.fullName?.trim() || user?.user_metadata?.full_name?.trim() || 'Candidate'} - CV.pdf`;
   const fileName = resumeService.extractResumeFileName(
     profile?.resumeUrl,
-    storedMetadata?.fileName || 'Surya Naikoti - CV.pdf',
+    storedMetadata?.fileName || defaultCandidateResumeName,
     storedMetadata?.fileName
   );
   
