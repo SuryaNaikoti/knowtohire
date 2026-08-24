@@ -238,7 +238,12 @@ export function isSustainabilityDomain(title: string, domain: string, skills: st
     text.includes('brsr') ||
     text.includes('eia') ||
     text.includes('ehs') ||
-    text.includes('ecology')
+    text.includes('ecology') ||
+    text.includes('clean energy') ||
+    text.includes('renewable') ||
+    text.includes('net zero') ||
+    text.includes('decarbonization') ||
+    text.includes('energy transition')
   );
 }
 
@@ -248,7 +253,9 @@ export function isPatentOrIPRDomain(title: string, domain: string, skills: strin
     text.includes('patent') ||
     text.includes('ipr') ||
     text.includes('intellectual property') ||
-    text.includes('prior art')
+    text.includes('prior art') ||
+    text.includes('freedom to operate') ||
+    text.includes('trademark')
   );
 }
 
@@ -484,7 +491,13 @@ export const careerInsightsService = {
             created_by: '00000000-0000-0000-0000-000000000001',
             title: j.title,
             department: j.department || 'Engineering',
-            category: j.department?.includes('Sustainability') || j.department?.includes('ESG') || j.department?.includes('Environmental') ? 'Environmental' : 'Engineering & Technology',
+            category: j.department?.includes('Sustainability') || j.department?.includes('ESG') || j.department?.includes('Environmental')
+              ? 'Environmental'
+              : j.department?.includes('Intellectual Property')
+              ? 'Intellectual Property'
+              : j.department?.includes('Policy')
+              ? 'Public Policy & Research'
+              : 'Engineering & Technology',
             employment_type: (j.employmentType === 'Full-Time' ? 'full_time' : j.employmentType === 'Part-Time' ? 'part_time' : j.employmentType === 'Contract' ? 'contract' : 'internship') as any,
             work_mode: (j.isRemote ? 'remote' : j.employmentType === 'Hybrid' ? 'hybrid' : 'on_site') as any,
             experience_level: (j.title.toLowerCase().includes('senior') || j.title.toLowerCase().includes('lead')) ? 'senior' : 'mid_level',
