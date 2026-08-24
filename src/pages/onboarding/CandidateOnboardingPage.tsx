@@ -348,6 +348,16 @@ export const CandidateOnboardingPage: React.FC<CandidateOnboardingPageProps> = (
   const handleContinue = async () => {
     if (!validateStep(currentStep)) return;
 
+    // If candidate has uploaded a resume on Step 1, or is on the final review step, allow direct activation to dashboard
+    if (currentStep === 1 && formData.resumeUrl) {
+      const saveOk = await persistStepData(true);
+      if (!saveOk) return;
+
+      await refreshProfile();
+      navigate('/candidate');
+      return;
+    }
+
     if (currentStep < 10) {
       const saveOk = await persistStepData(false);
       if (!saveOk) return;
@@ -480,7 +490,13 @@ export const CandidateOnboardingPage: React.FC<CandidateOnboardingPageProps> = (
           isLastStep={currentStep === 10}
           isLoading={isLoading}
           isSaveSuccess={saveSuccess}
-          continueText={currentStep === 10 ? 'Complete My Profile' : 'Save & Continue'}
+          continueText={
+            currentStep === 1 && formData.resumeUrl
+              ? 'Continue to Dashboard'
+              : currentStep === 10
+              ? 'Complete My Profile'
+              : 'Save & Continue'
+          }
         />
       </div>
     </OnboardingLayout>
