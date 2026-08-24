@@ -171,18 +171,55 @@ export function matchesSkill(skillA: string, skillB: string): boolean {
 
 export function isSoftwareOrTechDomain(title: string, domain: string, skills: string[]): boolean {
   const text = `${title} ${domain} ${skills.join(' ')}`.toLowerCase();
-  return (
+
+  // If the job is clearly in an environmental, sustainability, ESG, or IPR domain,
+  // do NOT classify it as software/tech even if it contains 'engineer' or 'technology'.
+  const isEnvironmental =
+    text.includes('sustainability') ||
+    text.includes('esg') ||
+    text.includes('environmental') ||
+    text.includes('carbon') ||
+    text.includes('climate') ||
+    text.includes('brsr') ||
+    text.includes('eia') ||
+    text.includes('ehs') ||
+    text.includes('ecology') ||
+    text.includes('patent') ||
+    text.includes('ipr') ||
+    text.includes('intellectual property') ||
+    text.includes('prior art');
+
+  // Strong tech signals that are unambiguous
+  const hasStrongTechSignal =
     text.includes('developer') ||
-    text.includes('engineer') ||
     text.includes('full stack') ||
     text.includes('frontend') ||
     text.includes('backend') ||
-    text.includes('cloud') ||
     text.includes('software') ||
-    text.includes('web') ||
-    text.includes('react') ||
-    text.includes('node') ||
     text.includes('devops') ||
+    text.includes('react') ||
+    text.includes('node.js') ||
+    text.includes('typescript') ||
+    text.includes('javascript') ||
+    text.includes('python') ||
+    text.includes('kubernetes') ||
+    text.includes('docker') ||
+    text.includes('terraform') ||
+    text.includes('ci/cd') ||
+    text.includes('microservice') ||
+    text.includes('api architecture');
+
+  // If there are strong tech signals, it's tech regardless
+  if (hasStrongTechSignal) return true;
+
+  // If it's clearly environmental/ESG/IPR, it's NOT tech
+  if (isEnvironmental) return false;
+
+  // Weaker signals that are only tech-indicative when NOT in an environmental context
+  return (
+    text.includes('cloud') ||
+    text.includes('engineer') ||
+    text.includes('web') ||
     text.includes('solutions') ||
     text.includes('technology') ||
     text.includes('systems') ||
@@ -251,11 +288,16 @@ export function calculateCandidateJobMatch(
   const isJobIPR = isPatentOrIPRDomain(job.title, job.category || '', jobSkills);
 
   let isDomainRelevant = true;
-  if (isCandidateTech && !isCandidateESG && (isJobESG || isJobIPR) && !isJobTech) {
+  // Tech candidate: ESG/IPR jobs are NEVER relevant, regardless of weak tech signals
+  if (isCandidateTech && !isCandidateESG && (isJobESG || isJobIPR)) {
     isDomainRelevant = false;
-  } else if (isCandidateESG && !isCandidateTech && isJobTech && !isJobESG) {
+  }
+  // ESG candidate: pure tech jobs (without ESG overlap) are not relevant
+  if (isCandidateESG && !isCandidateTech && isJobTech && !isJobESG) {
     isDomainRelevant = false;
-  } else if (isCandidateIPR && !isJobIPR) {
+  }
+  // IPR candidate: non-IPR jobs are not relevant
+  if (isCandidateIPR && !isCandidateTech && !isCandidateESG && !isJobIPR) {
     isDomainRelevant = false;
   }
 
@@ -391,8 +433,10 @@ export function calculateCandidateJobMatch(
       scorePct: locScore,
       ratingLabel: 'Compatible',
       reason: job.is_remote
-        ? 'Fully Remote opportunity.'
-        : `Location: ${job.location}.`,
+        ? `Fully Remote — compatible with ${candidateLocation || 'any location'}.`
+        : candidateLocation && normalize(candidateLocation).includes(jobLocationNorm)
+        ? `Job in ${job.location} matches your location (${candidateLocation}).`
+        : `Job in ${job.location} (Candidate: ${candidateLocation || 'Not specified'}).`,
       isPositive: locScore >= 70,
     },
   ];
