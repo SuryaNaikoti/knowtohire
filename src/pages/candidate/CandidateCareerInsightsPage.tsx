@@ -234,11 +234,11 @@ export const CandidateCareerInsightsPage: React.FC = () => {
                           <span className="text-kth-slate-900">{exp.factor}</span>
                           <span
                             className={
-                              exp.ratingLabel === 'Strong'
+                              exp.ratingLabel === 'Excellent' || exp.ratingLabel === 'Strong'
                                 ? 'text-emerald-700'
-                                : exp.ratingLabel === 'Moderate'
-                                ? 'text-cyan-700'
-                                : 'text-amber-700'
+                                : exp.ratingLabel === 'Developing'
+                                ? 'text-amber-700'
+                                : 'text-kth-slate-700'
                             }
                           >
                             {exp.ratingLabel}
