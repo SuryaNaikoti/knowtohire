@@ -4,7 +4,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import { ServiceResult, normalizeServiceError } from './types';
+import { ServiceResult, normalizeServiceError, CandidateExperienceItem, CandidateEducationItem } from './types';
 
 export interface DiscoverableCandidate {
   id: string; // profile_id
@@ -14,7 +14,11 @@ export interface DiscoverableCandidate {
   phone?: string;
   location: string;
   domain: string;
+  bio?: string;
   skills: string[];
+  certifications?: string[];
+  experienceList?: CandidateExperienceItem[];
+  educationList?: CandidateEducationItem[];
   experienceYears: number;
   experienceSummary: string;
   noticePeriodDays: number;
@@ -22,6 +26,7 @@ export interface DiscoverableCandidate {
   profileCompletion: number;
   avatarUrl?: string;
   resumeUrl?: string;
+  resumeFileName?: string;
   educationSummary?: string;
 }
 
@@ -174,7 +179,11 @@ export const candidateDiscoveryService = {
         phone: p.phone,
         location: data.location || 'India',
         domain: data.domain_specialization || 'Environmental Engineering',
+        bio: data.bio || '',
         skills: Array.isArray(data.skills) && data.skills.length > 0 ? data.skills : ['EIA', 'ESG Compliance', 'Environmental Auditing'],
+        certifications: Array.isArray(data.certifications) ? data.certifications : [],
+        experienceList: Array.isArray(data.experience) ? data.experience : [],
+        educationList: Array.isArray(data.education) ? data.education : [],
         experienceYears: expYears,
         experienceSummary: expSummary,
         noticePeriodDays: Number(data.notice_period_days) || 30,
@@ -182,6 +191,7 @@ export const candidateDiscoveryService = {
         profileCompletion: Number(data.profile_completion_pct) || 80,
         avatarUrl: p.avatar_url,
         resumeUrl: data.resume_url,
+        resumeFileName: data.resume_file_name || (data.resume_url ? data.resume_url.split('/').pop() : 'Candidate_Resume.pdf'),
         educationSummary: eduSummary,
       };
 

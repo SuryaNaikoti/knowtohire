@@ -170,6 +170,19 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
           <div className="flex gap-2 flex-wrap bg-kth-slate-50 p-3 rounded-xl border border-kth-slate-200">
             {currentApp && (
               <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  onClose();
+                  window.history.pushState({}, '', `/employer/applications/${currentApp.id}`);
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                }}
+              >
+                View Full Candidate
+              </Button>
+            )}
+            {currentApp && (
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setIsScheduleModalOpen(true)}

@@ -22,3 +22,4 @@ export * from './adminService';
 export * from './resumeParserService';
 export * from './atsAnalysisTypes';
 export * from './atsAnalysisService';
+export * from './candidateDiscoveryService';

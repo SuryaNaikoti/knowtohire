@@ -227,16 +227,22 @@ export const EmployerJobApplicantsPage: React.FC<EmployerJobApplicantsPageProps>
                         {new Date(app.applied_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedApplication(app);
-                          }}
-                        >
-                          Quick View
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedApplication(app)}
+                          >
+                            Quick View
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleNavigate(`/employer/applications/${app.id}`)}
+                          >
+                            Full Profile
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

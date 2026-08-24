@@ -196,6 +196,10 @@ export function App() {
         const candidateId = path.replace('/employer/candidates/', '');
         pageComponent = <EmployerCandidateDetailsPage candidateId={candidateId} />;
       }
+      else if (path.startsWith('/employer/applications/')) {
+        const applicationId = path.replace('/employer/applications/', '');
+        pageComponent = <EmployerCandidateDetailsPage applicationId={applicationId} />;
+      }
       else if (path === '/employer/pipeline') pageComponent = <EmployerPipelinePage />;
       else if (path === '/employer/interviews') pageComponent = <EmployerInterviewsPage />;
       else if (path === '/employer/saved-candidates') pageComponent = <EmployerSavedCandidatesPage />;
