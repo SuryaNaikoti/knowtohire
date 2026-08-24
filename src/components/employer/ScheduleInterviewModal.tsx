@@ -123,67 +123,102 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
             value={interviewType}
             onChange={(e) => setInterviewType(e.target.value as InterviewType)}
             options={[
-              { value: 'technical_deep_dive', label: 'Technical Deep Dive' },
-              { value: 'cultural_fit', label: 'Cultural & Behavioral Fit' },
-              { value: 'executive_round', label: 'Executive Round' },
-              { value: 'hr_screening', label: 'HR Screening' },
+              { value: 'video', label: 'Video Interview (Google Meet / Zoom / Teams)' },
+              { value: 'phone', label: 'Phone Interview' },
+              { value: 'on_site', label: 'On-site / In-person Interview' },
+              { value: 'walk_in', label: 'Walk-in Interview (Date Range)' },
+              { value: 'external', label: 'External Assessment Platform' },
+              { value: 'technical_deep_dive', label: 'Technical Assessment Round' },
+              { value: 'hr_screening', label: 'HR Talent Screening' },
             ]}
           />
-          <Input
-            label="Date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            required
-          />
+          {interviewType !== 'walk_in' ? (
+            <Input
+              label="Date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              required
+            />
+          ) : (
+            <Input
+              label="Start Date (From)"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              required
+            />
+          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3.5">
-          <Input
-            label="Start Time"
-            type="time"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            required
-          />
-          <Input
-            label="End Time"
-            type="time"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            required
-          />
-        </div>
+        {interviewType !== 'walk_in' ? (
+          <div className="grid grid-cols-2 gap-3.5">
+            <Input
+              label="Start Time"
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              required
+            />
+            <Input
+              label="End Time"
+              type="time"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              required
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3.5">
+            <Input
+              label="Time Window (e.g. 10:00 AM – 4:00 PM)"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="10:00 AM – 4:00 PM"
+            />
+            <Input
+              label="End Date (To)"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+        )}
 
-        <div className="space-y-1.5">
-          <Input
-            label="Video Conference Meeting Link"
-            value={meetingLink}
-            onChange={(e) => setMeetingLink(e.target.value)}
-            placeholder="https://meet.google.com/..."
-            leftIcon={<Video className="w-4 h-4" />}
-          />
-        </div>
+        {(interviewType === 'video' || interviewType === 'external' || interviewType === 'technical_deep_dive') && (
+          <div className="space-y-1.5">
+            <Input
+              label="External Video / Meeting Link"
+              value={meetingLink}
+              onChange={(e) => setMeetingLink(e.target.value)}
+              placeholder="https://meet.google.com/..."
+              leftIcon={<Video className="w-4 h-4" />}
+            />
+          </div>
+        )}
 
-        <div className="space-y-1.5">
-          <Input
-            label="Office / Physical Location (If Onsite)"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="e.g. EcoTower Level 4, Bengaluru"
-            leftIcon={<MapPin className="w-4 h-4" />}
-          />
-        </div>
+        {(interviewType === 'on_site' || interviewType === 'walk_in') && (
+          <div className="space-y-1.5">
+            <Input
+              label="Venue / Full Office Address"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g. EcoTower Level 4, Outer Ring Road, Bengaluru"
+              leftIcon={<MapPin className="w-4 h-4" />}
+              required
+            />
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold text-kth-slate-700">
-            Internal Recruiter & Interviewer Notes <span className="text-kth-slate-400 font-normal">(Optional)</span>
+            Candidate Instructions & Notes <span className="text-kth-slate-400 font-normal">(Optional)</span>
           </label>
           <textarea
             rows={2}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Key focus areas, coding questions, or topics for this round..."
+            placeholder="Preparation tips, documents to bring, or interview guidance..."
             className="w-full rounded-xl border border-kth-slate-200 px-3.5 py-2 text-xs text-kth-slate-900 placeholder:text-kth-slate-400 focus:outline-none focus:ring-2 focus:ring-kth-primary-500/20 focus:border-kth-primary-600 transition-colors resize-none"
           />
         </div>

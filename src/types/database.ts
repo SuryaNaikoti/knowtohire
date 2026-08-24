@@ -96,9 +96,24 @@ export type ApplicationStage =
   | 'rejected'
   | 'withdrawn';
 
-export type InterviewType = 'hr_screening' | 'technical_deep_dive' | 'case_study' | 'executive_review';
+export type InterviewType =
+  | 'video'
+  | 'phone'
+  | 'on_site'
+  | 'walk_in'
+  | 'external'
+  | 'hr_screening'
+  | 'technical_deep_dive'
+  | 'case_study'
+  | 'executive_review';
 
-export type InterviewStatus = 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
+export type InterviewStatus =
+  | 'scheduled'
+  | 'confirmed'
+  | 'rescheduled'
+  | 'completed'
+  | 'cancelled'
+  | 'no_show';
 
 export interface Job {
   id: string; // Primary Key UUID
@@ -179,10 +194,22 @@ export interface Interview {
   created_by?: string | null; // Foreign Key to public.profiles.id
   interview_type: InterviewType;
   title: string;
+  round_name?: string | null;
   scheduled_start: string;
   scheduled_end?: string | null;
+  date_from?: string | null;
+  date_to?: string | null;
+  time_window?: string | null;
   meeting_link?: string | null;
+  meeting_platform?: string | null;
+  contact_phone?: string | null;
   location?: string | null;
+  venue_address?: string | null;
+  map_url?: string | null;
+  interviewer_name?: string | null;
+  interviewer_role?: string | null;
+  required_documents?: string[];
+  instructions?: string | null;
   status: InterviewStatus;
   notes?: string | null;
   created_at: string;
@@ -190,6 +217,7 @@ export interface Interview {
   // Joined entity representations
   candidate?: Profile;
   job?: Job;
+  company?: CompanyProfile;
 }
 
 export interface SavedCandidate {

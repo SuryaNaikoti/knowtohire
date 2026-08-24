@@ -224,20 +224,44 @@ export interface InterviewCreateInput {
   candidate_id: string;
   interview_type: InterviewType;
   title: string;
+  round_name?: string | null;
   scheduled_start: string;
   scheduled_end?: string | null;
+  date_from?: string | null;
+  date_to?: string | null;
+  time_window?: string | null;
   meeting_link?: string | null;
+  meeting_platform?: string | null;
+  contact_phone?: string | null;
   location?: string | null;
+  venue_address?: string | null;
+  map_url?: string | null;
+  interviewer_name?: string | null;
+  interviewer_role?: string | null;
+  required_documents?: string[];
+  instructions?: string | null;
   notes?: string | null;
 }
 
 export interface InterviewUpdateInput {
   interview_type?: InterviewType;
   title?: string;
+  round_name?: string | null;
   scheduled_start?: string;
   scheduled_end?: string | null;
+  date_from?: string | null;
+  date_to?: string | null;
+  time_window?: string | null;
   meeting_link?: string | null;
+  meeting_platform?: string | null;
+  contact_phone?: string | null;
   location?: string | null;
+  venue_address?: string | null;
+  map_url?: string | null;
+  interviewer_name?: string | null;
+  interviewer_role?: string | null;
+  required_documents?: string[];
+  instructions?: string | null;
   status?: InterviewStatus;
   notes?: string | null;
 }

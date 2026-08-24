@@ -11,6 +11,11 @@ export interface UpcomingInterviewCardProps {
 }
 
 const INTERVIEW_TYPE_LABELS: Record<InterviewType, string> = {
+  video: 'Video Interview',
+  phone: 'Phone Interview',
+  on_site: 'On-site Interview',
+  walk_in: 'Walk-in Interview',
+  external: 'External Platform',
   hr_screening: 'HR Screening',
   technical_deep_dive: 'Technical Round',
   case_study: 'Case Study',
