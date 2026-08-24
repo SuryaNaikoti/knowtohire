@@ -37,9 +37,18 @@ export const CandidateCareerInsightsPage: React.FC = () => {
 
     const { data, error } = await careerInsightsService.getCareerInsights();
     if (error) {
+      console.error('[CareerInsights UI] Error loading insights:', error);
       setErrorMessage(error.message);
       setInsights(null);
     } else if (data) {
+      console.log('[CareerInsights UI] Received insights:', {
+        currentTitle: data.currentTitle,
+        hasSufficientProfileData: data.hasSufficientProfileData,
+        hasSufficientMarketData: data.hasSufficientMarketData,
+        opportunitiesCount: data.opportunities?.length,
+        targetRoleTitle: data.targetRoleTitle,
+        matchScore: data.matchScore,
+      });
       setInsights(data);
     }
     setIsLoading(false);
@@ -119,7 +128,7 @@ export const CandidateCareerInsightsPage: React.FC = () => {
         )}
 
         {/* Insufficient Market Data State */}
-        {!isLoading && !errorMessage && insights && insights.hasSufficientProfileData && !insights.hasSufficientMarketData && (
+        {!isLoading && !errorMessage && insights && insights.hasSufficientProfileData && (!insights.hasSufficientMarketData || insights.opportunities.length === 0) && (
           <EmptyState
             title="No Matching Openings Found"
             description={insights.emptyStateReason || "Not enough relevant openings currently published in the catalog to generate market-wide skill gap benchmarks."}
@@ -130,7 +139,7 @@ export const CandidateCareerInsightsPage: React.FC = () => {
         )}
 
         {/* Main Insights Content Dashboard */}
-        {!isLoading && !errorMessage && insights && insights.hasSufficientProfileData && insights.hasSufficientMarketData && (
+        {!isLoading && !errorMessage && insights && insights.hasSufficientProfileData && (insights.hasSufficientMarketData && insights.opportunities.length > 0) && (
           <>
             {/* 1. CURRENT CAREER POSITION */}
             <Card className="p-6 md:p-7 bg-white border-kth-slate-200 shadow-xs">
