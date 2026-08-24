@@ -101,78 +101,19 @@ export const candidateProfileService = {
               // Ignore
             }
 
-            const hasUploadedResume = Boolean(storedResume?.url || customOverrides.resumeUrl);
-
-            const fullName = (authCustom.full_name as string) || (parsed.full_name as string) || (hasUploadedResume ? 'Candidate' : 'Aarav Sharma (ESG Analyst)');
-            const phone = authCustom.phone !== undefined ? (authCustom.phone as string) : (hasUploadedResume ? (customOverrides.phone as string || null) : ((parsed.phone as string) || '+91 98765 43210'));
-            const avatarUrl = (authCustom.avatar_url as string) || parsed.avatar_url || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&h=150&q=80';
+            const fullName = (authCustom.full_name as string) || (parsed.full_name as string) || 'Candidate';
+            const phone = authCustom.phone !== undefined ? (authCustom.phone as string) : ((customOverrides.phone as string) || (parsed.phone as string) || null);
+            const avatarUrl = (authCustom.avatar_url as string) || parsed.avatar_url || null;
             
-            // If resume is uploaded or custom profile edited, do not fallback to static ESG dummy records
-            const headline = customOverrides.headline !== undefined 
-              ? (customOverrides.headline || null) 
-              : (hasUploadedResume ? null : 'Senior Environmental & ESG Consultant');
-              
-            const bio = customOverrides.bio !== undefined 
-              ? (customOverrides.bio || null) 
-              : (hasUploadedResume ? null : 'Environmental consultant with 5+ years of experience leading SEBI BRSR compliance, ISO 14001 audits, and corporate decarbonization strategies across renewable energy and manufacturing sectors in India.');
-              
-            const location = customOverrides.location !== undefined 
-              ? (customOverrides.location || null) 
-              : (hasUploadedResume ? null : 'Hyderabad, Telangana');
-              
-            const domainSpecialization = customOverrides.domainSpecialization !== undefined 
-              ? (customOverrides.domainSpecialization || null) 
-              : (hasUploadedResume ? null : 'Sustainability & ESG Advisory');
-              
-            const skills = customOverrides.skills !== undefined 
-              ? (Array.isArray(customOverrides.skills) ? customOverrides.skills : []) 
-              : (hasUploadedResume ? [] : ['ESG Reporting', 'SEBI BRSR', 'ISO 14001', 'Carbon Accounting', 'EIA Assessment', 'GRI Standards', 'Hazardous Waste Compliance']);
-              
-            const experience = customOverrides.experience !== undefined 
-              ? (Array.isArray(customOverrides.experience) ? customOverrides.experience : []) 
-              : (hasUploadedResume ? [] : [
-                  {
-                    title: 'Senior ESG Consultant',
-                    company: 'EcoStrategy India Pvt Ltd',
-                    period: '2023 - Present',
-                    location: 'Hyderabad',
-                    description: 'Led BRSR mandatory reporting readiness and Scope 1 & 2 carbon accounting for top 500 listed Indian corporate clients.',
-                  },
-                  {
-                    title: 'Environmental Compliance Specialist',
-                    company: 'GreenTech Infrastructure',
-                    period: '2021 - 2023',
-                    location: 'Bengaluru',
-                    description: 'Secured MoEFCC environmental clearances and SPCB consent to operate (CTO) for commercial clean energy projects.',
-                  },
-                ]);
-                
-            const education = customOverrides.education !== undefined 
-              ? (Array.isArray(customOverrides.education) ? customOverrides.education : []) 
-              : (hasUploadedResume ? [] : [
-                  {
-                    qualification: 'M.Sc in Environmental Science & Technology',
-                    degree: 'M.Sc in Environmental Science & Technology',
-                    institution: 'Indian Institute of Technology (IIT) Bombay',
-                    graduation_year: '2021',
-                    year: '2021',
-                  },
-                  {
-                    qualification: 'B.Tech in Chemical Engineering',
-                    degree: 'B.Tech in Chemical Engineering',
-                    institution: 'National Institute of Technology (NIT) Warangal',
-                    graduation_year: '2019',
-                    year: '2019',
-                  },
-                ]);
-                
-            const certifications = customOverrides.certifications !== undefined 
-              ? (Array.isArray(customOverrides.certifications) ? customOverrides.certifications : []) 
-              : (hasUploadedResume ? [] : [
-                  'GRI Certified Sustainability Professional (2024)',
-                  'Lead Auditor ISO 14001:2015 Environmental Management',
-                ]);
-                
+            // Never fallback to static dummy records
+            const headline = customOverrides.headline !== undefined ? (customOverrides.headline || null) : null;
+            const bio = customOverrides.bio !== undefined ? (customOverrides.bio || null) : null;
+            const location = customOverrides.location !== undefined ? (customOverrides.location || null) : null;
+            const domainSpecialization = customOverrides.domainSpecialization !== undefined ? (customOverrides.domainSpecialization || null) : null;
+            const skills = customOverrides.skills !== undefined && Array.isArray(customOverrides.skills) ? customOverrides.skills : [];
+            const experience = customOverrides.experience !== undefined && Array.isArray(customOverrides.experience) ? customOverrides.experience : [];
+            const education = customOverrides.education !== undefined && Array.isArray(customOverrides.education) ? customOverrides.education : [];
+            const certifications = customOverrides.certifications !== undefined && Array.isArray(customOverrides.certifications) ? customOverrides.certifications : [];
             const activeResumeUrl = customOverrides.resumeUrl !== undefined ? customOverrides.resumeUrl : (storedResume?.url || null);
 
             // Calculate authentic completeness score
