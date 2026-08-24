@@ -32,7 +32,11 @@ import {
   User,
 } from 'lucide-react';
 
-export const CandidateProfilePage: React.FC = () => {
+interface CandidateProfilePageProps {
+  onNavigate?: (path: string) => void;
+}
+
+export const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ onNavigate }) => {
   const { refreshProfile } = useAuth();
 
   // ─── Profile Data States ───────────────────────────────────────────────────
@@ -90,24 +94,14 @@ export const CandidateProfilePage: React.FC = () => {
     loadProfile();
   }, [loadProfile]);
 
-  // Open Edit Modal with fresh synced data
+  // ─── Open Full-Page Edit Profile ──────────────────────────────────────────
   const handleOpenEdit = () => {
-    if (profile) {
-      setFormFullName(profile.fullName || '');
-      setFormHeadline(profile.headline || '');
-      setFormLocation(profile.location || '');
-      setFormPhone(profile.phone || '');
-      setFormBio(profile.bio || '');
-      setFormSkillsText((profile.skills || []).join(', '));
-      setFormCertificationsText((profile.certifications || []).join('\n'));
-      setFormExperience(profile.experience ? JSON.parse(JSON.stringify(profile.experience)) : []);
-      setFormEducation(profile.education ? JSON.parse(JSON.stringify(profile.education)) : []);
+    if (onNavigate) {
+      onNavigate('/candidate/profile/edit');
+    } else {
+      window.history.pushState({}, '', '/candidate/profile/edit');
+      window.dispatchEvent(new PopStateEvent('popstate'));
     }
-    setActiveTab('basic');
-    setSaveError(null);
-    setSaveSuccess(false);
-    setFormFieldErrors({});
-    setIsEditOpen(true);
   };
 
   // ─── Experience Handlers ──────────────────────────────────────────────────

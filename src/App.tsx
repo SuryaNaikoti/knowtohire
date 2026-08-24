@@ -40,6 +40,7 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 // Import Candidate Pages
 import { CandidateDashboardPage } from '@/pages/candidate/CandidateDashboardPage';
 import { CandidateProfilePage } from '@/pages/candidate/CandidateProfilePage';
+import { CandidateEditProfilePage } from '@/pages/candidate/CandidateEditProfilePage';
 import { CandidateResumePage } from '@/pages/candidate/CandidateResumePage';
 import { CandidateJobsPage } from '@/pages/candidate/CandidateJobsPage';
 import { CandidateJobDetailsPage } from '@/pages/candidate/CandidateJobDetailsPage';
@@ -217,7 +218,8 @@ export function App() {
       let pageComponent: React.ReactNode = <CandidateDashboardPage />;
 
       if (path === '/candidate' || path === '/candidate/') pageComponent = <CandidateDashboardPage />;
-      else if (path === '/candidate/profile') pageComponent = <CandidateProfilePage />;
+      else if (path === '/candidate/profile/edit') pageComponent = <CandidateEditProfilePage onNavigate={navigateTo} />;
+      else if (path === '/candidate/profile') pageComponent = <CandidateProfilePage onNavigate={navigateTo} />;
       else if (path === '/candidate/resume') pageComponent = <CandidateResumePage />;
       else if (path === '/candidate/jobs') pageComponent = <CandidateJobsPage />;
       else if (path.startsWith('/candidate/jobs/')) {
