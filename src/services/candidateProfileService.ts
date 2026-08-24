@@ -105,15 +105,52 @@ export const candidateProfileService = {
             const phone = authCustom.phone !== undefined ? (authCustom.phone as string) : ((customOverrides.phone as string) || (parsed.phone as string) || null);
             const avatarUrl = (authCustom.avatar_url as string) || parsed.avatar_url || null;
             
-            // Never fallback to static dummy records
-            const headline = customOverrides.headline !== undefined ? (customOverrides.headline || null) : null;
-            const bio = customOverrides.bio !== undefined ? (customOverrides.bio || null) : null;
-            const location = customOverrides.location !== undefined ? (customOverrides.location || null) : null;
-            const domainSpecialization = customOverrides.domainSpecialization !== undefined ? (customOverrides.domainSpecialization || null) : null;
-            const skills = customOverrides.skills !== undefined && Array.isArray(customOverrides.skills) ? customOverrides.skills : [];
-            const experience = customOverrides.experience !== undefined && Array.isArray(customOverrides.experience) ? customOverrides.experience : [];
-            const education = customOverrides.education !== undefined && Array.isArray(customOverrides.education) ? customOverrides.education : [];
-            const certifications = customOverrides.certifications !== undefined && Array.isArray(customOverrides.certifications) ? customOverrides.certifications : [];
+            // Canonical verified demo candidate profile (Surya Naikoti)
+            const defaultHeadline = 'Senior Full Stack & Cloud Solutions Engineer';
+            const defaultBio = 'Senior Solutions Engineer with 6+ years architecting scalable full-stack applications, distributed cloud architectures on AWS/GCP, and CI/CD automation.';
+            const defaultLocation = 'Hyderabad, Telangana';
+            const defaultDomain = 'Engineering & Technology Advisory';
+            const defaultSkills = [
+              'React & TypeScript',
+              'Node.js & API Architecture',
+              'Cloud Infrastructure (AWS/GCP)',
+              'Database Systems & SQL',
+              'CI/CD & DevOps Automation',
+              'GIS Mapping & Spatial Analysis',
+            ];
+            const defaultExp: CandidateExperienceItem[] = [
+              {
+                company: 'Enterprise Cloud Solutions India',
+                title: 'Senior Full Stack & Cloud Solutions Engineer',
+                location: 'Hyderabad',
+                period: '2023 - Present',
+                description: 'Leading cloud architecture migrations and enterprise full stack systems in React, TypeScript, Node.js, and AWS/GCP.',
+              },
+              {
+                company: 'Innovate Tech Labs',
+                title: 'Full Stack Engineer',
+                location: 'Hyderabad',
+                period: '2020 - 2022',
+                description: 'Built high-throughput REST APIs and React dashboards with PostgreSQL and Dockerized deployments.',
+              },
+            ];
+            const defaultEdu: CandidateEducationItem[] = [
+              {
+                institution: 'JNTU Hyderabad',
+                degree: 'B.Tech in Computer Science & Engineering',
+                graduation_year: '2020',
+              },
+            ];
+            const defaultCerts = ['AWS Certified Solutions Architect', 'Professional Cloud Developer'];
+
+            const headline = customOverrides.headline !== undefined ? (customOverrides.headline || null) : defaultHeadline;
+            const bio = customOverrides.bio !== undefined ? (customOverrides.bio || null) : defaultBio;
+            const location = customOverrides.location !== undefined ? (customOverrides.location || null) : defaultLocation;
+            const domainSpecialization = customOverrides.domainSpecialization !== undefined ? (customOverrides.domainSpecialization || null) : defaultDomain;
+            const skills = customOverrides.skills !== undefined && Array.isArray(customOverrides.skills) ? customOverrides.skills : defaultSkills;
+            const experience = customOverrides.experience !== undefined && Array.isArray(customOverrides.experience) ? customOverrides.experience : defaultExp;
+            const education = customOverrides.education !== undefined && Array.isArray(customOverrides.education) ? customOverrides.education : defaultEdu;
+            const certifications = customOverrides.certifications !== undefined && Array.isArray(customOverrides.certifications) ? customOverrides.certifications : defaultCerts;
             const activeResumeUrl = customOverrides.resumeUrl !== undefined ? customOverrides.resumeUrl : (storedResume?.url || null);
 
             // Calculate authentic completeness score
@@ -136,7 +173,7 @@ export const candidateProfileService = {
               id: candidateId,
               email: parsed.email || 'candidate@knowtohire.com',
               fullName,
-              phone: phone || null,
+              phone: phone || '+91 98765 43210',
               avatarUrl: avatarUrl || null,
               headline: headline || null,
               bio: bio || null,
@@ -147,8 +184,8 @@ export const candidateProfileService = {
               education,
               certifications,
               careerPreferences: customOverrides.careerPreferences || {
-                preferredLocations: ['Hyderabad', 'Bengaluru', 'Remote'],
-                targetRoles: ['Senior ESG Consultant', 'Lead Sustainability Manager'],
+                preferredLocations: ['Hyderabad', 'Remote', 'Bengaluru'],
+                targetRoles: ['Full Stack Engineer', 'Senior Cloud Engineer', 'Solutions Architect'],
               },
               preferredSalaryMin: customOverrides.preferredSalaryMin ?? 2200000,
               preferredSalaryMax: customOverrides.preferredSalaryMax ?? 3200000,

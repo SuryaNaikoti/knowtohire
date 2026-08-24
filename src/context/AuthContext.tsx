@@ -14,7 +14,7 @@ export const DEMO_CREDENTIALS = {
     password: 'Password123!',
     role: 'candidate' as UserRole,
     status: 'active' as AccountStatus,
-    full_name: 'Aarav Sharma (ESG Analyst)',
+    full_name: 'Surya Naikoti',
     phone: '+91 98765 43210',
     avatar_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&h=150&q=80',
     id: '00000000-0000-0000-0000-000000000001',
