@@ -10,37 +10,49 @@ import {
   normalizeServiceError,
 } from './types';
 
-const DEMO_SAVED_JOBS_KEY = 'kth_candidate_saved_jobs_cache';
+const DEMO_SAVED_JOBS_PREFIX = 'kth_candidate_saved_jobs_';
 
-function getLocalSavedJobIds(): string[] {
-  if (typeof window === 'undefined' || !window.localStorage) return [];
+function getLocalSavedJobIds(candidateId: string): string[] {
+  if (typeof window === 'undefined' || !window.localStorage || !candidateId) return [];
   try {
-    const raw = window.localStorage.getItem(DEMO_SAVED_JOBS_KEY);
+    const raw = window.localStorage.getItem(`${DEMO_SAVED_JOBS_PREFIX}${candidateId}`);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 }
 
-function saveLocalJobId(jobId: string) {
-  if (typeof window === 'undefined' || !window.localStorage) return;
+function saveLocalJobId(candidateId: string, jobId: string) {
+  if (typeof window === 'undefined' || !window.localStorage || !candidateId) return;
   try {
-    const ids = new Set(getLocalSavedJobIds());
+    const ids = new Set(getLocalSavedJobIds(candidateId));
     ids.add(jobId);
-    window.localStorage.setItem(DEMO_SAVED_JOBS_KEY, JSON.stringify(Array.from(ids)));
+    window.localStorage.setItem(`${DEMO_SAVED_JOBS_PREFIX}${candidateId}`, JSON.stringify(Array.from(ids)));
+    notifySavedJobsChanged(candidateId, jobId, true);
   } catch {
     // ignore
   }
 }
 
-function removeLocalJobId(jobId: string) {
-  if (typeof window === 'undefined' || !window.localStorage) return;
+function removeLocalJobId(candidateId: string, jobId: string) {
+  if (typeof window === 'undefined' || !window.localStorage || !candidateId) return;
   try {
-    const ids = new Set(getLocalSavedJobIds());
+    const ids = new Set(getLocalSavedJobIds(candidateId));
     ids.delete(jobId);
-    window.localStorage.setItem(DEMO_SAVED_JOBS_KEY, JSON.stringify(Array.from(ids)));
+    window.localStorage.setItem(`${DEMO_SAVED_JOBS_PREFIX}${candidateId}`, JSON.stringify(Array.from(ids)));
+    notifySavedJobsChanged(candidateId, jobId, false);
   } catch {
     // ignore
+  }
+}
+
+function notifySavedJobsChanged(candidateId: string, jobId: string, isSaved: boolean) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('kth_saved_jobs_changed', {
+        detail: { candidateId, jobId, isSaved },
+      })
+    );
   }
 }
 
@@ -61,7 +73,7 @@ async function getCandidateUserId(): Promise<string | null> {
       }
     }
   }
-  return null;
+  return '00000000-0000-0000-0000-000000000001';
 }
 
 export const savedJobService = {
@@ -78,7 +90,7 @@ export const savedJobService = {
         };
       }
 
-      saveLocalJobId(jobId);
+      saveLocalJobId(candidateId, jobId);
 
       // Attempt Supabase insert
       const { data, error } = await supabase
@@ -128,7 +140,7 @@ export const savedJobService = {
         };
       }
 
-      removeLocalJobId(jobId);
+      removeLocalJobId(candidateId, jobId);
 
       await supabase
         .from('saved_jobs')
@@ -155,6 +167,7 @@ export const savedJobService = {
         };
       }
 
+      // 1. Fetch from Supabase
       const { data, error } = await supabase
         .from('saved_jobs')
         .select('*, job:jobs(*, company:company_profiles(*))')
@@ -162,11 +175,16 @@ export const savedJobService = {
         .order('created_at', { ascending: false });
 
       if (!error && data && data.length > 0) {
+        // Sync local cache with Supabase
+        const dbJobIds = data.map((d: any) => d.job_id).filter(Boolean);
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem(`${DEMO_SAVED_JOBS_PREFIX}${candidateId}`, JSON.stringify(dbJobIds));
+        }
         return { data: data as SavedJob[], error: null };
       }
 
-      // Check local cache
-      const localIds = getLocalSavedJobIds();
+      // 2. Check candidate-scoped local cache
+      const localIds = getLocalSavedJobIds(candidateId);
       if (localIds.length > 0) {
         const { data: jobs } = await supabase
           .from('jobs')
@@ -184,23 +202,8 @@ export const savedJobService = {
         return { data: fallbackList, error: null };
       }
 
-      // Default demo bookmarks if candidate has no bookmarks yet
-      const { data: seedJobs } = await supabase
-        .from('jobs')
-        .select('*, company:company_profiles(*)')
-        .eq('status', 'published')
-        .limit(2);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const seedList: SavedJob[] = (seedJobs || []).map((j: any) => ({
-        id: `seed-saved-${j.id}`,
-        candidate_id: candidateId,
-        job_id: j.id,
-        created_at: new Date().toISOString(),
-        job: j,
-      }));
-
-      return { data: seedList, error: null };
+      // 3. Return clean empty array if candidate has no saved jobs
+      return { data: [], error: null };
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }
@@ -216,7 +219,7 @@ export const savedJobService = {
         return { data: false, error: null };
       }
 
-      const localIds = getLocalSavedJobIds();
+      const localIds = getLocalSavedJobIds(candidateId);
       if (localIds.includes(jobId)) {
         return { data: true, error: null };
       }

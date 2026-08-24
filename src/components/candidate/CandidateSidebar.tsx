@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
+import { savedJobService } from '@/services';
 import {
   LayoutDashboard,
   User,
@@ -27,19 +28,30 @@ function useSidebarCounts() {
     let cancelled = false;
 
     const fetchCounts = async () => {
+      let userId: string | null = null;
       const { data: authData } = await supabase.auth.getUser();
-      const userId = authData?.user?.id;
-      if (!userId) return;
+      if (authData?.user?.id) {
+        userId = authData.user.id;
+      } else if (typeof window !== 'undefined' && window.localStorage) {
+        const storedDemo = window.localStorage.getItem('kth_demo_auth_session');
+        if (storedDemo) {
+          try {
+            const parsed = JSON.parse(storedDemo);
+            if (parsed?.role === 'candidate' && parsed?.id) userId = parsed.id;
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      if (!userId) userId = '00000000-0000-0000-0000-000000000001';
 
       const [appsResult, savedResult, interviewResult, notifResult] = await Promise.all([
         supabase
           .from('job_applications')
           .select('*', { count: 'exact', head: true })
           .eq('candidate_id', userId),
-        supabase
-          .from('saved_jobs')
-          .select('*', { count: 'exact', head: true })
-          .eq('candidate_id', userId),
+        savedJobService.getMySavedJobs(),
         supabase
           .from('interviews')
           .select('*', { count: 'exact', head: true })
@@ -55,7 +67,7 @@ function useSidebarCounts() {
       if (!cancelled) {
         setCounts({
           applications: appsResult.count ?? 0,
-          savedJobs: savedResult.count ?? 0,
+          savedJobs: savedResult.data ? savedResult.data.length : 0,
           interviews: interviewResult.count ?? 0,
           notifications: notifResult.count ?? 0,
         });
@@ -63,8 +75,15 @@ function useSidebarCounts() {
     };
 
     fetchCounts();
+
+    const handleSavedChanged = () => {
+      fetchCounts();
+    };
+    window.addEventListener('kth_saved_jobs_changed', handleSavedChanged);
+
     return () => {
       cancelled = true;
+      window.removeEventListener('kth_saved_jobs_changed', handleSavedChanged);
     };
   }, []);
 

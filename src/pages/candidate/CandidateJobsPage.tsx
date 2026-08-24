@@ -48,6 +48,31 @@ export const CandidateJobsPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
+
+    const handleSavedJobsChanged = (e: Event) => {
+      const customEvent = e as CustomEvent<{ candidateId: string; jobId: string; isSaved: boolean }>;
+      if (customEvent.detail) {
+        const { jobId, isSaved } = customEvent.detail;
+        setSavedJobIds((prev) => {
+          const next = new Set(prev);
+          if (isSaved) {
+            next.add(jobId);
+          } else {
+            next.delete(jobId);
+          }
+          return next;
+        });
+      } else {
+        savedJobService.getMySavedJobs().then((res) => {
+          if (res.data) setSavedJobIds(new Set(res.data.map((s) => s.job_id)));
+        });
+      }
+    };
+
+    window.addEventListener('kth_saved_jobs_changed', handleSavedJobsChanged);
+    return () => {
+      window.removeEventListener('kth_saved_jobs_changed', handleSavedJobsChanged);
+    };
   }, [loadData]);
 
   // Handle Save / Unsave bookmark toggle
@@ -86,7 +111,7 @@ export const CandidateJobsPage: React.FC = () => {
 
   const handleJobClick = (jobId: string) => {
     window.history.pushState({}, '', `/candidate/jobs/${jobId}`);
-    window.dispatchEvent(new Event('popstate'));
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   const formatRelativeDate = (dateStr?: string | null) => {

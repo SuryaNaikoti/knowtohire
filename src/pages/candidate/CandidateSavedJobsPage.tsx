@@ -30,6 +30,15 @@ export const CandidateSavedJobsPage: React.FC = () => {
 
   useEffect(() => {
     loadSavedJobs();
+
+    const handleSavedJobsChanged = () => {
+      loadSavedJobs();
+    };
+
+    window.addEventListener('kth_saved_jobs_changed', handleSavedJobsChanged);
+    return () => {
+      window.removeEventListener('kth_saved_jobs_changed', handleSavedJobsChanged);
+    };
   }, [loadSavedJobs]);
 
   const handleUnsave = async (jobId: string) => {
@@ -45,7 +54,7 @@ export const CandidateSavedJobsPage: React.FC = () => {
 
   const handleJobClick = (jobId: string) => {
     window.history.pushState({}, '', `/candidate/jobs/${jobId}`);
-    window.dispatchEvent(new Event('popstate'));
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   const formatRelativeDate = (dateStr?: string | null) => {
@@ -59,12 +68,15 @@ export const CandidateSavedJobsPage: React.FC = () => {
     return `Posted on ${date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}`;
   };
 
+  const count = savedRecords.length;
+  const countLabel = count === 1 ? '1 saved opportunity' : `${count} saved opportunities`;
+
   return (
     <CandidateShell title="Saved Jobs" currentPath="/candidate/saved-jobs">
       <div className="space-y-6 font-sans">
         <div className="flex justify-between items-center text-xs">
           <span className="text-kth-slate-500">
-            You have <strong className="text-kth-slate-900">{isLoading ? '...' : savedRecords.length}</strong> saved opportunities
+            You have <strong className="text-kth-slate-900">{isLoading ? '...' : countLabel}</strong>
           </span>
         </div>
 

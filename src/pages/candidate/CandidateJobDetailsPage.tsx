@@ -58,7 +58,19 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
 
   useEffect(() => {
     loadJobData();
-  }, [loadJobData]);
+
+    const handleSavedJobsChanged = (e: Event) => {
+      const customEvent = e as CustomEvent<{ candidateId: string; jobId: string; isSaved: boolean }>;
+      if (customEvent.detail && resolvedJobId && customEvent.detail.jobId === resolvedJobId) {
+        setIsSaved(customEvent.detail.isSaved);
+      }
+    };
+
+    window.addEventListener('kth_saved_jobs_changed', handleSavedJobsChanged);
+    return () => {
+      window.removeEventListener('kth_saved_jobs_changed', handleSavedJobsChanged);
+    };
+  }, [loadJobData, resolvedJobId]);
 
   const handleSaveToggle = async () => {
     if (!job) return;
@@ -76,12 +88,12 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
 
   const handleBack = () => {
     window.history.pushState({}, '', '/candidate/jobs');
-    window.dispatchEvent(new Event('popstate'));
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   const handleNavigateApplications = () => {
     window.history.pushState({}, '', '/candidate/applications');
-    window.dispatchEvent(new Event('popstate'));
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   if (isLoading) {
