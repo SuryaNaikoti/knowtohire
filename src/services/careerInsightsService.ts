@@ -172,7 +172,7 @@ export function matchesSkill(skillA: string, skillB: string): boolean {
 export function isSoftwareOrTechDomain(title: string, domain: string, skills: string[]): boolean {
   const text = `${title} ${domain} ${skills.join(' ')}`.toLowerCase();
 
-  // If the job is clearly in an environmental, sustainability, ESG, or IPR domain,
+  // If the job is clearly in an environmental, sustainability, ESG, clean energy, or IPR domain,
   // do NOT classify it as software/tech even if it contains 'engineer' or 'technology'.
   const isEnvironmental =
     text.includes('sustainability') ||
@@ -184,6 +184,14 @@ export function isSoftwareOrTechDomain(title: string, domain: string, skills: st
     text.includes('eia') ||
     text.includes('ehs') ||
     text.includes('ecology') ||
+    text.includes('clean energy') ||
+    text.includes('renewable') ||
+    text.includes('net zero') ||
+    text.includes('decarbonization') ||
+    text.includes('energy transition') ||
+    text.includes('policy research') ||
+    text.includes('public policy') ||
+    text.includes('white papers') ||
     text.includes('patent') ||
     text.includes('ipr') ||
     text.includes('intellectual property') ||
@@ -201,7 +209,6 @@ export function isSoftwareOrTechDomain(title: string, domain: string, skills: st
     text.includes('node.js') ||
     text.includes('typescript') ||
     text.includes('javascript') ||
-    text.includes('python') ||
     text.includes('kubernetes') ||
     text.includes('docker') ||
     text.includes('terraform') ||
@@ -209,11 +216,11 @@ export function isSoftwareOrTechDomain(title: string, domain: string, skills: st
     text.includes('microservice') ||
     text.includes('api architecture');
 
-  // If there are strong tech signals, it's tech regardless
-  if (hasStrongTechSignal) return true;
-
-  // If it's clearly environmental/ESG/IPR, it's NOT tech
+  // If it's clearly environmental/ESG/IPR/Policy, it's NOT tech
   if (isEnvironmental) return false;
+
+  // If there are strong tech signals, it's tech
+  if (hasStrongTechSignal) return true;
 
   // Weaker signals that are only tech-indicative when NOT in an environmental context
   return (
