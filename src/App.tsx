@@ -237,7 +237,7 @@ export function App() {
         pageComponent = <CandidateApplicationDetailsPage appId={appId} />;
       }
       else if (path === '/candidate/interviews') pageComponent = <CandidateInterviewsPage />;
-      else if (path === '/candidate/career-insights') pageComponent = <CandidateCareerInsightsPage />;
+      else if (path === '/candidate/career-insights' || path === '/candidate/insights') pageComponent = <CandidateCareerInsightsPage />;
       else if (path === '/candidate/requests') pageComponent = <CandidateRequestsPage />;
       else if (path === '/candidate/notifications') pageComponent = <CandidateNotificationsPage />;
       else if (path === '/candidate/settings') pageComponent = <CandidateSettingsPage />;
