@@ -142,18 +142,18 @@ export function matchesSkill(skillA: string, skillB: string): boolean {
   if (a.includes(b) || b.includes(a)) return true;
 
   const aliases: Record<string, string[]> = {
-    'react': ['react.js', 'reactjs', 'react & typescript', 'react / typescript', 'frontend development'],
+    'react': ['react.js', 'reactjs', 'react & typescript', 'react / typescript'],
     'typescript': ['ts', 'react & typescript', 'react / typescript', 'typed javascript'],
     'javascript': ['js', 'es6', 'web development'],
-    'node': ['node.js', 'nodejs', 'node & express', 'node.js & api architecture', 'backend engineering'],
+    'node': ['node.js', 'nodejs', 'node & express', 'node.js & api architecture'],
     'api': ['rest api', 'rest apis', 'api architecture', 'graphql', 'grpc'],
-    'aws': ['amazon web services', 'cloud infrastructure (aws/gcp)', 'cloud (aws)', 'aws / gcp', 'cloud solutions', 'cloud infrastructure'],
+    'aws': ['amazon web services', 'cloud infrastructure (aws/gcp)', 'cloud (aws)', 'aws / gcp'],
     'gcp': ['google cloud', 'google cloud platform', 'cloud infrastructure (aws/gcp)'],
     'sql': ['postgresql', 'mysql', 'database systems & sql', 'database systems', 'relational database'],
     'docker': ['containers', 'containerization'],
-    'kubernetes': ['k8s', 'container orchestration', 'cloud native'],
+    'kubernetes': ['k8s', 'container orchestration'],
     'terraform': ['iac', 'infrastructure as code'],
-    'ci/cd': ['ci/cd & devops automation', 'devops', 'automation', 'continuous integration'],
+    'ci/cd': ['ci/cd & devops automation', 'devops automation', 'continuous integration'],
     'esg': ['esg compliance', 'esg reporting', 'environmental social governance'],
     'brsr': ['brsr core', 'brsr reporting', 'sebi brsr'],
     'ghg': ['ghg protocol', 'carbon accounting', 'scope 1 2 3'],
@@ -161,8 +161,8 @@ export function matchesSkill(skillA: string, skillB: string): boolean {
   };
 
   for (const [key, group] of Object.entries(aliases)) {
-    const isAInGroup = a === key || group.some((g) => a.includes(g) || g.includes(a));
-    const isBInGroup = b === key || group.some((g) => b.includes(g) || g.includes(b));
+    const isAInGroup = a === key || group.some((g) => a === g || (g.length > 4 && (a.includes(g) || g.includes(a))));
+    const isBInGroup = b === key || group.some((g) => b === g || (g.length > 4 && (b.includes(g) || g.includes(b))));
     if (isAInGroup && isBInGroup) return true;
   }
 
@@ -747,17 +747,28 @@ export const careerInsightsService = {
         ? Array.from(new Set([...targetMatchedSkills, ...otherDomainSkills]))
         : candidateSkills.filter((cs) => Object.keys(skillDemandCounts).some((ds) => matchesSkill(cs, ds)));
 
-      // Identified Skill Gaps: (Target Job Requirements MINUS Candidate Skills) + Domain Market Gaps
+      // Identified Skill Gaps: (Target Job Requirements MINUS Candidate Skills) + Closely Related Domain Market Gaps
       const targetJobMissing = cleanSkillArray(best.missingSkills).filter(
         (ms) => !candidateSkills.some((cs) => matchesSkill(cs, ms))
       );
 
-      const marketDemandMissing = Object.entries(skillDemandCounts)
-        .filter(([demandSkill]) => isValidSkill(demandSkill) && !candidateSkills.some((cs) => matchesSkill(cs, demandSkill)))
-        .sort((a, b) => b[1] - a[1])
-        .map(([s]) => s);
+      // Extract additional missing skills strictly from domain-relevant market jobs
+      const domainMarketGaps: string[] = [];
+      for (const j of relevantMarketJobs) {
+        for (const s of cleanSkillArray(j.skills)) {
+          if (
+            isValidSkill(s) &&
+            !candidateSkills.some((cs) => matchesSkill(cs, s)) &&
+            !targetJobMissing.some((ts) => matchesSkill(ts, s)) &&
+            !domainMarketGaps.some((dg) => matchesSkill(dg, s))
+          ) {
+            domainMarketGaps.push(s);
+          }
+        }
+      }
 
-      const uniqueGaps = Array.from(new Set([...targetJobMissing, ...marketDemandMissing]));
+      // Order gaps: Target role missing requirements first, followed by high-demand domain technical skills
+      const uniqueGaps = Array.from(new Set([...targetJobMissing, ...domainMarketGaps]));
 
       // Growth Skills with dynamically calculated percentages or sample size disclaimers
       const growthSkillRecommendations: GrowthSkillRecommendation[] = uniqueGaps.slice(0, 4).map((skill) => {
