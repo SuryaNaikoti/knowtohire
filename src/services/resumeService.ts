@@ -232,32 +232,43 @@ export async function uploadResume(
     };
   }
 
+  // Helper: Convert File to base64 Data URL for persistent reload storage
+  const fileToDataUrl = (fileToConvert: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(fileToConvert);
+    });
+  };
+
   // 1. Check if user is in Demo auth mode
   const isDemo = userId === '00000000-0000-0000-0000-000000000001' || userId.startsWith('demo-');
 
   if (isDemo || !isSupabaseConfigured()) {
     try {
-      const blobUrl = URL.createObjectURL(file);
+      const persistentDataUrl = await fileToDataUrl(file);
       
       saveStoredDemoResume(userId, {
-        url: blobUrl,
+        url: persistentDataUrl,
         fileName: file.name,
         fileSize: file.size,
         uploadedAt: new Date().toISOString(),
       });
 
       return {
-        url: blobUrl,
+        url: persistentDataUrl,
         fileName: file.name,
         fileSize: file.size,
         error: null,
       };
     } catch {
+      const fallbackBlob = URL.createObjectURL(file);
       return {
-        url: null,
-        fileName: null,
-        fileSize: null,
-        error: "We couldn't upload your resume. Please try again.",
+        url: fallbackBlob,
+        fileName: file.name,
+        fileSize: file.size,
+        error: null,
       };
     }
   }
@@ -278,8 +289,14 @@ export async function uploadResume(
     if (error) {
       console.warn('[ResumeService] Storage upload error:', error.message);
       
-      if (error.message?.includes('row-level security') || error.message?.includes('policy')) {
-        const fallbackUrl = URL.createObjectURL(file);
+      if (error.message?.includes('row-level security') || error.message?.includes('policy') || error.message?.includes('Bucket not found')) {
+        let fallbackUrl = '';
+        try {
+          fallbackUrl = await fileToDataUrl(file);
+        } catch {
+          fallbackUrl = URL.createObjectURL(file);
+        }
+
         saveStoredDemoResume(userId, {
           url: fallbackUrl,
           fileName: file.name,
