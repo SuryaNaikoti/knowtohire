@@ -13,6 +13,8 @@ import {
   resumeService,
   parseResumeDocument,
   ParsedResumeData,
+  performATSAnalysis,
+  ATSOptimizationRecommendation,
 } from '@/services';
 import {
   CheckCircle2,
@@ -41,6 +43,10 @@ export const CandidateResumePage: React.FC = () => {
   // ─── Modal Preview State ───────────────────────────────────────────────────
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
+  // ─── ATS Analysis & Recommendations State ─────────────────────────────────
+  const [atsScore, setAtsScore] = useState<number>(87);
+  const [atsRecommendations, setAtsRecommendations] = useState<ATSOptimizationRecommendation[]>([]);
+
   // ─── Load Candidate Profile & Active Resume ────────────────────────────────
   const loadResumeData = useCallback(async () => {
     setIsLoading(true);
@@ -53,10 +59,40 @@ export const CandidateResumePage: React.FC = () => {
       setProfile(null);
     } else if (res.data) {
       setProfile(res.data);
+      
+      const effectiveUserId = user?.id || res.data.id || '00000000-0000-0000-0000-000000000001';
+      const stored = resumeService.getStoredDemoResume(effectiveUserId) || (user?.id ? resumeService.getStoredDemoResume(user.id) : null);
+      
+      if (stored?.atsRecommendations && stored.atsRecommendations.length > 0) {
+        setAtsScore(stored.atsScore ?? 87);
+        setAtsRecommendations(stored.atsRecommendations);
+      } else if (res.data.resumeUrl) {
+        // Generate dynamic ATS analysis from the active document metadata/name if missing
+        try {
+          const pseudoFileName = stored?.fileName || `${res.data.fullName || 'Candidate'} - CV.pdf`;
+          const dummyBlob = new Blob(['%PDF-1.4 ' + (res.data.bio || '') + ' ' + (res.data.skills || []).join(' ')], { type: 'application/pdf' });
+          const dummyFile = new File([dummyBlob], pseudoFileName, { type: 'application/pdf' });
+          const analysis = await performATSAnalysis(dummyFile);
+          
+          setAtsScore(analysis.overallAtsScore);
+          setAtsRecommendations(analysis.recommendations);
+          
+          resumeService.saveStoredDemoResume(effectiveUserId, {
+            url: res.data.resumeUrl,
+            fileName: pseudoFileName,
+            uploadedAt: res.data.updatedAt,
+            atsScore: analysis.overallAtsScore,
+            atsAnalysis: analysis,
+            atsRecommendations: analysis.recommendations,
+          });
+        } catch (err) {
+          console.warn('[CandidateResumePage] Auto-audit warning:', err);
+        }
+      }
     }
 
     setIsLoading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     loadResumeData();
@@ -92,6 +128,7 @@ export const CandidateResumePage: React.FC = () => {
     }
 
     // Invalidate previous ATS analysis and recommendations immediately
+    setAtsRecommendations([]);
     resumeService.saveStoredDemoResume(user.id, {
       url: '',
       fileName: file.name,
@@ -139,6 +176,10 @@ export const CandidateResumePage: React.FC = () => {
       if (parsedData.education && parsedData.education.length > 0) updatePayload.education = parsedData.education;
       if (parsedData.certifications && parsedData.certifications.length > 0) updatePayload.certifications = parsedData.certifications;
 
+      // Update state immediately
+      setAtsScore(parsedData.atsScore);
+      setAtsRecommendations(parsedData.atsRecommendations);
+
       // Update stored metadata strictly with newly generated ATS analysis & evidence-based recommendations
       resumeService.saveStoredDemoResume(user.id, {
         url: uploadRes.url,
@@ -149,6 +190,19 @@ export const CandidateResumePage: React.FC = () => {
         atsAnalysis: parsedData.atsAnalysis,
         atsRecommendations: parsedData.atsRecommendations,
       });
+
+      // Also persist to effectiveUserId if demo ID differs
+      if (profile?.id && profile.id !== user.id) {
+        resumeService.saveStoredDemoResume(profile.id, {
+          url: uploadRes.url,
+          fileName: file.name,
+          fileSize: file.size,
+          uploadedAt: new Date().toISOString(),
+          atsScore: parsedData.atsScore,
+          atsAnalysis: parsedData.atsAnalysis,
+          atsRecommendations: parsedData.atsRecommendations,
+        });
+      }
     }
 
     const updateRes = await candidateProfileService.updateMyCandidateProfile(updatePayload);
@@ -164,6 +218,8 @@ export const CandidateResumePage: React.FC = () => {
     if (updateRes.data) {
       setProfile(updateRes.data);
       setSuccessMessage('Your resume has been parsed and your ATS compatibility audit has been updated.');
+    } else {
+      await loadResumeData();
     }
   };
 
@@ -189,9 +245,6 @@ export const CandidateResumePage: React.FC = () => {
         year: 'numeric',
       })
     : '24 Aug 2026';
-
-  const atsScore = storedMetadata?.atsScore ?? 87;
-  const atsRecommendations = storedMetadata?.atsRecommendations || [];
 
   return (
     <CandidateShell title="Resume & ATS Analysis" currentPath="/candidate/resume">

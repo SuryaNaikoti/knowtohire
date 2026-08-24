@@ -344,6 +344,9 @@ export const candidateProfileService = {
                 fileName: existingStored?.fileName || resumeService.extractResumeFileName(input.resumeUrl, 'Candidate_Resume.pdf'),
                 fileSize: existingStored?.fileSize,
                 uploadedAt: existingStored?.uploadedAt || new Date().toISOString(),
+                atsScore: existingStored?.atsScore,
+                atsAnalysis: existingStored?.atsAnalysis,
+                atsRecommendations: existingStored?.atsRecommendations,
               });
             }
             return this.getMyCandidateProfile();
