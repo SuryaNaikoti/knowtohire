@@ -11,6 +11,8 @@ import { useAuth } from '@/context/AuthContext';
 import {
   candidateProfileService,
   CandidateFullProfile,
+  CandidateExperienceItem,
+  CandidateEducationItem,
   resumeService,
 } from '@/services';
 import {
@@ -25,6 +27,9 @@ import {
   RefreshCw,
   Sparkles,
   FileText,
+  Plus,
+  Trash2,
+  User,
 } from 'lucide-react';
 
 export const CandidateProfilePage: React.FC = () => {
@@ -37,6 +42,7 @@ export const CandidateProfilePage: React.FC = () => {
 
   // ─── Edit Modal States ─────────────────────────────────────────────────────
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'basic' | 'experience' | 'education' | 'skills'>('basic');
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -47,6 +53,10 @@ export const CandidateProfilePage: React.FC = () => {
   const [formLocation, setFormLocation] = useState('');
   const [formPhone, setFormPhone] = useState('');
   const [formBio, setFormBio] = useState('');
+  const [formSkillsText, setFormSkillsText] = useState('');
+  const [formCertificationsText, setFormCertificationsText] = useState('');
+  const [formExperience, setFormExperience] = useState<CandidateExperienceItem[]>([]);
+  const [formEducation, setFormEducation] = useState<CandidateEducationItem[]>([]);
   const [formFieldErrors, setFormFieldErrors] = useState<Record<string, string>>({});
 
   // ─── Load Candidate Profile from Supabase ──────────────────────────────────
@@ -67,6 +77,10 @@ export const CandidateProfilePage: React.FC = () => {
       setFormLocation(res.data.location || '');
       setFormPhone(res.data.phone || '');
       setFormBio(res.data.bio || '');
+      setFormSkillsText((res.data.skills || []).join(', '));
+      setFormCertificationsText((res.data.certifications || []).join('\n'));
+      setFormExperience(res.data.experience ? JSON.parse(JSON.stringify(res.data.experience)) : []);
+      setFormEducation(res.data.education ? JSON.parse(JSON.stringify(res.data.education)) : []);
     }
 
     setIsLoading(false);
@@ -84,11 +98,66 @@ export const CandidateProfilePage: React.FC = () => {
       setFormLocation(profile.location || '');
       setFormPhone(profile.phone || '');
       setFormBio(profile.bio || '');
+      setFormSkillsText((profile.skills || []).join(', '));
+      setFormCertificationsText((profile.certifications || []).join('\n'));
+      setFormExperience(profile.experience ? JSON.parse(JSON.stringify(profile.experience)) : []);
+      setFormEducation(profile.education ? JSON.parse(JSON.stringify(profile.education)) : []);
     }
+    setActiveTab('basic');
     setSaveError(null);
     setSaveSuccess(false);
     setFormFieldErrors({});
     setIsEditOpen(true);
+  };
+
+  // ─── Experience Handlers ──────────────────────────────────────────────────
+  const handleAddExperience = () => {
+    setFormExperience(prev => [
+      ...prev,
+      {
+        title: '',
+        company: '',
+        period: '2023 - Present',
+        location: formLocation || '',
+        description: '',
+      },
+    ]);
+  };
+
+  const handleRemoveExperience = (index: number) => {
+    setFormExperience(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateExperience = (index: number, field: keyof CandidateExperienceItem, value: string) => {
+    setFormExperience(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
+  };
+
+  // ─── Education Handlers ───────────────────────────────────────────────────
+  const handleAddEducation = () => {
+    setFormEducation(prev => [
+      ...prev,
+      {
+        degree: '',
+        qualification: '',
+        institution: '',
+        graduation_year: new Date().getFullYear().toString(),
+        year: new Date().getFullYear().toString(),
+      },
+    ]);
+  };
+
+  const handleRemoveEducation = (index: number) => {
+    setFormEducation(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateEducation = (index: number, field: keyof CandidateEducationItem, value: string) => {
+    setFormEducation(prev => prev.map((item, i) => {
+      if (i !== index) return item;
+      const updated = { ...item, [field]: value };
+      if (field === 'degree') updated.qualification = value;
+      if (field === 'graduation_year') updated.year = value;
+      return updated;
+    }));
   };
 
   // ─── Handle Form Submission & Supabase Persistence ────────────────────────
@@ -109,8 +178,23 @@ export const CandidateProfilePage: React.FC = () => {
 
     if (Object.keys(errors).length > 0) {
       setFormFieldErrors(errors);
+      setActiveTab('basic');
       return;
     }
+
+    // Parse skills and certifications arrays
+    const parsedSkills = formSkillsText
+      .split(/[,;\n]/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+
+    const parsedCerts = formCertificationsText
+      .split('\n')
+      .map(c => c.trim())
+      .filter(c => c.length > 0);
+
+    const cleanedExperience = formExperience.filter(e => e.title.trim() || e.company.trim());
+    const cleanedEducation = formEducation.filter(e => (e.degree && e.degree.trim()) || e.institution.trim());
 
     setFormFieldErrors({});
     setIsSaving(true);
@@ -124,6 +208,10 @@ export const CandidateProfilePage: React.FC = () => {
       location: formLocation.trim(),
       phone: formPhone.trim() || null,
       bio: formBio.trim() || null,
+      skills: parsedSkills,
+      certifications: parsedCerts,
+      experience: cleanedExperience,
+      education: cleanedEducation,
     });
 
     if (res.error) {
@@ -509,75 +597,336 @@ export const CandidateProfilePage: React.FC = () => {
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSaveProfile} className="space-y-4">
+          <form onSubmit={handleSaveProfile} className="space-y-5">
             {saveError && (
               <Alert variant="error" title="Update Failed">
                 {saveError}
               </Alert>
             )}
 
-            <Input
-              label="Full Name"
-              value={formFullName}
-              onChange={(e) => {
-                setFormFullName(e.target.value);
-                if (formFieldErrors.fullName) {
-                  setFormFieldErrors((prev) => ({ ...prev, fullName: '' }));
-                }
-              }}
-              error={formFieldErrors.fullName}
-              disabled={isSaving}
-              required
-            />
-
-            <Input
-              label="Professional Headline"
-              placeholder="e.g. Senior ESG & Sustainability Consultant"
-              value={formHeadline}
-              onChange={(e) => {
-                setFormHeadline(e.target.value);
-                if (formFieldErrors.headline) {
-                  setFormFieldErrors((prev) => ({ ...prev, headline: '' }));
-                }
-              }}
-              error={formFieldErrors.headline}
-              disabled={isSaving}
-              required
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="Location"
-                placeholder="e.g. Hyderabad, Telangana"
-                value={formLocation}
-                onChange={(e) => {
-                  setFormLocation(e.target.value);
-                  if (formFieldErrors.location) {
-                    setFormFieldErrors((prev) => ({ ...prev, location: '' }));
-                  }
-                }}
-                error={formFieldErrors.location}
-                disabled={isSaving}
-                required
-              />
-
-              <Input
-                label="Phone Number (Optional)"
-                placeholder="e.g. +91 98765 43210"
-                value={formPhone}
-                onChange={(e) => setFormPhone(e.target.value)}
-                disabled={isSaving}
-              />
+            {/* Navigation Tabs */}
+            <div className="flex border-b border-kth-slate-200 gap-1 pb-1 overflow-x-auto text-xs">
+              <button
+                type="button"
+                onClick={() => setActiveTab('basic')}
+                className={`px-3 py-2 font-bold rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === 'basic'
+                    ? 'bg-kth-primary-50 text-kth-primary-700 border border-kth-primary-200'
+                    : 'text-kth-slate-600 hover:text-kth-slate-900 hover:bg-kth-slate-100'
+                }`}
+              >
+                <User className="w-3.5 h-3.5" />
+                Basic Info
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('experience')}
+                className={`px-3 py-2 font-bold rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === 'experience'
+                    ? 'bg-kth-primary-50 text-kth-primary-700 border border-kth-primary-200'
+                    : 'text-kth-slate-600 hover:text-kth-slate-900 hover:bg-kth-slate-100'
+                }`}
+              >
+                <Briefcase className="w-3.5 h-3.5" />
+                Experience ({formExperience.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('education')}
+                className={`px-3 py-2 font-bold rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === 'education'
+                    ? 'bg-kth-primary-50 text-kth-primary-700 border border-kth-primary-200'
+                    : 'text-kth-slate-600 hover:text-kth-slate-900 hover:bg-kth-slate-100'
+                }`}
+              >
+                <GraduationCap className="w-3.5 h-3.5" />
+                Education ({formEducation.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('skills')}
+                className={`px-3 py-2 font-bold rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === 'skills'
+                    ? 'bg-kth-primary-50 text-kth-primary-700 border border-kth-primary-200'
+                    : 'text-kth-slate-600 hover:text-kth-slate-900 hover:bg-kth-slate-100'
+                }`}
+              >
+                <Award className="w-3.5 h-3.5" />
+                Skills & Certs
+              </button>
             </div>
 
-            <Textarea
-              label="Professional Summary"
-              placeholder="Provide an overview of your sustainability expertise, certifications, and career accomplishments..."
-              rows={4}
-              value={formBio}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormBio(e.target.value)}
-              disabled={isSaving}
-            />
+            {/* Tab 1: Basic Info */}
+            {activeTab === 'basic' && (
+              <div className="space-y-4">
+                <Input
+                  label="Full Name"
+                  value={formFullName}
+                  onChange={(e) => {
+                    setFormFullName(e.target.value);
+                    if (formFieldErrors.fullName) {
+                      setFormFieldErrors((prev) => ({ ...prev, fullName: '' }));
+                    }
+                  }}
+                  error={formFieldErrors.fullName}
+                  disabled={isSaving}
+                  required
+                />
+
+                <Input
+                  label="Professional Headline"
+                  placeholder="e.g. Senior ESG & Sustainability Consultant"
+                  value={formHeadline}
+                  onChange={(e) => {
+                    setFormHeadline(e.target.value);
+                    if (formFieldErrors.headline) {
+                      setFormFieldErrors((prev) => ({ ...prev, headline: '' }));
+                    }
+                  }}
+                  error={formFieldErrors.headline}
+                  disabled={isSaving}
+                  required
+                />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    label="Location"
+                    placeholder="e.g. Hyderabad, Telangana"
+                    value={formLocation}
+                    onChange={(e) => {
+                      setFormLocation(e.target.value);
+                      if (formFieldErrors.location) {
+                        setFormFieldErrors((prev) => ({ ...prev, location: '' }));
+                      }
+                    }}
+                    error={formFieldErrors.location}
+                    disabled={isSaving}
+                    required
+                  />
+
+                  <Input
+                    label="Phone Number (Optional)"
+                    placeholder="e.g. +91 98765 43210"
+                    value={formPhone}
+                    onChange={(e) => setFormPhone(e.target.value)}
+                    disabled={isSaving}
+                  />
+                </div>
+
+                <Textarea
+                  label="Professional Summary"
+                  placeholder="Provide an overview of your expertise, key deliverables, and achievements..."
+                  rows={3}
+                  value={formBio}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormBio(e.target.value)}
+                  disabled={isSaving}
+                />
+              </div>
+            )}
+
+            {/* Tab 2: Work Experience */}
+            {activeTab === 'experience' && (
+              <div className="space-y-4 max-h-[55vh] overflow-y-auto pr-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-kth-slate-500">
+                    Add or update your work experience entries below:
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    onClick={handleAddExperience}
+                    leftIcon={<Plus className="w-3.5 h-3.5" />}
+                  >
+                    Add Experience
+                  </Button>
+                </div>
+
+                {formExperience.length === 0 ? (
+                  <div className="text-center py-8 bg-kth-slate-50 rounded-xl border border-dashed border-kth-slate-200">
+                    <Briefcase className="w-8 h-8 text-kth-slate-300 mx-auto mb-2" />
+                    <p className="text-xs font-semibold text-kth-slate-600">No work experience entries.</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      onClick={handleAddExperience}
+                      className="mt-2 text-xs text-kth-primary-600"
+                    >
+                      + Add Work Experience
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {formExperience.map((exp, idx) => (
+                      <div key={idx} className="p-3.5 bg-kth-slate-50 rounded-xl border border-kth-slate-200 space-y-3 relative">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-kth-slate-700">Role #{idx + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveExperience(idx)}
+                            className="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-50 transition-colors"
+                            title="Remove role"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <Input
+                            label="Job Title"
+                            placeholder="e.g. Senior Consultant"
+                            value={exp.title}
+                            onChange={(e) => handleUpdateExperience(idx, 'title', e.target.value)}
+                            disabled={isSaving}
+                            required
+                          />
+                          <Input
+                            label="Company"
+                            placeholder="e.g. Acme Corp Pvt Ltd"
+                            value={exp.company}
+                            onChange={(e) => handleUpdateExperience(idx, 'company', e.target.value)}
+                            disabled={isSaving}
+                            required
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <Input
+                            label="Duration / Period"
+                            placeholder="e.g. 2021 - Present"
+                            value={exp.period}
+                            onChange={(e) => handleUpdateExperience(idx, 'period', e.target.value)}
+                            disabled={isSaving}
+                          />
+                          <Input
+                            label="Location (Optional)"
+                            placeholder="e.g. Hyderabad, India"
+                            value={exp.location || ''}
+                            onChange={(e) => handleUpdateExperience(idx, 'location', e.target.value)}
+                            disabled={isSaving}
+                          />
+                        </div>
+                        <Textarea
+                          label="Description / Key Achievements"
+                          placeholder="Summary of responsibilities and impact..."
+                          rows={2}
+                          value={exp.description || ''}
+                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleUpdateExperience(idx, 'description', e.target.value)}
+                          disabled={isSaving}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tab 3: Education */}
+            {activeTab === 'education' && (
+              <div className="space-y-4 max-h-[55vh] overflow-y-auto pr-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-kth-slate-500">
+                    Add or update your educational qualifications:
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    onClick={handleAddEducation}
+                    leftIcon={<Plus className="w-3.5 h-3.5" />}
+                  >
+                    Add Education
+                  </Button>
+                </div>
+
+                {formEducation.length === 0 ? (
+                  <div className="text-center py-8 bg-kth-slate-50 rounded-xl border border-dashed border-kth-slate-200">
+                    <GraduationCap className="w-8 h-8 text-kth-slate-300 mx-auto mb-2" />
+                    <p className="text-xs font-semibold text-kth-slate-600">No education entries.</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      onClick={handleAddEducation}
+                      className="mt-2 text-xs text-kth-primary-600"
+                    >
+                      + Add Education
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {formEducation.map((edu, idx) => (
+                      <div key={idx} className="p-3.5 bg-kth-slate-50 rounded-xl border border-kth-slate-200 space-y-3 relative">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-kth-slate-700">Qualification #{idx + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveEducation(idx)}
+                            className="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-50 transition-colors"
+                            title="Remove qualification"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <Input
+                          label="Degree / Qualification"
+                          placeholder="e.g. Master of Technology (M.Tech) / B.E."
+                          value={edu.degree || edu.qualification || ''}
+                          onChange={(e) => handleUpdateEducation(idx, 'degree', e.target.value)}
+                          disabled={isSaving}
+                          required
+                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <Input
+                            label="University / Institution"
+                            placeholder="e.g. National Institute of Technology"
+                            value={edu.institution}
+                            onChange={(e) => handleUpdateEducation(idx, 'institution', e.target.value)}
+                            disabled={isSaving}
+                            required
+                          />
+                          <Input
+                            label="Graduation Year"
+                            placeholder="e.g. 2021"
+                            value={edu.graduation_year || edu.year || ''}
+                            onChange={(e) => handleUpdateEducation(idx, 'graduation_year', e.target.value)}
+                            disabled={isSaving}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tab 4: Skills & Certifications */}
+            {activeTab === 'skills' && (
+              <div className="space-y-4">
+                <Textarea
+                  label="Key Skills (comma or newline separated)"
+                  placeholder="e.g. React, TypeScript, Python, SQL, AWS Cloud, Docker"
+                  rows={3}
+                  value={formSkillsText}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormSkillsText(e.target.value)}
+                  disabled={isSaving}
+                />
+                <p className="text-[11px] text-kth-slate-400">
+                  Separate multiple skills with commas or newlines.
+                </p>
+
+                <Textarea
+                  label="Certifications (one per line)"
+                  placeholder="e.g. AWS Certified Solutions Architect&#10;Certified Kubernetes Administrator"
+                  rows={4}
+                  value={formCertificationsText}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormCertificationsText(e.target.value)}
+                  disabled={isSaving}
+                />
+                <p className="text-[11px] text-kth-slate-400">
+                  Enter each certification on a new line.
+                </p>
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 pt-4 border-t border-kth-slate-100">
               <Button
@@ -593,7 +942,7 @@ export const CandidateProfilePage: React.FC = () => {
                 type="submit"
                 isLoading={isSaving}
               >
-                {isSaving ? 'Saving...' : 'Save Changes'}
+                {isSaving ? 'Saving...' : 'Save All Changes'}
               </Button>
             </div>
           </form>
