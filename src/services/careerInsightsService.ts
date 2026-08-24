@@ -482,9 +482,8 @@ export const careerInsightsService = {
       let rawJobs: Job[] = jobsRes.data?.data || [];
       const allResources: KnowledgeResource[] = resourcesRes.data || [];
 
-      // If database contains only 0 or legacy jobs, ensure all mock data catalog is included for rich domain matching
-      if (rawJobs.length === 0 || !rawJobs.some(j => isSoftwareOrTechDomain(j.title, j.category || '', j.skills || []))) {
-        const mockNormalized: Job[] = MOCK_JOBS.map((j) => {
+      // Ensure full catalog (both DB jobs and foundational domain requisitions) is available for deterministic matching
+      const mockNormalized: Job[] = MOCK_JOBS.map((j) => {
           return {
             id: j.id,
             company_id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
@@ -531,10 +530,9 @@ export const careerInsightsService = {
             } as any,
           };
         });
-        const existingIds = new Set(rawJobs.map(j => j.id));
-        const missingFromCatalog = mockNormalized.filter(j => !existingIds.has(j.id));
-        rawJobs = [...rawJobs, ...missingFromCatalog];
-      }
+      const existingIds = new Set(rawJobs.map(j => j.id));
+      const missingFromCatalog = mockNormalized.filter(j => !existingIds.has(j.id));
+      rawJobs = [...rawJobs, ...missingFromCatalog];
 
       // Extract candidate data dynamically from single source of truth
       const currentTitle = profile?.headline?.trim() || 'Software Engineer & Professional';
