@@ -8,20 +8,24 @@
  *    - Active Resume and ATS analysis evidence
  *    - Published real job openings across the platform
  *    - Actual Knowledge Hub resources for growth skill recommendations
- * 3. Weighted Explainable Matching Algorithm:
+ * 3. Relevance Guardrails:
+ *    - Domain & Role similarity guardrails prevent irrelevant cross-domain matchings (e.g. Full Stack candidate matched with Environmental Engineer).
+ *    - Centralized skill validation (`cleanSkillArray`, `isValidSkill`) rejects all corrupted strings, gibberish, and non-standard tokens.
+ * 4. Weighted Explainable Matching Algorithm:
  *    - Required Skills: 35%
  *    - Relevant Experience: 25%
  *    - Role / Seniority Alignment: 15%
  *    - Education & Certifications: 10%
  *    - Domain Alignment: 10%
  *    - Location / Work Mode Preference: 5%
- * 4. Candidate Isolation: All calculations are strictly scoped to the active candidate identity.
+ * 5. Candidate Isolation: All calculations are strictly scoped to the active candidate identity.
  */
 
 import { candidateProfileService } from './candidateProfileService';
 import { jobService, Job } from './jobService';
 import { knowledgeService, KnowledgeResource } from './knowledgeService';
 import { ServiceResult, normalizeServiceError } from './types';
+import { cleanSkillArray, isValidSkill } from '@/utils/skillValidation';
 
 export interface CareerMatchExplanation {
   factor: string;
@@ -83,18 +87,24 @@ function matchesSkill(skillA: string, skillB: string): boolean {
   if (a === b) return true;
   if (a.includes(b) || b.includes(a)) return true;
 
-  // Common aliases
+  // Common technical and domain aliases
   const aliases: Record<string, string[]> = {
-    'react': ['react.js', 'reactjs', 'react & typescript'],
-    'node': ['node.js', 'nodejs', 'node & express'],
-    'aws': ['amazon web services', 'cloud (aws)', 'cloud infrastructure (aws/gcp)'],
-    'gcp': ['google cloud', 'google cloud platform'],
-    'ts': ['typescript'],
-    'js': ['javascript'],
+    'react': ['react.js', 'reactjs', 'react & typescript', 'react / typescript'],
+    'typescript': ['ts', 'react & typescript', 'react / typescript'],
+    'javascript': ['js', 'es6', 'web development'],
+    'node': ['node.js', 'nodejs', 'node & express', 'node.js & api architecture'],
+    'api': ['rest api', 'rest apis', 'api architecture', 'graphql'],
+    'aws': ['amazon web services', 'cloud infrastructure (aws/gcp)', 'cloud (aws)', 'aws / gcp'],
+    'gcp': ['google cloud', 'google cloud platform', 'cloud infrastructure (aws/gcp)'],
+    'sql': ['postgresql', 'mysql', 'database systems & sql', 'database systems', 'database'],
+    'docker': ['containers', 'containerization'],
+    'kubernetes': ['k8s', 'container orchestration'],
+    'terraform': ['iac', 'infrastructure as code'],
+    'ci/cd': ['ci/cd & devops automation', 'devops', 'automation'],
     'esg': ['esg compliance', 'esg reporting', 'environmental social governance'],
     'brsr': ['brsr core', 'brsr reporting', 'sebi brsr'],
     'ghg': ['ghg protocol', 'carbon accounting', 'scope 1 2 3'],
-    'eia': ['environmental impact assessment', 'environmental clearance'],
+    'eia': ['environmental impact assessment', 'eia assessment', 'environmental clearance'],
   };
 
   for (const [key, group] of Object.entries(aliases)) {
@@ -106,6 +116,42 @@ function matchesSkill(skillA: string, skillB: string): boolean {
   return false;
 }
 
+/**
+ * Evaluates whether a candidate profile is in a technical / software / cloud engineering domain
+ */
+function isSoftwareOrTechDomain(title: string, domain: string, skills: string[]): boolean {
+  const text = `${title} ${domain} ${skills.join(' ')}`.toLowerCase();
+  return (
+    text.includes('developer') ||
+    text.includes('engineer') ||
+    text.includes('full stack') ||
+    text.includes('frontend') ||
+    text.includes('backend') ||
+    text.includes('cloud') ||
+    text.includes('software') ||
+    text.includes('web') ||
+    text.includes('react') ||
+    text.includes('node') ||
+    text.includes('devops')
+  );
+}
+
+/**
+ * Evaluates whether a candidate profile is in sustainability / ESG / environmental domain
+ */
+function isSustainabilityDomain(title: string, domain: string, skills: string[]): boolean {
+  const text = `${title} ${domain} ${skills.join(' ')}`.toLowerCase();
+  return (
+    text.includes('sustainability') ||
+    text.includes('esg') ||
+    text.includes('environmental') ||
+    text.includes('carbon') ||
+    text.includes('climate') ||
+    text.includes('brsr') ||
+    text.includes('eia')
+  );
+}
+
 export const careerInsightsService = {
   /**
    * Computes deterministic, explainable career intelligence for the authenticated candidate.
@@ -115,18 +161,18 @@ export const careerInsightsService = {
       // 1. Fetch Candidate Profile, Jobs, and Knowledge Resources in parallel
       const [profileRes, jobsRes, resourcesRes] = await Promise.all([
         candidateProfileService.getMyCandidateProfile(),
-        jobService.getPublishedJobs(),
+        jobService.getPublishedJobs({ pageSize: 50 }),
         knowledgeService.getResources(),
       ]);
 
       const profile = profileRes.data;
-      const allJobs: Job[] = jobsRes.data?.data || [];
+      const rawJobs: Job[] = jobsRes.data?.data || [];
       const allResources: KnowledgeResource[] = resourcesRes.data || [];
 
-      // Extract Candidate Data
+      // Extract and sanitize Candidate Data
       const currentTitle = profile?.headline?.trim() || 'Software Engineer & Professional';
       const currentDomain = profile?.domainSpecialization?.trim() || 'Software Engineering';
-      const candidateSkills = Array.isArray(profile?.skills) ? profile.skills.filter(Boolean) : [];
+      const candidateSkills = cleanSkillArray(profile?.skills || []);
       const experienceList = Array.isArray(profile?.experience) ? profile.experience : [];
       const educationList = Array.isArray(profile?.education) ? profile.education : [];
       const certsList = Array.isArray(profile?.certifications) ? profile.certifications : [];
@@ -143,19 +189,25 @@ export const careerInsightsService = {
             targetRoleTitle: 'Profile Assessment Needed',
             targetSalaryRange: 'Salary not disclosed',
             marketOpeningsCount: 0,
-            totalMarketJobsCount: allJobs.length,
+            totalMarketJobsCount: rawJobs.length,
             matchScore: 0,
             matchedSkills: [],
             missingSkills: [],
             explanations: [],
             growthSkillRecommendations: [],
             hasSufficientProfileData: false,
-            hasSufficientMarketData: allJobs.length > 0,
-            emptyStateReason: 'Complete your profile or upload your verified resume to unlock explainable career insights and market match scores.',
+            hasSufficientMarketData: rawJobs.length > 0,
+            emptyStateReason: 'Complete your profile or upload your verified resume to unlock career insights and market match scores.',
           },
           error: null,
         };
       }
+
+      // Filter and clean all jobs with skill validation
+      const allJobs: Job[] = rawJobs.map((j) => ({
+        ...j,
+        skills: cleanSkillArray(j.skills),
+      }));
 
       if (allJobs.length === 0) {
         return {
@@ -189,25 +241,41 @@ export const careerInsightsService = {
         };
       }
 
+      // Determine Candidate's Major Domain
+      const isCandidateTech = isSoftwareOrTechDomain(currentTitle, currentDomain, candidateSkills);
+      const isCandidateESG = isSustainabilityDomain(currentTitle, currentDomain, candidateSkills);
+
       // Estimate total years of candidate experience
       const totalYearsExperience = experienceList.length * 2 || (candidateSkills.length >= 5 ? 3 : 1);
 
-      // 2. Filter / Score Jobs against Candidate to find Best Target Role
+      // 2. Filter / Score Jobs against Candidate with Domain Relevance Guardrails
       interface ScoredJob {
         job: Job;
         totalScore: number;
         matchedSkills: string[];
         missingSkills: string[];
         explanations: CareerMatchExplanation[];
+        isDomainRelevant: boolean;
       }
 
       const scoredJobs: ScoredJob[] = allJobs.map((job) => {
-        const jobSkills: string[] = Array.isArray(job.skills) ? job.skills : [];
+        const jobSkills: string[] = cleanSkillArray(job.skills);
         const jobTitleNorm = normalize(job.title);
         const jobCategoryNorm = normalize(job.category);
         const jobLocationNorm = normalize(job.location);
         const candidateTitleNorm = normalize(currentTitle);
         const candidateDomainNorm = normalize(currentDomain);
+
+        // Domain Guardrail: Determine Job Domain
+        const isJobTech = isSoftwareOrTechDomain(job.title, job.category || '', jobSkills);
+        const isJobESG = isSustainabilityDomain(job.title, job.category || '', jobSkills);
+
+        let isDomainRelevant = true;
+        if (isCandidateTech && !isCandidateESG && isJobESG && !isJobTech) {
+          isDomainRelevant = false;
+        } else if (isCandidateESG && !isCandidateTech && isJobTech && !isJobESG) {
+          isDomainRelevant = false;
+        }
 
         // A. Required Skills Alignment (35%)
         const matchedSkills: string[] = [];
@@ -222,7 +290,6 @@ export const careerInsightsService = {
             }
           }
         } else {
-          // If job has no explicit skills array, default to candidate skills overlap with description
           const descNorm = normalize(job.description);
           for (const cs of candidateSkills) {
             if (descNorm.includes(normalize(cs))) {
@@ -233,7 +300,7 @@ export const careerInsightsService = {
 
         const skillMatchRatio = jobSkills.length > 0
           ? matchedSkills.length / jobSkills.length
-          : (matchedSkills.length > 0 ? 0.8 : 0.5);
+          : (matchedSkills.length > 0 ? 0.75 : 0.4);
         const skillScore = Math.min(100, Math.round(skillMatchRatio * 100));
 
         // B. Relevant Experience Alignment (25%)
@@ -250,7 +317,7 @@ export const careerInsightsService = {
         }
 
         // C. Role / Title Similarity & Seniority Alignment (15%)
-        let roleScore = 40;
+        let roleScore = 30;
         const titleTokens = jobTitleNorm.split(/[\s,&/-]+/).filter((t) => t.length > 2);
         const candidateTokens = candidateTitleNorm.split(/[\s,&/-]+/).filter((t) => t.length > 2);
         const overlapCount = titleTokens.filter((t) => candidateTokens.includes(t)).length;
@@ -267,17 +334,15 @@ export const careerInsightsService = {
         eduScore = Math.min(100, eduScore);
 
         // E. Domain Alignment (10%)
-        let domainScore = 50;
-        if (candidateDomainNorm && jobCategoryNorm && (candidateDomainNorm.includes(jobCategoryNorm) || jobCategoryNorm.includes(candidateDomainNorm))) {
-          domainScore = 95;
-        } else if (jobCategoryNorm.includes('technology') || jobCategoryNorm.includes('engineering') || jobCategoryNorm.includes('software')) {
-          if (candidateTitleNorm.includes('stack') || candidateTitleNorm.includes('engineer') || candidateTitleNorm.includes('developer')) {
-            domainScore = 90;
+        let domainScore = 40;
+        if (isDomainRelevant) {
+          if (candidateDomainNorm && jobCategoryNorm && (candidateDomainNorm.includes(jobCategoryNorm) || jobCategoryNorm.includes(candidateDomainNorm))) {
+            domainScore = 95;
+          } else {
+            domainScore = 80;
           }
-        } else if (jobCategoryNorm.includes('sustainability') || jobCategoryNorm.includes('esg') || jobCategoryNorm.includes('environmental')) {
-          if (candidateTitleNorm.includes('esg') || candidateTitleNorm.includes('sustainability') || candidateTitleNorm.includes('environmental')) {
-            domainScore = 90;
-          }
+        } else {
+          domainScore = 15; // Severe penalty for cross-domain mismatch
         }
 
         // F. Location / Work Mode (5%)
@@ -288,8 +353,8 @@ export const careerInsightsService = {
           locScore = 95;
         }
 
-        // Weighted Overall Match Calculation
-        const totalWeightedScore = Math.round(
+        // Overall Weighted Match Calculation
+        let totalWeightedScore = Math.round(
           skillScore * 0.35 +
           expScore * 0.25 +
           roleScore * 0.15 +
@@ -298,7 +363,11 @@ export const careerInsightsService = {
           locScore * 0.05
         );
 
-        // Explanations for transparency
+        // Penalize irrelevant domain jobs so they never become the target role
+        if (!isDomainRelevant) {
+          totalWeightedScore = Math.min(totalWeightedScore, 35);
+        }
+
         const explanations: CareerMatchExplanation[] = [
           {
             factor: 'Skill Match',
@@ -308,10 +377,10 @@ export const careerInsightsService = {
             isPositive: skillScore >= 60,
           },
           {
-            factor: 'Experience Alignment',
+            factor: 'Experience Level',
             weightPct: 25,
             scorePct: expScore,
-            reason: `${totalYearsExperience}+ years verified experience evaluated for ${job.experience_level?.replace('_', ' ') || 'role level'}.`,
+            reason: `${totalYearsExperience}+ years relevant experience evaluated for ${job.experience_level?.replace('_', ' ') || 'role level'}.`,
             isPositive: expScore >= 70,
           },
           {
@@ -325,11 +394,13 @@ export const careerInsightsService = {
             factor: 'Domain & Credentials',
             weightPct: 20,
             scorePct: Math.round((domainScore + eduScore) / 2),
-            reason: `${educationList.length} degree(s) & ${certsList.length} verified certification(s) mapped.`,
-            isPositive: domainScore >= 60,
+            reason: isDomainRelevant
+              ? 'Strong career domain alignment with verified credentials.'
+              : 'Cross-domain requisition with lower direct alignment.',
+            isPositive: isDomainRelevant,
           },
           {
-            factor: 'Location / Work Mode',
+            factor: 'Location & Work Mode',
             weightPct: 5,
             scorePct: locScore,
             reason: job.is_remote ? 'Fully Remote opportunity.' : `Location: ${job.location}.`,
@@ -343,22 +414,32 @@ export const careerInsightsService = {
           matchedSkills,
           missingSkills,
           explanations,
+          isDomainRelevant,
         };
       });
 
-      // Sort by highest match score
-      scoredJobs.sort((a, b) => b.totalScore - a.totalScore);
+      // Filter relevant jobs first, fallback to all if none
+      const domainRelevantJobs = scoredJobs.filter((sj) => sj.isDomainRelevant);
+      const candidateJobsPool = domainRelevantJobs.length > 0 ? domainRelevantJobs : scoredJobs;
 
-      const best = scoredJobs[0];
+      // Sort by highest match score
+      candidateJobsPool.sort((a, b) => b.totalScore - a.totalScore);
+
+      const best = candidateJobsPool[0];
       const targetJob = best.job;
       const targetRoleTitle = targetJob.title || currentTitle;
 
-      // Count relevant openings in this domain / role category
+      // Count truly relevant verified openings in candidate domain
       const relevantOpenings = allJobs.filter((j) => {
         const jTitle = normalize(j.title);
-        const jCat = normalize(j.category);
         const tTitle = normalize(targetRoleTitle);
-        return jTitle.includes(tTitle) || tTitle.includes(jTitle) || jCat === normalize(targetJob.category);
+        const isJobInDomain = isCandidateTech
+          ? isSoftwareOrTechDomain(j.title, j.category || '', j.skills || [])
+          : isCandidateESG
+          ? isSustainabilityDomain(j.title, j.category || '', j.skills || [])
+          : true;
+
+        return isJobInDomain && (jTitle.includes(tTitle) || tTitle.includes(jTitle) || normalize(j.category) === normalize(targetJob.category));
       }).length;
 
       // Format target salary range
@@ -374,24 +455,24 @@ export const careerInsightsService = {
 
       // 3. Calculate Market-Wide Skill Demand across relevant job inventory
       const skillDemandCounts: Record<string, number> = {};
-      const relevantJobsPool = allJobs.filter((j) => {
-        const jCat = normalize(j.category);
-        const tCat = normalize(targetJob.category);
-        return jCat === tCat || scoredJobs.some((sj) => sj.job.id === j.id && sj.totalScore >= 50);
+      const relevantMarketJobs = allJobs.filter((j) => {
+        return isCandidateTech
+          ? isSoftwareOrTechDomain(j.title, j.category || '', j.skills || [])
+          : isCandidateESG
+          ? isSustainabilityDomain(j.title, j.category || '', j.skills || [])
+          : true;
       });
 
-      const poolSize = relevantJobsPool.length || allJobs.length;
+      const poolSize = relevantMarketJobs.length || allJobs.length;
 
-      for (const j of relevantJobsPool) {
-        const sList = Array.isArray(j.skills) ? j.skills : [];
+      for (const j of relevantMarketJobs) {
+        const sList = cleanSkillArray(j.skills);
         for (const s of sList) {
-          const sClean = s.trim();
-          if (!sClean) continue;
-          skillDemandCounts[sClean] = (skillDemandCounts[sClean] || 0) + 1;
+          skillDemandCounts[s] = (skillDemandCounts[s] || 0) + 1;
         }
       }
 
-      // Build Verified Strengths (Candidate has it & Market demands it)
+      // Build Verified Strengths (Candidate has it & Validated)
       const verifiedStrengths = candidateSkills.filter((cs) => {
         return (
           best.matchedSkills.some((ms) => matchesSkill(cs, ms)) ||
@@ -399,16 +480,26 @@ export const careerInsightsService = {
         );
       });
 
-      const displayStrengths = verifiedStrengths.length > 0 ? verifiedStrengths : candidateSkills.slice(0, 4);
+      const displayStrengths = verifiedStrengths.length > 0 ? verifiedStrengths : candidateSkills;
 
-      // Build Identified Growth Skills (Market demands it & Candidate lacks it)
-      const missingCandidates = Object.entries(skillDemandCounts)
-        .filter(([demandSkill]) => !candidateSkills.some((cs) => matchesSkill(cs, demandSkill)))
-        .sort((a, b) => b[1] - a[1]);
+      // Build Identified Growth Skills (From Target Job Requirements MINUS Candidate Skills)
+      const targetJobMissing = cleanSkillArray(best.missingSkills).filter(
+        (ms) => !candidateSkills.some((cs) => matchesSkill(cs, ms))
+      );
 
-      // Top missing skills
-      const missingSkillsToRecommend = missingCandidates.slice(0, 4).map(([skill, count]) => {
-        const demandPercentage = Math.min(95, Math.max(30, Math.round((count / Math.max(poolSize, 1)) * 100)));
+      // Also look at high-demand skills in the relevant market pool
+      const marketDemandMissing = Object.entries(skillDemandCounts)
+        .filter(([demandSkill]) => isValidSkill(demandSkill) && !candidateSkills.some((cs) => matchesSkill(cs, demandSkill)))
+        .sort((a, b) => b[1] - a[1])
+        .map(([s]) => s);
+
+      // Combine priority: Target Job specific gaps first, then market demand gaps
+      const uniqueGaps = Array.from(new Set([...targetJobMissing, ...marketDemandMissing]));
+
+      // Do NOT force four items: Only return genuine gaps (up to 4, or fewer if fewer exist)
+      const growthSkillRecommendations: GrowthSkillRecommendation[] = uniqueGaps.slice(0, 4).map((skill) => {
+        const occurrences = skillDemandCounts[skill] || 1;
+        const demandPercentage = Math.min(95, Math.max(35, Math.round((occurrences / Math.max(poolSize, 1)) * 100)));
 
         // Match with real Knowledge Hub Resources
         const matchingResource = allResources.find((r) => {
@@ -422,7 +513,7 @@ export const careerInsightsService = {
         return {
           skill,
           demandPercentage,
-          reason: `Appears in ${demandPercentage}% of relevant market openings and is currently missing from your verified profile.`,
+          reason: `Required in ${demandPercentage}% of relevant openings for ${targetRoleTitle}.`,
           recommendedResource: matchingResource
             ? {
                 id: matchingResource.id,
@@ -445,13 +536,13 @@ export const careerInsightsService = {
           targetRoleTitle,
           targetRoleId: targetJob.id,
           targetSalaryRange,
-          marketOpeningsCount: relevantOpenings > 0 ? relevantOpenings : allJobs.length,
+          marketOpeningsCount: relevantOpenings,
           totalMarketJobsCount: allJobs.length,
           matchScore: best.totalScore,
           matchedSkills: displayStrengths,
-          missingSkills: missingSkillsToRecommend.map((r) => r.skill),
+          missingSkills: growthSkillRecommendations.map((r) => r.skill),
           explanations: best.explanations,
-          growthSkillRecommendations: missingSkillsToRecommend,
+          growthSkillRecommendations,
           hasSufficientProfileData: true,
           hasSufficientMarketData: true,
         },

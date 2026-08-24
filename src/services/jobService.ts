@@ -43,10 +43,12 @@ export type {
   WorkMode,
 } from './types';
 
+import { cleanSkillArray } from '@/utils/skillValidation';
+
 /**
  * Normalizes raw job database entity into guaranteed typed Job structure.
  * Converts stringified JSON, CSV, newline-separated, null/undefined, or native arrays into guaranteed string[].
- * Never throws an exception on malformed metadata.
+ * Eliminates corrupted, gibberish strings from skill tags using cleanSkillArray.
  */
 export function normalizeJobEntity(raw: any): Job {
   if (!raw || typeof raw !== 'object') {
@@ -104,7 +106,7 @@ export function normalizeJobEntity(raw: any): Job {
 
   return {
     ...raw,
-    skills: parseStringArray(raw.skills),
+    skills: cleanSkillArray(raw.skills),
     responsibilities: parseStringArray(raw.responsibilities),
     requirements: parseStringArray(raw.requirements),
     benefits: parseStringArray(raw.benefits),
