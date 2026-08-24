@@ -22,6 +22,16 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
+function isValidUrl(urlString?: string | null): boolean {
+  if (!urlString) return false;
+  try {
+    const url = new URL(urlString.trim());
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 export const CandidateInterviewsPage: React.FC = () => {
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,8 +61,10 @@ export const CandidateInterviewsPage: React.FC = () => {
     };
 
     window.addEventListener('kth_interviews_changed', handleSync);
+    window.addEventListener('kth_applications_changed', handleSync);
     return () => {
       window.removeEventListener('kth_interviews_changed', handleSync);
+      window.removeEventListener('kth_applications_changed', handleSync);
     };
   }, [loadInterviews]);
 
@@ -97,22 +109,22 @@ export const CandidateInterviewsPage: React.FC = () => {
     }
   };
 
-  const getInterviewTypeMeta = (type: InterviewType) => {
+  const getInterviewTypeMeta = (type: InterviewType, platform?: string | null) => {
     switch (type) {
       case 'video':
-        return { label: 'Video Interview', icon: Video, variant: 'indigo' as const };
+        return { label: platform ? `${platform} Video Interview` : 'Video Interview', icon: Video, variant: 'indigo' as const };
       case 'phone':
         return { label: 'Phone Interview', icon: Phone, variant: 'cyan' as const };
       case 'on_site':
-        return { label: 'On-site / In-person', icon: MapPin, variant: 'emerald' as const };
+        return { label: 'On-site Interview', icon: MapPin, variant: 'emerald' as const };
       case 'walk_in':
         return { label: 'Walk-in Interview', icon: Building2, variant: 'amber' as const };
       case 'external':
-        return { label: 'External Platform', icon: ExternalLink, variant: 'indigo' as const };
+        return { label: platform ? `${platform}` : 'External Interview', icon: ExternalLink, variant: 'indigo' as const };
       case 'hr_screening':
         return { label: 'HR Talent Screening', icon: Phone, variant: 'cyan' as const };
       case 'technical_deep_dive':
-        return { label: 'Technical Assessment', icon: Video, variant: 'indigo' as const };
+        return { label: platform ? `${platform} Technical Interview` : 'Technical Interview', icon: Video, variant: 'indigo' as const };
       case 'case_study':
         return { label: 'Case Study & Presentation', icon: Video, variant: 'indigo' as const };
       case 'executive_review':
@@ -158,7 +170,7 @@ export const CandidateInterviewsPage: React.FC = () => {
   };
 
   const renderInterviewCard = (interview: Interview, isPast = false) => {
-    const typeMeta = getInterviewTypeMeta(interview.interview_type);
+    const typeMeta = getInterviewTypeMeta(interview.interview_type, interview.meeting_platform);
     const TypeIcon = typeMeta.icon;
     const isVideo = interview.interview_type === 'video' || interview.interview_type === 'technical_deep_dive' || interview.interview_type === 'case_study';
     const isExternal = interview.interview_type === 'external';
@@ -168,6 +180,8 @@ export const CandidateInterviewsPage: React.FC = () => {
 
     const companyName = interview.company?.name || 'Verified Enterprise';
     const jobTitle = interview.job?.title || 'Job Opening';
+    const hasValidMeetingLink = isValidUrl(interview.meeting_link);
+    const isJoinable = !isPast && (interview.status === 'scheduled' || interview.status === 'confirmed' || interview.status === 'rescheduled');
 
     return (
       <Card
@@ -217,12 +231,12 @@ export const CandidateInterviewsPage: React.FC = () => {
             </div>
 
             {/* Type-Specific Content Snippet */}
-            {isVideo && (
+            {(isVideo || isExternal) && (
               <div className="flex items-center gap-2 text-kth-slate-600">
                 <Video className="w-3.5 h-3.5 text-kth-slate-400 shrink-0" />
                 <span>
-                  {interview.meeting_platform ? `${interview.meeting_platform} Video Call` : 'Online Video Conference'}
-                  {interview.meeting_link ? '' : ' (Link pending from recruiter)'}
+                  {interview.meeting_platform ? `${interview.meeting_platform}` : (isVideo ? 'Video Interview' : 'External Platform')}
+                  {!hasValidMeetingLink ? ' — Meeting link will be provided by the employer.' : ''}
                 </span>
               </div>
             )}
@@ -231,7 +245,7 @@ export const CandidateInterviewsPage: React.FC = () => {
               <div className="flex items-center gap-2 text-kth-slate-600">
                 <Phone className="w-3.5 h-3.5 text-kth-slate-400 shrink-0" />
                 <span>
-                  {interview.contact_phone ? `Direct Call: ${interview.contact_phone}` : 'Recruiter will initiate phone call'}
+                  {interview.contact_phone ? `Direct Call: ${interview.contact_phone}` : 'Call details will be provided by the employer.'}
                 </span>
               </div>
             )}
@@ -259,6 +273,12 @@ export const CandidateInterviewsPage: React.FC = () => {
                 <span>Bring: {interview.required_documents.join(', ')}</span>
               </div>
             )}
+
+            {interview.instructions && (
+              <div className="text-[11px] text-kth-slate-600 pt-1 border-t border-kth-slate-200/60 line-clamp-2">
+                <strong className="text-kth-slate-800">Note:</strong> {interview.instructions}
+              </div>
+            )}
           </div>
         </div>
 
@@ -268,9 +288,9 @@ export const CandidateInterviewsPage: React.FC = () => {
             View Details
           </Button>
 
-          {!isPast && interview.status === 'scheduled' && (
+          {isJoinable && (
             <div>
-              {isVideo && interview.meeting_link && (
+              {(isVideo || isExternal) && hasValidMeetingLink && (
                 <Button
                   variant="primary"
                   size="sm"
@@ -279,18 +299,6 @@ export const CandidateInterviewsPage: React.FC = () => {
                   className="font-bold text-xs"
                 >
                   Join Interview
-                </Button>
-              )}
-
-              {isExternal && interview.meeting_link && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
-                  onClick={() => window.open(interview.meeting_link!, '_blank')}
-                  className="font-bold text-xs"
-                >
-                  Open Interview Link
                 </Button>
               )}
 
@@ -388,7 +396,7 @@ export const CandidateInterviewsPage: React.FC = () => {
         {!isLoading && !errorMessage && interviews.length === 0 && (
           <EmptyState
             title="No Interviews Scheduled Yet"
-            description="When recruiters review your job applications and move you to the interview stage, your interview details will appear here."
+            description="When recruiters move your applications to the interview stage, your interview details will appear here."
             actionText="Discover Relevant Jobs"
             onAction={handleNavigateJobs}
             icon={<Calendar className="w-8 h-8 text-kth-slate-400" />}
@@ -413,7 +421,7 @@ export const CandidateInterviewsPage: React.FC = () => {
           <div className="space-y-4 pt-4 border-t border-kth-slate-200">
             <h2 className="font-display font-bold text-base text-kth-slate-700 flex items-center gap-2">
               <Clock className="w-4 h-4 text-kth-slate-400" />
-              Past / Completed Rounds ({pastInterviews.length})
+              Past Interviews ({pastInterviews.length})
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {pastInterviews.map((interview) => renderInterviewCard(interview, true))}
@@ -434,8 +442,8 @@ export const CandidateInterviewsPage: React.FC = () => {
             {/* Type & Status Bar */}
             <div className="flex justify-between items-center bg-kth-slate-50 p-3 rounded-xl border border-kth-slate-200">
               <div className="flex items-center gap-2">
-                <Badge variant={getInterviewTypeMeta(selectedInterview.interview_type).variant}>
-                  {getInterviewTypeMeta(selectedInterview.interview_type).label}
+                <Badge variant={getInterviewTypeMeta(selectedInterview.interview_type, selectedInterview.meeting_platform).variant}>
+                  {getInterviewTypeMeta(selectedInterview.interview_type, selectedInterview.meeting_platform).label}
                 </Badge>
                 {selectedInterview.round_name && (
                   <span className="font-semibold text-kth-slate-700">{selectedInterview.round_name}</span>
@@ -483,9 +491,11 @@ export const CandidateInterviewsPage: React.FC = () => {
             )}
 
             {/* Meeting Link for Video / External */}
-            {selectedInterview.meeting_link && (
+            {selectedInterview.meeting_link && isValidUrl(selectedInterview.meeting_link) ? (
               <div className="bg-cyan-50/70 p-3.5 rounded-xl border border-cyan-200 space-y-1.5">
-                <span className="text-[10px] font-bold text-cyan-900 uppercase block">ONLINE MEETING LINK</span>
+                <span className="text-[10px] font-bold text-cyan-900 uppercase block">
+                  {selectedInterview.meeting_platform ? `${selectedInterview.meeting_platform} MEETING LINK` : 'ONLINE MEETING LINK'}
+                </span>
                 <a
                   href={selectedInterview.meeting_link}
                   target="_blank"
@@ -497,7 +507,12 @@ export const CandidateInterviewsPage: React.FC = () => {
                   <ExternalLink className="w-3 h-3 shrink-0" />
                 </a>
               </div>
-            )}
+            ) : (selectedInterview.interview_type === 'video' || selectedInterview.interview_type === 'external' || selectedInterview.interview_type === 'technical_deep_dive') ? (
+              <div className="bg-kth-slate-50 p-3.5 rounded-xl border border-kth-slate-200 space-y-1">
+                <span className="text-[10px] font-bold text-kth-slate-400 uppercase block">MEETING LINK STATUS</span>
+                <p className="text-kth-slate-600">Meeting link will be provided by the employer.</p>
+              </div>
+            ) : null}
 
             {/* Phone Contact */}
             {selectedInterview.contact_phone && (
@@ -551,7 +566,7 @@ export const CandidateInterviewsPage: React.FC = () => {
               <Button variant="secondary" size="sm" onClick={() => setIsDetailsOpen(false)}>
                 Close
               </Button>
-              {selectedInterview.meeting_link && selectedInterview.status === 'scheduled' && (
+              {selectedInterview.meeting_link && isValidUrl(selectedInterview.meeting_link) && (selectedInterview.status === 'scheduled' || selectedInterview.status === 'confirmed' || selectedInterview.status === 'rescheduled') && (
                 <Button
                   variant="primary"
                   size="sm"
