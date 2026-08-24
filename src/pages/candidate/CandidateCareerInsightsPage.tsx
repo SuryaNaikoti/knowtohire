@@ -19,15 +19,17 @@ import {
   Loader2,
   Briefcase,
   Layers,
-  HelpCircle,
   ArrowRight,
+  Sparkles,
+  MapPin,
+  Clock,
+  ChevronRight,
 } from 'lucide-react';
 
 export const CandidateCareerInsightsPage: React.FC = () => {
   const [insights, setInsights] = useState<CareerIntelligenceResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showExplanations, setShowExplanations] = useState(false);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -68,7 +70,7 @@ export const CandidateCareerInsightsPage: React.FC = () => {
   return (
     <CandidateShell title="Career Insights" currentPath="/candidate/career-insights">
       <div className="space-y-6 max-w-5xl mx-auto text-left font-sans">
-        {/* Professional Hero Section */}
+        {/* Header Hero Section */}
         <div className="bg-white p-6 md:p-8 rounded-2xl border border-kth-slate-200 shadow-xs">
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="indigo" className="text-xs font-semibold py-0.5 px-2.5">
@@ -79,7 +81,7 @@ export const CandidateCareerInsightsPage: React.FC = () => {
             Career Insights
           </h1>
           <p className="text-xs sm:text-sm text-kth-slate-600 mt-1 max-w-2xl leading-relaxed">
-            Understand how your profile matches current opportunities and identify the skills that can improve your career fit.
+            Understand your current career position, market alignment, and next opportunities.
           </p>
         </div>
 
@@ -100,7 +102,7 @@ export const CandidateCareerInsightsPage: React.FC = () => {
           <div className="py-24 flex flex-col items-center justify-center">
             <Loader2 className="w-8 h-8 text-kth-primary-600 animate-spin mb-3" />
             <p className="text-xs text-kth-slate-500 font-medium">
-              Comparing your profile with active market openings...
+              Comparing your verified profile with active market openings...
             </p>
           </div>
         )}
@@ -127,87 +129,98 @@ export const CandidateCareerInsightsPage: React.FC = () => {
           />
         )}
 
-        {/* Main Insights Dashboard */}
+        {/* Main Insights Content Dashboard */}
         {!isLoading && !errorMessage && insights && insights.hasSufficientProfileData && insights.hasSufficientMarketData && (
           <>
-            {/* Progression Alignment Card */}
-            <Card className="p-6 md:p-8 bg-white border-kth-slate-200 shadow-xs">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="font-display font-bold text-base text-kth-slate-900 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-kth-primary-600" /> Progression Alignment
-                </h2>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowExplanations(!showExplanations)}
-                  className="text-xs text-kth-slate-600 gap-1.5 hover:text-kth-primary-600"
-                >
-                  <HelpCircle className="w-3.5 h-3.5 text-kth-primary-600" />
-                  {showExplanations ? 'Hide Score Breakdown' : 'Why this score?'}
-                </Button>
-              </div>
-
-              {/* Three-Column Progression: Current Profile -> Target Role -> Market */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {/* Current Profile */}
-                <div className="bg-kth-slate-50 p-4 rounded-xl border border-kth-slate-200 text-left space-y-1.5">
-                  <span className="text-[11px] font-bold text-kth-slate-500 uppercase tracking-wider block">
-                    CURRENT PROFILE
+            {/* 1. CURRENT CAREER POSITION */}
+            <Card className="p-6 md:p-7 bg-white border-kth-slate-200 shadow-xs">
+              <div className="flex justify-between items-start flex-wrap gap-4">
+                <div className="space-y-1 max-w-xl">
+                  <span className="text-[11px] font-bold text-kth-slate-400 uppercase tracking-wider block">
+                    CURRENT CAREER POSITION
                   </span>
-                  <h3 className="font-bold text-sm text-kth-slate-900 leading-snug" title={insights.currentTitle}>
+                  <h2 className="font-display text-xl font-extrabold text-kth-slate-900 leading-snug">
                     {insights.currentTitle}
-                  </h3>
-                  <span className="text-xs font-mono text-kth-slate-600 block">
-                    {insights.verifiedSkillsCount} Verified Skills
-                  </span>
+                  </h2>
+                  <p className="text-xs text-kth-slate-600 font-medium">
+                    Domain: <span className="text-kth-slate-900 font-semibold">{insights.currentDomain}</span>
+                  </p>
                 </div>
 
-                {/* Target Role */}
-                <div className="bg-kth-primary-50/70 p-4 rounded-xl border border-kth-primary-200 text-left space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[11px] font-bold text-kth-primary-700 uppercase tracking-wider block">
-                      TARGET ROLE
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="inline-flex items-center gap-1.5 bg-kth-slate-100 text-kth-slate-700 px-3 py-1.5 rounded-lg font-medium border border-kth-slate-200">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <strong>{insights.verifiedSkillsCount}</strong> Verified Skills
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 bg-kth-slate-100 text-kth-slate-700 px-3 py-1.5 rounded-lg font-medium border border-kth-slate-200">
+                    <MapPin className="w-3.5 h-3.5 text-kth-slate-500" />
+                    {insights.location}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 bg-kth-slate-100 text-kth-slate-700 px-3 py-1.5 rounded-lg font-medium border border-kth-slate-200">
+                    <Clock className="w-3.5 h-3.5 text-kth-slate-500" />
+                    {insights.employmentPreference}
+                  </span>
+                </div>
+              </div>
+            </Card>
+
+            {/* 2. STRONGEST CURRENT OPPORTUNITIES & PROGRESSION ALIGNMENT */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left 2 Cols: Progression Alignment & Explainable Score */}
+              <Card className="lg:col-span-2 p-6 md:p-7 bg-white border-kth-slate-200 shadow-xs space-y-6">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <h3 className="font-display font-bold text-base text-kth-slate-900 flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-kth-primary-600" /> Progression Alignment
+                    </h3>
+                    <span className="text-xs font-semibold text-kth-slate-500">
+                      Strongest Current Alignment
                     </span>
-                    <Badge variant="indigo" className="text-[10px] font-bold py-0.5">
-                      {insights.matchScore}% Match
-                    </Badge>
                   </div>
-                  <h3 className="font-bold text-sm text-kth-primary-950 leading-snug" title={insights.targetRoleTitle}>
-                    {insights.targetRoleTitle}
-                  </h3>
-                  <span className="text-xs font-mono text-kth-primary-800 font-semibold block">
-                    {insights.targetSalaryRange}
-                  </span>
+                  <p className="text-xs text-kth-slate-500">
+                    Calculated alignment between your verified profile and live platform requisitions.
+                  </p>
                 </div>
 
-                {/* Market Availability */}
-                <div className="bg-kth-slate-50 p-4 rounded-xl border border-kth-slate-200 text-left space-y-1.5">
-                  <span className="text-[11px] font-bold text-kth-slate-500 uppercase tracking-wider block">
-                    MARKET
-                  </span>
-                  <h3 className="font-bold text-sm text-kth-slate-900">
-                    {insights.marketOpeningsCount} Relevant Opening{insights.marketOpeningsCount !== 1 ? 's' : ''}
-                  </h3>
-                  <span className="text-xs text-kth-slate-600 block">
-                    {insights.marketOpeningsCount > 0 ? 'Across Active Requisitions' : 'No strongly aligned openings currently available'}
-                  </span>
+                {/* Main Target Role Match Overview */}
+                <div className="bg-kth-primary-50/70 p-5 rounded-xl border border-kth-primary-200 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] font-bold text-kth-primary-700 uppercase tracking-wider block">
+                        TARGET ROLE
+                      </span>
+                      <h4 className="font-display font-extrabold text-lg text-kth-primary-950">
+                        {insights.targetRoleTitle}
+                      </h4>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <span className="text-[10px] font-bold text-kth-primary-700 uppercase tracking-wider block">
+                        MATCH SCORE
+                      </span>
+                      <span className="font-mono text-2xl font-black text-kth-primary-700">
+                        {insights.matchScore}%
+                      </span>
+                    </div>
+                  </div>
+
+                  <Progress
+                    value={insights.matchScore}
+                    label="Role Alignment Progress"
+                    color="primary"
+                  />
+
+                  <div className="flex justify-between items-center text-xs pt-1">
+                    <span className="text-kth-primary-900 font-semibold font-mono">
+                      {insights.targetSalaryRange}
+                    </span>
+                    <span className="text-kth-slate-600">
+                      {insights.marketOpeningsCount} Active Opening{insights.marketOpeningsCount !== 1 ? 's' : ''}
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Match Score Progress Bar */}
-              <div className="space-y-2">
-                <Progress
-                  value={insights.matchScore}
-                  label="Target Role Match Score"
-                  showValue
-                  color="primary"
-                />
-              </div>
-
-              {/* Explainable Factor Breakdown (Collapsible) */}
-              {showExplanations && insights.explanations.length > 0 && (
-                <div className="mt-6 pt-5 border-t border-kth-slate-200 space-y-3">
+                {/* Explainable Dimensions Breakdown */}
+                <div className="space-y-3 pt-2">
                   <h4 className="font-bold text-xs uppercase tracking-wider text-kth-slate-700">
                     Why this score?
                   </h4>
@@ -215,12 +228,20 @@ export const CandidateCareerInsightsPage: React.FC = () => {
                     {insights.explanations.map((exp, idx) => (
                       <div
                         key={idx}
-                        className="bg-kth-slate-50 p-3 rounded-lg border border-kth-slate-200 space-y-1 text-xs"
+                        className="bg-kth-slate-50 p-3.5 rounded-xl border border-kth-slate-200/80 space-y-1 text-xs"
                       >
-                        <div className="flex justify-between items-center font-semibold">
+                        <div className="flex justify-between items-center font-bold">
                           <span className="text-kth-slate-900">{exp.factor}</span>
-                          <span className={exp.isPositive ? 'text-emerald-700 font-mono' : 'text-amber-700 font-mono'}>
-                            {exp.scorePct}%
+                          <span
+                            className={
+                              exp.ratingLabel === 'Strong'
+                                ? 'text-emerald-700'
+                                : exp.ratingLabel === 'Moderate'
+                                ? 'text-cyan-700'
+                                : 'text-amber-700'
+                            }
+                          >
+                            {exp.ratingLabel}
                           </span>
                         </div>
                         <p className="text-kth-slate-600 text-[11px] leading-relaxed">{exp.reason}</p>
@@ -228,10 +249,59 @@ export const CandidateCareerInsightsPage: React.FC = () => {
                     ))}
                   </div>
                 </div>
-              )}
-            </Card>
+              </Card>
 
-            {/* Strengths & Growth Skills Cards */}
+              {/* Right Col: Career Opportunity Map (Ranked Alternative Roles) */}
+              <Card className="p-6 bg-white border-kth-slate-200 shadow-xs flex flex-col justify-between space-y-4">
+                <div>
+                  <h3 className="font-display font-bold text-base text-kth-slate-900 mb-1 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-kth-primary-600" /> Career Opportunity Map
+                  </h3>
+                  <p className="text-xs text-kth-slate-500 mb-4">
+                    Comparison across relevant openings in your career domain:
+                  </p>
+
+                  <div className="space-y-3">
+                    {insights.opportunities.map((opp, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => handleNavigate(`/candidate/jobs?keyword=${encodeURIComponent(opp.roleTitle)}`)}
+                        className={`p-3 rounded-xl border transition-all cursor-pointer text-xs space-y-1.5 ${
+                          opp.isTopMatch
+                            ? 'bg-kth-primary-50/50 border-kth-primary-300 hover:border-kth-primary-500'
+                            : 'bg-kth-slate-50/70 border-kth-slate-200 hover:border-kth-slate-400'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-2">
+                          <strong className="font-bold text-kth-slate-900 leading-snug line-clamp-1">
+                            {opp.roleTitle}
+                          </strong>
+                          <Badge variant={opp.matchScore >= 80 ? 'emerald' : 'indigo'} className="shrink-0 text-[10px]">
+                            {opp.matchScore}%
+                          </Badge>
+                        </div>
+
+                        <div className="flex justify-between items-center text-[11px] text-kth-slate-500">
+                          <span>{opp.openingsCount} opening{opp.openingsCount !== 1 ? 's' : ''}</span>
+                          <span className="font-mono text-kth-slate-700">{opp.salaryRange}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleNavigate('/candidate/jobs')}
+                  className="w-full text-xs text-kth-slate-700 font-semibold"
+                >
+                  Explore All Jobs <ArrowRight className="w-3 h-3 ml-1" />
+                </Button>
+              </Card>
+            </div>
+
+            {/* 3. VERIFIED SKILL STRENGTHS & IDENTIFIED SKILL GAPS */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Verified Skill Strengths */}
               <Card className="p-6 bg-white border-kth-slate-200 flex flex-col justify-between shadow-xs">
@@ -240,7 +310,7 @@ export const CandidateCareerInsightsPage: React.FC = () => {
                     <Target className="w-4 h-4 text-emerald-600" /> Verified Skill Strengths
                   </h3>
                   <p className="text-xs text-kth-slate-500 mb-4">
-                    Skills from your profile that match current opportunities.
+                    Skills from your profile that directly match requirements in relevant market openings:
                   </p>
                   <div className="space-y-2">
                     {insights.matchedSkills.length > 0 ? (
@@ -276,14 +346,14 @@ export const CandidateCareerInsightsPage: React.FC = () => {
                 </div>
               </Card>
 
-              {/* Skills to Strengthen (Growth Skills) */}
+              {/* Identified Skill Gaps */}
               <Card className="p-6 bg-white border-kth-slate-200 flex flex-col justify-between shadow-xs">
                 <div>
                   <h3 className="font-display font-bold text-base text-kth-slate-900 mb-1 flex items-center gap-1.5">
-                    <AlertCircle className="w-4 h-4 text-amber-500" /> Skills to Strengthen
+                    <AlertCircle className="w-4 h-4 text-amber-500" /> Identified Skill Gaps
                   </h3>
                   <p className="text-xs text-kth-slate-500 mb-4">
-                    Skills that could improve your fit for relevant opportunities.
+                    High-demand competencies missing from your profile that could improve your match:
                   </p>
 
                   <div className="space-y-3">
@@ -291,7 +361,7 @@ export const CandidateCareerInsightsPage: React.FC = () => {
                       insights.growthSkillRecommendations.map((rec, idx) => (
                         <div
                           key={idx}
-                          className="p-3 bg-amber-50/50 border border-amber-200 rounded-lg space-y-1.5 text-xs"
+                          className="p-3.5 bg-amber-50/50 border border-amber-200 rounded-xl space-y-2 text-xs"
                         >
                           <div className="flex justify-between items-start gap-2">
                             <div>
@@ -303,13 +373,13 @@ export const CandidateCareerInsightsPage: React.FC = () => {
 
                           {/* Knowledge Hub Resource Link if available */}
                           <div className="flex justify-between items-center text-[11px] text-kth-slate-600 pt-1.5 border-t border-amber-200/60">
-                            <span className="text-kth-slate-500">Recommended Resource:</span>
+                            <span className="text-kth-slate-500">Learning Material:</span>
                             {rec.recommendedResource?.isAvailable ? (
                               <a
                                 href={rec.recommendedResource.url}
                                 className="font-bold text-kth-primary-600 hover:text-kth-primary-700 flex items-center gap-1 hover:underline"
                               >
-                                <BookOpen className="w-3 h-3" /> Study Guide
+                                <BookOpen className="w-3 h-3" /> {rec.recommendedResource.title}
                               </a>
                             ) : (
                               <span className="text-kth-slate-400 italic">Resource coming soon</span>
@@ -319,7 +389,7 @@ export const CandidateCareerInsightsPage: React.FC = () => {
                       ))
                     ) : (
                       <p className="text-xs text-kth-slate-600 p-4 bg-kth-slate-50 rounded-lg border border-kth-slate-200 leading-relaxed">
-                        Your current skills closely match the requirements of your strongest target roles.
+                        Your verified profile already covers the primary requirements of your current target roles.
                       </p>
                     )}
                   </div>
@@ -329,14 +399,62 @@ export const CandidateCareerInsightsPage: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleNavigate('/candidate/jobs')}
+                    onClick={() => handleNavigate('/knowledge')}
                     className="text-xs text-kth-slate-600 hover:text-kth-primary-600"
                   >
-                    View Matching Openings <ArrowRight className="w-3 h-3 ml-1" />
+                    Explore Knowledge Hub <ArrowRight className="w-3 h-3 ml-1" />
                   </Button>
                 </div>
               </Card>
             </div>
+
+            {/* 4. IMPROVE MY MATCH & RECOMMENDED NEXT ACTIONS */}
+            <Card className="p-6 md:p-7 bg-white border-kth-slate-200 shadow-xs space-y-4">
+              <div>
+                <h3 className="font-display font-bold text-base text-kth-slate-900 mb-1 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-kth-primary-600" /> Improve My Match & Recommended Next Actions
+                </h3>
+                <p className="text-xs text-kth-slate-500">
+                  Concrete steps connected to verified opportunities to elevate your candidate profile:
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                {insights.recommendedActions.map((action) => (
+                  <div
+                    key={action.id}
+                    className="bg-kth-slate-50 p-4 rounded-xl border border-kth-slate-200 flex flex-col justify-between space-y-3"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <Badge
+                          variant={action.impactLevel === 'High impact' ? 'amber' : 'indigo'}
+                          className="text-[10px] font-bold py-0.5"
+                        >
+                          {action.impactLevel}
+                        </Badge>
+                      </div>
+                      <h4 className="font-bold text-sm text-kth-slate-900 leading-snug">
+                        {action.title}
+                      </h4>
+                      <p className="text-[11px] text-kth-slate-600 leading-relaxed">
+                        {action.description}
+                      </p>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleNavigate(action.actionUrl)}
+                      className="w-full text-xs font-semibold justify-between bg-white text-kth-slate-800 hover:text-kth-primary-600"
+                    >
+                      <span>{action.actionLabel}</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </Card>
           </>
         )}
       </div>
