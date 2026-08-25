@@ -13,6 +13,7 @@
  */
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { resumeService } from './resumeService';
 import {
   JobApplication,
   ApplicationStage,
@@ -316,6 +317,15 @@ export const applicationService = {
         };
       }
 
+      if (!activeResumeUrl || activeResumeUrl.includes('knowtohire.com/resumes')) {
+        const stored = resumeService.getStoredDemoResume(candidateId);
+        if (stored?.url) {
+          activeResumeUrl = stored.url;
+        }
+      }
+
+      const finalResumeUrl = activeResumeUrl || '';
+
       // If demo session or Supabase not configured, immediately save demo application
       if (isDemoSession() || !isSupabaseConfigured()) {
         const demoApp: JobApplication = {
@@ -324,7 +334,7 @@ export const applicationService = {
           candidate_id: candidateId,
           company_id: targetJob.company_id,
           stage: 'new',
-          resume_url: activeResumeUrl || 'https://knowtohire.com/resumes/candidate_resume.pdf',
+          resume_url: finalResumeUrl,
           cover_letter: input.cover_letter ? input.cover_letter.trim() : null,
           candidate_snapshot: (snapshot as any) || {},
           applied_at: new Date().toISOString(),
@@ -344,7 +354,7 @@ export const applicationService = {
           candidate_id: candidateId,
           company_id: targetJob.company_id,
           stage: 'new',
-          resume_url: activeResumeUrl || 'https://knowtohire.com/resumes/candidate_resume.pdf',
+          resume_url: finalResumeUrl,
           cover_letter: input.cover_letter ? input.cover_letter.trim() : null,
           candidate_snapshot: snapshot,
         })

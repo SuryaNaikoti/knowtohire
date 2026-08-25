@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Select } from '@/components/ui/Select';
 import { ScheduleInterviewModal } from './ScheduleInterviewModal';
-import { applicationService, savedCandidateService, JobApplication, ApplicationStage } from '@/services';
+import { applicationService, savedCandidateService, resumeService, JobApplication, ApplicationStage } from '@/services';
 import { EmployerCandidate } from '@/data/employerMockData';
-import { MapPin, FileText, Bookmark, Calendar, Star, Check, ExternalLink } from 'lucide-react';
+import { MapPin, FileText, Bookmark, Calendar, Star, Check, ExternalLink, Download } from 'lucide-react';
 
 export interface CandidateQuickViewProps {
   application?: JobApplication | null;
@@ -25,8 +25,9 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
   onApplicationUpdated,
 }) => {
   const [currentApp, setCurrentApp] = useState<JobApplication | null>(application || null);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [stageLoading, setStageLoading] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
   // Recruiter notes and rating state
@@ -34,29 +35,31 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
   const [rating, setRating] = useState<number>(0);
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [notesSuccess, setNotesSuccess] = useState(false);
-  const [stageLoading, setStageLoading] = useState(false);
 
   useEffect(() => {
     setCurrentApp(application || null);
-    if (application) {
-      setNotes(application.employer_notes || '');
-      setRating(application.employer_rating || 0);
+    if (application?.employer_notes) {
+      setNotes(application.employer_notes);
+    } else {
+      setNotes('');
+    }
+    if (application?.employer_rating) {
+      setRating(application.employer_rating);
+    } else {
+      setRating(0);
+    }
 
-      // Check if candidate is saved
-      const checkSaved = async () => {
-        const { data } = await savedCandidateService.isCandidateSaved(application.candidate_id);
-        setIsSaved(data || false);
-      };
-      checkSaved();
-    } else if (candidate) {
-      setIsSaved(candidate.isSaved || false);
+    // Check saved state
+    const targetId = application?.candidate_id || candidate?.id;
+    if (targetId) {
+      savedCandidateService.isCandidateSaved(targetId).then((res) => {
+        setIsSaved(Boolean(res.data));
+      });
     }
   }, [application, candidate]);
 
-  if (!currentApp && !candidate) return null;
-
-  // Extract snapshot fields
-  const snapshot = currentApp ? ((currentApp.candidate_snapshot || {}) as Record<string, any>) : {};
+  // Candidate Data Resolution
+  const snapshot = (currentApp?.candidate_snapshot || {}) as Record<string, any>;
   const candidateName =
     currentApp?.candidate?.full_name ||
     snapshot.full_name ||
@@ -73,7 +76,31 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
     snapshot.summary ||
     candidate?.summary ||
     'No candidate bio provided.';
-  const candidateResume = currentApp?.resume_url || snapshot.resume_url;
+  
+  let rawResume = currentApp?.resume_url || snapshot.resume_url;
+  if (!rawResume || rawResume.includes('knowtohire.com/resumes')) {
+    const fallbackId = currentApp?.candidate_id || candidate?.id || '00000000-0000-0000-0000-000000000001';
+    const stored = resumeService.getStoredDemoResume(fallbackId);
+    if (stored?.url) {
+      rawResume = stored.url;
+    }
+  }
+  const candidateResume = rawResume;
+  const resumeFileName = `${candidateName.replace(/\s+/g, '_')}_Resume.pdf`;
+
+  const handleDownloadResume = () => {
+    if (!candidateResume) return;
+    if (candidateResume.startsWith('data:')) {
+      const link = document.createElement('a');
+      link.href = candidateResume;
+      link.download = resumeFileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      window.open(candidateResume, '_blank');
+    }
+  };
   const currentStage: ApplicationStage = currentApp?.stage || 'new';
 
   // Stage advancement
@@ -368,14 +395,24 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
 
           <div className="flex justify-between items-center pt-2 border-t border-kth-slate-100">
             {candidateResume && (
-              <Button
-                variant="ghost"
-                size="sm"
-                leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
-                onClick={() => window.open(candidateResume, '_blank')}
-              >
-                Open Full Window
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
+                  onClick={() => window.open(candidateResume, '_blank')}
+                >
+                  Open Full Window
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<Download className="w-3.5 h-3.5" />}
+                  onClick={handleDownloadResume}
+                >
+                  Download
+                </Button>
+              </div>
             )}
             <Button variant="secondary" size="sm" onClick={() => setIsPreviewOpen(false)} className="ml-auto">
               Close

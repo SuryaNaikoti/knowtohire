@@ -28,6 +28,8 @@ export interface StoredResumeMetadata {
   atsRecommendations?: ATSOptimizationRecommendation[];
 }
 
+import { generateCandidatePdfDataUrl } from '@/utils/candidatePdfGenerator';
+
 /**
  * Helper to store and retrieve demo candidate resume data across reloads.
  */
@@ -35,7 +37,34 @@ export function getStoredDemoResume(userId: string): StoredResumeMetadata | null
   if (typeof window === 'undefined' || !window.localStorage) return null;
   try {
     const raw = window.localStorage.getItem(`${DEMO_RESUME_STORAGE_KEY_PREFIX}${userId}`);
-    return raw ? JSON.parse(raw) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.url && !parsed.url.includes('knowtohire.com/resumes')) {
+        return parsed;
+      }
+    }
+    
+    // Generate authentic PDF data URL for default/demo candidate
+    const defaultDataUrl = generateCandidatePdfDataUrl({
+      fullName: 'Surya Naikoti',
+      headline: 'Senior Full Stack & Cloud Solutions Engineer',
+      email: 'candidate@knowtohire.com',
+      phone: '+91 98765 43210',
+      location: 'Hyderabad, Telangana',
+      skills: ['React & TypeScript', 'Node.js & API Architecture', 'Cloud Infrastructure (AWS/GCP)', 'Database Systems & SQL'],
+      bio: 'Senior Solutions Engineer with 6+ years architecting scalable full-stack applications, distributed cloud architectures on AWS/GCP, and CI/CD automation.',
+    });
+
+    const defaultResume: StoredResumeMetadata = {
+      url: defaultDataUrl,
+      fileName: 'Surya_Naikoti_Senior_Engineer_Resume.pdf',
+      fileSize: 1048576,
+      uploadedAt: new Date().toISOString(),
+      atsScore: 92,
+    };
+
+    saveStoredDemoResume(userId, defaultResume);
+    return defaultResume;
   } catch {
     return null;
   }

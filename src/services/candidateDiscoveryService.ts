@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { resumeService } from './resumeService';
 import { ServiceResult, normalizeServiceError, CandidateExperienceItem, CandidateEducationItem } from './types';
 
 export interface DiscoverableCandidate {
@@ -272,8 +273,16 @@ export const candidateDiscoveryService = {
             },
           ];
 
-          const activeResumeUrl = candSettings.resumeUrl || parsedResume.url || '';
-          const activeFileName = candSettings.resumeFileName || parsedResume.fileName || 'Candidate_Resume.pdf';
+          let activeResumeUrl = candSettings.resumeUrl || parsedResume.url || '';
+          let activeFileName = candSettings.resumeFileName || parsedResume.fileName || 'Candidate_Resume.pdf';
+
+          if (!activeResumeUrl || activeResumeUrl.includes('knowtohire.com/resumes')) {
+            const stored = resumeService.getStoredDemoResume(candidateId);
+            if (stored?.url) {
+              activeResumeUrl = stored.url;
+              activeFileName = stored.fileName || 'Candidate_Resume.pdf';
+            }
+          }
 
           const demoCandidate: DiscoverableCandidate = {
             id: candidateId,

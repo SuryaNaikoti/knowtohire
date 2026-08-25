@@ -13,6 +13,7 @@ import {
   interviewService,
   candidateDiscoveryService,
   savedCandidateService,
+  resumeService,
   JobApplication,
   ApplicationStage,
   Interview,
@@ -248,8 +249,31 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
   const experienceList = candidate?.experienceList || [];
   const educationList = candidate?.educationList || [];
   const certifications = candidate?.certifications || [];
-  const resumeUrl = application?.resume_url || candidate?.resumeUrl || snapshot.resume_url;
-  const resumeFileName = candidate?.resumeFileName || (resumeUrl ? resumeUrl.split('/').pop() : 'Resume_Document.pdf');
+  
+  let rawResumeUrl = application?.resume_url || candidate?.resumeUrl || snapshot.resume_url;
+  if (!rawResumeUrl || rawResumeUrl.includes('knowtohire.com/resumes')) {
+    const fallbackId = resolvedCandidateId || application?.candidate_id || candidate?.id || '00000000-0000-0000-0000-000000000001';
+    const stored = resumeService.getStoredDemoResume(fallbackId);
+    if (stored?.url) {
+      rawResumeUrl = stored.url;
+    }
+  }
+  const resumeUrl = rawResumeUrl;
+  const resumeFileName = candidate?.resumeFileName || (resumeUrl && !resumeUrl.startsWith('data:') ? resumeUrl.split('/').pop() : `${name.replace(/\s+/g, '_')}_Resume.pdf`);
+
+  const handleDownloadResume = () => {
+    if (!resumeUrl) return;
+    if (resumeUrl.startsWith('data:')) {
+      const link = document.createElement('a');
+      link.href = resumeUrl;
+      link.download = resumeFileName || 'Candidate_Resume.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      window.open(resumeUrl, '_blank');
+    }
+  };
 
   return (
     <EmployerShell title={`Candidate Profile — ${name}`} currentPath="/employer/jobs">
@@ -552,7 +576,7 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => window.open(resumeUrl, '_blank')}
+                      onClick={handleDownloadResume}
                       leftIcon={<Download className="w-3.5 h-3.5" />}
                     >
                       Download
