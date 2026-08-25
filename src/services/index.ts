@@ -24,3 +24,4 @@ export * from './atsAnalysisTypes';
 export * from './atsAnalysisService';
 export * from './candidateDiscoveryService';
 export * from './careerInsightsService';
+export * from './contentStorageService';

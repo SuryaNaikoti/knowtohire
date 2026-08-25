@@ -47,8 +47,9 @@ export const ResourceDetailsPage: React.FC<ResourceDetailsPageProps> = ({ resour
     const res = await knowledgeService.trackDownload(resource.id);
     setIsDownloading(false);
     setIsDownloadModalOpen(true);
-    if (res.data?.downloadUrl && res.data.downloadUrl.startsWith('http')) {
-      // In real scenario, opens or downloads the file
+    const targetUrl = res.data?.downloadUrl || resource.file_url;
+    if (targetUrl) {
+      window.open(targetUrl, '_blank');
     }
   };
 

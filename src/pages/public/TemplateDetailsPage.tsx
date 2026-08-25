@@ -46,9 +46,13 @@ export const TemplateDetailsPage: React.FC<TemplateDetailsPageProps> = ({ templa
     setIsProcessing(true);
 
     if (template.is_free) {
-      await templateService.trackDownload(template.id);
+      const res = await templateService.trackDownload(template.id);
       setIsProcessing(false);
       setIsModalOpen(true);
+      const targetUrl = res.data?.downloadUrl || template.file_url || template.download_url;
+      if (targetUrl) {
+        window.open(targetUrl, '_blank');
+      }
     } else {
       // Paid template purchase
       const res = await paymentService.initiateCheckout({
@@ -57,9 +61,13 @@ export const TemplateDetailsPage: React.FC<TemplateDetailsPageProps> = ({ templa
         itemName: template.title,
         amountINR: template.price_inr,
         onSuccess: async () => {
-          await templateService.trackDownload(template.id);
+          const dlRes = await templateService.trackDownload(template.id);
           setIsProcessing(false);
           setIsModalOpen(true);
+          const targetUrl = dlRes.data?.downloadUrl || template.file_url || template.download_url;
+          if (targetUrl) {
+            window.open(targetUrl, '_blank');
+          }
         },
         onCancel: () => {
           setIsProcessing(false);

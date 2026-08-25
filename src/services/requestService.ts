@@ -1,17 +1,25 @@
 /**
  * KnowToHire On-Demand Content Request Service
- * Supports submission, lifecycle tracking, admin review, and deliverable delivery.
+ * Supports submission, lifecycle tracking, admin review, file uploading, and deliverable fulfillment.
  *
  * ARCHITECTURE NOTE:
  * Dual support:
- * 1. REAL SUPABASE MODE: Authenticated users persist to public.resource_requests.
+ * 1. REAL SUPABASE MODE: Authenticated users persist to public.resource_requests and Supabase Storage.
  * 2. DEMO MODE / HYBRID: Synchronizes shared store for seamless testability across Candidate and Admin portals.
  */
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { ServiceResult, normalizeServiceError } from './types';
+import { contentStorageService } from './contentStorageService';
 
-export type RequestStatus = 'pending' | 'under_review' | 'completed' | 'rejected';
+export type RequestStatus =
+  | 'pending'
+  | 'under_review'
+  | 'in_progress'
+  | 'ready_for_delivery'
+  | 'completed'
+  | 'rejected'
+  | 'cancelled';
 
 export interface ContentRequest {
   id: string;
@@ -28,8 +36,16 @@ export interface ContentRequest {
   upvote_count: number;
   admin_notes?: string | null;
   completed_resource_id?: string | null;
-  deliverable_url?: string | null;
   deliverable_title?: string | null;
+  deliverable_description?: string | null;
+  deliverable_url?: string | null;
+  deliverable_format?: string | null;
+  deliverable_size?: string | null;
+  deliverable_name?: string | null;
+  storage_path?: string | null;
+  storage_bucket?: string | null;
+  fulfilled_by_resource_id?: string | null;
+  completed_at?: string | null;
   created_at: string;
   updated_at?: string;
 }
@@ -41,6 +57,22 @@ export interface CreateRequestInput {
   type: string;
   preferred_format?: string;
   additional_requirements?: string;
+}
+
+export interface FulfillRequestInput {
+  status: RequestStatus;
+  admin_notes?: string;
+  deliverable_title?: string;
+  deliverable_description?: string;
+  deliverable_url?: string;
+  deliverable_format?: string;
+  deliverable_size?: string;
+  deliverable_name?: string;
+  storage_path?: string;
+  storage_bucket?: string;
+  completed_resource_id?: string;
+  file?: File;
+  onProgress?: (progress: number) => void;
 }
 
 const DEMO_REQUESTS_STORAGE_KEY = 'kth_demo_resource_requests';
@@ -73,13 +105,46 @@ function updateDemoRequest(id: string, updates: Partial<ContentRequest>) {
     const existing = getDemoRequests();
     const targetIndex = existing.findIndex((r) => r.id === id);
     if (targetIndex >= 0) {
-      existing[targetIndex] = { ...existing[targetIndex], ...updates, updated_at: new Date().toISOString() };
+      existing[targetIndex] = {
+        ...existing[targetIndex],
+        ...updates,
+        updated_at: new Date().toISOString(),
+      };
       window.localStorage.setItem(DEMO_REQUESTS_STORAGE_KEY, JSON.stringify(existing));
       window.dispatchEvent(new CustomEvent('kth_requests_changed'));
     }
   } catch {
     // Ignore
   }
+}
+
+function mapDatabaseRowToContentRequest(r: Record<string, any>): ContentRequest {
+  return {
+    id: r.id,
+    user_id: r.user_id,
+    title: r.title,
+    description: r.description,
+    category: r.category || 'General',
+    type: r.type || 'Study Material',
+    preferred_format: r.preferred_format || 'PDF',
+    additional_requirements: r.additional_requirements || null,
+    status: (r.status || 'pending') as RequestStatus,
+    upvote_count: r.upvote_count || 0,
+    admin_notes: r.admin_notes || null,
+    completed_resource_id: r.completed_resource_id || r.fulfilled_by_resource_id || null,
+    deliverable_title: r.deliverable_title || null,
+    deliverable_description: r.deliverable_description || null,
+    deliverable_url: r.deliverable_url || null,
+    deliverable_format: r.deliverable_format || null,
+    deliverable_size: r.deliverable_size || null,
+    deliverable_name: r.deliverable_name || null,
+    storage_path: r.storage_path || null,
+    storage_bucket: r.storage_bucket || 'content',
+    fulfilled_by_resource_id: r.fulfilled_by_resource_id || r.completed_resource_id || null,
+    completed_at: r.completed_at || null,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+  };
 }
 
 export const requestService = {
@@ -98,7 +163,7 @@ export const requestService = {
             currentUserId = userData.user.id;
           }
         } catch {
-          // Supabase session lookup error fallback
+          // Supabase session lookup fallback
         }
       }
 
@@ -135,22 +200,7 @@ export const requestService = {
             .order('created_at', { ascending: false });
 
           if (!error && data) {
-            dbRequests = data.map((r) => ({
-              id: r.id,
-              user_id: r.user_id,
-              title: r.title,
-              description: r.description,
-              category: r.category || 'General',
-              type: r.type || 'Study Material',
-              preferred_format: r.preferred_format || 'PDF',
-              additional_requirements: r.additional_requirements || null,
-              status: r.status as RequestStatus,
-              upvote_count: r.upvote_count || 0,
-              admin_notes: r.admin_notes,
-              completed_resource_id: r.completed_resource_id,
-              created_at: r.created_at,
-              updated_at: r.updated_at,
-            }));
+            dbRequests = data.map(mapDatabaseRowToContentRequest);
           }
         } catch {
           // Table / network catch
@@ -161,7 +211,11 @@ export const requestService = {
       const demoReqs = getDemoRequests().filter((r) => r.user_id === currentUserId);
       const combined = [...dbRequests];
       for (const dr of demoReqs) {
-        if (!combined.some((c) => c.id === dr.id)) {
+        const existingIndex = combined.findIndex((c) => c.id === dr.id);
+        if (existingIndex >= 0) {
+          // Overwrite with newer demo modifications if present
+          combined[existingIndex] = { ...combined[existingIndex], ...dr };
+        } else {
           combined.push(dr);
         }
       }
@@ -188,25 +242,13 @@ export const requestService = {
             .maybeSingle();
 
           if (!error && data) {
-            return {
-              data: {
-                id: data.id,
-                user_id: data.user_id,
-                title: data.title,
-                description: data.description,
-                category: data.category || 'General',
-                type: data.type || 'Study Material',
-                preferred_format: data.preferred_format || 'PDF',
-                additional_requirements: data.additional_requirements || null,
-                status: data.status as RequestStatus,
-                upvote_count: data.upvote_count || 0,
-                admin_notes: data.admin_notes,
-                completed_resource_id: data.completed_resource_id,
-                created_at: data.created_at,
-                updated_at: data.updated_at,
-              },
-              error: null,
-            };
+            const parsed = mapDatabaseRowToContentRequest(data);
+            // Check if demo store has local deliverable overrides
+            const demo = getDemoRequests().find((r) => r.id === id);
+            if (demo) {
+              return { data: { ...parsed, ...demo }, error: null };
+            }
+            return { data: parsed, error: null };
           }
         } catch {
           // Fallback to demo store
@@ -290,6 +332,16 @@ export const requestService = {
         upvote_count: 0,
         admin_notes: null,
         completed_resource_id: null,
+        deliverable_title: null,
+        deliverable_description: null,
+        deliverable_url: null,
+        deliverable_format: null,
+        deliverable_size: null,
+        deliverable_name: null,
+        storage_path: null,
+        storage_bucket: 'content',
+        fulfilled_by_resource_id: null,
+        completed_at: null,
         created_at: now,
         updated_at: now,
       };
@@ -304,6 +356,8 @@ export const requestService = {
             description: newRequest.description,
             category: newRequest.category,
             type: newRequest.type,
+            preferred_format: newRequest.preferred_format,
+            additional_requirements: newRequest.additional_requirements,
             status: 'pending',
             upvote_count: 0,
           };
@@ -342,22 +396,7 @@ export const requestService = {
             .order('created_at', { ascending: false });
 
           if (!error && data) {
-            dbRequests = data.map((r) => ({
-              id: r.id,
-              user_id: r.user_id,
-              title: r.title,
-              description: r.description,
-              category: r.category || 'General',
-              type: r.type || 'Study Material',
-              preferred_format: r.preferred_format || 'PDF',
-              additional_requirements: r.additional_requirements || null,
-              status: r.status as RequestStatus,
-              upvote_count: r.upvote_count || 0,
-              admin_notes: r.admin_notes,
-              completed_resource_id: r.completed_resource_id,
-              created_at: r.created_at,
-              updated_at: r.updated_at,
-            }));
+            dbRequests = data.map(mapDatabaseRowToContentRequest);
           }
         } catch {
           // Table catch
@@ -367,7 +406,10 @@ export const requestService = {
       const demoReqs = getDemoRequests();
       const combined = [...dbRequests];
       for (const dr of demoReqs) {
-        if (!combined.some((c) => c.id === dr.id)) {
+        const existingIndex = combined.findIndex((c) => c.id === dr.id);
+        if (existingIndex >= 0) {
+          combined[existingIndex] = { ...combined[existingIndex], ...dr };
+        } else {
           combined.push(dr);
         }
       }
@@ -381,39 +423,94 @@ export const requestService = {
   },
 
   /**
-   * Admin: Update request status, admin notes, or attach completed resource ID.
+   * Admin: Fulfill or update a content request.
+   * Handles file uploading to Supabase Storage, linking existing resources,
+   * and enforcing that a request cannot be marked 'completed' without a deliverable.
    */
-  async updateRequestStatus(
+  async updateAndFulfillRequest(
     id: string,
-    status: RequestStatus,
-    adminNotes?: string,
-    completedResourceId?: string
+    input: FulfillRequestInput
   ): Promise<ServiceResult<ContentRequest>> {
     try {
-      const updates: Record<string, unknown> = {
-        status,
+      const existingRes = await this.getRequestById(id);
+      const existing = existingRes.data;
+
+      let deliverableUrl = input.deliverable_url || existing?.deliverable_url;
+      let deliverableName = input.deliverable_name || existing?.deliverable_name;
+      let deliverableSize = input.deliverable_size || existing?.deliverable_size;
+      let deliverableFormat = input.deliverable_format || existing?.deliverable_format;
+      let storagePath = input.storage_path || existing?.storage_path;
+      let storageBucket = input.storage_bucket || existing?.storage_bucket || 'content';
+      let completedResourceId = input.completed_resource_id || existing?.completed_resource_id;
+
+      // 1. If a new file was provided, upload to Supabase Storage in 'content' bucket
+      if (input.file) {
+        const uploadResult = await contentStorageService.uploadFile({
+          bucket: 'content',
+          folder: `requests/${id}`,
+          file: input.file,
+          onProgress: input.onProgress,
+        });
+
+        if (uploadResult.error || !uploadResult.url) {
+          return {
+            data: null,
+            error: { message: uploadResult.error || 'Failed to upload deliverable file.', code: 'UPLOAD_FAILED', status: 400 },
+          };
+        }
+
+        deliverableUrl = uploadResult.url;
+        deliverableName = uploadResult.fileName;
+        deliverableSize = uploadResult.fileSize;
+        deliverableFormat = uploadResult.format;
+        storagePath = uploadResult.filePath;
+        storageBucket = 'content';
+      }
+
+      // 2. Enforce Fulfillment Governance:
+      // A request cannot be marked as 'completed' unless an uploaded deliverable or attached resource exists.
+      const hasDeliverable = Boolean(deliverableUrl || completedResourceId);
+      if (input.status === 'completed' && !hasDeliverable) {
+        return {
+          data: null,
+          error: {
+            message: 'A completed resource or file deliverable must be uploaded or attached before this request can be marked as fulfilled.',
+            code: 'DELIVERABLE_REQUIRED',
+            status: 422,
+          },
+        };
+      }
+
+      const completedAt = input.status === 'completed' ? new Date().toISOString() : existing?.completed_at;
+
+      const updates: Partial<ContentRequest> = {
+        status: input.status,
+        admin_notes: input.admin_notes !== undefined ? input.admin_notes : existing?.admin_notes,
+        deliverable_title: input.deliverable_title !== undefined ? input.deliverable_title : existing?.deliverable_title,
+        deliverable_description: input.deliverable_description !== undefined ? input.deliverable_description : existing?.deliverable_description,
+        deliverable_url: deliverableUrl,
+        deliverable_name: deliverableName,
+        deliverable_size: deliverableSize,
+        deliverable_format: deliverableFormat,
+        storage_path: storagePath,
+        storage_bucket: storageBucket,
+        completed_resource_id: completedResourceId,
+        fulfilled_by_resource_id: completedResourceId,
+        completed_at: completedAt,
         updated_at: new Date().toISOString(),
       };
-      if (adminNotes !== undefined) updates.admin_notes = adminNotes;
-      if (completedResourceId !== undefined) updates.completed_resource_id = completedResourceId;
 
+      // Update Supabase if configured
       if (isSupabaseConfigured()) {
         try {
-          await supabase
-            .from('resource_requests')
-            .update(updates)
-            .eq('id', id);
+          await supabase.from('resource_requests').update(updates).eq('id', id);
         } catch {
-          // Ignore
+          // Table catch
         }
       }
 
       // Update in demo shared storage
-      updateDemoRequest(id, {
-        status,
-        admin_notes: adminNotes,
-        completed_resource_id: completedResourceId,
-      });
+      updateDemoRequest(id, updates);
 
       const updated = await this.getRequestById(id);
       return updated;
@@ -421,5 +518,20 @@ export const requestService = {
       return { data: null, error: normalizeServiceError(err) };
     }
   },
-};
 
+  /**
+   * Legacy method support: Update request status and notes.
+   */
+  async updateRequestStatus(
+    id: string,
+    status: RequestStatus,
+    adminNotes?: string,
+    completedResourceId?: string
+  ): Promise<ServiceResult<ContentRequest>> {
+    return this.updateAndFulfillRequest(id, {
+      status,
+      admin_notes: adminNotes,
+      completed_resource_id: completedResourceId,
+    });
+  },
+};
