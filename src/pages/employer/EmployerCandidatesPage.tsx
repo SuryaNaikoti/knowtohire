@@ -16,6 +16,9 @@ export const EmployerCandidatesPage: React.FC = () => {
   const [selectedCandidate, setSelectedCandidate] = useState<DiscoverableCandidate | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDomain, setSelectedDomain] = useState('all');
+  const [sortBy, setSortBy] = useState<'completion' | 'experience_high' | 'experience_low' | 'salary_low' | 'salary_high' | 'notice_fast'>('completion');
+  const [minExp, setMinExp] = useState<string>('all');
+  const [maxNotice, setMaxNotice] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -33,11 +36,23 @@ export const EmployerCandidatesPage: React.FC = () => {
       const res = await candidateDiscoveryService.searchCandidates({
         search: searchTerm,
         domain: selectedDomain,
+        minExperience: minExp !== 'all' ? Number(minExp) : undefined,
+        maxNoticeDays: maxNotice !== 'all' ? Number(maxNotice) : undefined,
+        sortBy,
       });
 
       if (!isMounted) return;
       if (res.data) {
-        setCandidates(res.data);
+        let list = res.data;
+        if (minExp !== 'all') {
+          const m = Number(minExp);
+          list = list.filter((c) => c.experienceYears >= m);
+        }
+        if (maxNotice !== 'all') {
+          const n = Number(maxNotice);
+          list = list.filter((c) => c.noticePeriodDays <= n);
+        }
+        setCandidates(list);
       }
       setIsLoading(false);
     };
@@ -47,43 +62,108 @@ export const EmployerCandidatesPage: React.FC = () => {
       isMounted = false;
       clearTimeout(debounce);
     };
-  }, [searchTerm, selectedDomain]);
+  }, [searchTerm, selectedDomain, sortBy, minExp, maxNotice]);
 
   return (
     <EmployerShell title="Candidate Talent Discovery" currentPath="/employer/candidates">
       <div className="space-y-6">
         {/* Workspace Toolbar */}
-        <div className="bg-white p-4 rounded-xl border border-kth-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div className="flex-1 w-full flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <Input
-                placeholder="Search candidate skills (e.g. BRSR, ISO 14001), name, domain..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-              />
+        <div className="bg-white p-4 rounded-xl border border-kth-slate-200 shadow-xs space-y-3">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+            <div className="flex-1 w-full flex flex-col md:flex-row gap-3">
+              <div className="flex-1">
+                <Input
+                  placeholder="Search candidate skills (e.g. BRSR, ISO 14001), name, domain..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  leftIcon={<Search className="w-4 h-4" />}
+                />
+              </div>
+              <div className="w-full md:w-60">
+                <Select
+                  value={selectedDomain}
+                  onChange={(e) => setSelectedDomain(e.target.value)}
+                  options={[
+                    { value: 'all', label: 'All Specializations' },
+                    ...categories.map((c) => ({
+                      value: c.name.replace(' Careers', ''),
+                      label: c.name,
+                    })),
+                  ]}
+                />
+              </div>
+              <div className="w-full md:w-56">
+                <Select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  options={[
+                    { value: 'completion', label: 'Sort: Profile Match' },
+                    { value: 'experience_high', label: 'Sort: Experience (High-Low)' },
+                    { value: 'experience_low', label: 'Sort: Experience (Low-High)' },
+                    { value: 'salary_low', label: 'Sort: Expected CTC (Low-High)' },
+                    { value: 'salary_high', label: 'Sort: Expected CTC (High-Low)' },
+                    { value: 'notice_fast', label: 'Sort: Immediate Joiners' },
+                  ]}
+                />
+              </div>
             </div>
-            <div className="w-full sm:w-64">
-              <Select
-                value={selectedDomain}
-                onChange={(e) => setSelectedDomain(e.target.value)}
-                options={[
-                  { value: 'all', label: 'All Specializations' },
-                  ...categories.map((c) => ({
-                    value: c.name.replace(' Careers', ''),
-                    label: c.name,
-                  })),
-                ]}
-              />
-            </div>
+            <Button
+              variant="secondary"
+              leftIcon={<GitCompare className="w-4 h-4" />}
+              onClick={() => (window.location.href = '/employer/candidates/compare')}
+            >
+              Compare Candidates
+            </Button>
           </div>
-          <Button
-            variant="secondary"
-            leftIcon={<GitCompare className="w-4 h-4" />}
-            onClick={() => (window.location.href = '/employer/candidates/compare')}
-          >
-            Compare Candidates
-          </Button>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-kth-slate-100 text-xs text-kth-slate-500">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium text-kth-slate-700">Filter By:</span>
+              <select
+                value={minExp}
+                onChange={(e) => setMinExp(e.target.value)}
+                className="bg-kth-slate-50 border border-kth-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-kth-slate-700 focus:outline-none focus:ring-1 focus:ring-kth-primary-500 font-medium"
+              >
+                <option value="all">Any Experience</option>
+                <option value="1">1+ Years Experience</option>
+                <option value="3">3+ Years Experience</option>
+                <option value="5">5+ Years Experience</option>
+                <option value="8">8+ Years Experience</option>
+              </select>
+
+              <select
+                value={maxNotice}
+                onChange={(e) => setMaxNotice(e.target.value)}
+                className="bg-kth-slate-50 border border-kth-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-kth-slate-700 focus:outline-none focus:ring-1 focus:ring-kth-primary-500 font-medium"
+              >
+                <option value="all">Any Notice Period</option>
+                <option value="0">Immediate Joiner (0 days)</option>
+                <option value="15">Max 15 Days Notice</option>
+                <option value="30">Max 30 Days Notice</option>
+                <option value="60">Max 60 Days Notice</option>
+              </select>
+
+              {(searchTerm || selectedDomain !== 'all' || minExp !== 'all' || maxNotice !== 'all' || sortBy !== 'completion') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedDomain('all');
+                    setMinExp('all');
+                    setMaxNotice('all');
+                    setSortBy('completion');
+                  }}
+                  className="text-xs text-kth-primary-600 hover:text-kth-primary-800 font-semibold underline ml-1 cursor-pointer"
+                >
+                  Reset Filters
+                </button>
+              )}
+            </div>
+
+            <span className="text-kth-slate-500 font-medium">
+              Found <strong className="text-kth-slate-900">{isLoading ? '...' : candidates.length}</strong> verified talent profiles
+            </span>
+          </div>
         </div>
 
         {isLoading ? (

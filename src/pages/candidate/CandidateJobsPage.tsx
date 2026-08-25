@@ -3,7 +3,6 @@ import { CandidateShell } from '@/components/candidate/CandidateShell';
 import { JobCard } from '@/components/cards/JobCard';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { jobService, savedJobService, Job } from '@/services';
@@ -12,6 +11,9 @@ import { Search, Briefcase, RefreshCw, XCircle } from 'lucide-react';
 export const CandidateJobsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLoc, setSelectedLoc] = useState('all');
+  const [sortBy, setSortBy] = useState<'latest' | 'salary_high' | 'salary_low' | 'deadline'>('latest');
+  const [workMode, setWorkMode] = useState<string>('all');
+  const [employmentType, setEmploymentType] = useState<string>('all');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
@@ -26,8 +28,10 @@ export const CandidateJobsPage: React.FC = () => {
       jobService.getPublishedJobs({
         keyword: searchTerm.trim() || undefined,
         location: selectedLoc !== 'all' ? selectedLoc : undefined,
-        pageSize: 30,
-        sort_by: 'latest',
+        work_mode: workMode !== 'all' ? (workMode as any) : undefined,
+        employment_type: employmentType !== 'all' ? (employmentType as any) : undefined,
+        pageSize: 50,
+        sort_by: sortBy,
       }),
       savedJobService.getMySavedJobs(),
     ]);
@@ -44,7 +48,7 @@ export const CandidateJobsPage: React.FC = () => {
     }
 
     setIsLoading(false);
-  }, [searchTerm, selectedLoc]);
+  }, [searchTerm, selectedLoc, sortBy, workMode, employmentType]);
 
   useEffect(() => {
     loadData();
@@ -129,39 +133,93 @@ export const CandidateJobsPage: React.FC = () => {
     <CandidateShell title="Find Jobs" currentPath="/candidate/jobs">
       <div className="space-y-6 font-sans">
         {/* Search & Filter Toolbar */}
-        <div className="bg-white p-4 rounded-xl border border-kth-slate-200 shadow-xs flex flex-col sm:flex-row gap-3">
-          <div className="flex-1">
-            <Input
-              placeholder="Search by job title, skill, department..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              leftIcon={<Search className="w-4 h-4" />}
-            />
+        <div className="bg-white p-4 rounded-xl border border-kth-slate-200 shadow-xs space-y-3">
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex-1">
+              <Input
+                placeholder="Search by job title, skill, department..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                leftIcon={<Search className="w-4 h-4" />}
+              />
+            </div>
+            <div className="w-full md:w-52">
+              <Select
+                value={selectedLoc}
+                onChange={(e) => setSelectedLoc(e.target.value)}
+                options={[
+                  { value: 'all', label: 'All Locations' },
+                  { value: 'Bengaluru', label: 'Bengaluru, KA' },
+                  { value: 'Hyderabad', label: 'Hyderabad, TS' },
+                  { value: 'Mumbai', label: 'Mumbai, MH' },
+                  { value: 'Delhi', label: 'Delhi NCR' },
+                  { value: 'Pune', label: 'Pune, MH' },
+                  { value: 'Chennai', label: 'Chennai, TN' },
+                  { value: 'Kolkata', label: 'Kolkata, WB' },
+                ]}
+              />
+            </div>
+            <div className="w-full md:w-52">
+              <Select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                options={[
+                  { value: 'latest', label: 'Sort: Most Recent' },
+                  { value: 'salary_high', label: 'Sort: Highest CTC' },
+                  { value: 'salary_low', label: 'Sort: Lowest CTC' },
+                  { value: 'deadline', label: 'Sort: Closing Soon' },
+                ]}
+              />
+            </div>
           </div>
-          <div className="w-full sm:w-56">
-            <Select
-              value={selectedLoc}
-              onChange={(e) => setSelectedLoc(e.target.value)}
-              options={[
-                { value: 'all', label: 'All Locations' },
-                { value: 'Bengaluru', label: 'Bengaluru, KA' },
-                { value: 'Hyderabad', label: 'Hyderabad, TS' },
-                { value: 'Mumbai', label: 'Mumbai, MH' },
-                { value: 'Delhi', label: 'Delhi NCR' },
-                { value: 'Pune', label: 'Pune, MH' },
-                { value: 'Chennai', label: 'Chennai, TN' },
-                { value: 'Kolkata', label: 'Kolkata, WB' },
-              ]}
-            />
-          </div>
-        </div>
 
-        {/* Candidate Context Pill */}
-        <div className="flex justify-between items-center text-xs">
-          <span className="text-kth-slate-500">
-            Showing <strong className="text-kth-slate-900">{isLoading ? '...' : jobs.length}</strong> verified ESG & sustainability openings
-          </span>
-          <Badge variant="emerald" hasPulse>AI Skill Match Active</Badge>
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-kth-slate-100 text-xs text-kth-slate-500">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium text-kth-slate-700">Filter By:</span>
+              <select
+                value={workMode}
+                onChange={(e) => setWorkMode(e.target.value)}
+                className="bg-kth-slate-50 border border-kth-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-kth-slate-700 focus:outline-none focus:ring-1 focus:ring-kth-primary-500 font-medium"
+              >
+                <option value="all">All Work Modes</option>
+                <option value="On-site">On-site</option>
+                <option value="Hybrid">Hybrid</option>
+                <option value="Remote">Remote</option>
+              </select>
+
+              <select
+                value={employmentType}
+                onChange={(e) => setEmploymentType(e.target.value)}
+                className="bg-kth-slate-50 border border-kth-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-kth-slate-700 focus:outline-none focus:ring-1 focus:ring-kth-primary-500 font-medium"
+              >
+                <option value="all">All Employment Types</option>
+                <option value="Full-Time">Full-Time</option>
+                <option value="Part-Time">Part-Time</option>
+                <option value="Contract">Contract</option>
+                <option value="Internship">Internship</option>
+              </select>
+
+              {(searchTerm || selectedLoc !== 'all' || workMode !== 'all' || employmentType !== 'all' || sortBy !== 'latest') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedLoc('all');
+                    setWorkMode('all');
+                    setEmploymentType('all');
+                    setSortBy('latest');
+                  }}
+                  className="text-xs text-kth-primary-600 hover:text-kth-primary-800 font-semibold underline ml-1 cursor-pointer"
+                >
+                  Reset Filters
+                </button>
+              )}
+            </div>
+
+            <span className="text-kth-slate-500 font-medium">
+              Showing <strong className="text-kth-slate-900">{isLoading ? '...' : jobs.length}</strong> openings
+            </span>
+          </div>
         </div>
 
         {/* Error Alert with Retry */}

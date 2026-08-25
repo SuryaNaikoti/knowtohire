@@ -255,10 +255,35 @@ export const jobService = {
         publishedLocal = publishedLocal.filter((j) => (j.category || '').toLowerCase().includes(cat));
       }
 
+      let combined = [...publishedLocal, ...dbJobs.filter(j => !publishedLocal.some(lj => lj.id === j.id))];
+
+      // Apply in-memory sort on combined list
+      switch (filters.sort_by) {
+        case 'salary_high':
+          combined.sort((a, b) => (b.max_salary_inr || 0) - (a.max_salary_inr || 0));
+          break;
+        case 'salary_low':
+          combined.sort((a, b) => (a.min_salary_inr || 0) - (b.min_salary_inr || 0));
+          break;
+        case 'deadline':
+          combined.sort((a, b) => {
+            if (!a.application_deadline) return 1;
+            if (!b.application_deadline) return -1;
+            return new Date(a.application_deadline).getTime() - new Date(b.application_deadline).getTime();
+          });
+          break;
+        case 'latest':
+        default:
+          combined.sort((a, b) => {
+            const timeA = new Date(a.published_at || a.created_at || 0).getTime();
+            const timeB = new Date(b.published_at || b.created_at || 0).getTime();
+            return timeB - timeA;
+          });
+          break;
+      }
+
       const totalCount = (count || 0) + publishedLocal.length;
       const totalPages = Math.ceil(totalCount / pageSize);
-
-      const combined = [...publishedLocal, ...dbJobs.filter(j => !publishedLocal.some(lj => lj.id === j.id))];
 
       return {
         data: {

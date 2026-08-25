@@ -39,6 +39,7 @@ export interface CandidateSearchParams {
   minExperience?: number;
   maxNoticeDays?: number;
   limit?: number;
+  sortBy?: 'completion' | 'experience_high' | 'experience_low' | 'salary_low' | 'salary_high' | 'notice_fast';
 }
 
 export const candidateDiscoveryService = {
@@ -167,6 +168,29 @@ export const candidateDiscoveryService = {
             c.domain.toLowerCase().includes(s) ||
             c.skills.some((sk) => sk.toLowerCase().includes(s))
         );
+      }
+
+      // Sort results
+      switch (params?.sortBy) {
+        case 'experience_high':
+          results.sort((a, b) => (b.experienceYears || 0) - (a.experienceYears || 0));
+          break;
+        case 'experience_low':
+          results.sort((a, b) => (a.experienceYears || 0) - (b.experienceYears || 0));
+          break;
+        case 'salary_low':
+          results.sort((a, b) => (a.expectedSalaryINR || 0) - (b.expectedSalaryINR || 0));
+          break;
+        case 'salary_high':
+          results.sort((a, b) => (b.expectedSalaryINR || 0) - (a.expectedSalaryINR || 0));
+          break;
+        case 'notice_fast':
+          results.sort((a, b) => (a.noticePeriodDays || 0) - (b.noticePeriodDays || 0));
+          break;
+        case 'completion':
+        default:
+          results.sort((a, b) => (b.profileCompletion || 0) - (a.profileCompletion || 0));
+          break;
       }
 
       return { data: results, error: null };
