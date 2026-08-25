@@ -80,6 +80,7 @@ import { AdminApplicationsPage } from '@/pages/admin/AdminApplicationsPage';
 import { AdminResourcesPage } from '@/pages/admin/AdminResourcesPage';
 import { AdminTemplatesPage } from '@/pages/admin/AdminTemplatesPage';
 import { AdminRequestsPage } from '@/pages/admin/AdminRequestsPage';
+import { AdminFulfillRequestPage } from '@/pages/admin/AdminFulfillRequestPage';
 import { AdminBlogPage } from '@/pages/admin/AdminBlogPage';
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
 
@@ -129,7 +130,11 @@ export function App() {
       else if (path === '/admin/applications') adminComponent = <AdminApplicationsPage />;
       else if (path === '/admin/resources') adminComponent = <AdminResourcesPage />;
       else if (path === '/admin/templates') adminComponent = <AdminTemplatesPage />;
-      else if (path === '/admin/requests') adminComponent = <AdminRequestsPage />;
+      else if (path.startsWith('/admin/requests/') && path !== '/admin/requests') {
+        const reqId = path.replace('/admin/requests/', '').replace('/fulfill', '');
+        adminComponent = <AdminFulfillRequestPage requestId={reqId} onNavigate={navigateTo} />;
+      }
+      else if (path === '/admin/requests') adminComponent = <AdminRequestsPage onNavigate={navigateTo} />;
       else if (path === '/admin/blog') adminComponent = <AdminBlogPage />;
       else if (path === '/admin/settings') adminComponent = <AdminSettingsPage />;
 
