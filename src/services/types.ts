@@ -181,6 +181,14 @@ export interface JobCreateInput {
   salary_currency?: string;
   status?: JobStatus;
   application_deadline?: string | null;
+  career_category_id?: string | null;
+  industry_id?: string | null;
+  functional_area_id?: string | null;
+  domain_id?: string | null;
+  canonical_role_id?: string | null;
+  country_id?: string | null;
+  state_id?: string | null;
+  city_id?: string | null;
 }
 
 export interface JobUpdateInput {
@@ -203,6 +211,14 @@ export interface JobUpdateInput {
   salary_currency?: string;
   status?: JobStatus;
   application_deadline?: string | null;
+  career_category_id?: string | null;
+  industry_id?: string | null;
+  functional_area_id?: string | null;
+  domain_id?: string | null;
+  canonical_role_id?: string | null;
+  country_id?: string | null;
+  state_id?: string | null;
+  city_id?: string | null;
 }
 
 // ====================================================================

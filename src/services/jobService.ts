@@ -452,6 +452,14 @@ export const jobService = {
         status: input.status || 'draft',
         application_deadline: input.application_deadline || null,
         published_at: input.status === 'published' ? new Date().toISOString() : null,
+        career_category_id: input.career_category_id || null,
+        industry_id: input.industry_id || null,
+        functional_area_id: input.functional_area_id || null,
+        domain_id: input.domain_id || null,
+        canonical_role_id: input.canonical_role_id || null,
+        country_id: input.country_id || null,
+        state_id: input.state_id || null,
+        city_id: input.city_id || null,
       };
 
       const { data, error } = await supabase
@@ -489,6 +497,14 @@ export const jobService = {
           published_at: payload.published_at || new Date().toISOString(),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          career_category_id: payload.career_category_id,
+          industry_id: payload.industry_id,
+          functional_area_id: payload.functional_area_id,
+          domain_id: payload.domain_id,
+          canonical_role_id: payload.canonical_role_id,
+          country_id: payload.country_id,
+          state_id: payload.state_id,
+          city_id: payload.city_id,
           company: {
             id: targetCompanyId,
             name: 'EcoStrategy India Pvt Ltd',

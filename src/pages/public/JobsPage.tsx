@@ -4,11 +4,11 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
-import { jobService, Job, EmploymentType, WorkMode } from '@/services';
+import { jobService, taxonomyService, Job, EmploymentType, WorkMode } from '@/services';
 import { useAuth } from '@/context/AuthContext';
 import { Search, Briefcase, RefreshCw, XCircle, ShieldCheck, Banknote } from 'lucide-react';
 
-const CAREER_CATEGORIES = [
+const DEFAULT_CAREER_CATEGORIES = [
   { value: 'all', label: 'All Categories' },
   { value: 'General', label: 'General Careers' },
   { value: 'Environmental', label: 'Environmental Careers' },
@@ -20,7 +20,7 @@ const CAREER_CATEGORIES = [
   { value: 'Consulting', label: 'Consulting Careers' },
 ];
 
-const LOCATION_OPTIONS = [
+const DEFAULT_LOCATION_OPTIONS = [
   { value: 'all', label: 'All Locations (India)' },
   { value: 'Bengaluru', label: 'Bengaluru, KA' },
   { value: 'Hyderabad', label: 'Hyderabad, TS' },
@@ -92,6 +92,33 @@ export const JobsPage: React.FC = () => {
       }
     });
     window.history.replaceState({}, '', url.toString());
+  }, []);
+
+  // Taxonomy Dynamic Options
+  const [categoriesOptions, setCategoriesOptions] = useState<{ value: string; label: string }[]>(DEFAULT_CAREER_CATEGORIES);
+  const [locationOptions, setLocationOptions] = useState<{ value: string; label: string }[]>(DEFAULT_LOCATION_OPTIONS);
+
+  useEffect(() => {
+    async function loadTaxonomyFilters() {
+      const [catRes, cityRes] = await Promise.all([
+        taxonomyService.getCareerCategories(),
+        taxonomyService.searchCities('', 'country-in'),
+      ]);
+      if (catRes.data && catRes.data.length > 0) {
+        setCategoriesOptions([
+          { value: 'all', label: 'All Categories' },
+          ...catRes.data.map((c) => ({ value: c.name.replace(' Careers', ''), label: c.name })),
+        ]);
+      }
+      if (cityRes.data && cityRes.data.length > 0) {
+        setLocationOptions([
+          { value: 'all', label: 'All Locations (India)' },
+          ...cityRes.data.map((c) => ({ value: c.name, label: `${c.name}, India` })),
+          { value: 'Remote', label: 'Remote Only' },
+        ]);
+      }
+    }
+    loadTaxonomyFilters();
   }, []);
 
   // Fetch Published Jobs from Supabase
@@ -209,7 +236,7 @@ export const JobsPage: React.FC = () => {
                   setSelectedCategory(e.target.value);
                   setCurrentPage(1);
                 }}
-                options={CAREER_CATEGORIES}
+                options={categoriesOptions}
               />
             </div>
 
@@ -220,7 +247,7 @@ export const JobsPage: React.FC = () => {
                   setSelectedLocation(e.target.value);
                   setCurrentPage(1);
                 }}
-                options={LOCATION_OPTIONS}
+                options={locationOptions}
               />
             </div>
 
@@ -266,7 +293,7 @@ export const JobsPage: React.FC = () => {
                   setSelectedCategory(e.target.value);
                   setCurrentPage(1);
                 }}
-                options={CAREER_CATEGORIES}
+                options={categoriesOptions}
               />
               <Select
                 value={selectedLocation}
@@ -274,7 +301,7 @@ export const JobsPage: React.FC = () => {
                   setSelectedLocation(e.target.value);
                   setCurrentPage(1);
                 }}
-                options={LOCATION_OPTIONS}
+                options={locationOptions}
               />
             </div>
 

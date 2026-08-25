@@ -82,6 +82,7 @@ import { AdminTemplatesPage } from '@/pages/admin/AdminTemplatesPage';
 import { AdminRequestsPage } from '@/pages/admin/AdminRequestsPage';
 import { AdminFulfillRequestPage } from '@/pages/admin/AdminFulfillRequestPage';
 import { AdminBlogPage } from '@/pages/admin/AdminBlogPage';
+import { AdminTaxonomyPage } from '@/pages/admin/AdminTaxonomyPage';
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
 
 export function App() {
@@ -136,6 +137,7 @@ export function App() {
       }
       else if (path === '/admin/requests') adminComponent = <AdminRequestsPage onNavigate={navigateTo} />;
       else if (path === '/admin/blog') adminComponent = <AdminBlogPage />;
+      else if (path === '/admin/taxonomy') adminComponent = <AdminTaxonomyPage />;
       else if (path === '/admin/settings') adminComponent = <AdminSettingsPage />;
 
       return (

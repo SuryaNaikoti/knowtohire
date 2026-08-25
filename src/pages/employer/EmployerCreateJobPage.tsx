@@ -7,15 +7,16 @@ import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
-import { jobService, JobCreateInput, WorkMode, EmploymentType, ExperienceLevel, Job } from '@/services';
+import { jobService, taxonomyService, JobCreateInput, WorkMode, EmploymentType, ExperienceLevel, Job, CareerCategory, CityItem } from '@/services';
 import { formatINR } from '@/design-system/tokens';
-import { CheckCircle2, Eye, Save, Send, AlertCircle, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, Eye, Save, Send, AlertCircle, ArrowLeft, Sparkles } from 'lucide-react';
 
 export const EmployerCreateJobPage: React.FC = () => {
   // Form State
   const [title, setTitle] = useState('');
   const [department, setDepartment] = useState('');
-  const [category, setCategory] = useState('Sustainability & ESG');
+  const [category, setCategory] = useState('General Careers');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('cat-general');
   const [workMode, setWorkMode] = useState<WorkMode>('hybrid');
   const [employmentType, setEmploymentType] = useState<EmploymentType>('full_time');
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>('mid_level');
@@ -28,11 +29,54 @@ export const EmployerCreateJobPage: React.FC = () => {
   const [skillsText, setSkillsText] = useState('');
   const [benefitsText, setBenefitsText] = useState('Health Insurance, Performance Bonus, Learning Stipend');
 
+  // Master Taxonomy State
+  const [categoriesList, setCategoriesList] = useState<CareerCategory[]>([]);
+  const [citiesList, setCitiesList] = useState<CityItem[]>([]);
+  const [canonicalRoleName, setCanonicalRoleName] = useState<string | null>(null);
+  const [canonicalRoleId, setCanonicalRoleId] = useState<string | null>(null);
+
   // UI state
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdJob, setCreatedJob] = useState<Job | null>(null);
+
+  React.useEffect(() => {
+    async function fetchTaxonomy() {
+      const [catsRes, citiesRes] = await Promise.all([
+        taxonomyService.getCareerCategories(),
+        taxonomyService.searchCities('', 'country-in'),
+      ]);
+      if (catsRes.data && catsRes.data.length > 0) {
+        setCategoriesList(catsRes.data);
+      }
+      if (citiesRes.data && citiesRes.data.length > 0) {
+        setCitiesList(citiesRes.data);
+      }
+    }
+    fetchTaxonomy();
+  }, []);
+
+  // Automatically resolve canonical job role alias as employer types title
+  React.useEffect(() => {
+    async function resolveRole() {
+      if (title.trim().length >= 3) {
+        const resolved = await taxonomyService.resolveJobRole(title);
+        if (resolved) {
+          setCanonicalRoleName(resolved.name);
+          setCanonicalRoleId(resolved.id);
+        } else {
+          setCanonicalRoleName(null);
+          setCanonicalRoleId(null);
+        }
+      } else {
+        setCanonicalRoleName(null);
+        setCanonicalRoleId(null);
+      }
+    }
+    const timer = setTimeout(resolveRole, 250);
+    return () => clearTimeout(timer);
+  }, [title]);
 
   const validateForm = (): string | null => {
     if (!title.trim()) return 'Job title is required.';
@@ -95,6 +139,8 @@ export const EmployerCreateJobPage: React.FC = () => {
       skills: skills.length > 0 ? skills : undefined,
       benefits: benefits.length > 0 ? benefits : undefined,
       status: targetStatus,
+      career_category_id: selectedCategoryId || undefined,
+      canonical_role_id: canonicalRoleId || undefined,
     };
 
     const { data, error } = await jobService.createJob(payload);
@@ -145,46 +191,43 @@ export const EmployerCreateJobPage: React.FC = () => {
               1. Basic Role Information
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="Job Title"
-                placeholder="e.g. Senior Sustainability Consultant"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
+              <div>
+                <Input
+                  label="Job Title"
+                  placeholder="e.g. Senior Full Stack Engineer"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                />
+                {canonicalRoleName && (
+                  <div className="mt-1 flex items-center gap-1.5 text-[11px] text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-200">
+                    <Sparkles className="w-3 h-3 text-emerald-600 shrink-0" />
+                    <span>Canonical Role: <strong>{canonicalRoleName}</strong></span>
+                  </div>
+                )}
+              </div>
               <Input
                 label="Department"
-                placeholder="e.g. ESG & Decarbonization"
+                placeholder="e.g. Software & Cloud Engineering"
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
                 required
               />
               <Select
-                label="Domain Category"
+                label="Career Category"
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                options={[
-                  { value: 'Sustainability & ESG', label: 'Sustainability & ESG' },
-                  { value: 'Renewable Energy', label: 'Renewable Energy' },
-                  { value: 'Environmental Engineering', label: 'Environmental Engineering' },
-                  { value: 'Patent & IP Analytics', label: 'Patent & IP Analytics' },
-                  { value: 'Carbon Accounting', label: 'Carbon Accounting' },
-                  { value: 'CSR & Policy', label: 'CSR & Policy' },
-                  { value: 'Circular Economy', label: 'Circular Economy' },
-                ]}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  const match = categoriesList.find((c) => c.name === e.target.value);
+                  if (match) setSelectedCategoryId(match.id);
+                }}
+                options={categoriesList.map((c) => ({ value: c.name, label: c.name }))}
               />
               <Select
-                label="Primary Location (India)"
+                label="Primary Location (Hub & Regional Cities)"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                options={[
-                  { value: 'Bengaluru, Karnataka', label: 'Bengaluru, Karnataka' },
-                  { value: 'Hyderabad, Telangana', label: 'Hyderabad, Telangana' },
-                  { value: 'Mumbai, Maharashtra', label: 'Mumbai, Maharashtra' },
-                  { value: 'Delhi NCR', label: 'Delhi NCR' },
-                  { value: 'Pune, Maharashtra', label: 'Pune, Maharashtra' },
-                  { value: 'Chennai, Tamil Nadu', label: 'Chennai, Tamil Nadu' },
-                ]}
+                options={citiesList.map((c) => ({ value: `${c.name}, India`, label: `${c.name}, India${c.is_popular ? ' (Popular Hub)' : ''}` }))}
               />
               <Select
                 label="Work Mode"
