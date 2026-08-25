@@ -23,6 +23,7 @@ export * from './resumeParserService';
 export * from './atsAnalysisTypes';
 export * from './atsAnalysisService';
 export * from './candidateDiscoveryService';
+export * from './companyProfileService';
 export * from './careerInsightsService';
 export * from './contentStorageService';
 export * from './taxonomyTypes';

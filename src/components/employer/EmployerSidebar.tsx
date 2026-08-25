@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { companyProfileService } from '@/services';
 import { Button } from '@/components/ui/Button';
 import {
   LayoutDashboard,
@@ -34,24 +34,31 @@ export const EmployerSidebar: React.FC<EmployerSidebarProps> = ({
   );
 
   useEffect(() => {
-    if (!user) return;
     const fetchCompany = async () => {
       try {
-        const { data: emp } = await supabase
-          .from('employer_profiles')
-          .select('company_profiles(name)')
-          .eq('profile_id', user.id)
-          .maybeSingle();
-
-        const fetchedName = (emp?.company_profiles as any)?.name;
-        if (fetchedName) {
-          setCompanyName(fetchedName);
+        const res = await companyProfileService.getMyCompanyProfile();
+        if (res.data?.name) {
+          setCompanyName(res.data.name);
         }
       } catch (err) {
         console.debug('Could not load company in sidebar:', err);
       }
     };
     fetchCompany();
+
+    const handleCompanyUpdated = (e: Event) => {
+      const custom = e as CustomEvent<{ name?: string }>;
+      if (custom.detail?.name) {
+        setCompanyName(custom.detail.name);
+      } else {
+        fetchCompany();
+      }
+    };
+
+    window.addEventListener('kth_company_profile_updated', handleCompanyUpdated);
+    return () => {
+      window.removeEventListener('kth_company_profile_updated', handleCompanyUpdated);
+    };
   }, [user]);
 
   const initials =

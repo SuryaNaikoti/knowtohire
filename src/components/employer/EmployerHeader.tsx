@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Bell, Menu } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { companyProfileService } from '@/services';
 import { UserMenuDropdown } from '@/components/navigation/UserMenuDropdown';
 
 export interface EmployerHeaderProps {
@@ -21,24 +21,31 @@ export const EmployerHeader: React.FC<EmployerHeaderProps> = ({
   );
 
   useEffect(() => {
-    if (!user) return;
     const fetchCompany = async () => {
       try {
-        const { data: emp } = await supabase
-          .from('employer_profiles')
-          .select('company_profiles(name)')
-          .eq('profile_id', user.id)
-          .maybeSingle();
-
-        const fetchedName = (emp?.company_profiles as any)?.name;
-        if (fetchedName) {
-          setCompanyName(fetchedName);
+        const res = await companyProfileService.getMyCompanyProfile();
+        if (res.data?.name) {
+          setCompanyName(res.data.name);
         }
       } catch (err) {
         console.debug('Could not load company name:', err);
       }
     };
     fetchCompany();
+
+    const handleCompanyUpdated = (e: Event) => {
+      const custom = e as CustomEvent<{ name?: string }>;
+      if (custom.detail?.name) {
+        setCompanyName(custom.detail.name);
+      } else {
+        fetchCompany();
+      }
+    };
+
+    window.addEventListener('kth_company_profile_updated', handleCompanyUpdated);
+    return () => {
+      window.removeEventListener('kth_company_profile_updated', handleCompanyUpdated);
+    };
   }, [user]);
 
   const fullName =
