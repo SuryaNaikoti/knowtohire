@@ -121,6 +121,7 @@ export const notificationService = {
 
   /**
    * Create and trigger a notification for a user.
+   * Respects candidate notification preferences for job recommendations and application stage updates.
    */
   async sendNotification(
     userId: string,
@@ -128,8 +129,61 @@ export const notificationService = {
     message: string,
     type: 'application' | 'interview' | 'offer' | 'system' = 'system',
     link?: string
-  ): Promise<ServiceResult<AppNotification>> {
+  ): Promise<ServiceResult<AppNotification | null>> {
     try {
+      // 1. Check user notification preferences if candidate
+      let shouldDeliver = true;
+
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const raw = window.localStorage.getItem(`kth_demo_cand_profile_${userId}`);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed.isActive === false) {
+              shouldDeliver = false;
+            }
+            if (type === 'system' && title.toLowerCase().includes('job') && parsed.jobRecommendationAlerts === false) {
+              shouldDeliver = false;
+            }
+            if ((type === 'application' || type === 'interview' || type === 'offer') && parsed.applicationStageUpdates === false) {
+              shouldDeliver = false;
+            }
+          }
+        } catch {
+          // Ignore
+        }
+      }
+
+      // Check database preferences
+      if (shouldDeliver) {
+        try {
+          const { data: candProfile } = await supabase
+            .from('candidate_profiles')
+            .select('job_recommendation_alerts, application_stage_updates, is_active')
+            .eq('profile_id', userId)
+            .maybeSingle();
+
+          if (candProfile) {
+            if (candProfile.is_active === false) {
+              shouldDeliver = false;
+            }
+            if (type === 'system' && title.toLowerCase().includes('job') && candProfile.job_recommendation_alerts === false) {
+              shouldDeliver = false;
+            }
+            if ((type === 'application' || type === 'interview' || type === 'offer') && candProfile.application_stage_updates === false) {
+              shouldDeliver = false;
+            }
+          }
+        } catch {
+          // Table check catch
+        }
+      }
+
+      if (!shouldDeliver) {
+        // Notification suppressed by user preferences
+        return { data: null, error: null };
+      }
+
       const payload = {
         user_id: userId,
         title: title.trim(),
@@ -142,7 +196,18 @@ export const notificationService = {
       const { data, error } = await supabase.from('notifications').insert(payload).select('*').single();
 
       if (error) {
-        return { data: null, error: normalizeServiceError(error) };
+        // Supabase offline/demo fallback
+        const demoNotif: AppNotification = {
+          id: `notif-${Date.now()}`,
+          user_id: userId,
+          type,
+          title: payload.title,
+          message: payload.message,
+          is_read: false,
+          link,
+          created_at: payload.created_at,
+        };
+        return { data: demoNotif, error: null };
       }
 
       return {

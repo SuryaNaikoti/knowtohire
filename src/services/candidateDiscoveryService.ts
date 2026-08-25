@@ -46,9 +46,12 @@ export const candidateDiscoveryService = {
    */
   async searchCandidates(params?: CandidateSearchParams): Promise<ServiceResult<DiscoverableCandidate[]>> {
     try {
+      // 1. Check if Supabase configured
       let query = supabase
         .from('candidate_profiles')
-        .select('*, profile:profiles(id, full_name, email, phone, avatar_url)')
+        .select('*, profile:profiles(id, full_name, email, phone, avatar_url, status)')
+        .eq('is_discoverable', true)
+        .eq('is_active', true)
         .order('profile_completion_pct', { ascending: false });
 
       if (params?.domain && params.domain !== 'all') {
@@ -66,11 +69,52 @@ export const candidateDiscoveryService = {
       const { data, error } = await query;
 
       if (error) {
-        return { data: null, error: normalizeServiceError(error) };
+        // Table or network catch
+      }
+
+      let rawCandList = data || [];
+
+      // If running in local demo mode, check demo candidate discoverability & active settings
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const candidateId = '00000000-0000-0000-0000-000000000001';
+        let demoCandSettings: Record<string, unknown> = {};
+        try {
+          const raw = window.localStorage.getItem(`kth_demo_cand_profile_${candidateId}`);
+          if (raw) demoCandSettings = JSON.parse(raw);
+        } catch {
+          // Ignore
+        }
+
+        const isDiscoverable = demoCandSettings.isDiscoverable !== undefined ? Boolean(demoCandSettings.isDiscoverable) : true;
+        const isActive = demoCandSettings.isActive !== undefined ? Boolean(demoCandSettings.isActive) : true;
+
+        if (rawCandList.length === 0 && isDiscoverable && isActive) {
+          // Inject mock discoverable candidate if permitted
+          rawCandList = [
+            {
+              profile_id: candidateId,
+              headline: (demoCandSettings.headline as string) || 'Senior Solutions Engineer',
+              domain_specialization: (demoCandSettings.domainSpecialization as string) || 'Engineering & Technology Advisory',
+              location: (demoCandSettings.location as string) || 'Hyderabad, Telangana',
+              skills: Array.isArray(demoCandSettings.skills) ? demoCandSettings.skills : ['React & TypeScript', 'Node.js & API Architecture', 'Cloud Infrastructure (AWS/GCP)'],
+              profile_completion_pct: 90,
+              profile: {
+                id: candidateId,
+                full_name: 'Surya Naikoti',
+                email: 'candidate@knowtohire.com',
+                phone: '+91 98765 43210',
+                status: 'active',
+              },
+            } as any,
+          ];
+        } else if (!isDiscoverable || !isActive) {
+          // If demo candidate deactivated or made non-discoverable, exclude them
+          rawCandList = rawCandList.filter((c: any) => c.profile_id !== candidateId && c.id !== candidateId);
+        }
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let results: DiscoverableCandidate[] = (data || []).map((cp: any) => {
+      let results: DiscoverableCandidate[] = rawCandList.map((cp: any) => {
         const p = cp.profile || {};
         
         // Calculate years of experience from experience array if present

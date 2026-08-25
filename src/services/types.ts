@@ -80,6 +80,11 @@ export interface CandidateFullProfile {
   employmentPreference?: string | null;
   noticePeriodDays?: number | null;
   resumeUrl?: string | null;
+  jobRecommendationAlerts?: boolean;
+  applicationStageUpdates?: boolean;
+  isDiscoverable?: boolean;
+  isActive?: boolean;
+  deactivatedAt?: string | null;
   profileCompletionPct: number;
   status: string;
   role: string;
@@ -105,6 +110,11 @@ export interface CandidateProfileUpdateInput {
   employmentPreference?: string | null;
   noticePeriodDays?: number | null;
   resumeUrl?: string | null;
+  jobRecommendationAlerts?: boolean;
+  applicationStageUpdates?: boolean;
+  isDiscoverable?: boolean;
+  isActive?: boolean;
+  deactivatedAt?: string | null;
 }
 
 // ====================================================================

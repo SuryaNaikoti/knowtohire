@@ -169,6 +169,12 @@ export const candidateProfileService = {
               }
             );
 
+            const jobRecommendationAlerts = customOverrides.jobRecommendationAlerts !== undefined ? customOverrides.jobRecommendationAlerts : true;
+            const applicationStageUpdates = customOverrides.applicationStageUpdates !== undefined ? customOverrides.applicationStageUpdates : true;
+            const isDiscoverable = customOverrides.isDiscoverable !== undefined ? customOverrides.isDiscoverable : true;
+            const isActive = customOverrides.isActive !== undefined ? customOverrides.isActive : true;
+            const deactivatedAt = customOverrides.deactivatedAt || null;
+
             const demoFull: CandidateFullProfile = {
               id: candidateId,
               email: parsed.email || 'candidate@knowtohire.com',
@@ -192,8 +198,13 @@ export const candidateProfileService = {
               employmentPreference: customOverrides.employmentPreference || 'Full-Time / Hybrid',
               noticePeriodDays: customOverrides.noticePeriodDays ?? 15,
               resumeUrl: activeResumeUrl,
+              jobRecommendationAlerts,
+              applicationStageUpdates,
+              isDiscoverable,
+              isActive,
+              deactivatedAt,
               profileCompletionPct: calculatedPct,
-              status: 'active',
+              status: isActive ? 'active' : 'suspended',
               role: 'candidate',
               createdAt: '2026-08-01T00:00:00Z',
               updatedAt: new Date().toISOString(),
@@ -273,6 +284,11 @@ export const candidateProfileService = {
         employmentPreference: candProfile?.employment_preference || null,
         noticePeriodDays: candProfile?.notice_period_days ?? null,
         resumeUrl: candProfile?.resume_url || null,
+        jobRecommendationAlerts: candProfile?.job_recommendation_alerts !== undefined ? Boolean(candProfile.job_recommendation_alerts) : true,
+        applicationStageUpdates: candProfile?.application_stage_updates !== undefined ? Boolean(candProfile.application_stage_updates) : true,
+        isDiscoverable: candProfile?.is_discoverable !== undefined ? Boolean(candProfile.is_discoverable) : true,
+        isActive: candProfile?.is_active !== undefined ? Boolean(candProfile.is_active) : (userProfile.status !== 'suspended'),
+        deactivatedAt: candProfile?.deactivated_at || null,
         profileCompletionPct: calculatedPct,
         status: userProfile.status,
         role: userProfile.role,
@@ -314,6 +330,9 @@ export const candidateProfileService = {
             if (input.fullName !== undefined) existingAuthCustom.full_name = input.fullName.trim();
             if (input.phone !== undefined) existingAuthCustom.phone = input.phone ? input.phone.trim() : null;
             if (input.avatarUrl !== undefined) existingAuthCustom.avatar_url = input.avatarUrl ? input.avatarUrl.trim() : null;
+            if (input.isActive !== undefined) {
+              existingAuthCustom.status = input.isActive ? 'active' : 'suspended';
+            }
             existingAuthCustom.updated_at = new Date().toISOString();
             window.localStorage.setItem(`kth_demo_profile_custom_${candidateId}`, JSON.stringify(existingAuthCustom));
 
@@ -340,6 +359,11 @@ export const candidateProfileService = {
             if (input.employmentPreference !== undefined) existingCandCustom.employmentPreference = input.employmentPreference;
             if (input.noticePeriodDays !== undefined) existingCandCustom.noticePeriodDays = input.noticePeriodDays;
             if (input.resumeUrl !== undefined) existingCandCustom.resumeUrl = input.resumeUrl;
+            if (input.jobRecommendationAlerts !== undefined) existingCandCustom.jobRecommendationAlerts = input.jobRecommendationAlerts;
+            if (input.applicationStageUpdates !== undefined) existingCandCustom.applicationStageUpdates = input.applicationStageUpdates;
+            if (input.isDiscoverable !== undefined) existingCandCustom.isDiscoverable = input.isDiscoverable;
+            if (input.isActive !== undefined) existingCandCustom.isActive = input.isActive;
+            if (input.deactivatedAt !== undefined) existingCandCustom.deactivatedAt = input.deactivatedAt;
 
             window.localStorage.setItem(`kth_demo_cand_profile_${candidateId}`, JSON.stringify(existingCandCustom));
 
@@ -355,6 +379,11 @@ export const candidateProfileService = {
                 atsRecommendations: existingStored?.atsRecommendations,
               });
             }
+
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('kth_profile_updated'));
+            }
+
             return this.getMyCandidateProfile();
           }
         }
@@ -371,7 +400,7 @@ export const candidateProfileService = {
 
       const userId = authData.user.id;
 
-      // 1. Update public.profiles if full_name, phone, or avatar_url changed
+      // 1. Update public.profiles if full_name, phone, avatar_url, or status changed
       const profileUpdates: Record<string, unknown> = {};
       if (input.fullName !== undefined && input.fullName.trim()) {
         profileUpdates.full_name = input.fullName.trim();
@@ -381,6 +410,9 @@ export const candidateProfileService = {
       }
       if (input.avatarUrl !== undefined) {
         profileUpdates.avatar_url = input.avatarUrl ? input.avatarUrl.trim() : null;
+      }
+      if (input.isActive !== undefined) {
+        profileUpdates.status = input.isActive ? 'active' : 'suspended';
       }
 
       if (Object.keys(profileUpdates).length > 0) {
@@ -421,6 +453,11 @@ export const candidateProfileService = {
       if (input.employmentPreference !== undefined) candidatePayload.employment_preference = input.employmentPreference;
       if (input.noticePeriodDays !== undefined) candidatePayload.notice_period_days = input.noticePeriodDays;
       if (input.resumeUrl !== undefined) candidatePayload.resume_url = input.resumeUrl;
+      if (input.jobRecommendationAlerts !== undefined) candidatePayload.job_recommendation_alerts = input.jobRecommendationAlerts;
+      if (input.applicationStageUpdates !== undefined) candidatePayload.application_stage_updates = input.applicationStageUpdates;
+      if (input.isDiscoverable !== undefined) candidatePayload.is_discoverable = input.isDiscoverable;
+      if (input.isActive !== undefined) candidatePayload.is_active = input.isActive;
+      if (input.deactivatedAt !== undefined) candidatePayload.deactivated_at = input.deactivatedAt;
 
       // 4. Calculate updated profile completion score
       const mergedProfileForCalc = {
@@ -440,6 +477,10 @@ export const candidateProfileService = {
 
       if (candUpsertError) {
         return { data: null, error: normalizeServiceError(candUpsertError) };
+      }
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('kth_profile_updated'));
       }
 
       // 6. Return fresh full profile representation
