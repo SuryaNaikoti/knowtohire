@@ -372,25 +372,48 @@ export const adminService = {
    */
   async getJobs(): Promise<ServiceResult<AdminJobRecord[]>> {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('jobs')
         .select('id, title, status, category, location, created_at, company:company_profiles(name)')
         .order('created_at', { ascending: false });
-
-      if (error) {
-        return { data: null, error: normalizeServiceError(error) };
-      }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const jobs: AdminJobRecord[] = (data || []).map((j: any) => ({
         id: j.id,
         title: j.title || 'Untitled Job',
-        company_name: j.company?.name || 'Niche Synthesis Technologies',
+        company_name: j.company?.name || 'EcoStrategy India Pvt Ltd',
         status: j.status || 'draft',
         category: j.category || 'General',
         location: j.location || 'India',
         created_at: j.created_at,
       }));
+
+      // Merge local created jobs for Admin visibility
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const raw = window.localStorage.getItem('kth_local_created_jobs');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              for (const lj of parsed) {
+                if (!jobs.some((j) => j.id === lj.id)) {
+                  jobs.unshift({
+                    id: lj.id,
+                    title: lj.title || 'Untitled Job',
+                    company_name: lj.company?.name || 'EcoStrategy India Pvt Ltd',
+                    status: lj.status || 'published',
+                    category: lj.category || 'Engineering & Environment',
+                    location: lj.location || 'India',
+                    created_at: lj.created_at || new Date().toISOString(),
+                  });
+                }
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
 
       return { data: jobs, error: null };
     } catch (err) {
@@ -403,6 +426,27 @@ export const adminService = {
    */
   async updateJobStatus(jobId: string, status: 'published' | 'paused' | 'closed'): Promise<ServiceResult<boolean>> {
     try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const raw = window.localStorage.getItem('kth_local_created_jobs');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              const match = parsed.find((j: any) => j.id === jobId);
+              if (match) {
+                match.status = status;
+                match.updated_at = new Date().toISOString();
+                window.localStorage.setItem('kth_local_created_jobs', JSON.stringify(parsed));
+                window.dispatchEvent(new CustomEvent('kth_jobs_changed'));
+                return { data: true, error: null };
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const { error } = await supabase.from('jobs').update({ status }).eq('id', jobId);
       if (error) return { data: null, error: normalizeServiceError(error) };
       return { data: true, error: null };
@@ -439,18 +483,14 @@ export const adminService = {
         query = query.eq('stage', stageFilter);
       }
 
-      const { data, error } = await query;
-
-      if (error) {
-        return { data: null, error: normalizeServiceError(error) };
-      }
+      const { data } = await query;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let apps: AdminApplicationRecord[] = (data || []).map((a: any) => ({
         id: a.id,
         job_id: a.job_id,
         job_title: a.job?.title || 'Unknown Job',
-        company_name: a.company?.name || 'Verified Enterprise',
+        company_name: a.company?.name || 'EcoStrategy India Pvt Ltd',
         candidate_id: a.candidate_id,
         candidate_name: a.candidate?.full_name || 'Candidate',
         candidate_email: a.candidate?.email || '',
@@ -463,6 +503,42 @@ export const adminService = {
         applied_at: a.applied_at || a.created_at,
         created_at: a.created_at,
       }));
+
+      // Merge demo applications for single source of truth across portals
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const raw = window.localStorage.getItem('kth_demo_applications');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              for (const demoApp of parsed) {
+                if (!apps.some((a) => a.id === demoApp.id)) {
+                  const snapshot = demoApp.candidate_snapshot || {};
+                  apps.unshift({
+                    id: demoApp.id,
+                    job_id: demoApp.job_id,
+                    job_title: demoApp.job?.title || 'Position Opening',
+                    company_name: demoApp.job?.company?.name || 'EcoStrategy India Pvt Ltd',
+                    candidate_id: demoApp.candidate_id,
+                    candidate_name: demoApp.candidate?.full_name || snapshot.full_name || 'Candidate',
+                    candidate_email: demoApp.candidate?.email || snapshot.email || '',
+                    category: demoApp.job?.category || 'Environmental & ESG',
+                    stage: demoApp.stage || 'new',
+                    status: 'applied',
+                    match_score: 90,
+                    cover_letter: demoApp.cover_letter,
+                    resume_url: demoApp.resume_url,
+                    applied_at: demoApp.applied_at || demoApp.created_at,
+                    created_at: demoApp.applied_at || demoApp.created_at,
+                  });
+                }
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
 
       // If database returned 0 applications (e.g. unauthenticated demo admin), provide rich seed list
       if (apps.length === 0) {

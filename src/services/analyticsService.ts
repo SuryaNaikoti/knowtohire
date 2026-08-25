@@ -106,15 +106,28 @@ class AnalyticsService {
       const startDate = this.calculateStartDate(filters?.timeRange, filters?.startDate);
 
       // Active jobs count
-      const { count: activeJobsCount, error: jobsErr } = await supabase
+      const { count: activeJobsCount } = await supabase
         .from('jobs')
         .select('id', { count: 'exact', head: true })
         .eq('company_id', companyId)
         .eq('status', 'published');
 
-      if (jobsErr) {
-        return { data: null, error: normalizeServiceError(jobsErr) };
+      let localJobsCount = 0;
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const raw = window.localStorage.getItem('kth_local_created_jobs');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              localJobsCount = parsed.filter((j: any) => j.status === 'published' && (!j.company_id || j.company_id === companyId)).length;
+            }
+          }
+        } catch {
+          // ignore
+        }
       }
+
+      const totalActiveJobs = (activeJobsCount || 0) + localJobsCount;
 
       // Applications aggregation
       let appsQuery = supabase
@@ -132,12 +145,29 @@ class AnalyticsService {
         appsQuery = appsQuery.lte('applied_at', new Date(filters.endDate).toISOString());
       }
 
-      const { data: applications, error: appsErr } = await appsQuery;
-      if (appsErr) {
-        return { data: null, error: normalizeServiceError(appsErr) };
+      const { data: applications } = await appsQuery;
+
+      let appsList: any[] = applications ? [...applications] : [];
+
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const raw = window.localStorage.getItem('kth_demo_applications');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              const demoForCompany = parsed.filter((a: any) => (!a.company_id || a.company_id === companyId));
+              for (const demoApp of demoForCompany) {
+                if (!appsList.some((a) => a.id === demoApp.id)) {
+                  appsList.push(demoApp);
+                }
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
       }
 
-      const appsList = applications || [];
       const totalApplicants = appsList.length;
 
       let shortlistedCount = 0;
@@ -166,6 +196,24 @@ class AnalyticsService {
         .eq('company_id', companyId)
         .eq('status', 'scheduled');
 
+      let demoInterviewsList: any[] = [];
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const raw = window.localStorage.getItem('kth_demo_interviews');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              demoInterviewsList = parsed.filter((i: any) => (!i.company_id || i.company_id === companyId));
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      const totalInterviewsFinal = (interviewsTotal || 0) + demoInterviewsList.length;
+      const scheduledInterviewsFinal = (interviewsScheduled || 0) + demoInterviewsList.filter((i: any) => i.status === 'scheduled').length;
+
       // Conversion rates
       const hireConversionRate = totalApplicants > 0 ? Number(((hiredCount / totalApplicants) * 100).toFixed(1)) : 0;
       const interviewConversionRate =
@@ -177,9 +225,9 @@ class AnalyticsService {
 
       const result: RecruitmentOverview = {
         totalApplicants,
-        activeJobs: activeJobsCount || 0,
-        interviewsTotal: interviewsTotal || 0,
-        interviewsScheduled: interviewsScheduled || 0,
+        activeJobs: totalActiveJobs,
+        interviewsTotal: totalInterviewsFinal,
+        interviewsScheduled: scheduledInterviewsFinal,
         shortlistedCount,
         offersCount,
         hiredCount,
@@ -222,12 +270,27 @@ class AnalyticsService {
         query = query.lte('applied_at', new Date(filters.endDate).toISOString());
       }
 
-      const { data: apps, error } = await query;
-      if (error) {
-        return { data: null, error: normalizeServiceError(error) };
-      }
+      const { data: apps } = await query;
+      let appList: any[] = apps ? [...apps] : [];
 
-      const appList = apps || [];
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const raw = window.localStorage.getItem('kth_demo_applications');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              const demoForCompany = parsed.filter((a: any) => (!a.company_id || a.company_id === companyId));
+              for (const demoApp of demoForCompany) {
+                if (!appList.some((a) => a.id === demoApp.id)) {
+                  appList.push(demoApp);
+                }
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
       const total = appList.length;
 
       const stageCounts: Record<ApplicationStage, number> = {

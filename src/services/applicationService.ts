@@ -120,7 +120,7 @@ async function getEmployerCompanyId(): Promise<string | null> {
       try {
         const parsed = JSON.parse(storedDemo);
         if (parsed?.role === 'employer') {
-          return 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+          return parsed.company_id || 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
         }
       } catch { /* ignore */ }
     }
@@ -157,20 +157,38 @@ export const applicationService = {
       }
 
       // 1. Fetch Job to verify existence and get company_id
-      const { data: job, error: jobError } = await supabase
+      let targetJob = null;
+      const { data: job } = await supabase
         .from('jobs')
         .select('id, company_id, status, title, location, employment_type, min_salary_inr, max_salary_inr, company:company_profiles(*)')
         .eq('id', input.job_id)
         .maybeSingle();
 
-      if (jobError || !job) {
+      targetJob = job;
+
+      if (!targetJob && typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const raw = window.localStorage.getItem('kth_local_created_jobs');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              const localMatch = parsed.find((j: any) => j.id === input.job_id);
+              if (localMatch) targetJob = localMatch;
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      if (!targetJob) {
         return {
           data: null,
           error: { message: 'Job posting not found.', code: 'NOT_FOUND', status: 404 },
         };
       }
 
-      if (job.status !== 'published') {
+      if (targetJob.status !== 'published') {
         return {
           data: null,
           error: { message: 'This position is no longer accepting new applications.', code: 'JOB_NOT_PUBLISHED', status: 422 },
@@ -249,7 +267,7 @@ export const applicationService = {
         .insert({
           job_id: input.job_id,
           candidate_id: candidateId,
-          company_id: job.company_id,
+          company_id: targetJob.company_id,
           stage: 'new',
           resume_url: activeResumeUrl || 'https://knowtohire.com/resumes/candidate_resume.pdf',
           cover_letter: input.cover_letter ? input.cover_letter.trim() : null,
@@ -272,14 +290,14 @@ export const applicationService = {
           id: `demo-app-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           job_id: input.job_id,
           candidate_id: candidateId,
-          company_id: job.company_id,
+          company_id: targetJob.company_id,
           stage: 'new',
           resume_url: activeResumeUrl || 'https://knowtohire.com/resumes/candidate_resume.pdf',
           cover_letter: input.cover_letter ? input.cover_letter.trim() : null,
           candidate_snapshot: (snapshot as any) || {},
           applied_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          job: (job as any) || undefined,
+          job: (targetJob as any) || undefined,
         };
 
         saveDemoApplication(demoApp);

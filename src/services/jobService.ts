@@ -133,10 +133,10 @@ async function getEmployerAuthContext(): Promise<{ userId: string; companyId: st
     if (storedDemo) {
       try {
         const parsed = JSON.parse(storedDemo);
-        if (parsed?.role === 'employer') {
+        if (parsed?.role === 'employer' || parsed?.role === 'admin') {
           return {
             userId: parsed.id || '00000000-0000-0000-0000-000000000002',
-            companyId: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
+            companyId: parsed.company_id || 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
           };
         }
       } catch {
@@ -233,16 +233,32 @@ export const jobService = {
       // 11. Pagination Range
       const { data, count, error } = await query.range(from, to);
 
-      if (error) {
-        return { data: null, error: normalizeServiceError(error) };
+      let dbJobs: Job[] = (!error && data) ? ((data as any[]) || []).map(normalizeJobEntity) : [];
+
+      let publishedLocal = getLocalCreatedJobs().filter(j => j.status === 'published');
+      if (filters.keyword && filters.keyword.trim()) {
+        const kw = filters.keyword.trim().toLowerCase();
+        publishedLocal = publishedLocal.filter(
+          (j) =>
+            j.title.toLowerCase().includes(kw) ||
+            j.department.toLowerCase().includes(kw) ||
+            j.description.toLowerCase().includes(kw) ||
+            (j.company?.name || '').toLowerCase().includes(kw)
+        );
+      }
+      if (filters.location && filters.location.trim()) {
+        const loc = filters.location.trim().toLowerCase();
+        publishedLocal = publishedLocal.filter((j) => j.location.toLowerCase().includes(loc));
+      }
+      if (filters.category && filters.category.trim() && filters.category !== 'all') {
+        const cat = filters.category.trim().toLowerCase();
+        publishedLocal = publishedLocal.filter((j) => (j.category || '').toLowerCase().includes(cat));
       }
 
-      const publishedLocal = getLocalCreatedJobs().filter(j => j.status === 'published');
       const totalCount = (count || 0) + publishedLocal.length;
       const totalPages = Math.ceil(totalCount / pageSize);
-      const normalizedJobs = ((data as any[]) || []).map(normalizeJobEntity);
 
-      const combined = [...publishedLocal, ...normalizedJobs.filter(j => !publishedLocal.some(lj => lj.id === j.id))];
+      const combined = [...publishedLocal, ...dbJobs.filter(j => !publishedLocal.some(lj => lj.id === j.id))];
 
       return {
         data: {
@@ -271,18 +287,24 @@ export const jobService = {
         .eq('status', 'published')
         .maybeSingle();
 
+      if (data) {
+        return { data: normalizeJobEntity(data), error: null };
+      }
+
+      // Check local created jobs
+      const localJob = getLocalCreatedJobs().find((j) => j.id === jobId && j.status === 'published');
+      if (localJob) {
+        return { data: normalizeJobEntity(localJob), error: null };
+      }
+
       if (error) {
         return { data: null, error: normalizeServiceError(error) };
       }
 
-      if (!data) {
-        return {
-          data: null,
-          error: { message: 'Job posting not found or is no longer active.', code: 'NOT_FOUND', status: 404 },
-        };
-      }
-
-      return { data: normalizeJobEntity(data), error: null };
+      return {
+        data: null,
+        error: { message: 'Job posting not found or is no longer active.', code: 'NOT_FOUND', status: 404 },
+      };
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }
@@ -295,6 +317,7 @@ export const jobService = {
   async getEmployerJobs(filters: { status?: JobStatus; page?: number; pageSize?: number } = {}): Promise<ServiceResult<PaginatedResult<Job>>> {
     try {
       const authCtx = await getEmployerAuthContext();
+      const companyId = authCtx?.companyId;
       const page = filters.page && filters.page > 0 ? filters.page : 1;
       const pageSize = filters.pageSize && filters.pageSize > 0 ? filters.pageSize : 20;
       const from = (page - 1) * pageSize;
@@ -305,8 +328,8 @@ export const jobService = {
         .select('*, company:company_profiles(*)', { count: 'exact' });
 
       // CRITICAL FIX: Scope by company_id so employers only see their own jobs
-      if (authCtx?.companyId) {
-        query = query.eq('company_id', authCtx.companyId);
+      if (companyId) {
+        query = query.eq('company_id', companyId);
       }
 
       if (filters.status) {
@@ -317,17 +340,21 @@ export const jobService = {
 
       const { data, count, error } = await query;
 
-      if (error) {
-        return { data: null, error: normalizeServiceError(error) };
+      let dbJobs: Job[] = (!error && data) ? ((data as any[]) || []).map(normalizeJobEntity) : [];
+
+      let localJobs = getLocalCreatedJobs();
+      if (companyId) {
+        localJobs = localJobs.filter((j) => !j.company_id || j.company_id === companyId);
+      }
+      if (filters.status) {
+        localJobs = localJobs.filter((j) => j.status === filters.status);
       }
 
-      const totalCount = (count || 0) + getLocalCreatedJobs().length;
+      const totalCount = (count || 0) + localJobs.length;
       const totalPages = Math.ceil(totalCount / pageSize);
-      const normalizedJobs = ((data as any[]) || []).map(normalizeJobEntity);
 
       // Blend local jobs at top of feed
-      const localJobs = getLocalCreatedJobs();
-      const combined = [...localJobs, ...normalizedJobs.filter(j => !localJobs.some(lj => lj.id === j.id))];
+      const combined = [...localJobs, ...dbJobs.filter(j => !localJobs.some(lj => lj.id === j.id))];
 
       return {
         data: {
@@ -355,18 +382,23 @@ export const jobService = {
         .eq('id', jobId)
         .maybeSingle();
 
+      if (data) {
+        return { data: normalizeJobEntity(data), error: null };
+      }
+
+      const localJob = getLocalCreatedJobs().find((j) => j.id === jobId);
+      if (localJob) {
+        return { data: normalizeJobEntity(localJob), error: null };
+      }
+
       if (error) {
         return { data: null, error: normalizeServiceError(error) };
       }
 
-      if (!data) {
-        return {
-          data: null,
-          error: { message: 'Job requisition not found.', code: 'NOT_FOUND', status: 404 },
-        };
-      }
-
-      return { data: normalizeJobEntity(data), error: null };
+      return {
+        data: null,
+        error: { message: 'Job opening not found.', code: 'NOT_FOUND', status: 404 },
+      };
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }

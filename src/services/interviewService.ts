@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { applicationService } from './applicationService';
 import {
   Interview,
   InterviewCreateInput,
@@ -64,6 +65,35 @@ async function getCandidateUserId(): Promise<string | null> {
   return '00000000-0000-0000-0000-000000000001';
 }
 
+async function getEmployerCompanyId(): Promise<string | null> {
+  const { data: userData } = await supabase.auth.getUser();
+  if (userData?.user?.id) {
+    const { data: employerProfile } = await supabase
+      .from('employer_profiles')
+      .select('company_id')
+      .eq('profile_id', userData.user.id)
+      .maybeSingle();
+
+    if (employerProfile?.company_id) return employerProfile.company_id;
+    return 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+  }
+
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const storedDemo = window.localStorage.getItem('kth_demo_auth_session');
+    if (storedDemo) {
+      try {
+        const parsed = JSON.parse(storedDemo);
+        if (parsed?.role === 'employer') {
+          return parsed.company_id || 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+  return null;
+}
+
 export const interviewService = {
   /**
    * Fetch all upcoming and past interviews for the authenticated candidate.
@@ -109,13 +139,24 @@ export const interviewService = {
    */
   async getEmployerInterviews(): Promise<ServiceResult<Interview[]>> {
     try {
-      const { data, error } = await supabase
+      const companyId = await getEmployerCompanyId();
+
+      let query = supabase
         .from('interviews')
         .select('*, candidate:profiles!candidate_id(full_name, email, phone, avatar_url), job:jobs(title, department), company:company_profiles(*)')
         .order('scheduled_start', { ascending: true });
 
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
+
+      const { data, error } = await query;
+
       const dbInterviews = (!error && data) ? (data as Interview[]) : [];
-      const demoInterviews = getDemoInterviews();
+      let demoInterviews = getDemoInterviews();
+      if (companyId) {
+        demoInterviews = demoInterviews.filter((i) => i.company_id === companyId);
+      }
 
       const merged = [...demoInterviews];
       for (const item of dbInterviews) {
@@ -199,6 +240,31 @@ export const interviewService = {
         notes: input.notes ? input.notes.trim() : null,
       };
 
+      const isDemo =
+        typeof window !== 'undefined' &&
+        window.localStorage &&
+        (Boolean(window.localStorage.getItem('kth_demo_auth_session')) ||
+          Boolean(window.localStorage.getItem('kth_demo_applications')));
+
+      // In demo mode or if Supabase is offline/unauthenticated, save to demo store
+      if (isDemo) {
+        const demoId = `interview-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        const demoRecord: Interview = {
+          id: demoId,
+          ...payload,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        if (input.application_id) {
+          await applicationService.updateApplicationStage(input.application_id, 'interview');
+        }
+
+        saveDemoInterview(demoRecord);
+        notifyInterviewsChanged();
+        return { data: demoRecord, error: null };
+      }
+
       const { data, error } = await supabase
         .from('interviews')
         .insert(payload)
@@ -206,22 +272,18 @@ export const interviewService = {
         .single();
 
       if (!error && data) {
+        if (input.application_id) {
+          await applicationService.updateApplicationStage(input.application_id, 'interview');
+        }
         notifyInterviewsChanged();
         return { data: data as Interview, error: null };
       }
 
-      // Demo mode fallback
-      const demoId = `interview-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      const demoRecord: Interview = {
-        id: demoId,
-        ...payload,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+      if (error) {
+        return { data: null, error: normalizeServiceError(error) };
+      }
 
-      saveDemoInterview(demoRecord);
-      notifyInterviewsChanged();
-      return { data: demoRecord, error: null };
+      return { data: null, error: { message: 'Failed to schedule interview.', code: 'INTERVIEW_ERROR', status: 500 } };
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }

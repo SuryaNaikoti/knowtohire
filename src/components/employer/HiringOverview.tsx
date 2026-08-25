@@ -36,6 +36,11 @@ export const HiringOverview: React.FC = () => {
     (user?.user_metadata?.full_name as string)?.split(' ')[0] ||
     'Recruiter';
 
+  const handleNavigate = (path: string) => {
+    window.history.pushState({}, '', path);
+    window.dispatchEvent(new Event('popstate'));
+  };
+
   return (
     <div className="bg-white p-6 rounded-2xl border border-kth-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
@@ -47,14 +52,14 @@ export const HiringOverview: React.FC = () => {
         </p>
       </div>
       <div className="flex gap-2 w-full sm:w-auto">
-        <Button variant="secondary" size="sm" onClick={() => (window.location.href = '/employer/candidates')}>
+        <Button variant="secondary" size="sm" onClick={() => handleNavigate('/employer/candidates')}>
           Discover Talent
         </Button>
         <Button
           variant="primary"
           size="sm"
           leftIcon={<Plus className="w-4 h-4" />}
-          onClick={() => (window.location.href = '/employer/jobs/new')}
+          onClick={() => handleNavigate('/employer/jobs/new')}
         >
           Post a Job
         </Button>

@@ -121,7 +121,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
 
   const handleSelect = (link: string) => {
     onClose();
-    window.location.href = link;
+    window.history.pushState({}, '', link);
+    window.dispatchEvent(new Event('popstate'));
   };
 
   return (

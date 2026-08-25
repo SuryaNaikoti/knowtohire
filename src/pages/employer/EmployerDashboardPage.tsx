@@ -51,6 +51,20 @@ export const EmployerDashboardPage: React.FC = () => {
 
   useEffect(() => {
     loadDashboard();
+
+    const handleSync = () => {
+      loadDashboard();
+    };
+
+    window.addEventListener('kth_applications_changed', handleSync);
+    window.addEventListener('kth_interviews_changed', handleSync);
+    window.addEventListener('kth_jobs_changed', handleSync);
+
+    return () => {
+      window.removeEventListener('kth_applications_changed', handleSync);
+      window.removeEventListener('kth_interviews_changed', handleSync);
+      window.removeEventListener('kth_jobs_changed', handleSync);
+    };
   }, [loadDashboard]);
 
   const handleNavigate = (path: string) => {

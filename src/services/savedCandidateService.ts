@@ -10,12 +10,62 @@ import {
   normalizeServiceError,
 } from './types';
 
+function getDemoSavedCandidates(): SavedCandidate[] {
+  if (typeof window === 'undefined' || !window.localStorage) return [];
+  try {
+    const raw = window.localStorage.getItem('kth_demo_saved_candidates');
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveDemoSavedCandidates(list: SavedCandidate[]) {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    window.localStorage.setItem('kth_demo_saved_candidates', JSON.stringify(list));
+  } catch {
+    // ignore
+  }
+}
+
 export const savedCandidateService = {
   /**
    * Bookmark a candidate for the employer's organization.
    */
   async saveCandidate(candidateId: string, notes?: string): Promise<ServiceResult<SavedCandidate>> {
     try {
+      const isDemo =
+        typeof window !== 'undefined' &&
+        window.localStorage &&
+        Boolean(window.localStorage.getItem('kth_demo_auth_session'));
+
+      if (isDemo) {
+        const demoAuth = JSON.parse(window.localStorage.getItem('kth_demo_auth_session') || '{}');
+        const companyId = demoAuth.company_id || 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+        const employerId = demoAuth.id || '00000000-0000-0000-0000-000000000002';
+
+        const list = getDemoSavedCandidates();
+        const existingIdx = list.findIndex((s) => s.candidate_id === candidateId && s.company_id === companyId);
+        
+        const newRecord: SavedCandidate = {
+          id: `saved-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          company_id: companyId,
+          employer_id: employerId,
+          candidate_id: candidateId,
+          notes: notes ? notes.trim() : null,
+          created_at: new Date().toISOString(),
+        };
+
+        if (existingIdx >= 0) {
+          list[existingIdx] = newRecord;
+        } else {
+          list.unshift(newRecord);
+        }
+        saveDemoSavedCandidates(list);
+        return { data: newRecord, error: null };
+      }
+
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData?.user) {
         return {
@@ -65,6 +115,21 @@ export const savedCandidateService = {
    */
   async unsaveCandidate(candidateId: string): Promise<ServiceResult<boolean>> {
     try {
+      const isDemo =
+        typeof window !== 'undefined' &&
+        window.localStorage &&
+        Boolean(window.localStorage.getItem('kth_demo_auth_session'));
+
+      if (isDemo) {
+        const demoAuth = JSON.parse(window.localStorage.getItem('kth_demo_auth_session') || '{}');
+        const companyId = demoAuth.company_id || 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+        const list = getDemoSavedCandidates().filter(
+          (s) => !(s.candidate_id === candidateId && s.company_id === companyId)
+        );
+        saveDemoSavedCandidates(list);
+        return { data: true, error: null };
+      }
+
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData?.user) {
         return {
@@ -107,6 +172,18 @@ export const savedCandidateService = {
    */
   async getMySavedCandidates(): Promise<ServiceResult<SavedCandidate[]>> {
     try {
+      const isDemo =
+        typeof window !== 'undefined' &&
+        window.localStorage &&
+        Boolean(window.localStorage.getItem('kth_demo_auth_session'));
+
+      if (isDemo) {
+        const demoAuth = JSON.parse(window.localStorage.getItem('kth_demo_auth_session') || '{}');
+        const companyId = demoAuth.company_id || 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+        const list = getDemoSavedCandidates().filter((s) => s.company_id === companyId);
+        return { data: list, error: null };
+      }
+
       const { data, error } = await supabase
         .from('saved_candidates')
         .select('*, candidate:profiles!candidate_id(*, candidate_profile:candidate_profiles(*))')
@@ -127,6 +204,20 @@ export const savedCandidateService = {
    */
   async isCandidateSaved(candidateId: string): Promise<ServiceResult<boolean>> {
     try {
+      const isDemo =
+        typeof window !== 'undefined' &&
+        window.localStorage &&
+        Boolean(window.localStorage.getItem('kth_demo_auth_session'));
+
+      if (isDemo) {
+        const demoAuth = JSON.parse(window.localStorage.getItem('kth_demo_auth_session') || '{}');
+        const companyId = demoAuth.company_id || 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+        const exists = getDemoSavedCandidates().some(
+          (s) => s.candidate_id === candidateId && s.company_id === companyId
+        );
+        return { data: exists, error: null };
+      }
+
       const { data: userData } = await supabase.auth.getUser();
       if (!userData?.user) {
         return { data: false, error: null };
