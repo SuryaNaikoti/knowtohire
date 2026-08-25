@@ -46,6 +46,10 @@ export interface ContentRequest {
   storage_bucket?: string | null;
   fulfilled_by_resource_id?: string | null;
   completed_at?: string | null;
+  price_inr?: number;
+  is_paid?: boolean;
+  payment_id?: string | null;
+  paid_at?: string | null;
   created_at: string;
   updated_at?: string;
 }
@@ -71,6 +75,7 @@ export interface FulfillRequestInput {
   storage_path?: string;
   storage_bucket?: string;
   completed_resource_id?: string;
+  price_inr?: number;
   file?: File;
   onProgress?: (progress: number) => void;
 }
@@ -142,6 +147,10 @@ function mapDatabaseRowToContentRequest(r: Record<string, any>): ContentRequest 
     storage_bucket: r.storage_bucket || 'content',
     fulfilled_by_resource_id: r.fulfilled_by_resource_id || r.completed_resource_id || null,
     completed_at: r.completed_at || null,
+    price_inr: Number(r.price_inr || 0),
+    is_paid: Boolean(r.is_paid),
+    payment_id: r.payment_id || null,
+    paid_at: r.paid_at || null,
     created_at: r.created_at,
     updated_at: r.updated_at,
   };
@@ -342,6 +351,10 @@ export const requestService = {
         storage_bucket: 'content',
         fulfilled_by_resource_id: null,
         completed_at: null,
+        price_inr: 0,
+        is_paid: false,
+        payment_id: null,
+        paid_at: null,
         created_at: now,
         updated_at: now,
       };
@@ -496,6 +509,7 @@ export const requestService = {
         storage_bucket: storageBucket,
         completed_resource_id: completedResourceId,
         fulfilled_by_resource_id: completedResourceId,
+        price_inr: input.price_inr !== undefined ? input.price_inr : existing?.price_inr,
         completed_at: completedAt,
         updated_at: new Date().toISOString(),
       };
@@ -514,6 +528,34 @@ export const requestService = {
 
       const updated = await this.getRequestById(id);
       return updated;
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
+   * Candidate / Payment Flow: Mark request as paid upon successful transaction.
+   */
+  async markRequestPaid(id: string, paymentId: string): Promise<ServiceResult<ContentRequest>> {
+    try {
+      const now = new Date().toISOString();
+      const updates = {
+        is_paid: true,
+        payment_id: paymentId,
+        paid_at: now,
+        updated_at: now,
+      };
+
+      if (isSupabaseConfigured()) {
+        try {
+          await supabase.from('resource_requests').update(updates).eq('id', id);
+        } catch {
+          // Ignore
+        }
+      }
+
+      updateDemoRequest(id, updates);
+      return this.getRequestById(id);
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }

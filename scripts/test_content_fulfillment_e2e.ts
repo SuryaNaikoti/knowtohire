@@ -111,7 +111,7 @@ async function runE2ETests() {
   assert(invalidFulfill.error !== null, 'Fulfillment blocked without deliverable');
   assert(invalidFulfill.error?.code === 'DELIVERABLE_REQUIRED', 'Error code is DELIVERABLE_REQUIRED');
 
-  // Now fulfill with deliverable
+  // Now fulfill with deliverable and set price
   const fulfillRes = await requestService.updateAndFulfillRequest(createdRequestId, {
     status: 'completed',
     deliverable_title: 'Advanced Digital Marketing Master Guide',
@@ -121,20 +121,30 @@ async function runE2ETests() {
     deliverable_size: '2.4 MB',
     deliverable_format: 'PDF',
     storage_bucket: 'content',
+    price_inr: 499,
   });
 
   assert(fulfillRes.data !== null, 'Request fulfilled successfully');
   assert(fulfillRes.data?.status === 'completed', 'Status is completed (Fulfilled)');
   assert(fulfillRes.data?.deliverable_url !== null, 'Deliverable URL attached');
   assert(fulfillRes.data?.deliverable_size === '2.4 MB', 'Deliverable metadata saved');
+  assert(fulfillRes.data?.price_inr === 499, 'Deliverable price set to ₹499');
+  assert(fulfillRes.data?.is_paid === false, 'Deliverable is initially unpaid');
 
   // ----------------------------------------------------
-  // TEST D: Candidate Delivery Verification
+  // TEST D: Candidate Delivery & Payment Unlock Verification
   // ----------------------------------------------------
-  console.log('\n--- TEST D: Candidate Delivery & Access Verification ---');
+  console.log('\n--- TEST D: Candidate Delivery & Paid Unlock Verification ---');
   const candidateReqRes = await requestService.getRequestById(createdRequestId);
   assert(candidateReqRes.data?.status === 'completed', 'Candidate sees Fulfilled status');
-  assert(candidateReqRes.data?.deliverable_url?.includes('.pdf') === true, 'Candidate can access deliverable URL');
+  assert(candidateReqRes.data?.price_inr === 499, 'Candidate sees required price ₹499');
+  assert(candidateReqRes.data?.is_paid === false, 'Deliverable is locked prior to payment');
+
+  // Candidate pays for request
+  const payRes = await requestService.markRequestPaid(createdRequestId, 'pay_test_order_12345');
+  assert(payRes.data?.is_paid === true, 'Request marked as paid');
+  assert(payRes.data?.payment_id === 'pay_test_order_12345', 'Payment ID recorded');
+  assert(payRes.data?.deliverable_url?.includes('.pdf') === true, 'Candidate can now access unlocked deliverable');
 
   // ----------------------------------------------------
   // TEST E: Knowledge Hub Publishing & Lifecycle

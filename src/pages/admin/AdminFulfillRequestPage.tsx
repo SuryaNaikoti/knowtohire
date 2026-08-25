@@ -47,6 +47,7 @@ export const AdminFulfillRequestPage: React.FC<AdminFulfillRequestPageProps> = (
   // Form States
   const [status, setStatus] = useState<RequestStatus>('under_review');
   const [adminNotes, setAdminNotes] = useState('');
+  const [priceINR, setPriceINR] = useState('0');
   const [fulfillmentMode, setFulfillmentMode] = useState<'upload' | 'attach'>('upload');
 
   // Custom Deliverable State
@@ -84,6 +85,7 @@ export const AdminFulfillRequestPage: React.FC<AdminFulfillRequestPageProps> = (
       setRequest(req);
       setStatus(req.status);
       setAdminNotes(req.admin_notes || '');
+      setPriceINR(String(req.price_inr || 0));
       setDeliverableTitle(req.deliverable_title || `${req.title} — Deliverable`);
       setDeliverableDescription(req.deliverable_description || '');
       setSelectedResourceId(req.completed_resource_id || '');
@@ -126,6 +128,7 @@ export const AdminFulfillRequestPage: React.FC<AdminFulfillRequestPageProps> = (
       admin_notes: adminNotes.trim() || undefined,
       deliverable_title: deliverableTitle.trim() || undefined,
       deliverable_description: deliverableDescription.trim() || undefined,
+      price_inr: parseFloat(priceINR) || 0,
       completed_resource_id: fulfillmentMode === 'attach' ? (selectedResourceId || undefined) : undefined,
       file: fulfillmentMode === 'upload' && selectedFile ? selectedFile : undefined,
       onProgress: (pct) => setUploadProgress(pct),
@@ -490,6 +493,36 @@ export const AdminFulfillRequestPage: React.FC<AdminFulfillRequestPageProps> = (
                   <option value="rejected">Declined</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-kth-slate-700 uppercase tracking-wider block">
+                  Access Pricing (INR)
+                </label>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="0 for Free Access"
+                    value={priceINR}
+                    onChange={(e) => setPriceINR(e.target.value)}
+                  />
+                </div>
+                <p className="text-[11px] text-kth-slate-400">
+                  {parseFloat(priceINR) > 0 ? (
+                    <span className="text-amber-700 font-medium">
+                      Paid Content: Candidate must pay ₹{priceINR} before unlocking download.
+                    </span>
+                  ) : (
+                    'Free Deliverable: Accessible immediately once fulfilled.'
+                  )}
+                </p>
+                {request.is_paid && (
+                  <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] font-bold text-emerald-800 flex items-center gap-1.5 mt-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Payment Confirmed by Candidate (Tx: {request.payment_id || 'Verified'})</span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">

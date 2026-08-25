@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Dialog } from '@/components/ui/Dialog';
 import { requestService, ContentRequest, RequestStatus } from '@/services/requestService';
+import { paymentService } from '@/services/paymentService';
 import {
   FileText,
   Plus,
@@ -20,6 +21,8 @@ import {
   Calendar,
   Download,
   FileCheck,
+  CreditCard,
+  Lock,
 } from 'lucide-react';
 
 export const CandidateRequestsPage: React.FC = () => {
@@ -27,6 +30,7 @@ export const CandidateRequestsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<ContentRequest | null>(null);
 
   // Form State
@@ -159,6 +163,37 @@ export const CandidateRequestsPage: React.FC = () => {
     }
   };
 
+  const handlePayAndUnlock = async (req: ContentRequest) => {
+    if (!req.price_inr || req.price_inr <= 0) {
+      handleOpenDeliverable(req);
+      return;
+    }
+
+    setIsPaying(true);
+    const res = await paymentService.initiateCheckout({
+      itemType: 'content_request',
+      itemId: req.id,
+      itemName: `Deliverable: ${req.title}`,
+      amountINR: req.price_inr,
+      onSuccess: async (paymentId: string) => {
+        await requestService.markRequestPaid(req.id, paymentId);
+        setIsPaying(false);
+        setSuccessToast(`Payment of ₹${req.price_inr} confirmed! Your deliverable is now unlocked.`);
+        fetchRequests();
+        if (selectedRequest && selectedRequest.id === req.id) {
+          setSelectedRequest({ ...selectedRequest, is_paid: true, payment_id: paymentId });
+        }
+      },
+      onCancel: () => {
+        setIsPaying(false);
+      },
+    });
+
+    if (res.error) {
+      setIsPaying(false);
+    }
+  };
+
   return (
     <CandidateShell title="Content Requests" currentPath="/candidate/requests">
       <div className="space-y-6 max-w-5xl mx-auto">
@@ -287,9 +322,15 @@ export const CandidateRequestsPage: React.FC = () => {
                                 </span>
                               </div>
                             </div>
-                            <span className="text-[11px] font-bold text-emerald-700 underline shrink-0">
-                              Ready for Download
-                            </span>
+                            {req.price_inr && req.price_inr > 0 && !req.is_paid ? (
+                              <Badge variant="amber" className="text-[11px] font-bold shrink-0">
+                                Price: ₹{req.price_inr}
+                              </Badge>
+                            ) : (
+                              <span className="text-[11px] font-bold text-emerald-700 underline shrink-0">
+                                Ready for Download
+                              </span>
+                            )}
                           </div>
                         )}
 
@@ -298,6 +339,17 @@ export const CandidateRequestsPage: React.FC = () => {
                             <Calendar className="w-3 h-3 text-kth-slate-400" />
                             Submitted: {new Date(req.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                           </span>
+                          {req.price_inr && req.price_inr > 0 ? (
+                            req.is_paid ? (
+                              <span className="text-emerald-700 font-sans font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                ✓ Paid (₹{req.price_inr})
+                              </span>
+                            ) : (
+                              <span className="text-amber-800 font-sans font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                Price: ₹{req.price_inr}
+                              </span>
+                            )
+                          ) : null}
                           {req.admin_notes && (
                             <span className="text-kth-primary-700 font-sans font-medium bg-kth-primary-50 px-2 py-0.5 rounded border border-kth-primary-200">
                               Editor Note: {req.admin_notes}
@@ -308,19 +360,34 @@ export const CandidateRequestsPage: React.FC = () => {
 
                       <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-kth-slate-100">
                         {isFulfilled && hasDeliverable ? (
-                          <div className="flex items-center gap-2">
+                          req.price_inr && req.price_inr > 0 && !req.is_paid ? (
                             <Button
                               variant="primary"
                               size="sm"
-                              leftIcon={<Download className="w-3.5 h-3.5" />}
+                              isLoading={isPaying}
+                              leftIcon={<CreditCard className="w-3.5 h-3.5" />}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleOpenDeliverable(req);
+                                handlePayAndUnlock(req);
                               }}
                             >
-                              View / Download Resource
+                              Pay ₹{req.price_inr} & Unlock
                             </Button>
-                          </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                leftIcon={<Download className="w-3.5 h-3.5" />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenDeliverable(req);
+                                }}
+                              >
+                                View / Download Resource
+                              </Button>
+                            </div>
+                          )
                         ) : (
                           <Button
                             variant="secondary"
@@ -490,61 +557,102 @@ export const CandidateRequestsPage: React.FC = () => {
               {/* DELIVERABLE SECTION */}
               {selectedRequest.status === 'completed' && (selectedRequest.deliverable_url || selectedRequest.completed_resource_id) && (
                 <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-3">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                    <div>
-                      <span className="text-xs font-bold text-emerald-950 block">DELIVERABLE ATTACHED & FULFILLED</span>
-                      <span className="text-[11px] text-emerald-800">
-                        The requested study resource is ready for review and download.
-                      </span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      <div>
+                        <span className="text-xs font-bold text-emerald-950 block">DELIVERABLE ATTACHED & FULFILLED</span>
+                        <span className="text-[11px] text-emerald-800">
+                          The requested study resource is ready for access.
+                        </span>
+                      </div>
                     </div>
+                    {selectedRequest.price_inr && selectedRequest.price_inr > 0 ? (
+                      selectedRequest.is_paid ? (
+                        <Badge variant="emerald" className="font-bold">✓ Paid ₹{selectedRequest.price_inr}</Badge>
+                      ) : (
+                        <Badge variant="amber" className="font-bold">₹{selectedRequest.price_inr}</Badge>
+                      )
+                    ) : (
+                      <Badge variant="emerald">Free Resource</Badge>
+                    )}
                   </div>
 
-                  <div className="bg-white p-4 rounded-xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-800 font-mono font-bold text-xs shrink-0">
-                        {selectedRequest.deliverable_format || 'PDF'}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-kth-slate-900 truncate">
-                          {selectedRequest.deliverable_title || selectedRequest.deliverable_name || selectedRequest.title}
-                        </p>
-                        <p className="text-[11px] text-kth-slate-500 font-mono">
-                          {selectedRequest.deliverable_format || 'PDF'} {selectedRequest.deliverable_size ? `• ${selectedRequest.deliverable_size}` : ''}
-                        </p>
-                        {selectedRequest.deliverable_description && (
-                          <p className="text-xs text-kth-slate-600 mt-1 line-clamp-2">
-                            {selectedRequest.deliverable_description}
+                  {/* If paid content and NOT paid yet, show locked pay card */}
+                  {selectedRequest.price_inr && selectedRequest.price_inr > 0 && !selectedRequest.is_paid ? (
+                    <div className="bg-white p-5 rounded-xl border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-800 shrink-0">
+                          <Lock className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-kth-slate-900 truncate">
+                            {selectedRequest.deliverable_title || selectedRequest.deliverable_name || selectedRequest.title}
                           </p>
+                          <p className="text-[11px] text-amber-700 font-medium">
+                            Premium Research Deliverable • ₹{selectedRequest.price_inr} required to unlock
+                          </p>
+                        </div>
+                      </div>
+
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        isLoading={isPaying}
+                        leftIcon={<CreditCard className="w-4 h-4" />}
+                        onClick={() => handlePayAndUnlock(selectedRequest)}
+                      >
+                        Pay ₹{selectedRequest.price_inr} to Download
+                      </Button>
+                    </div>
+                  ) : (
+                    /* UNLOCKED & DOWNLOADABLE */
+                    <div className="bg-white p-4 rounded-xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-800 font-mono font-bold text-xs shrink-0">
+                          {selectedRequest.deliverable_format || 'PDF'}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-kth-slate-900 truncate">
+                            {selectedRequest.deliverable_title || selectedRequest.deliverable_name || selectedRequest.title}
+                          </p>
+                          <p className="text-[11px] text-kth-slate-500 font-mono">
+                            {selectedRequest.deliverable_format || 'PDF'} {selectedRequest.deliverable_size ? `• ${selectedRequest.deliverable_size}` : ''}
+                          </p>
+                          {selectedRequest.deliverable_description && (
+                            <p className="text-xs text-kth-slate-600 mt-1 line-clamp-2">
+                              {selectedRequest.deliverable_description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {selectedRequest.deliverable_url && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            leftIcon={<Download className="w-3.5 h-3.5" />}
+                            onClick={() => window.open(selectedRequest.deliverable_url || '', '_blank')}
+                          >
+                            Download Deliverable
+                          </Button>
+                        )}
+                        {selectedRequest.completed_resource_id && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
+                            onClick={() => {
+                              window.location.href = `/knowledge/${selectedRequest.completed_resource_id}`;
+                            }}
+                          >
+                            View in Hub
+                          </Button>
                         )}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      {selectedRequest.deliverable_url && (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          leftIcon={<Download className="w-3.5 h-3.5" />}
-                          onClick={() => window.open(selectedRequest.deliverable_url || '', '_blank')}
-                        >
-                          Download
-                        </Button>
-                      )}
-                      {selectedRequest.completed_resource_id && (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
-                          onClick={() => {
-                            window.location.href = `/knowledge/${selectedRequest.completed_resource_id}`;
-                          }}
-                        >
-                          View in Hub
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+                  )}
                 </div>
               )}
 

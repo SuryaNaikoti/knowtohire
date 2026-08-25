@@ -11,14 +11,14 @@ export interface PaymentOrder {
   order_id: string;
   user_id: string;
   amount_inr: number;
-  item_type: 'template' | 'resource' | 'candidate_subscription' | 'employer_subscription' | 'job_post';
+  item_type: 'template' | 'resource' | 'content_request' | 'candidate_subscription' | 'employer_subscription' | 'job_post';
   item_id: string;
   status: 'created' | 'paid' | 'failed' | 'cancelled';
   created_at: string;
 }
 
 export interface CheckoutOptions {
-  itemType: 'template' | 'resource' | 'candidate_subscription' | 'employer_subscription' | 'job_post';
+  itemType: 'template' | 'resource' | 'content_request' | 'candidate_subscription' | 'employer_subscription' | 'job_post';
   itemId: string;
   itemName: string;
   amountINR: number;
