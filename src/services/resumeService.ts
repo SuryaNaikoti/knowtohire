@@ -36,6 +36,7 @@ import { generateCandidatePdfDataUrl } from '@/utils/candidatePdfGenerator';
 export function getStoredDemoResume(userId: string): StoredResumeMetadata | null {
   if (typeof window === 'undefined' || !window.localStorage) return null;
   try {
+    const raw = window.localStorage.getItem(`${DEMO_RESUME_STORAGE_KEY_PREFIX}${userId}`);
     // If a candidate uploaded resume is present, return it immediately
     if (raw) {
       const parsed = JSON.parse(raw);
