@@ -3,6 +3,7 @@ import { EmployerShell } from '@/components/employer/EmployerShell';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { SearchableCombobox } from '@/components/ui/SearchableCombobox';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Badge } from '@/components/ui/Badge';
@@ -223,11 +224,17 @@ export const EmployerCreateJobPage: React.FC = () => {
                 }}
                 options={categoriesList.map((c) => ({ value: c.name, label: c.name }))}
               />
-              <Select
-                label="Primary Location (Hub & Regional Cities)"
+              <SearchableCombobox
+                label="Primary Location (Search 160+ Hubs & Regional Cities)"
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                options={citiesList.map((c) => ({ value: `${c.name}, India`, label: `${c.name}, India${c.is_popular ? ' (Popular Hub)' : ''}` }))}
+                onChange={(val) => setLocation(val)}
+                placeholder="Search city (e.g. Hyderabad, Bengaluru, Pune)..."
+                searchPlaceholder="Search city name..."
+                options={citiesList.map((c) => ({
+                  value: `${c.name}, India`,
+                  label: `${c.name}, India`,
+                  category: c.is_popular ? 'Metropolitan Hub' : 'Regional City',
+                }))}
               />
               <Select
                 label="Work Mode"

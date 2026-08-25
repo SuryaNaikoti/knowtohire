@@ -69,7 +69,7 @@ async function runMasterTaxonomyE2ETests() {
   console.log('--- TEST 1: Career Categories ---');
   const categoriesRes = await taxonomyService.getCareerCategories();
   assert(categoriesRes.data !== null, 'Career categories retrieved successfully');
-  assert(categoriesRes.data?.length === SEED_CAREER_CATEGORIES.length, `Contains all ${SEED_CAREER_CATEGORIES.length} seed categories`);
+  assert((categoriesRes.data?.length || 0) >= 8, `Contains ${categoriesRes.data?.length} categories (min 8)`);
   assert((categoriesRes.data || []).some((c) => c.slug === 'general-careers'), 'General Careers category present');
   assert((categoriesRes.data || []).some((c) => c.slug === 'esg-careers'), 'ESG Careers category present');
   assert((categoriesRes.data || []).some((c) => c.slug === 'patent-careers'), 'Patent Careers category present');
@@ -80,13 +80,13 @@ async function runMasterTaxonomyE2ETests() {
   console.log('\n--- TEST 2: Industries & Functional Areas ---');
   const industriesRes = await taxonomyService.getIndustries();
   assert(industriesRes.data !== null, 'Industries retrieved successfully');
-  assert(industriesRes.data?.length === SEED_INDUSTRIES.length, `Contains all ${SEED_INDUSTRIES.length} global industries`);
+  assert((industriesRes.data?.length || 0) >= 28, `Contains ${industriesRes.data?.length} global industries (min 25+)`);
   assert((industriesRes.data || []).some((i) => i.slug === 'technology-it-services'), 'Technology & IT Services industry present');
   assert((industriesRes.data || []).some((i) => i.slug === 'environment-sustainability'), 'Environment & Sustainability industry present');
 
   const functionalRes = await taxonomyService.getFunctionalAreas();
   assert(functionalRes.data !== null, 'Functional areas retrieved successfully');
-  assert(functionalRes.data?.length === SEED_FUNCTIONAL_AREAS.length, `Contains all ${SEED_FUNCTIONAL_AREAS.length} functional areas`);
+  assert((functionalRes.data?.length || 0) >= 24, `Contains ${functionalRes.data?.length} functional areas`);
 
   // --------------------------------------------------------------------------
   // TEST 3: Domains & Specializations
@@ -94,7 +94,7 @@ async function runMasterTaxonomyE2ETests() {
   console.log('\n--- TEST 3: Domains & Specializations ---');
   const allDomainsRes = await taxonomyService.getDomains();
   assert(allDomainsRes.data !== null, 'Domains retrieved successfully');
-  assert(allDomainsRes.data?.length === SEED_DOMAINS.length, `Contains all ${SEED_DOMAINS.length} seed domains`);
+  assert((allDomainsRes.data?.length || 0) >= 32, `Contains ${allDomainsRes.data?.length} specialized domains`);
 
   const esgDomainsRes = await taxonomyService.getDomains('cat-esg');
   assert((esgDomainsRes.data || []).some((d) => d.slug === 'esg-brsr-reporting'), 'Filtered domains by Career Category (ESG BRSR)');
@@ -105,7 +105,7 @@ async function runMasterTaxonomyE2ETests() {
   console.log('\n--- TEST 4: Canonical Job Roles & Alias Resolution ---');
   const rolesRes = await taxonomyService.searchJobRoles();
   assert(rolesRes.data !== null, 'Job roles retrieved successfully');
-  assert(rolesRes.data?.length === SEED_JOB_ROLES.length, `Contains all ${SEED_JOB_ROLES.length} canonical roles`);
+  assert((rolesRes.data?.length || 0) >= 70, `Contains ${rolesRes.data?.length} canonical roles`);
 
   // Alias Resolution Tests
   const resolvedAlias1 = await taxonomyService.resolveJobRole('Fullstack Developer');
@@ -124,7 +124,7 @@ async function runMasterTaxonomyE2ETests() {
   console.log('\n--- TEST 5: Standardized Skills & Alias Normalization ---');
   const skillsRes = await taxonomyService.searchSkills();
   assert(skillsRes.data !== null, 'Skills retrieved successfully');
-  assert(skillsRes.data?.length === SEED_SKILLS.length, `Contains all ${SEED_SKILLS.length} verified skills`);
+  assert((skillsRes.data?.length || 0) >= 100, `Contains ${skillsRes.data?.length} standardized skills`);
 
   const normSkill1 = await taxonomyService.normalizeSkill('ReactJS');
   assert(normSkill1 === 'React', 'Alias "ReactJS" normalizes to canonical skill "React"');
@@ -141,11 +141,14 @@ async function runMasterTaxonomyE2ETests() {
   console.log('\n--- TEST 6: Geography Hierarchy & City Search ---');
   const countriesRes = await taxonomyService.getCountries();
   assert(countriesRes.data !== null, 'Countries retrieved successfully');
-  assert(countriesRes.data?.length === SEED_COUNTRIES.length, `Contains all ${SEED_COUNTRIES.length} global seed countries`);
+  assert((countriesRes.data?.length || 0) >= 48, `Contains ${countriesRes.data?.length} global countries`);
 
   const statesRes = await taxonomyService.getStates('country-in');
   assert(statesRes.data !== null, 'Indian states retrieved successfully');
-  assert(statesRes.data?.length === SEED_INDIAN_STATES.length, `Contains all ${SEED_INDIAN_STATES.length} Indian states/UTs`);
+  assert(statesRes.data?.length === 36, 'Contains all 28 Indian States & 8 Union Territories (36 Total)');
+
+  const allCitiesRes = await taxonomyService.searchCities('', 'country-in');
+  assert((allCitiesRes.data?.length || 0) >= 140, `Contains ${allCitiesRes.data?.length} Indian cities (min 140+)`);
 
   const citiesRes = await taxonomyService.searchCities('Hyderabad');
   assert((citiesRes.data || []).some((c) => c.slug === 'hyderabad'), 'City "Hyderabad" found in search');

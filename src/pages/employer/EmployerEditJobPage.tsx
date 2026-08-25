@@ -3,10 +3,11 @@ import { EmployerShell } from '@/components/employer/EmployerShell';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { SearchableCombobox } from '@/components/ui/SearchableCombobox';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Alert } from '@/components/ui/Alert';
-import { jobService, Job, JobUpdateInput, WorkMode, EmploymentType, ExperienceLevel } from '@/services';
+import { jobService, taxonomyService, Job, JobUpdateInput, WorkMode, EmploymentType, ExperienceLevel, CareerCategory, CityItem } from '@/services';
 import { Save, CheckCircle2, AlertCircle, ArrowLeft, Briefcase } from 'lucide-react';
 
 export interface EmployerEditJobPageProps {
@@ -19,6 +20,11 @@ export const EmployerEditJobPage: React.FC<EmployerEditJobPageProps> = ({ jobId:
   const [job, setJob] = useState<Job | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Taxonomy Lists
+  const [categoriesList, setCategoriesList] = useState<CareerCategory[]>([]);
+  const [citiesList, setCitiesList] = useState<CityItem[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
 
   // Form State
   const [title, setTitle] = useState('');
@@ -40,6 +46,18 @@ export const EmployerEditJobPage: React.FC<EmployerEditJobPageProps> = ({ jobId:
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchTax() {
+      const [catsRes, citiesRes] = await Promise.all([
+        taxonomyService.getCareerCategories(),
+        taxonomyService.searchCities('', 'country-in'),
+      ]);
+      if (catsRes.data) setCategoriesList(catsRes.data);
+      if (citiesRes.data) setCitiesList(citiesRes.data);
+    }
+    fetchTax();
+  }, []);
 
   const loadJob = useCallback(async () => {
     if (!resolvedJobId) {
@@ -140,6 +158,7 @@ export const EmployerEditJobPage: React.FC<EmployerEditJobPageProps> = ({ jobId:
       requirements: requirements.length > 0 ? requirements : undefined,
       skills: skills.length > 0 ? skills : undefined,
       benefits: benefits.length > 0 ? benefits : undefined,
+      career_category_id: selectedCategoryId || undefined,
     };
 
     const { data, error } = await jobService.updateJob(job.id, updates);
@@ -234,31 +253,26 @@ export const EmployerEditJobPage: React.FC<EmployerEditJobPageProps> = ({ jobId:
                 required
               />
               <Select
-                label="Domain Category"
+                label="Career Category"
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                options={[
-                  { value: 'Sustainability & ESG', label: 'Sustainability & ESG' },
-                  { value: 'Renewable Energy', label: 'Renewable Energy' },
-                  { value: 'Environmental Engineering', label: 'Environmental Engineering' },
-                  { value: 'Patent & IP Analytics', label: 'Patent & IP Analytics' },
-                  { value: 'Carbon Accounting', label: 'Carbon Accounting' },
-                  { value: 'CSR & Policy', label: 'CSR & Policy' },
-                  { value: 'Circular Economy', label: 'Circular Economy' },
-                ]}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  const match = categoriesList.find((c) => c.name === e.target.value);
+                  if (match) setSelectedCategoryId(match.id);
+                }}
+                options={categoriesList.map((c) => ({ value: c.name, label: c.name }))}
               />
-              <Select
-                label="Primary Location (India)"
+              <SearchableCombobox
+                label="Primary Location (Search 160+ Hubs & Regional Cities)"
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                options={[
-                  { value: 'Bengaluru, Karnataka', label: 'Bengaluru, Karnataka' },
-                  { value: 'Hyderabad, Telangana', label: 'Hyderabad, Telangana' },
-                  { value: 'Mumbai, Maharashtra', label: 'Mumbai, Maharashtra' },
-                  { value: 'Delhi NCR', label: 'Delhi NCR' },
-                  { value: 'Pune, Maharashtra', label: 'Pune, Maharashtra' },
-                  { value: 'Chennai, Tamil Nadu', label: 'Chennai, Tamil Nadu' },
-                ]}
+                onChange={(val) => setLocation(val)}
+                placeholder="Search city (e.g. Hyderabad, Bengaluru, Pune)..."
+                searchPlaceholder="Search city name..."
+                options={citiesList.map((c) => ({
+                  value: `${c.name}, India`,
+                  label: `${c.name}, India`,
+                  category: c.is_popular ? 'Metropolitan Hub' : 'Regional City',
+                }))}
               />
               <Select
                 label="Work Mode"
