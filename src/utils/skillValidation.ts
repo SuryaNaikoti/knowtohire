@@ -13,30 +13,12 @@
  * 3. Human-readable standard naming with capitalization and known alias resolution.
  */
 
-// Comprehensive known technical, compliance, sustainability, and legal skills
-export const KNOWN_VALID_SKILL_PATTERNS = [
-  // Software & Cloud
-  'react', 'react.js', 'react native', 'typescript', 'javascript', 'node.js', 'nodejs', 'express',
-  'python', 'django', 'fastapi', 'flask', 'java', 'spring boot', 'golang', 'rust', 'c++', 'c#', '.net',
-  'aws', 'amazon web services', 'gcp', 'google cloud', 'azure', 'docker', 'kubernetes', 'terraform',
-  'ci/cd', 'devops', 'microservices', 'rest apis', 'graphql', 'grpc', 'postgresql', 'mysql', 'mongodb',
-  'redis', 'elasticsearch', 'kafka', 'system design', 'cloud architecture', 'linux', 'git', 'github',
-  'tailwind css', 'html5', 'css3', 'next.js', 'vue.js', 'angular', 'webpack', 'vite',
+import { MASTER_SKILLS } from '@/services/masterTaxonomyData';
 
-  // ESG, Sustainability & Climate
-  'esg reporting', 'esg compliance', 'esg due diligence', 'brsr', 'brsr core', 'sebi brsr',
-  'ghg protocol', 'carbon accounting', 'scope 1 2 3', 'iso 14001', 'iso 50001', 'gri standards',
-  'tcfd', 'cdp reporting', 'sbti', 'net zero strategy', 'life cycle assessment', 'lca',
-  'environmental impact assessment', 'eia', 'cpcb regulations', 'spcb compliance', 'waste management',
-  'air quality monitoring', 'water footprint', 'circular economy', 'sustainable finance',
+// Dynamically reference canonical skill patterns from the master taxonomy
+export const KNOWN_VALID_SKILL_PATTERNS = MASTER_SKILLS.map((s) => s.name.toLowerCase());
 
-  // IPR, Legal & Advisory
-  'patent drafting', 'patent prior art', 'freedom to operate', 'fto', 'patent analytics',
-  'trademark law', 'ip strategy', 'technology transfer', 'legal compliance', 'due diligence',
-  'contract management', 'regulatory filings',
-];
-
-const KNOWN_VALID_ACRONYMS = new Set(['ai', 'ml', 'ui', 'ux', 'ip', 'ec', 'qa', 'db', 'go', 'r', 'c', 'js', 'ts']);
+const KNOWN_VALID_ACRONYMS = new Set(['ai', 'ml', 'ui', 'ux', 'ip', 'ec', 'qa', 'db', 'go', 'r', 'c', 'js', 'ts', 'aws', 'gcp', 'sql', 'lca', 'eia', 'ehs', 'gis', 'fto', 'csr', 'epc', 'esg']);
 
 /**
  * Validates whether a raw string represents a genuine human-readable skill.

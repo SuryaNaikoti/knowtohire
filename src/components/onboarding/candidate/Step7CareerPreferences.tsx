@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader';
 import { CandidateOnboardingData } from '@/types/onboarding';
+import { taxonomyService } from '@/services/taxonomyService';
 import { Plus, X, MapPin, Briefcase } from 'lucide-react';
 
 export interface Step7CareerPreferencesProps {
@@ -10,17 +11,6 @@ export interface Step7CareerPreferencesProps {
   onChange: (updates: Partial<CandidateOnboardingData>) => void;
   errors: Record<string, string>;
 }
-
-const COMMON_LOCATIONS = [
-  'Hyderabad, TS',
-  'Bengaluru, KA',
-  'Mumbai, MH',
-  'Delhi NCR',
-  'Pune, MH',
-  'Chennai, TN',
-  'Kolkata, WB',
-  'Remote (Anywhere in India)',
-];
 
 const REMOTE_PREFERENCES = [
   { value: 'Hybrid', label: 'Hybrid (Preferred balance of office & remote)' },
@@ -43,15 +33,41 @@ export const Step7CareerPreferences: React.FC<Step7CareerPreferencesProps> = ({
 }) => {
   const [roleInput, setRoleInput] = useState('');
   const [customLocInput, setCustomLocInput] = useState('');
+  const [commonLocations, setCommonLocations] = useState<string[]>([
+    'Hyderabad, TS',
+    'Bengaluru, KA',
+    'Mumbai, MH',
+    'Delhi NCR',
+    'Pune, MH',
+    'Chennai, TN',
+    'Kolkata, WB',
+    'Remote (Anywhere in India)',
+  ]);
+
+  useEffect(() => {
+    async function loadMasterLocations() {
+      const res = await taxonomyService.searchCities('', 'country-in');
+      if (res.data && res.data.length > 0) {
+        const popular = res.data.filter((c) => c.is_popular).slice(0, 8).map((c) => `${c.name}, India`);
+        setCommonLocations([...popular, 'Remote (Anywhere in India)']);
+      }
+    }
+    loadMasterLocations();
+  }, []);
 
   const preferredTitles = data.preferredJobTitles || [];
   const preferredLocations = data.preferredLocations || [];
 
-  const handleAddRole = (titleToAdd?: string) => {
+  const handleAddRole = async (titleToAdd?: string) => {
     const raw = (titleToAdd || roleInput).trim();
     if (!raw) return;
-    if (!preferredTitles.some((t) => t.toLowerCase() === raw.toLowerCase())) {
-      onChange({ preferredJobTitles: [...preferredTitles, raw] });
+    
+    // Resolve canonical role if known
+    const resolvedRole = await taxonomyService.resolveJobRole(raw);
+    const finalRole = resolvedRole ? resolvedRole.name : raw;
+
+    if (!preferredTitles.some((t) => t.toLowerCase() === finalRole.toLowerCase())) {
+      onChange({ preferredJobTitles: [...preferredTitles, finalRole] });
     }
     setRoleInput('');
   };
@@ -157,7 +173,7 @@ export const Step7CareerPreferences: React.FC<Step7CareerPreferencesProps> = ({
             Preferred Job Locations *
           </label>
           <div className="flex flex-wrap gap-2">
-            {COMMON_LOCATIONS.map((loc) => {
+            {commonLocations.map((loc) => {
               const isSelected = preferredLocations.includes(loc);
               return (
                 <button

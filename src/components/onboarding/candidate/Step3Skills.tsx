@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader';
 import { CandidateOnboardingData } from '@/types/onboarding';
+import { taxonomyService } from '@/services/taxonomyService';
 import { Plus, X, Tag, Sparkles } from 'lucide-react';
 
 export interface Step3SkillsProps {
@@ -10,24 +11,6 @@ export interface Step3SkillsProps {
   errors: Record<string, string>;
 }
 
-const POPULAR_SUGGESTIONS = [
-  'ESG Reporting',
-  'SEBI BRSR',
-  'ISO 14001',
-  'Carbon Accounting',
-  'GHG Protocol (Scope 1, 2 & 3)',
-  'GRI Standards',
-  'EIA Assessment',
-  'Decarbonization',
-  'Life Cycle Assessment (LCA)',
-  'Net Zero Strategy',
-  'Energy Auditing',
-  'Water Neutrality',
-  'MoEFCC Clearances',
-  'Sustainability Strategy',
-  'Circular Economy',
-];
-
 export const Step3Skills: React.FC<Step3SkillsProps> = ({
   data,
   onChange,
@@ -35,10 +18,36 @@ export const Step3Skills: React.FC<Step3SkillsProps> = ({
 }) => {
   const [skillInput, setSkillInput] = useState('');
   const [inputError, setInputError] = useState<string | null>(null);
+  const [popularSuggestions, setPopularSuggestions] = useState<string[]>([
+    'React',
+    'TypeScript',
+    'Python',
+    'SEBI BRSR Core',
+    'GHG Protocol',
+    'Carbon Accounting (Scope 1/2/3)',
+    'GRI Standards',
+    'Life Cycle Assessment (LCA)',
+    'Patent Drafting',
+    'Prior Art Search',
+    'AWS',
+    'Docker',
+  ]);
 
   const skills = data.skills || [];
 
-  const handleAddSkill = (skillToAdd?: string) => {
+  useEffect(() => {
+    async function loadMasterSuggestions() {
+      const res = await taxonomyService.searchSkills();
+      if (res.data && res.data.length > 0) {
+        // Pick representative cross-domain skills
+        const topSkills = res.data.slice(0, 18).map((s) => s.name);
+        setPopularSuggestions(topSkills);
+      }
+    }
+    loadMasterSuggestions();
+  }, []);
+
+  const handleAddSkill = async (skillToAdd?: string) => {
     const rawSkill = skillToAdd || skillInput;
     const trimmed = rawSkill.trim();
     setInputError(null);
@@ -50,17 +59,21 @@ export const Step3Skills: React.FC<Step3SkillsProps> = ({
       return;
     }
 
+    // Attempt alias normalization (e.g. ReactJS -> React, BRSR Reporting -> SEBI BRSR Core)
+    const normalized = await taxonomyService.normalizeSkill(trimmed);
+    const finalSkill = normalized || trimmed;
+
     // Case-insensitive duplicate check
     const isDuplicate = skills.some(
-      (s) => s.toLowerCase() === trimmed.toLowerCase()
+      (s) => s.toLowerCase() === finalSkill.toLowerCase()
     );
 
     if (isDuplicate) {
-      setInputError(`"${trimmed}" is already in your skills list.`);
+      setInputError(`"${finalSkill}" is already in your skills list.`);
       return;
     }
 
-    onChange({ skills: [...skills, trimmed] });
+    onChange({ skills: [...skills, finalSkill] });
     setSkillInput('');
   };
 
@@ -172,10 +185,10 @@ export const Step3Skills: React.FC<Step3SkillsProps> = ({
         <div className="space-y-2 pt-2">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-kth-slate-600">
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>Popular Suggestions (Click to Add):</span>
+            <span>Popular Master Suggestions (Click to Add):</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {POPULAR_SUGGESTIONS.map((sug) => {
+            {popularSuggestions.map((sug) => {
               const isAlreadyAdded = skills.some(
                 (s) => s.toLowerCase() === sug.toLowerCase()
               );

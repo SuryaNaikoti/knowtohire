@@ -4,12 +4,17 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { SearchableCombobox } from '@/components/ui/SearchableCombobox';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { taxonomyService, Industry, CityItem } from '@/services';
 import { MapPin, Users, CheckCircle2, ExternalLink, Loader2, Check } from 'lucide-react';
 
 export const EmployerCompanyProfilePage: React.FC = () => {
   const { user } = useAuth();
+  const [industriesList, setIndustriesList] = useState<Industry[]>([]);
+  const [citiesList, setCitiesList] = useState<CityItem[]>([]);
+
   const [company, setCompany] = useState<{
     id?: string;
     name: string;
@@ -21,8 +26,8 @@ export const EmployerCompanyProfilePage: React.FC = () => {
     verification_status: string;
   }>({
     name: 'Enterprise Organization',
-    industry: 'Sustainability & Environmental Solutions',
-    location: 'India',
+    industry: 'Environment & Sustainability',
+    location: 'Bengaluru, Karnataka, India',
     size: '50-250 Employees',
     website: 'https://knowtohire.com',
     about: 'Leading enterprise dedicated to environmental stewardship, ESG compliance, and sustainable engineering.',
@@ -32,6 +37,18 @@ export const EmployerCompanyProfilePage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    async function loadTaxonomy() {
+      const [indRes, citiesRes] = await Promise.all([
+        taxonomyService.getIndustries(),
+        taxonomyService.searchCities('', 'country-in'),
+      ]);
+      if (indRes.data) setIndustriesList(indRes.data);
+      if (citiesRes.data) setCitiesList(citiesRes.data);
+    }
+    loadTaxonomy();
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -57,8 +74,8 @@ export const EmployerCompanyProfilePage: React.FC = () => {
           setCompany({
             id: comp.id,
             name: comp.name || 'Enterprise Organization',
-            industry: comp.industry || 'Environmental & ESG Consulting',
-            location: comp.headquarters_location || 'India',
+            industry: comp.industry || 'Environment & Sustainability',
+            location: comp.headquarters_location || 'Bengaluru, Karnataka, India',
             size: comp.company_size || '50-200 Employees',
             website: comp.website_url || 'https://knowtohire.com',
             about: comp.about || 'Specialized enterprise delivering environmental compliance and clean innovation solutions.',
@@ -172,15 +189,28 @@ export const EmployerCompanyProfilePage: React.FC = () => {
                     value={company.name}
                     onChange={(e) => setCompany({ ...company, name: e.target.value })}
                   />
-                  <Input
+                  <SearchableCombobox
                     label="Industry Sector"
                     value={company.industry}
-                    onChange={(e) => setCompany({ ...company, industry: e.target.value })}
+                    onChange={(val) => setCompany({ ...company, industry: val })}
+                    placeholder="Select industry sector..."
+                    searchPlaceholder="Filter industries..."
+                    options={industriesList.map((ind) => ({
+                      value: ind.name,
+                      label: ind.name,
+                    }))}
                   />
-                  <Input
+                  <SearchableCombobox
                     label="Headquarters Location"
                     value={company.location}
-                    onChange={(e) => setCompany({ ...company, location: e.target.value })}
+                    onChange={(val) => setCompany({ ...company, location: val })}
+                    placeholder="Search canonical hub or city..."
+                    searchPlaceholder="Filter city..."
+                    options={citiesList.map((c) => ({
+                      value: `${c.name}, India`,
+                      label: `${c.name}, India`,
+                      category: c.is_popular ? 'Metropolitan Hub' : 'Regional City',
+                    }))}
                   />
                   <Input
                     label="Website URL"

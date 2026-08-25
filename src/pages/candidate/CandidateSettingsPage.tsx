@@ -2,12 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { CandidateShell } from '@/components/candidate/CandidateShell';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
+import { SearchableCombobox } from '@/components/ui/SearchableCombobox';
 import { Switch } from '@/components/ui/Switch';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { useAuth } from '@/context/AuthContext';
 import { candidateProfileService } from '@/services/candidateProfileService';
+import { taxonomyService, CityItem } from '@/services';
 import {
   User,
   Bell,
@@ -20,43 +21,21 @@ import {
   Loader2,
 } from 'lucide-react';
 
-const LOCATION_OPTIONS = [
-  { value: 'hyderabad', label: 'Hyderabad, TS' },
-  { value: 'bengaluru', label: 'Bengaluru, KA' },
-  { value: 'mumbai', label: 'Mumbai, MH' },
-  { value: 'delhi', label: 'Delhi NCR' },
-  { value: 'pune', label: 'Pune, MH' },
-  { value: 'chennai', label: 'Chennai, TN' },
-  { value: 'kolkata', label: 'Kolkata, WB' },
-  { value: 'remote', label: 'Remote Only' },
-];
-
-function normalizeLocationToOption(loc?: string | null): string {
-  if (!loc) return 'hyderabad';
-  const lower = loc.toLowerCase();
-  if (lower.includes('hyderabad')) return 'hyderabad';
-  if (lower.includes('bengaluru') || lower.includes('bangalore')) return 'bengaluru';
-  if (lower.includes('mumbai')) return 'mumbai';
-  if (lower.includes('delhi')) return 'delhi';
-  if (lower.includes('pune')) return 'pune';
-  if (lower.includes('chennai')) return 'chennai';
-  if (lower.includes('kolkata')) return 'kolkata';
-  if (lower.includes('remote')) return 'remote';
-  return 'hyderabad';
-}
-
 export const CandidateSettingsPage: React.FC = () => {
   const { logout, profile, user, refreshProfile } = useAuth();
+
+  // Geography State
+  const [citiesList, setCitiesList] = useState<CityItem[]>([]);
 
   // Form State
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [preferredLocation, setPreferredLocation] = useState('hyderabad');
+  const [preferredLocation, setPreferredLocation] = useState('Hyderabad, Telangana');
 
   // Baseline Form State for dirty check
   const [initialFullName, setInitialFullName] = useState('');
   const [initialPhone, setInitialPhone] = useState('');
-  const [initialPreferredLocation, setInitialPreferredLocation] = useState('hyderabad');
+  const [initialPreferredLocation, setInitialPreferredLocation] = useState('Hyderabad, Telangana');
 
   // Toggle Preferences
   const [jobAlerts, setJobAlerts] = useState(true);
@@ -81,6 +60,17 @@ export const CandidateSettingsPage: React.FC = () => {
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [isAccountDeactivated, setIsAccountDeactivated] = useState(false);
 
+  // Load canonical geography cities
+  useEffect(() => {
+    async function fetchCities() {
+      const res = await taxonomyService.searchCities('', 'country-in');
+      if (res.data && res.data.length > 0) {
+        setCitiesList(res.data);
+      }
+    }
+    fetchCities();
+  }, []);
+
   // Load canonical profile & preferences
   const loadCandidateData = useCallback(async () => {
     setIsLoadingProfile(true);
@@ -98,14 +88,14 @@ export const CandidateSettingsPage: React.FC = () => {
     } else {
       const name = data.fullName || '';
       const ph = data.phone || '';
-      const locOpt = normalizeLocationToOption(data.location);
+      const loc = data.location || 'Hyderabad, Telangana';
 
       setFullName(name);
       setInitialFullName(name);
       setPhone(ph);
       setInitialPhone(ph);
-      setPreferredLocation(locOpt);
-      setInitialPreferredLocation(locOpt);
+      setPreferredLocation(loc);
+      setInitialPreferredLocation(loc);
 
       setJobAlerts(data.jobRecommendationAlerts !== undefined ? Boolean(data.jobRecommendationAlerts) : true);
       setAppAlerts(data.applicationStageUpdates !== undefined ? Boolean(data.applicationStageUpdates) : true);
@@ -124,7 +114,7 @@ export const CandidateSettingsPage: React.FC = () => {
   const isAccountDirty =
     fullName.trim() !== initialFullName.trim() ||
     phone.trim() !== initialPhone.trim() ||
-    preferredLocation !== initialPreferredLocation;
+    preferredLocation.trim() !== initialPreferredLocation.trim();
 
   // 1. Save Account Information
   const handleSaveAccountInfo = async (e?: React.FormEvent) => {
@@ -149,15 +139,13 @@ export const CandidateSettingsPage: React.FC = () => {
       return;
     }
 
-    // Convert location option back to display string (e.g. Hyderabad, TS)
-    const selectedOption = LOCATION_OPTIONS.find((opt) => opt.value === preferredLocation);
-    const locationString = selectedOption ? selectedOption.label : 'Hyderabad, TS';
+    const trimmedLocation = preferredLocation.trim() || 'Hyderabad, Telangana';
 
     setIsSavingAccount(true);
     const res = await candidateProfileService.updateMyCandidateProfile({
       fullName: trimmedName,
       phone: trimmedPhone || null,
-      location: locationString,
+      location: trimmedLocation,
     });
     setIsSavingAccount(false);
 
@@ -167,7 +155,7 @@ export const CandidateSettingsPage: React.FC = () => {
       setAccountSuccessMsg('✓ Changes saved successfully');
       setInitialFullName(trimmedName);
       setInitialPhone(trimmedPhone);
-      setInitialPreferredLocation(preferredLocation);
+      setInitialPreferredLocation(trimmedLocation);
       await refreshProfile();
       setTimeout(() => setAccountSuccessMsg(null), 4000);
     }
@@ -340,11 +328,17 @@ export const CandidateSettingsPage: React.FC = () => {
                 placeholder="+91 98765 43210"
                 disabled={isLoadingProfile || isSavingAccount}
               />
-              <Select
+              <SearchableCombobox
                 label="Preferred Work Location"
                 value={preferredLocation}
-                onChange={(e) => setPreferredLocation(e.target.value)}
-                options={LOCATION_OPTIONS}
+                onChange={(val) => setPreferredLocation(val)}
+                placeholder="Search canonical city (e.g. Hyderabad, Bengaluru, Pune)..."
+                searchPlaceholder="Search city name..."
+                options={citiesList.map((c) => ({
+                  value: `${c.name}, India`,
+                  label: `${c.name}, India`,
+                  category: c.is_popular ? 'Metropolitan Hub' : 'Regional City',
+                }))}
                 disabled={isLoadingProfile || isSavingAccount}
               />
             </div>

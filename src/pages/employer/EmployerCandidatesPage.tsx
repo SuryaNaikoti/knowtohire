@@ -7,14 +7,24 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { CandidateQuickView } from '@/components/employer/CandidateQuickView';
 import { candidateDiscoveryService, DiscoverableCandidate } from '@/services/candidateDiscoveryService';
+import { taxonomyService, CareerCategory } from '@/services';
 import { Search, MapPin, ArrowRight, GitCompare, Loader2, Users } from 'lucide-react';
 
 export const EmployerCandidatesPage: React.FC = () => {
   const [candidates, setCandidates] = useState<DiscoverableCandidate[]>([]);
+  const [categories, setCategories] = useState<CareerCategory[]>([]);
   const [selectedCandidate, setSelectedCandidate] = useState<DiscoverableCandidate | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDomain, setSelectedDomain] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadTaxonomy() {
+      const res = await taxonomyService.getCareerCategories();
+      if (res.data) setCategories(res.data);
+    }
+    loadTaxonomy();
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -53,16 +63,16 @@ export const EmployerCandidatesPage: React.FC = () => {
                 leftIcon={<Search className="w-4 h-4" />}
               />
             </div>
-            <div className="w-full sm:w-56">
+            <div className="w-full sm:w-64">
               <Select
                 value={selectedDomain}
                 onChange={(e) => setSelectedDomain(e.target.value)}
                 options={[
                   { value: 'all', label: 'All Specializations' },
-                  { value: 'Environmental', label: 'Environmental Engineering' },
-                  { value: 'ESG', label: 'ESG & BRSR Strategy' },
-                  { value: 'Sustainability', label: 'Sustainability Consulting' },
-                  { value: 'Patent', label: 'Patent & IPR Law' },
+                  ...categories.map((c) => ({
+                    value: c.name.replace(' Careers', ''),
+                    label: c.name,
+                  })),
                 ]}
               />
             </div>
