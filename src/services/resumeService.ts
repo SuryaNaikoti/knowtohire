@@ -36,7 +36,7 @@ import { generateCandidatePdfDataUrl } from '@/utils/candidatePdfGenerator';
 export function getStoredDemoResume(userId: string): StoredResumeMetadata | null {
   if (typeof window === 'undefined' || !window.localStorage) return null;
   try {
-    const raw = window.localStorage.getItem(`${DEMO_RESUME_STORAGE_KEY_PREFIX}${userId}`);
+    // If a candidate uploaded resume is present, return it immediately
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed?.url && !parsed.url.includes('knowtohire.com/resumes')) {
@@ -44,7 +44,26 @@ export function getStoredDemoResume(userId: string): StoredResumeMetadata | null
       }
     }
     
-    // Generate authentic PDF data URL for default/demo candidate
+    // Check if candidate profile in localStorage has an uploaded resume
+    const candProfileRaw = window.localStorage.getItem(`kth_demo_cand_profile_${userId}`);
+    if (candProfileRaw) {
+      try {
+        const candProfile = JSON.parse(candProfileRaw);
+        if (candProfile?.resumeUrl && !candProfile.resumeUrl.includes('knowtohire.com/resumes')) {
+          const resMeta: StoredResumeMetadata = {
+            url: candProfile.resumeUrl,
+            fileName: candProfile.resumeFileName || 'Candidate_Resume.pdf',
+            uploadedAt: new Date().toISOString(),
+          };
+          saveStoredDemoResume(userId, resMeta);
+          return resMeta;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // Default fallback PDF data URL when candidate has not yet uploaded a custom document
     const defaultDataUrl = generateCandidatePdfDataUrl({
       fullName: 'Surya Naikoti',
       headline: 'Senior Full Stack & Cloud Solutions Engineer',
