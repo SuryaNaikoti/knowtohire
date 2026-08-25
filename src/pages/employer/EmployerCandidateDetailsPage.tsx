@@ -796,26 +796,44 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
       <Dialog
         isOpen={resumePreviewOpen}
         onClose={() => setResumePreviewOpen(false)}
-        title={`Candidate Document Preview — ${name}`}
-        description="Application Resume & Profile Dossier"
+        title={`Candidate Resume Document — ${name}`}
+        description={`Submitted PDF Dossier • ${resumeFileName}`}
+        maxWidth="xl"
       >
         <div className="space-y-4 text-left font-sans text-xs">
-          <div className="p-4 bg-kth-slate-50 border border-kth-slate-200 rounded-xl space-y-3">
-            <div className="flex items-center gap-3">
-              <FileText className="w-8 h-8 text-kth-primary-600" />
-              <div>
-                <h4 className="font-bold text-sm text-kth-slate-900">{name}</h4>
-                <p className="text-xs text-kth-slate-500">{headline}</p>
+          {resumeUrl ? (
+            <div className="w-full rounded-xl overflow-hidden border border-kth-slate-200 bg-kth-slate-50">
+              <iframe
+                src={`${resumeUrl}#toolbar=1&navpanes=0`}
+                title="Application Resume Full Preview"
+                className="w-full h-[620px] border-0 rounded-xl bg-white"
+              />
+            </div>
+          ) : (
+            <div className="p-8 text-center bg-kth-slate-50 border border-kth-slate-200 rounded-xl space-y-2">
+              <FileText className="w-8 h-8 text-kth-slate-400 mx-auto" />
+              <p className="font-semibold text-kth-slate-700">No attached PDF document found for this application snapshot.</p>
+              <p className="text-kth-slate-400">The candidate profile summary is displayed below.</p>
+              <div className="border-t border-kth-slate-200 pt-3 text-left space-y-1 text-kth-slate-600">
+                <div><strong>Location:</strong> {location}</div>
+                <div><strong>Email:</strong> {email}</div>
+                <div><strong>Skills:</strong> {skills.join(', ')}</div>
               </div>
             </div>
-            <div className="border-t border-kth-slate-200 pt-3 space-y-1.5 text-kth-slate-700">
-              <div><strong>Location:</strong> {location}</div>
-              <div><strong>Email:</strong> {email}</div>
-              <div><strong>Skills:</strong> {skills.join(', ')}</div>
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button variant="primary" size="sm" onClick={() => setResumePreviewOpen(false)}>
+          )}
+
+          <div className="flex justify-between items-center pt-2 border-t border-kth-slate-100">
+            {resumeUrl && (
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
+                onClick={() => window.open(resumeUrl, '_blank')}
+              >
+                Open Full Window
+              </Button>
+            )}
+            <Button variant="secondary" size="sm" onClick={() => setResumePreviewOpen(false)} className="ml-auto">
               Close
             </Button>
           </div>

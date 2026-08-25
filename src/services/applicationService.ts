@@ -12,7 +12,7 @@
  *    This allows the full Candidate → Apply → Employer Pipeline flow to work in demo mode.
  */
 
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import {
   JobApplication,
   ApplicationStage,
@@ -196,22 +196,24 @@ export const applicationService = {
       }
 
       // 2. Check for duplicate application in Supabase
-      const { data: existingApp } = await supabase
-        .from('job_applications')
-        .select('id')
-        .eq('job_id', input.job_id)
-        .eq('candidate_id', candidateId)
-        .maybeSingle();
+      if (isSupabaseConfigured() && !isDemoSession()) {
+        const { data: existingApp } = await supabase
+          .from('job_applications')
+          .select('id')
+          .eq('job_id', input.job_id)
+          .eq('candidate_id', candidateId)
+          .maybeSingle();
 
-      if (existingApp) {
-        return {
-          data: null,
-          error: {
-            message: 'You have already submitted an application for this job opening.',
-            code: 'DUPLICATE_APPLICATION',
-            status: 409,
-          },
-        };
+        if (existingApp) {
+          return {
+            data: null,
+            error: {
+              message: 'You have already submitted an application for this job opening.',
+              code: 'DUPLICATE_APPLICATION',
+              status: 409,
+            },
+          };
+        }
       }
 
       // 2b. Check for duplicate in demo store
@@ -229,36 +231,109 @@ export const applicationService = {
         };
       }
 
-      // 3. Prepare candidate profile snapshot
+      // 3. Prepare candidate profile snapshot & active resume reference
       let snapshot = input.candidate_snapshot;
       let activeResumeUrl = input.resume_url;
-      if (!snapshot || !activeResumeUrl) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, email, phone, avatar_url')
-          .eq('id', candidateId)
-          .maybeSingle();
 
-        const { data: candProfile } = await supabase
-          .from('candidate_profiles')
-          .select('headline, bio, location, domain_specialization, skills, experience, education, certifications, resume_url')
-          .eq('profile_id', candidateId)
-          .maybeSingle();
+      // Look up candidate profile info and stored resume from session/storage
+      let sessionName = 'Surya Naikoti';
+      let sessionEmail = 'candidate@knowtohire.com';
+      let sessionPhone = '+91 98765 43210';
+      let sessionHeadline = 'Senior Full Stack & Cloud Solutions Engineer';
+      let sessionLocation = 'Hyderabad, Telangana';
+      let sessionSkills = ['React & TypeScript', 'Node.js & API Architecture', 'Cloud Infrastructure (AWS/GCP)', 'Database Systems & SQL'];
+
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const storedAuth = window.localStorage.getItem('kth_demo_auth_session');
+          if (storedAuth) {
+            const parsed = JSON.parse(storedAuth);
+            if (parsed?.full_name) sessionName = parsed.full_name;
+            if (parsed?.email) sessionEmail = parsed.email;
+          }
+
+          const storedProfile = window.localStorage.getItem(`kth_demo_cand_profile_${candidateId}`);
+          if (storedProfile) {
+            const parsed = JSON.parse(storedProfile);
+            if (parsed?.headline) sessionHeadline = parsed.headline;
+            if (parsed?.location) sessionLocation = parsed.location;
+            if (Array.isArray(parsed?.skills) && parsed.skills.length > 0) sessionSkills = parsed.skills;
+            if (parsed?.phone) sessionPhone = parsed.phone;
+          }
+
+          const storedResume = window.localStorage.getItem(`kth_candidate_resume_${candidateId}`);
+          if (storedResume) {
+            const parsed = JSON.parse(storedResume);
+            if (parsed?.url) {
+              activeResumeUrl = parsed.url;
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      if (!snapshot || !activeResumeUrl) {
+        let dbFullName = '';
+        let dbEmail = '';
+        let dbPhone = '';
+        let dbHeadline = '';
+        let dbLocation = '';
+        let dbSkills: string[] = [];
+
+        if (isSupabaseConfigured() && !isDemoSession()) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, email, phone, avatar_url')
+            .eq('id', candidateId)
+            .maybeSingle();
+
+          const { data: candProfile } = await supabase
+            .from('candidate_profiles')
+            .select('headline, bio, location, domain_specialization, skills, experience, education, certifications, resume_url')
+            .eq('profile_id', candidateId)
+            .maybeSingle();
+
+          if (profile?.full_name) dbFullName = profile.full_name;
+          if (profile?.email) dbEmail = profile.email;
+          if (profile?.phone) dbPhone = profile.phone;
+          if (candProfile?.headline) dbHeadline = candProfile.headline;
+          if (candProfile?.location) dbLocation = candProfile.location;
+          if (Array.isArray(candProfile?.skills)) dbSkills = candProfile.skills;
+          if (!activeResumeUrl && candProfile?.resume_url) activeResumeUrl = candProfile.resume_url;
+        }
 
         snapshot = {
-          full_name: profile?.full_name || 'Aarav Sharma (ESG Analyst)',
-          email: profile?.email || 'candidate@knowtohire.com',
-          phone: profile?.phone || '+91 98765 43210',
-          avatar_url: profile?.avatar_url || '',
-          headline: candProfile?.headline || 'Senior ESG & Sustainability Consultant',
-          location: candProfile?.location || 'Bengaluru, Karnataka',
-          skills: candProfile?.skills || ['BRSR', 'GHG Protocol', 'ISO 14001'],
+          full_name: dbFullName || sessionName,
+          email: dbEmail || sessionEmail,
+          phone: dbPhone || sessionPhone,
+          avatar_url: '',
+          headline: dbHeadline || sessionHeadline,
+          location: dbLocation || sessionLocation,
+          skills: dbSkills.length > 0 ? dbSkills : sessionSkills,
+          resume_url: activeResumeUrl || '',
           snapshot_at: new Date().toISOString(),
         };
+      }
 
-        if (!activeResumeUrl && candProfile?.resume_url) {
-          activeResumeUrl = candProfile.resume_url;
-        }
+      // If demo session or Supabase not configured, immediately save demo application
+      if (isDemoSession() || !isSupabaseConfigured()) {
+        const demoApp: JobApplication = {
+          id: `demo-app-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          job_id: input.job_id,
+          candidate_id: candidateId,
+          company_id: targetJob.company_id,
+          stage: 'new',
+          resume_url: activeResumeUrl || 'https://knowtohire.com/resumes/candidate_resume.pdf',
+          cover_letter: input.cover_letter ? input.cover_letter.trim() : null,
+          candidate_snapshot: (snapshot as any) || {},
+          applied_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          job: (targetJob as any) || undefined,
+        };
+
+        saveDemoApplication(demoApp);
+        return { data: demoApp, error: null };
       }
 
       // 4. Attempt Supabase INSERT
@@ -282,29 +357,6 @@ export const applicationService = {
         return { data: data as JobApplication, error: null };
       }
 
-      // 6. INSERT FAILED — determine if this is demo mode
-      if (isDemoSession()) {
-        // Create a demo application record in localStorage.
-        // This allows the employer demo session to see it in the pipeline.
-        const demoApp: JobApplication = {
-          id: `demo-app-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          job_id: input.job_id,
-          candidate_id: candidateId,
-          company_id: targetJob.company_id,
-          stage: 'new',
-          resume_url: activeResumeUrl || 'https://knowtohire.com/resumes/candidate_resume.pdf',
-          cover_letter: input.cover_letter ? input.cover_letter.trim() : null,
-          candidate_snapshot: (snapshot as any) || {},
-          applied_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          job: (targetJob as any) || undefined,
-        };
-
-        saveDemoApplication(demoApp);
-        return { data: demoApp, error: null };
-      }
-
-      // 7. INSERT FAILED — NOT demo mode. Return actual error.
       return {
         data: null,
         error: normalizeServiceError(error || { message: 'Failed to submit application. Please try again.' }),

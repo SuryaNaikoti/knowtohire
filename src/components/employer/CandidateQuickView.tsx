@@ -7,7 +7,7 @@ import { Select } from '@/components/ui/Select';
 import { ScheduleInterviewModal } from './ScheduleInterviewModal';
 import { applicationService, savedCandidateService, JobApplication, ApplicationStage } from '@/services';
 import { EmployerCandidate } from '@/data/employerMockData';
-import { MapPin, FileText, Bookmark, Calendar, Star, Check } from 'lucide-react';
+import { MapPin, FileText, Bookmark, Calendar, Star, Check, ExternalLink } from 'lucide-react';
 
 export interface CandidateQuickViewProps {
   application?: JobApplication | null;
@@ -338,24 +338,48 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
         onClose={() => setIsPreviewOpen(false)}
         title={`Resume & Profile Document — ${candidateName}`}
         description="Verified Candidate Profile"
+        maxWidth="xl"
       >
-        <div className="space-y-4 text-left font-sans">
-          <div className="w-full bg-kth-slate-50 border border-kth-slate-200 rounded-xl p-5 space-y-3">
-            <div className="flex items-center gap-3">
-              <FileText className="w-8 h-8 text-kth-primary-600 shrink-0" />
-              <div>
-                <h4 className="font-bold text-sm text-kth-slate-900">{candidateName}</h4>
-                <p className="text-xs text-kth-slate-500">{candidateHeadline}</p>
+        <div className="space-y-4 text-left font-sans text-xs">
+          {candidateResume ? (
+            <div className="w-full rounded-xl overflow-hidden border border-kth-slate-200 bg-kth-slate-50">
+              <iframe
+                src={`${candidateResume}#toolbar=1&navpanes=0`}
+                title="Candidate Resume Full Preview"
+                className="w-full h-[580px] border-0 rounded-xl bg-white"
+              />
+            </div>
+          ) : (
+            <div className="w-full bg-kth-slate-50 border border-kth-slate-200 rounded-xl p-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <FileText className="w-8 h-8 text-kth-primary-600 shrink-0" />
+                <div>
+                  <h4 className="font-bold text-sm text-kth-slate-900">{candidateName}</h4>
+                  <p className="text-xs text-kth-slate-500">{candidateHeadline}</p>
+                </div>
+              </div>
+              <div className="border-t border-kth-slate-200 pt-3 text-xs text-kth-slate-700 space-y-2">
+                {candidateEmail && <div><strong>Email:</strong> {candidateEmail}</div>}
+                <div><strong>Location:</strong> {candidateLocation}</div>
+                {candidateSkills.length > 0 && <div><strong>Skills:</strong> {candidateSkills.join(', ')}</div>}
               </div>
             </div>
-            <div className="border-t border-kth-slate-200 pt-3 text-xs text-kth-slate-700 space-y-2">
-              {candidateEmail && <div><strong>Email:</strong> {candidateEmail}</div>}
-              <div><strong>Location:</strong> {candidateLocation}</div>
-              {candidateSkills.length > 0 && <div><strong>Skills:</strong> {candidateSkills.join(', ')}</div>}
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button variant="primary" size="sm" onClick={() => setIsPreviewOpen(false)}>Close</Button>
+          )}
+
+          <div className="flex justify-between items-center pt-2 border-t border-kth-slate-100">
+            {candidateResume && (
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
+                onClick={() => window.open(candidateResume, '_blank')}
+              >
+                Open Full Window
+              </Button>
+            )}
+            <Button variant="secondary" size="sm" onClick={() => setIsPreviewOpen(false)} className="ml-auto">
+              Close
+            </Button>
           </div>
         </div>
       </Dialog>
