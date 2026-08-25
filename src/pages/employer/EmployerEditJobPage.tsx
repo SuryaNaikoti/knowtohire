@@ -24,6 +24,8 @@ export const EmployerEditJobPage: React.FC<EmployerEditJobPageProps> = ({ jobId:
   // Taxonomy Lists
   const [categoriesList, setCategoriesList] = useState<CareerCategory[]>([]);
   const [citiesList, setCitiesList] = useState<CityItem[]>([]);
+  const [rolesList, setRolesList] = useState<{ id: string; name: string; category?: string }[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<string[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
 
   // Form State
@@ -49,12 +51,16 @@ export const EmployerEditJobPage: React.FC<EmployerEditJobPageProps> = ({ jobId:
 
   useEffect(() => {
     async function fetchTax() {
-      const [catsRes, citiesRes] = await Promise.all([
+      const [catsRes, citiesRes, rolesRes, funcsRes] = await Promise.all([
         taxonomyService.getCareerCategories(),
         taxonomyService.searchCities('', 'country-in'),
+        taxonomyService.searchJobRoles(),
+        taxonomyService.getFunctionalAreas(),
       ]);
       if (catsRes.data) setCategoriesList(catsRes.data);
       if (citiesRes.data) setCitiesList(citiesRes.data);
+      if (rolesRes.data) setRolesList(rolesRes.data.map((r) => ({ id: r.id, name: r.name, category: r.seniority_level ? r.seniority_level.replace('_', ' ') : 'General Role' })));
+      if (funcsRes.data) setDepartmentsList(funcsRes.data.map((f) => f.name));
     }
     fetchTax();
   }, []);
@@ -240,16 +246,33 @@ export const EmployerEditJobPage: React.FC<EmployerEditJobPageProps> = ({ jobId:
               1. Basic Role Information
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
+              <SearchableCombobox
                 label="Job Title"
+                placeholder="Select a role or enter custom title..."
+                searchPlaceholder="Search role or type custom..."
+                customPlaceholder="e.g. Lead Climate Strategist / Senior Architect"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(val) => setTitle(val)}
+                options={rolesList.map((r) => ({
+                  value: r.name,
+                  label: r.name,
+                  category: r.category,
+                }))}
+                allowCustom={true}
                 required
               />
-              <Input
+              <SearchableCombobox
                 label="Department"
+                placeholder="Select department or enter custom..."
+                searchPlaceholder="Search department or type custom..."
+                customPlaceholder="e.g. Special Advisory / Product R&D"
                 value={department}
-                onChange={(e) => setDepartment(e.target.value)}
+                onChange={(val) => setDepartment(val)}
+                options={departmentsList.map((dept) => ({
+                  value: dept,
+                  label: dept,
+                }))}
+                allowCustom={true}
                 required
               />
               <Select
@@ -267,12 +290,14 @@ export const EmployerEditJobPage: React.FC<EmployerEditJobPageProps> = ({ jobId:
                 value={location}
                 onChange={(val) => setLocation(val)}
                 placeholder="Search city (e.g. Hyderabad, Bengaluru, Pune)..."
-                searchPlaceholder="Search city name..."
+                searchPlaceholder="Search city name or type custom..."
+                customPlaceholder="e.g. Hyderabad Hitec City / Gurugram CyberHub"
                 options={citiesList.map((c) => ({
                   value: `${c.name}, India`,
                   label: `${c.name}, India`,
                   category: c.is_popular ? 'Metropolitan Hub' : 'Regional City',
                 }))}
+                allowCustom={true}
               />
               <Select
                 label="Work Mode"

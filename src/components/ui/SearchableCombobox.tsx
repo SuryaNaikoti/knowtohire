@@ -20,6 +20,8 @@ export interface SearchableComboboxProps {
   disabled?: boolean;
   required?: boolean;
   allowClear?: boolean;
+  allowCustom?: boolean;
+  customPlaceholder?: string;
   onChange: (value: string, option?: ComboboxOption) => void;
   className?: string;
 }
@@ -29,18 +31,23 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
   options = [],
   value = '',
   placeholder = 'Select an option...',
-  searchPlaceholder = 'Type to filter...',
+  searchPlaceholder = 'Type to filter or enter custom...',
   helperText,
   error,
   disabled = false,
   allowClear = false,
+  allowCustom = true,
+  customPlaceholder = 'Enter custom value...',
   onChange,
   className,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isEnteringCustom, setIsEnteringCustom] = useState(false);
+  const [customValue, setCustomValue] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const customInputRef = useRef<HTMLInputElement>(null);
 
   const selectedOption = useMemo(() => {
     return options.find((opt) => opt.value === value || opt.label.toLowerCase() === value.toLowerCase());
@@ -129,53 +136,129 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
 
       {/* Dropdown with Search & Virtualized slice */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1.5 max-h-64 overflow-hidden bg-white rounded-xl border border-kth-slate-200 shadow-lg p-1.5 animate-in fade-in zoom-in-95 duration-150 flex flex-col">
-          <div className="p-1 border-b border-kth-slate-100 mb-1 relative shrink-0">
-            <Search className="w-3.5 h-3.5 text-kth-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={searchPlaceholder}
-              className="w-full text-xs pl-7 pr-2 py-1.5 bg-kth-slate-50 border border-kth-slate-200 rounded-md outline-none focus:border-kth-primary-500 focus:bg-white transition-all"
-            />
-          </div>
-
-          <div className="overflow-y-auto max-h-48 scrollbar-thin">
-            {filteredOptions.length === 0 ? (
-              <div className="p-3 text-center text-xs text-kth-slate-400 font-medium">
-                No matching records found.
+        <div className="absolute top-full left-0 right-0 z-50 mt-1.5 max-h-72 overflow-hidden bg-white rounded-xl border border-kth-slate-200 shadow-lg p-1.5 animate-in fade-in zoom-in-95 duration-150 flex flex-col">
+          {isEnteringCustom ? (
+            <div className="p-2 space-y-2">
+              <div className="text-[11px] font-semibold text-kth-slate-600">Enter custom value:</div>
+              <input
+                ref={customInputRef}
+                type="text"
+                value={customValue}
+                onChange={(e) => setCustomValue(e.target.value)}
+                placeholder={customPlaceholder}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && customValue.trim()) {
+                    e.preventDefault();
+                    onChange(customValue.trim(), { value: customValue.trim(), label: customValue.trim() });
+                    setIsEnteringCustom(false);
+                    setIsOpen(false);
+                    setCustomValue('');
+                  }
+                }}
+                className="w-full text-xs px-2.5 py-1.5 bg-white border border-kth-primary-500 rounded-md outline-none focus:ring-2 focus:ring-kth-primary-500/20"
+              />
+              <div className="flex items-center justify-end gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setIsEnteringCustom(false)}
+                  className="px-2 py-1 text-xs text-kth-slate-500 hover:text-kth-slate-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={!customValue.trim()}
+                  onClick={() => {
+                    onChange(customValue.trim(), { value: customValue.trim(), label: customValue.trim() });
+                    setIsEnteringCustom(false);
+                    setIsOpen(false);
+                    setCustomValue('');
+                  }}
+                  className="px-2.5 py-1 bg-kth-primary-600 text-white rounded text-xs font-semibold disabled:opacity-50"
+                >
+                  Apply Custom
+                </button>
               </div>
-            ) : (
-              filteredOptions.map((opt) => {
-                const isSelected = selectedOption?.value === opt.value;
-                return (
+            </div>
+          ) : (
+            <>
+              <div className="p-1 border-b border-kth-slate-100 mb-1 relative shrink-0">
+                <Search className="w-3.5 h-3.5 text-kth-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={searchPlaceholder}
+                  className="w-full text-xs pl-7 pr-2 py-1.5 bg-kth-slate-50 border border-kth-slate-200 rounded-md outline-none focus:border-kth-primary-500 focus:bg-white transition-all"
+                />
+              </div>
+
+              <div className="overflow-y-auto max-h-48 scrollbar-thin space-y-0.5">
+                {/* If user typed a search query that has no exact match and allowCustom is true, show quick add option at top */}
+                {allowCustom && searchQuery.trim() && !options.some((o) => o.label.toLowerCase() === searchQuery.trim().toLowerCase()) && (
                   <button
-                    key={opt.value}
                     type="button"
-                    onClick={() => handleSelect(opt)}
-                    className={cn(
-                      'w-full flex items-center justify-between px-3 py-2 text-xs sm:text-sm rounded-md transition-colors text-left font-medium select-none',
-                      isSelected
-                        ? 'bg-kth-primary-50 text-kth-primary-700 font-bold'
-                        : 'text-kth-slate-700 hover:bg-kth-slate-50 hover:text-kth-slate-900'
-                    )}
+                    onClick={() => {
+                      onChange(searchQuery.trim(), { value: searchQuery.trim(), label: searchQuery.trim() });
+                      setIsOpen(false);
+                      setSearchQuery('');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs rounded-md bg-kth-primary-50 text-kth-primary-700 hover:bg-kth-primary-100 font-semibold transition-colors text-left"
                   >
-                    <div className="truncate">
-                      <span className="block truncate">{opt.label}</span>
-                      {opt.category && (
-                        <span className="text-[10px] text-kth-slate-400 block truncate">{opt.category}</span>
-                      )}
-                    </div>
-                    {isSelected && (
-                      <Check className="w-4 h-4 text-kth-primary-600 shrink-0 ml-2" />
-                    )}
+                    <span>Use custom: &quot;{searchQuery.trim()}&quot;</span>
                   </button>
-                );
-              })
-            )}
-          </div>
+                )}
+
+                {filteredOptions.length === 0 && !searchQuery.trim() ? (
+                  <div className="p-3 text-center text-xs text-kth-slate-400 font-medium">
+                    No matching records found.
+                  </div>
+                ) : (
+                  filteredOptions.map((opt) => {
+                    const isSelected = selectedOption?.value === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => handleSelect(opt)}
+                        className={cn(
+                          'w-full flex items-center justify-between px-3 py-2 text-xs sm:text-sm rounded-md transition-colors text-left font-medium select-none',
+                          isSelected
+                            ? 'bg-kth-primary-50 text-kth-primary-700 font-bold'
+                            : 'text-kth-slate-700 hover:bg-kth-slate-50 hover:text-kth-slate-900'
+                        )}
+                      >
+                        <div className="truncate">
+                          <span className="block truncate">{opt.label}</span>
+                          {opt.category && (
+                            <span className="text-[10px] text-kth-slate-400 block truncate">{opt.category}</span>
+                          )}
+                        </div>
+                        {isSelected && (
+                          <Check className="w-4 h-4 text-kth-primary-600 shrink-0 ml-2" />
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+
+                {/* Others Option */}
+                {allowCustom && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEnteringCustom(true);
+                      setTimeout(() => customInputRef.current?.focus(), 50);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs rounded-md text-kth-slate-600 hover:bg-kth-slate-100 border-t border-kth-slate-100 font-semibold transition-colors text-left mt-1"
+                  >
+                    <span>✨ Other (Type custom value)...</span>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 

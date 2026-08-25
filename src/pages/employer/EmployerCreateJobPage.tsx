@@ -33,6 +33,8 @@ export const EmployerCreateJobPage: React.FC = () => {
   // Master Taxonomy State
   const [categoriesList, setCategoriesList] = useState<CareerCategory[]>([]);
   const [citiesList, setCitiesList] = useState<CityItem[]>([]);
+  const [rolesList, setRolesList] = useState<{ id: string; name: string; category?: string }[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<string[]>([]);
   const [canonicalRoleName, setCanonicalRoleName] = useState<string | null>(null);
   const [canonicalRoleId, setCanonicalRoleId] = useState<string | null>(null);
 
@@ -44,15 +46,23 @@ export const EmployerCreateJobPage: React.FC = () => {
 
   React.useEffect(() => {
     async function fetchTaxonomy() {
-      const [catsRes, citiesRes] = await Promise.all([
+      const [catsRes, citiesRes, rolesRes, funcsRes] = await Promise.all([
         taxonomyService.getCareerCategories(),
         taxonomyService.searchCities('', 'country-in'),
+        taxonomyService.searchJobRoles(),
+        taxonomyService.getFunctionalAreas(),
       ]);
       if (catsRes.data && catsRes.data.length > 0) {
         setCategoriesList(catsRes.data);
       }
       if (citiesRes.data && citiesRes.data.length > 0) {
         setCitiesList(citiesRes.data);
+      }
+      if (rolesRes.data && rolesRes.data.length > 0) {
+        setRolesList(rolesRes.data.map((r) => ({ id: r.id, name: r.name, category: r.seniority_level ? r.seniority_level.replace('_', ' ') : 'General Role' })));
+      }
+      if (funcsRes.data && funcsRes.data.length > 0) {
+        setDepartmentsList(funcsRes.data.map((f) => f.name));
       }
     }
     fetchTaxonomy();
@@ -193,11 +203,19 @@ export const EmployerCreateJobPage: React.FC = () => {
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Input
+                <SearchableCombobox
                   label="Job Title"
-                  placeholder="e.g. Senior Full Stack Engineer"
+                  placeholder="Select a role or enter custom title..."
+                  searchPlaceholder="Search role or type custom..."
+                  customPlaceholder="e.g. Lead Climate Strategist / Senior Architect"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(val) => setTitle(val)}
+                  options={rolesList.map((r) => ({
+                    value: r.name,
+                    label: r.name,
+                    category: r.category,
+                  }))}
+                  allowCustom={true}
                   required
                 />
                 {canonicalRoleName && (
@@ -207,11 +225,18 @@ export const EmployerCreateJobPage: React.FC = () => {
                   </div>
                 )}
               </div>
-              <Input
+              <SearchableCombobox
                 label="Department"
-                placeholder="e.g. Software & Cloud Engineering"
+                placeholder="Select department or enter custom..."
+                searchPlaceholder="Search department or type custom..."
+                customPlaceholder="e.g. Special Advisory / Product R&D"
                 value={department}
-                onChange={(e) => setDepartment(e.target.value)}
+                onChange={(val) => setDepartment(val)}
+                options={departmentsList.map((dept) => ({
+                  value: dept,
+                  label: dept,
+                }))}
+                allowCustom={true}
                 required
               />
               <Select
@@ -229,12 +254,14 @@ export const EmployerCreateJobPage: React.FC = () => {
                 value={location}
                 onChange={(val) => setLocation(val)}
                 placeholder="Search city (e.g. Hyderabad, Bengaluru, Pune)..."
-                searchPlaceholder="Search city name..."
+                searchPlaceholder="Search city name or type custom..."
+                customPlaceholder="e.g. Hyderabad Hitec City / Gurugram CyberHub"
                 options={citiesList.map((c) => ({
                   value: `${c.name}, India`,
                   label: `${c.name}, India`,
                   category: c.is_popular ? 'Metropolitan Hub' : 'Regional City',
                 }))}
+                allowCustom={true}
               />
               <Select
                 label="Work Mode"
