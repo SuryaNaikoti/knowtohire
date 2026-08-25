@@ -164,6 +164,7 @@ export const CandidateResumePage: React.FC = () => {
     // 4. Persist new resume_url AND parsed resume profile fields to candidate_profiles in Supabase
     const updatePayload: Parameters<typeof candidateProfileService.updateMyCandidateProfile>[0] = {
       resumeUrl: uploadRes.url,
+      resumeFileName: file.name,
     };
 
     if (parsedData) {

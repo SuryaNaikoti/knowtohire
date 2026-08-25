@@ -358,7 +358,12 @@ export const candidateProfileService = {
             if (input.preferredSalaryMax !== undefined) existingCandCustom.preferredSalaryMax = input.preferredSalaryMax;
             if (input.employmentPreference !== undefined) existingCandCustom.employmentPreference = input.employmentPreference;
             if (input.noticePeriodDays !== undefined) existingCandCustom.noticePeriodDays = input.noticePeriodDays;
-            if (input.resumeUrl !== undefined) existingCandCustom.resumeUrl = input.resumeUrl;
+            if (input.resumeUrl !== undefined) {
+              existingCandCustom.resumeUrl = input.resumeUrl;
+              if (input.resumeFileName) {
+                existingCandCustom.resumeFileName = input.resumeFileName;
+              }
+            }
             if (input.jobRecommendationAlerts !== undefined) existingCandCustom.jobRecommendationAlerts = input.jobRecommendationAlerts;
             if (input.applicationStageUpdates !== undefined) existingCandCustom.applicationStageUpdates = input.applicationStageUpdates;
             if (input.isDiscoverable !== undefined) existingCandCustom.isDiscoverable = input.isDiscoverable;
@@ -369,9 +374,10 @@ export const candidateProfileService = {
 
             if (input.resumeUrl !== undefined) {
               const existingStored = resumeService.getStoredDemoResume(candidateId);
+              const effectiveFileName = input.resumeFileName || existingStored?.fileName || resumeService.extractResumeFileName(input.resumeUrl, 'Candidate_Resume.pdf');
               resumeService.saveStoredDemoResume(candidateId, {
                 url: input.resumeUrl || '',
-                fileName: existingStored?.fileName || resumeService.extractResumeFileName(input.resumeUrl, 'Candidate_Resume.pdf'),
+                fileName: effectiveFileName,
                 fileSize: existingStored?.fileSize,
                 uploadedAt: existingStored?.uploadedAt || new Date().toISOString(),
                 atsScore: existingStored?.atsScore,

@@ -110,6 +110,7 @@ export interface CandidateProfileUpdateInput {
   employmentPreference?: string | null;
   noticePeriodDays?: number | null;
   resumeUrl?: string | null;
+  resumeFileName?: string | null;
   jobRecommendationAlerts?: boolean;
   applicationStageUpdates?: boolean;
   isDiscoverable?: boolean;
