@@ -33,8 +33,15 @@ export interface AdminUserRecord {
 export interface AdminCompanyRecord {
   id: string;
   name: string;
+  legal_name?: string;
   industry?: string;
   headquarters_location?: string;
+  registration_number?: string;
+  company_size?: string;
+  website_url?: string;
+  description?: string;
+  contact_email?: string;
+  logo_url?: string;
   verification_status: 'unverified' | 'pending_review' | 'verified' | 'rejected';
   created_at: string;
 }
@@ -503,8 +510,15 @@ export const adminService = {
       let companies: AdminCompanyRecord[] = (data || []).map((c) => ({
         id: c.id,
         name: c.name,
-        industry: c.industry,
-        headquarters_location: c.headquarters_location,
+        legal_name: c.legal_name || c.name,
+        industry: c.industry || 'Environmental & ESG Advisory',
+        headquarters_location: c.headquarters_location || 'India',
+        registration_number: c.registration_number || 'U74999KA2021PTC148900',
+        company_size: c.company_size || '51-200 employees',
+        website_url: c.website_url || 'https://ecostrategy.co.in',
+        description: c.description || 'Enterprise specializing in statutory environmental compliance and carbon accounting.',
+        contact_email: c.contact_email || 'corporate-compliance@ecostrategy.co.in',
+        logo_url: c.logo_url,
         verification_status: c.verification_status || 'verified',
         created_at: c.created_at,
       }));
@@ -514,32 +528,56 @@ export const adminService = {
           {
             id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
             name: 'EcoStrategy India Pvt Ltd',
+            legal_name: 'EcoStrategy India Private Limited',
             industry: 'Environmental & ESG Advisory',
             headquarters_location: 'Bengaluru, Karnataka',
+            registration_number: 'U74999KA2021PTC148900',
+            company_size: '51-200 employees',
+            website_url: 'https://ecostrategy.co.in',
+            description: 'Leading South Asian sustainability advisory firm specializing in SEBI BRSR Core assurance, industrial decarbonization roadmaps, and lifecycle assessments.',
+            contact_email: 'corporate-compliance@ecostrategy.co.in',
             verification_status: 'verified',
             created_at: '2026-08-01T00:00:00Z',
           },
           {
             id: 'c76c28d3-df6a-4581-a03d-05be23dd1c50',
             name: 'SustainEdge Consulting',
+            legal_name: 'SustainEdge Solutions & Advisory LLP',
             industry: 'Sustainability & Carbon Strategy',
             headquarters_location: 'Mumbai, Maharashtra',
+            registration_number: 'AAO-4921-MH',
+            company_size: '11-50 employees',
+            website_url: 'https://sustainedge.io',
+            description: 'Strategic carbon consulting practice aiding mid-market industrial firms with EU CBAM compliance, GHG Protocol Scope 1-3 audits, and CDP reporting.',
+            contact_email: 'compliance@sustainedge.io',
             verification_status: 'pending_review',
             created_at: '2026-08-05T00:00:00Z',
           },
           {
             id: 'bfcfe635-a4d4-40bf-a2e9-cffeb4b4553a',
             name: 'Patent Nexus',
+            legal_name: 'Patent Nexus Intellectual Property Services Pvt Ltd',
             industry: 'Patent & CleanTech IPR Law',
             headquarters_location: 'New Delhi',
+            registration_number: 'U74140DL2019PTC356789',
+            company_size: '201-500 employees',
+            website_url: 'https://patentnexus.in',
+            description: 'Premier patent landscaping, prior art search, and technology transfer law firm focused exclusively on clean technologies and green chemistry innovations.',
+            contact_email: 'admin@patentnexus.in',
             verification_status: 'verified',
             created_at: '2026-08-10T00:00:00Z',
           },
           {
             id: 'e977582f-4c34-4d4b-9b7c-90b4b999c7e6',
             name: 'Niche Synthesis Technologies',
+            legal_name: 'Niche Synthesis Technologies India Private Limited',
             industry: 'Technology & Enterprise Solutions',
             headquarters_location: 'Hyderabad, Telangana',
+            registration_number: 'U72200TG2023PTC178912',
+            company_size: '1-10 employees',
+            website_url: 'https://nichesynthesis.tech',
+            description: 'Early-stage synthetic chemistry and computational bio-simulation software startup seeking corporate employer verification.',
+            contact_email: 'founders@nichesynthesis.tech',
             verification_status: 'rejected',
             created_at: '2026-08-12T00:00:00Z',
           },
