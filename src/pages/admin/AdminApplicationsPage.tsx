@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -19,7 +19,11 @@ import {
   Filter,
 } from 'lucide-react';
 
-export const AdminApplicationsPage: React.FC = () => {
+export interface AdminApplicationsPageProps {
+  onNavigate?: (route: string) => void;
+}
+
+export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({ onNavigate }) => {
   const [applications, setApplications] = useState<AdminApplicationRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,22 +32,36 @@ export const AdminApplicationsPage: React.FC = () => {
   // Inspect / Moderation Modal State
   const [selectedApp, setSelectedApp] = useState<AdminApplicationRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [targetStage, setTargetStage] = useState<'new' | 'screening' | 'interview' | 'offer' | 'hired' | 'rejected'>('new');
+  const [targetStage, setTargetStage] = useState<AdminApplicationRecord['stage']>('new');
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const fetchApplications = async () => {
+  const fetchApplications = useCallback(async () => {
     setIsLoading(true);
     const res = await adminService.getApplications(searchTerm, stageFilter);
     if (res.data) {
       setApplications(res.data);
     }
     setIsLoading(false);
-  };
+  }, [searchTerm, stageFilter]);
 
   useEffect(() => {
-    const timer = setTimeout(fetchApplications, 200);
+    const timer = setTimeout(fetchApplications, 150);
     return () => clearTimeout(timer);
-  }, [searchTerm, stageFilter]);
+  }, [fetchApplications]);
+
+  // Real-time synchronization with cross-portal events
+  useEffect(() => {
+    const handleApplicationsChanged = () => {
+      fetchApplications();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('kth_applications_changed', handleApplicationsChanged);
+      return () => {
+        window.removeEventListener('kth_applications_changed', handleApplicationsChanged);
+      };
+    }
+  }, [fetchApplications]);
 
   const handleOpenInspect = (app: AdminApplicationRecord) => {
     setSelectedApp(app);
@@ -68,6 +86,8 @@ export const AdminApplicationsPage: React.FC = () => {
         return <Badge variant="indigo">New Application</Badge>;
       case 'screening':
         return <Badge variant="cyan">Under Screening</Badge>;
+      case 'shortlisted':
+        return <Badge variant="cyan">Shortlisted</Badge>;
       case 'interview':
         return <Badge variant="amber">Interview Round</Badge>;
       case 'offer':
@@ -76,18 +96,20 @@ export const AdminApplicationsPage: React.FC = () => {
         return <Badge variant="emerald">Hired</Badge>;
       case 'rejected':
         return <Badge variant="rose">Declined</Badge>;
+      case 'withdrawn':
+        return <Badge variant="slate">Withdrawn</Badge>;
       default:
         return <Badge variant="slate">{stage}</Badge>;
     }
   };
 
   const totalCount = applications.length;
-  const screeningCount = applications.filter((a) => a.stage === 'screening').length;
+  const screeningCount = applications.filter((a) => a.stage === 'screening' || a.stage === 'shortlisted').length;
   const interviewCount = applications.filter((a) => a.stage === 'interview').length;
   const offerCount = applications.filter((a) => a.stage === 'offer' || a.stage === 'hired').length;
 
   return (
-    <AdminShell title="Platform Application Management" currentPath="/admin/applications">
+    <AdminShell title="Platform Application Management" currentPath="/admin/applications" onNavigate={onNavigate}>
       <div className="space-y-6 font-sans">
         {/* KPI Metrics Summary Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -158,10 +180,12 @@ export const AdminApplicationsPage: React.FC = () => {
                 { value: 'all', label: 'All Application Stages' },
                 { value: 'new', label: 'New Submissions' },
                 { value: 'screening', label: 'Screening' },
+                { value: 'shortlisted', label: 'Shortlisted' },
                 { value: 'interview', label: 'Interviewing' },
                 { value: 'offer', label: 'Offer Extended' },
                 { value: 'hired', label: 'Hired' },
                 { value: 'rejected', label: 'Declined / Rejected' },
+                { value: 'withdrawn', label: 'Withdrawn' },
               ]}
             />
           </div>
@@ -186,19 +210,19 @@ export const AdminApplicationsPage: React.FC = () => {
                   <div key={app.id} className="p-4 space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h4 className="font-bold text-sm text-kth-slate-900">{app.candidate_name}</h4>
-                        <p className="text-xs text-kth-slate-500 font-mono break-all">{app.candidate_email}</p>
+                        <h4 className="font-bold text-sm text-kth-slate-900">{app.candidate_name || '—'}</h4>
+                        <p className="text-xs text-kth-slate-500 font-mono break-all">{app.candidate_email || '—'}</p>
                       </div>
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                        {app.match_score}% Match
+                        {app.match_score > 0 ? `${app.match_score}% Match` : '—'}
                       </span>
                     </div>
 
                     <div className="bg-kth-slate-50 p-2.5 rounded-lg border border-kth-slate-100 space-y-1">
-                      <div className="font-semibold text-xs text-kth-slate-900">{app.job_title}</div>
+                      <div className="font-semibold text-xs text-kth-slate-900">{app.job_title || '—'}</div>
                       <div className="flex items-center justify-between text-[11px] text-kth-slate-600">
-                        <span>{app.company_name}</span>
-                        <span className="font-bold text-kth-primary-600 uppercase">{app.category}</span>
+                        <span>{app.company_name || '—'}</span>
+                        <span className="font-bold text-kth-primary-600 uppercase">{app.category || '—'}</span>
                       </div>
                     </div>
 
@@ -246,22 +270,22 @@ export const AdminApplicationsPage: React.FC = () => {
                     {applications.map((app) => (
                       <tr key={app.id} className="hover:bg-kth-slate-50/60 transition-colors">
                         <td className="p-4">
-                          <div className="font-bold text-kth-slate-900">{app.candidate_name}</div>
-                          <div className="text-[11px] text-kth-slate-500 font-mono">{app.candidate_email}</div>
+                          <div className="font-bold text-kth-slate-900">{app.candidate_name || '—'}</div>
+                          <div className="text-[11px] text-kth-slate-500 font-mono">{app.candidate_email || '—'}</div>
                         </td>
                         <td className="p-4">
-                          <div className="font-bold text-kth-slate-900">{app.job_title}</div>
-                          <div className="text-[10px] text-kth-primary-600 font-semibold uppercase">{app.category}</div>
+                          <div className="font-bold text-kth-slate-900">{app.job_title || '—'}</div>
+                          <div className="text-[10px] text-kth-primary-600 font-semibold uppercase">{app.category || '—'}</div>
                         </td>
                         <td className="p-4">
                           <div className="flex items-center gap-1.5 text-kth-slate-800 font-medium">
                             <Building2 className="w-3.5 h-3.5 text-kth-slate-400 shrink-0" />
-                            <span>{app.company_name}</span>
+                            <span>{app.company_name || '—'}</span>
                           </div>
                         </td>
                         <td className="p-4">
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            {app.match_score}% Match
+                            {app.match_score > 0 ? `${app.match_score}% Match` : '—'}
                           </span>
                         </td>
                         <td className="p-4">{getStageBadge(app.stage)}</td>
@@ -318,7 +342,7 @@ export const AdminApplicationsPage: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs pb-2 border-b border-kth-slate-100">
                   <span className="font-bold text-kth-slate-700">Semantic Fit Score:</span>
-                  <span className="font-mono font-bold text-emerald-600">{selectedApp.match_score}% Alignment</span>
+                  <span className="font-mono font-bold text-emerald-600">{selectedApp.match_score > 0 ? `${selectedApp.match_score}% Alignment` : '—'}</span>
                 </div>
 
                 {selectedApp.cover_letter && (
@@ -356,10 +380,12 @@ export const AdminApplicationsPage: React.FC = () => {
                 >
                   <option value="new">New (Submitted)</option>
                   <option value="screening">Screening (Under Review)</option>
+                  <option value="shortlisted">Shortlisted</option>
                   <option value="interview">Interview (Scheduled)</option>
                   <option value="offer">Offer (Extended)</option>
                   <option value="hired">Hired (Completed)</option>
                   <option value="rejected">Declined / Rejected</option>
+                  <option value="withdrawn">Withdrawn</option>
                 </select>
               </div>
 
@@ -379,3 +405,4 @@ export const AdminApplicationsPage: React.FC = () => {
     </AdminShell>
   );
 };
+

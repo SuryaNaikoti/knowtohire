@@ -69,21 +69,220 @@ export interface CreateResourceInput {
 
 const DEMO_RESOURCES_KEY = 'kth_demo_knowledge_resources';
 
+const INITIAL_CANONICAL_RESOURCES: KnowledgeResource[] = [
+  {
+    id: 'res-tech-1',
+    title: 'Kubernetes & Cloud Infrastructure Best Practices',
+    slug: 'kubernetes-cloud-infrastructure-best-practices',
+    description: 'Container orchestration, Kubernetes ingress controllers, zero-downtime rolling updates, and microservices clustering.',
+    category: 'Technology',
+    format: 'PDF',
+    file_url: 'https://knowtohire.com/resources/kubernetes_infrastructure_guide.pdf',
+    file_size: '3.8 MB',
+    file_name: 'kubernetes_infrastructure_guide.pdf',
+    file_path: 'resources/res-tech-1/kubernetes_infrastructure_guide.pdf',
+    mime_type: 'application/pdf',
+    storage_bucket: 'knowledge-hub',
+    cover_url: 'https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?auto=format&fit=crop&w=400&h=250&q=80',
+    author: 'KnowToHire Cloud Engineering Desk',
+    pageCount: 120,
+    rating: 4.9,
+    downloads_count: 21400,
+    is_free: true,
+    price_inr: 0,
+    tags: ['Kubernetes', 'Cloud Infrastructure', 'Docker', 'DevOps'],
+    status: 'published',
+    published_at: '2026-08-01T10:00:00.000Z',
+    created_from_request_id: null,
+    created_at: '2026-08-01T10:00:00.000Z',
+    updated_at: '2026-08-01T10:00:00.000Z',
+  },
+  {
+    id: 'res-tech-2',
+    title: 'Infrastructure as Code with Terraform & AWS',
+    slug: 'infrastructure-as-code-terraform-aws',
+    description: 'Declarative cloud provisioning, state management, security groups, and automated pipeline deployments with Terraform.',
+    category: 'Technology',
+    format: 'PDF',
+    file_url: 'https://knowtohire.com/resources/terraform_aws_iac_handbook.pdf',
+    file_size: '2.9 MB',
+    file_name: 'terraform_aws_iac_handbook.pdf',
+    file_path: 'resources/res-tech-2/terraform_aws_iac_handbook.pdf',
+    mime_type: 'application/pdf',
+    storage_bucket: 'knowledge-hub',
+    cover_url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=400&h=250&q=80',
+    author: 'DevOps & Cloud Architecture Team',
+    pageCount: 85,
+    rating: 4.8,
+    downloads_count: 15100,
+    is_free: true,
+    price_inr: 0,
+    tags: ['Terraform', 'AWS', 'Infrastructure as Code', 'Cloud Security'],
+    status: 'published',
+    published_at: '2026-08-05T12:00:00.000Z',
+    created_from_request_id: null,
+    created_at: '2026-08-05T12:00:00.000Z',
+    updated_at: '2026-08-05T12:00:00.000Z',
+  },
+  {
+    id: 'res-tech-3',
+    title: 'Enterprise System Architecture & Microservices Design',
+    slug: 'enterprise-system-architecture-microservices-design',
+    description: 'High-throughput microservices architecture, event-driven systems, fault tolerance, and domain-driven design patterns.',
+    category: 'Technology',
+    format: 'PDF',
+    file_url: 'https://knowtohire.com/resources/enterprise_microservices_architecture.pdf',
+    file_size: '4.2 MB',
+    file_name: 'enterprise_microservices_architecture.pdf',
+    file_path: 'resources/res-tech-3/enterprise_microservices_architecture.pdf',
+    mime_type: 'application/pdf',
+    storage_bucket: 'knowledge-hub',
+    cover_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=400&h=250&q=80',
+    author: 'KnowToHire Architecture Review Board',
+    pageCount: 110,
+    rating: 4.9,
+    downloads_count: 18300,
+    is_free: true,
+    price_inr: 0,
+    tags: ['System Architecture', 'Microservices', 'Distributed Systems', 'API Architecture'],
+    status: 'published',
+    published_at: '2026-08-10T14:30:00.000Z',
+    created_from_request_id: null,
+    created_at: '2026-08-10T14:30:00.000Z',
+    updated_at: '2026-08-10T14:30:00.000Z',
+  },
+  {
+    id: 'res-1',
+    title: 'Environmental Compliance Calendar & SPCB Guide 2026',
+    slug: 'environmental-compliance-calendar-spcb-guide-2026',
+    description: 'A comprehensive regulatory roadmap covering monthly, quarterly, and annual SPCB & MoEFCC filing deadlines across all Indian states.',
+    category: 'Environmental & ESG',
+    format: 'PDF',
+    file_url: 'https://knowtohire.com/resources/environmental_compliance_calendar_2026.pdf',
+    file_size: '4.6 MB',
+    file_name: 'environmental_compliance_calendar_2026.pdf',
+    file_path: 'resources/res-1/environmental_compliance_calendar_2026.pdf',
+    mime_type: 'application/pdf',
+    storage_bucket: 'knowledge-hub',
+    cover_url: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=400&h=250&q=80',
+    author: 'KnowToHire Legal & Environmental Desk',
+    pageCount: 140,
+    rating: 4.9,
+    downloads_count: 14200,
+    is_free: true,
+    price_inr: 0,
+    tags: ['SPCB Compliance', 'CTE/CTO Renewal', 'Hazardous Waste Rules', 'BRSR Framework'],
+    status: 'published',
+    published_at: '2026-08-12T09:15:00.000Z',
+    created_from_request_id: null,
+    created_at: '2026-08-12T09:15:00.000Z',
+    updated_at: '2026-08-12T09:15:00.000Z',
+  },
+  {
+    id: 'res-2',
+    title: 'Patent Filing & IPR Guide for Tech Startups',
+    slug: 'patent-filing-ipr-guide-tech-startups',
+    description: 'Step-by-step guide to navigating the Indian Patent Office, expedited examination for startups, and international PCT applications.',
+    category: 'Patent & IPR',
+    format: 'PDF',
+    file_url: 'https://knowtohire.com/resources/patent_filing_ipr_startups.pdf',
+    file_size: '3.1 MB',
+    file_name: 'patent_filing_ipr_startups.pdf',
+    file_path: 'resources/res-2/patent_filing_ipr_startups.pdf',
+    mime_type: 'application/pdf',
+    storage_bucket: 'knowledge-hub',
+    cover_url: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=400&h=250&q=80',
+    author: 'Dr. R. Sharma, Patent Attorney',
+    pageCount: 95,
+    rating: 4.8,
+    downloads_count: 9800,
+    is_free: false,
+    price_inr: 499,
+    tags: ['Indian Patent Act', 'Prior Art Search', 'Patentability Criteria', 'IP Licensing'],
+    status: 'published',
+    published_at: '2026-08-14T11:45:00.000Z',
+    created_from_request_id: null,
+    created_at: '2026-08-14T11:45:00.000Z',
+    updated_at: '2026-08-14T11:45:00.000Z',
+  },
+  {
+    id: 'res-3',
+    title: 'SEBI BRSR Core & ESG Reporting Handbook',
+    slug: 'sebi-brsr-core-esg-reporting-handbook',
+    description: 'Complete analysis of SEBI BRSR mandatory disclosure indicators for India top 1000 listed companies.',
+    category: 'Sustainability',
+    format: 'PDF',
+    file_url: 'https://knowtohire.com/resources/sebi_brsr_reporting_handbook.pdf',
+    file_size: '3.4 MB',
+    file_name: 'sebi_brsr_reporting_handbook.pdf',
+    file_path: 'resources/res-3/sebi_brsr_reporting_handbook.pdf',
+    mime_type: 'application/pdf',
+    storage_bucket: 'knowledge-hub',
+    cover_url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=400&h=250&q=80',
+    author: 'KnowToHire Intelligence Team',
+    pageCount: 110,
+    rating: 4.9,
+    downloads_count: 18500,
+    is_free: true,
+    price_inr: 0,
+    tags: ['SEBI BRSR', 'Scope 1 & 2 Emissions', 'Supply Chain ESG', 'Assurance Metrics'],
+    status: 'published',
+    published_at: '2026-08-16T16:00:00.000Z',
+    created_from_request_id: null,
+    created_at: '2026-08-16T16:00:00.000Z',
+    updated_at: '2026-08-16T16:00:00.000Z',
+  },
+  {
+    id: 'res-4',
+    title: 'Industrial Sustainability Audit Protocol',
+    slug: 'industrial-sustainability-audit-protocol',
+    description: 'Field inspection checklists and quantitative audit methodology for industrial energy, water, and effluent compliance.',
+    category: 'Environmental & ESG',
+    format: 'PDF',
+    file_url: 'https://knowtohire.com/resources/industrial_sustainability_audit_protocol.pdf',
+    file_size: '2.7 MB',
+    file_name: 'industrial_sustainability_audit_protocol.pdf',
+    file_path: 'resources/res-4/industrial_sustainability_audit_protocol.pdf',
+    mime_type: 'application/pdf',
+    storage_bucket: 'knowledge-hub',
+    cover_url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=400&h=250&q=80',
+    author: 'Indian Energy & Environmental Institute',
+    pageCount: 88,
+    rating: 4.7,
+    downloads_count: 6200,
+    is_free: false,
+    price_inr: 799,
+    tags: ['Energy Audit', 'Water Balance', 'ETP Compliance', 'ISO 50001'],
+    status: 'published',
+    published_at: '2026-08-18T08:30:00.000Z',
+    created_from_request_id: null,
+    created_at: '2026-08-18T08:30:00.000Z',
+    updated_at: '2026-08-18T08:30:00.000Z',
+  },
+];
+
+let memoryDemoResources: KnowledgeResource[] = [...INITIAL_CANONICAL_RESOURCES];
+
 function getDemoResources(): KnowledgeResource[] {
-  if (typeof window === 'undefined' || !window.localStorage) return [];
+  if (typeof window === 'undefined' || !window.localStorage) return memoryDemoResources;
   try {
     const raw = window.localStorage.getItem(DEMO_RESOURCES_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) {
+      window.localStorage.setItem(DEMO_RESOURCES_KEY, JSON.stringify(INITIAL_CANONICAL_RESOURCES));
+      return INITIAL_CANONICAL_RESOURCES;
+    }
+    return JSON.parse(raw);
   } catch {
-    return [];
+    return memoryDemoResources;
   }
 }
 
 function saveDemoResource(res: KnowledgeResource) {
+  const existing = getDemoResources().filter((r) => r.id !== res.id && r.slug !== res.slug);
+  const updated = [res, ...existing];
+  memoryDemoResources = updated;
   if (typeof window === 'undefined' || !window.localStorage) return;
   try {
-    const existing = getDemoResources().filter((r) => r.id !== res.id && r.slug !== res.slug);
-    const updated = [res, ...existing];
     window.localStorage.setItem(DEMO_RESOURCES_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('kth_resources_changed'));
   } catch {
@@ -92,17 +291,18 @@ function saveDemoResource(res: KnowledgeResource) {
 }
 
 function updateDemoResource(id: string, updates: Partial<KnowledgeResource>) {
-  if (typeof window === 'undefined' || !window.localStorage) return;
-  try {
-    const existing = getDemoResources();
-    const idx = existing.findIndex((r) => r.id === id);
-    if (idx >= 0) {
-      existing[idx] = { ...existing[idx], ...updates, updated_at: new Date().toISOString() };
+  const existing = getDemoResources();
+  const idx = existing.findIndex((r) => r.id === id);
+  if (idx >= 0) {
+    existing[idx] = { ...existing[idx], ...updates, updated_at: new Date().toISOString() };
+    memoryDemoResources = [...existing];
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    try {
       window.localStorage.setItem(DEMO_RESOURCES_KEY, JSON.stringify(existing));
       window.dispatchEvent(new CustomEvent('kth_resources_changed'));
+    } catch {
+      // Ignore
     }
-  } catch {
-    // Ignore
   }
 }
 

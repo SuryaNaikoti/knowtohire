@@ -58,19 +58,12 @@ export const EmployerCompanyProfilePage: React.FC = () => {
       setCompany(res.data);
       setName(res.data.name || '');
       setLegalName(res.data.legal_name || '');
-      setIndustry(res.data.industry || 'Environmental & ESG Advisory');
-      setLocation(res.data.headquarters_location || 'Bengaluru, Karnataka, India');
-      setCompanySize(res.data.company_size || '51–200 Employees');
+      setIndustry(res.data.industry || '');
+      setLocation(res.data.headquarters_location || '');
+      setCompanySize(res.data.company_size || '');
       setWebsiteUrl(res.data.website_url || '');
       setDescription(res.data.description || '');
-      setCultureBenefits(
-        res.data.culture_benefits || [
-          'Hybrid & Flexible Work Policy across major Indian hubs',
-          'Comprehensive Health & Group Term Life Insurance',
-          'Continuous Professional Development & SPCB/BRSR Certifications',
-          'Decarbonization & Clean Energy R&D projects',
-        ]
-      );
+      setCultureBenefits(res.data.culture_benefits || []);
     }
     setIsLoading(false);
   }, []);
@@ -84,19 +77,12 @@ export const EmployerCompanyProfilePage: React.FC = () => {
     if (company) {
       setName(company.name || '');
       setLegalName(company.legal_name || '');
-      setIndustry(company.industry || 'Environmental & ESG Advisory');
-      setLocation(company.headquarters_location || 'Bengaluru, Karnataka, India');
-      setCompanySize(company.company_size || '51–200 Employees');
+      setIndustry(company.industry || '');
+      setLocation(company.headquarters_location || '');
+      setCompanySize(company.company_size || '');
       setWebsiteUrl(company.website_url || '');
       setDescription(company.description || '');
-      setCultureBenefits(
-        company.culture_benefits || [
-          'Hybrid & Flexible Work Policy across major Indian hubs',
-          'Comprehensive Health & Group Term Life Insurance',
-          'Continuous Professional Development & SPCB/BRSR Certifications',
-          'Decarbonization & Clean Energy R&D projects',
-        ]
-      );
+      setCultureBenefits(company.culture_benefits || []);
     }
     setIsEditing(true);
   };
@@ -105,19 +91,12 @@ export const EmployerCompanyProfilePage: React.FC = () => {
     if (company) {
       setName(company.name || '');
       setLegalName(company.legal_name || '');
-      setIndustry(company.industry || 'Environmental & ESG Advisory');
-      setLocation(company.headquarters_location || 'Bengaluru, Karnataka, India');
-      setCompanySize(company.company_size || '51–200 Employees');
+      setIndustry(company.industry || '');
+      setLocation(company.headquarters_location || '');
+      setCompanySize(company.company_size || '');
       setWebsiteUrl(company.website_url || '');
       setDescription(company.description || '');
-      setCultureBenefits(
-        company.culture_benefits || [
-          'Hybrid & Flexible Work Policy across major Indian hubs',
-          'Comprehensive Health & Group Term Life Insurance',
-          'Continuous Professional Development & SPCB/BRSR Certifications',
-          'Decarbonization & Clean Energy R&D projects',
-        ]
-      );
+      setCultureBenefits(company.culture_benefits || []);
     }
     setIsEditing(false);
     setErrorMessage(null);
@@ -211,8 +190,19 @@ export const EmployerCompanyProfilePage: React.FC = () => {
                   <div>
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h1 className="font-display text-2xl font-extrabold text-kth-slate-900">{company.name}</h1>
-                      <Badge variant="cyan" className="capitalize">
-                        {(company.verification_status || 'verified').replace('_', ' ')}
+                      <Badge
+                        variant={
+                          company.verification_status === 'verified'
+                            ? 'cyan'
+                            : company.verification_status === 'pending_review'
+                            ? 'amber'
+                            : company.verification_status === 'rejected'
+                            ? 'rose'
+                            : 'slate'
+                        }
+                        className="capitalize"
+                      >
+                        {(company.verification_status || 'unverified').replace('_', ' ')}
                       </Badge>
                       {saveSuccess && (
                         <Badge variant="emerald" className="flex items-center gap-1">
@@ -223,13 +213,13 @@ export const EmployerCompanyProfilePage: React.FC = () => {
                     {company.legal_name && company.legal_name !== company.name && (
                       <p className="text-xs text-kth-slate-500 font-medium mb-1">{company.legal_name}</p>
                     )}
-                    <p className="text-xs font-semibold text-kth-slate-700 mb-1">{company.industry || 'Environmental & ESG Advisory'}</p>
+                    <p className="text-xs font-semibold text-kth-slate-700 mb-1">{company.industry || 'Industry not specified'}</p>
                     <div className="flex items-center gap-4 text-xs text-kth-slate-500 flex-wrap">
                       <span className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-kth-slate-400" /> {company.headquarters_location || 'India'}
+                        <MapPin className="w-3.5 h-3.5 text-kth-slate-400" /> {company.headquarters_location || 'Location not specified'}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5 text-kth-slate-400" /> {company.company_size || '51–200 Employees'}
+                        <Users className="w-3.5 h-3.5 text-kth-slate-400" /> {company.company_size || 'Size not specified'}
                       </span>
                     </div>
                   </div>
@@ -300,6 +290,7 @@ export const EmployerCompanyProfilePage: React.FC = () => {
                     options={industriesList.map((ind) => ({
                       value: ind.name,
                       label: ind.name,
+                      description: ind.id,
                     }))}
                   />
 
@@ -313,6 +304,7 @@ export const EmployerCompanyProfilePage: React.FC = () => {
                       value: `${c.name}, India`,
                       label: `${c.name}, India`,
                       category: c.is_popular ? 'Metropolitan Hub' : 'Regional City',
+                      description: c.id,
                     }))}
                   />
 
@@ -321,6 +313,7 @@ export const EmployerCompanyProfilePage: React.FC = () => {
                     value={companySize}
                     onChange={(e) => setCompanySize(e.target.value)}
                     options={[
+                      { value: '', label: 'Select company size...' },
                       { value: '1–10 Employees', label: '1–10 Employees (Seed / Early Stage)' },
                       { value: '11–50 Employees', label: '11–50 Employees (Emerging Growth)' },
                       { value: '51–200 Employees', label: '51–200 Employees (Scale-up)' },
@@ -401,7 +394,9 @@ export const EmployerCompanyProfilePage: React.FC = () => {
             <Card className="p-6">
               <h3 className="font-display font-bold text-base text-kth-slate-900 mb-3">About the Enterprise</h3>
               <p className="text-sm text-kth-slate-700 leading-relaxed whitespace-pre-line">
-                {company.description || 'Specialized enterprise delivering environmental compliance, sustainability strategy, and clean innovation solutions.'}
+                {company.description || (
+                  <span className="text-kth-slate-400 italic">No enterprise description provided yet.</span>
+                )}
               </p>
             </Card>
 
@@ -410,22 +405,18 @@ export const EmployerCompanyProfilePage: React.FC = () => {
               <h3 className="font-display font-bold text-base text-kth-slate-900 mb-4">
                 Workplace Culture & Candidate Perks
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-kth-slate-700">
-                {(company.culture_benefits && company.culture_benefits.length > 0
-                  ? company.culture_benefits
-                  : [
-                      'Hybrid & Flexible Work Policy across major Indian hubs',
-                      'Comprehensive Health & Group Term Life Insurance',
-                      'Continuous Professional Development & SPCB/BRSR Certifications',
-                      'Decarbonization & Clean Energy R&D projects',
-                    ]
-                ).map((perk, idx) => (
-                  <div key={idx} className="flex items-center gap-2 bg-kth-slate-50 p-3 rounded-lg border border-kth-slate-200">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>{perk}</span>
-                  </div>
-                ))}
-              </div>
+              {company.culture_benefits && company.culture_benefits.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-kth-slate-700">
+                  {company.culture_benefits.map((perk, idx) => (
+                    <div key={idx} className="flex items-center gap-2 bg-kth-slate-50 p-3 rounded-lg border border-kth-slate-200">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{perk}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-kth-slate-400 italic">No workplace perks or benefits specified yet.</p>
+              )}
             </Card>
           </>
         )}

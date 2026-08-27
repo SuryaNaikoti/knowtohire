@@ -276,7 +276,10 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
   };
 
   return (
-    <EmployerShell title={`Candidate Profile — ${name}`} currentPath="/employer/jobs">
+    <EmployerShell
+      title={`Candidate Profile — ${name}`}
+      currentPath={isAppRoute ? '/employer/pipeline' : '/employer/candidates'}
+    >
       <div className="space-y-6 font-sans max-w-7xl mx-auto text-left">
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between">
@@ -285,14 +288,22 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
             onClick={() => {
               if (job) {
                 handleNavigate(`/employer/jobs/${job.id}/applicants`);
+              } else if (isAppRoute) {
+                handleNavigate('/employer/pipeline');
               } else {
-                handleNavigate('/employer/jobs');
+                handleNavigate('/employer/candidates');
               }
             }}
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-kth-slate-600 hover:text-kth-slate-900 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>{job ? `Back to Applicants for ${job.title}` : 'Back to Jobs'}</span>
+            <span>
+              {job
+                ? `Back to Applicants for ${job.title}`
+                : isAppRoute
+                ? 'Back to ATS Pipeline'
+                : 'Back to Candidate Discovery'}
+            </span>
           </button>
 
           <div className="flex items-center gap-2">

@@ -154,10 +154,11 @@ export const taxonomyService = {
       }
 
       const local = getLocalTaxonomy().industries;
-      const filtered = includeInactive ? local : local.filter((i) => i.is_active);
+      const list = local && local.length > 0 ? local : [...SEED_INDUSTRIES];
+      const filtered = includeInactive ? list : list.filter((i) => i.is_active);
       return { data: filtered, error: null };
     } catch (err) {
-      return { data: null, error: normalizeServiceError(err) };
+      return { data: [...SEED_INDUSTRIES], error: null };
     }
   },
 

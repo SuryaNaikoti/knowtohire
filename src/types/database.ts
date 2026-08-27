@@ -154,6 +154,19 @@ export interface Job {
   city_id?: string | null;
   // Joined entity representations
   company?: CompanyProfile;
+  poster?: {
+    id: string;
+    full_name: string;
+    email: string;
+    role: string;
+    phone?: string | null;
+  };
+  // Moderation & Change Requests
+  moderation_status?: 'approved' | 'rejected' | 'changes_requested' | 'pending_review';
+  moderation_notes?: string | null;
+  moderation_flags?: string[];
+  moderated_at?: string | null;
+  moderated_by?: string | null;
 }
 
 export interface JobApplication {

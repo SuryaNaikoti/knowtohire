@@ -14,6 +14,7 @@
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { resumeService } from './resumeService';
+import { notificationService } from './notificationService';
 import {
   JobApplication,
   ApplicationStage,
@@ -343,6 +344,20 @@ export const applicationService = {
         };
 
         saveDemoApplication(demoApp);
+
+        // Dispatch employer notification for new applicant
+        const candidateName = (snapshot as any)?.full_name || sessionName;
+        notificationService.createNotification({
+          company_id: targetJob.company_id,
+          candidate_id: candidateId,
+          application_id: demoApp.id,
+          job_id: input.job_id,
+          type: 'application',
+          title: `New Applicant: ${candidateName}`,
+          message: `${candidateName} applied for "${targetJob.title}".`,
+          link: '/employer/pipeline',
+        }).catch(() => {});
+
         return { data: demoApp, error: null };
       }
 
@@ -364,6 +379,20 @@ export const applicationService = {
       // 5. SUCCESS — real database record created
       if (!error && data) {
         notifyApplicationsChanged();
+
+        // Dispatch employer notification for new applicant
+        const candidateName = (snapshot as any)?.full_name || sessionName;
+        notificationService.createNotification({
+          company_id: targetJob.company_id,
+          candidate_id: candidateId,
+          application_id: data.id,
+          job_id: input.job_id,
+          type: 'application',
+          title: `New Applicant: ${candidateName}`,
+          message: `${candidateName} applied for "${targetJob.title}".`,
+          link: '/employer/pipeline',
+        }).catch(() => {});
+
         return { data: data as JobApplication, error: null };
       }
 
@@ -489,6 +518,13 @@ export const applicationService = {
   },
 
   /**
+   * Fetch an application by ID (Internal / ATS / Admin).
+   */
+  async getApplicationById(applicationId: string): Promise<ServiceResult<JobApplication>> {
+    return this.getMyApplicationById(applicationId);
+  },
+
+  /**
    * Withdraw an application by the candidate.
    */
   async withdrawApplication(applicationId: string): Promise<ServiceResult<JobApplication>> {
@@ -535,6 +571,7 @@ export const applicationService = {
    */
   async getJobApplicants(jobId: string, filters: ApplicationFilters = {}): Promise<ServiceResult<PaginatedResult<JobApplication>>> {
     try {
+      const companyId = await getEmployerCompanyId();
       const page = filters.page && filters.page > 0 ? filters.page : 1;
       const pageSize = filters.pageSize && filters.pageSize > 0 ? filters.pageSize : 20;
       const from = (page - 1) * pageSize;
@@ -544,6 +581,10 @@ export const applicationService = {
         .from('job_applications')
         .select('*, candidate:profiles(*), job:jobs(title, department, location)', { count: 'exact' })
         .eq('job_id', jobId);
+
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
 
       if (filters.stage) {
         query = query.eq('stage', filters.stage);
@@ -555,8 +596,12 @@ export const applicationService = {
 
       let dbApps: JobApplication[] = (!error && data) ? (data as JobApplication[]) : [];
 
-      // Merge demo applications for this job
-      let demoApps = getDemoApplications().filter((a) => a.job_id === jobId);
+      // Merge demo applications for this job (tenant-scoped)
+      let demoApps = getDemoApplications().filter((a) => {
+        if (a.job_id !== jobId) return false;
+        if (companyId && a.company_id && a.company_id !== companyId) return false;
+        return true;
+      });
       if (filters.stage) {
         demoApps = demoApps.filter((a) => a.stage === filters.stage);
       }
@@ -699,18 +744,43 @@ export const applicationService = {
   ): Promise<ServiceResult<JobApplication>> {
     try {
       // Handle demo applications
-      if (applicationId.startsWith('demo-app-')) {
-        const allDemo = getDemoApplications();
-        const idx = allDemo.findIndex((a) => a.id === applicationId);
-        if (idx !== -1) {
-          allDemo[idx].stage = stage;
-          allDemo[idx].updated_at = new Date().toISOString();
-          if (rejectionReason) {
-            allDemo[idx].rejection_reason = rejectionReason;
-          }
-          window.localStorage.setItem(DEMO_APPLICATIONS_KEY, JSON.stringify(allDemo));
-          return { data: allDemo[idx], error: null };
+      const allDemo = getDemoApplications();
+      const idx = allDemo.findIndex((a) => a.id === applicationId);
+      if (idx !== -1) {
+        allDemo[idx].stage = stage;
+        allDemo[idx].updated_at = new Date().toISOString();
+        if (rejectionReason) {
+          allDemo[idx].rejection_reason = rejectionReason;
         }
+        window.localStorage.setItem(DEMO_APPLICATIONS_KEY, JSON.stringify(allDemo));
+        notifyApplicationsChanged();
+
+        // Dispatch notification for significant stage changes
+        const candidateName = allDemo[idx].candidate_snapshot?.full_name || 'Candidate';
+        const jobTitle = allDemo[idx].job?.title || 'Job Opening';
+        const stageTitles: Record<string, string> = {
+          screening: 'Screening in Progress',
+          shortlisted: 'Candidate Shortlisted',
+          interview: 'Interview Stage',
+          offer: 'Offer Extended',
+          hired: 'Candidate Hired',
+          rejected: 'Candidate Archived',
+        };
+
+        if (stageTitles[stage]) {
+          notificationService.createNotification({
+            company_id: allDemo[idx].company_id,
+            candidate_id: allDemo[idx].candidate_id,
+            application_id: allDemo[idx].id,
+            job_id: allDemo[idx].job_id,
+            type: stage === 'offer' || stage === 'hired' ? 'offer' : 'application',
+            title: `${stageTitles[stage]}: ${candidateName}`,
+            message: `${candidateName} was moved to ${stage.toUpperCase()} for "${jobTitle}".`,
+            link: '/employer/pipeline',
+          }).catch(() => {});
+        }
+
+        return { data: allDemo[idx], error: null };
       }
 
       const updates: Record<string, unknown> = {
@@ -731,6 +801,34 @@ export const applicationService = {
 
       if (error) {
         return { data: null, error: normalizeServiceError(error) };
+      }
+
+      notifyApplicationsChanged();
+
+      if (data) {
+        const candidateName = (data as any)?.candidate?.full_name || (data as any)?.candidate_snapshot?.full_name || 'Candidate';
+        const jobTitle = (data as any)?.job?.title || 'Job Opening';
+        const stageTitles: Record<string, string> = {
+          screening: 'Screening in Progress',
+          shortlisted: 'Candidate Shortlisted',
+          interview: 'Interview Stage',
+          offer: 'Offer Extended',
+          hired: 'Candidate Hired',
+          rejected: 'Candidate Archived',
+        };
+
+        if (stageTitles[stage]) {
+          notificationService.createNotification({
+            company_id: (data as any).company_id,
+            candidate_id: (data as any).candidate_id,
+            application_id: (data as any).id,
+            job_id: (data as any).job_id,
+            type: stage === 'offer' || stage === 'hired' ? 'offer' : 'application',
+            title: `${stageTitles[stage]}: ${candidateName}`,
+            message: `${candidateName} was moved to ${stage.toUpperCase()} for "${jobTitle}".`,
+            link: '/employer/pipeline',
+          }).catch(() => {});
+        }
       }
 
       return { data: data as JobApplication, error: null };

@@ -22,12 +22,14 @@ import { Drawer } from '@/components/ui/Drawer';
 export interface AdminShellProps {
   title?: string;
   currentPath?: string;
+  onNavigate?: (path: string) => void;
   children: React.ReactNode;
 }
 
 export const AdminShell: React.FC<AdminShellProps> = ({
   title = 'Platform Administration',
   currentPath = '/admin',
+  onNavigate,
   children,
 }) => {
   const { logout, profile, user } = useAuth();
@@ -49,7 +51,19 @@ export const AdminShell: React.FC<AdminShellProps> = ({
 
   const handleLogout = async () => {
     await logout();
-    window.location.href = '/login';
+    if (onNavigate) {
+      onNavigate('/login');
+    } else {
+      window.location.href = '/login';
+    }
+  };
+
+  const handleLinkClick = (e: React.MouseEvent, path: string) => {
+    if (onNavigate) {
+      e.preventDefault();
+      onNavigate(path);
+    }
+    setMobileMenuOpen(false);
   };
 
   const renderNavLinks = () => (
@@ -61,7 +75,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
           <a
             key={item.path}
             href={item.path}
-            onClick={() => setMobileMenuOpen(false)}
+            onClick={(e) => handleLinkClick(e, item.path)}
             className={cn(
               'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors no-underline',
               isActive

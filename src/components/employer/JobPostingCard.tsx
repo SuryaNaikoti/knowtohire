@@ -81,23 +81,31 @@ export const JobPostingCard: React.FC<JobPostingCardProps> = ({
         </div>
 
         {/* Lifecycle Status Specific Guidance */}
-        {job.status === 'draft' && (
+        {job.moderation_notes ? (
+          <div className="bg-amber-50 p-3 rounded-lg border border-amber-300 text-xs text-amber-900 mb-4 space-y-1">
+            <div className="font-bold flex items-center gap-1.5 text-amber-800 text-[11px] uppercase tracking-wider">
+              <span>⚠️ Admin Change Request</span>
+            </div>
+            <p className="text-[11px] leading-relaxed italic text-amber-900">
+              &ldquo;{job.moderation_notes}&rdquo;
+            </p>
+            <p className="text-[10px] text-amber-700 pt-0.5 font-medium">
+              Please click &ldquo;Edit&rdquo; below to update the requisition according to admin guidelines and resubmit.
+            </p>
+          </div>
+        ) : job.status === 'draft' ? (
           <div className="bg-kth-slate-100 p-2.5 rounded-lg border border-kth-slate-200 text-[11px] text-kth-slate-600 mb-4">
             Draft only. This opening is invisible to candidates and public search.
           </div>
-        )}
-
-        {job.status === 'paused' && (
+        ) : job.status === 'paused' ? (
           <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-200 text-[11px] text-amber-800 mb-4">
             Temporarily paused. New applications are currently suspended.
           </div>
-        )}
-
-        {job.status === 'closed' && (
+        ) : job.status === 'closed' ? (
           <div className="bg-rose-50 p-2.5 rounded-lg border border-rose-200 text-[11px] text-rose-800 mb-4">
             Requisition closed. Position is archived.
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className="pt-3 border-t border-kth-slate-100 space-y-2.5">

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Bell, Menu } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { companyProfileService } from '@/services';
+import { companyProfileService, notificationService } from '@/services';
 import { UserMenuDropdown } from '@/components/navigation/UserMenuDropdown';
 
 export interface EmployerHeaderProps {
@@ -19,6 +19,7 @@ export const EmployerHeader: React.FC<EmployerHeaderProps> = ({
   const [companyName, setCompanyName] = useState<string>(
     (user?.user_metadata?.company_name as string) || 'Enterprise Portal'
   );
+  const [unreadNotifCount, setUnreadNotifCount] = useState<number>(0);
 
   useEffect(() => {
     const fetchCompany = async () => {
@@ -33,6 +34,16 @@ export const EmployerHeader: React.FC<EmployerHeaderProps> = ({
     };
     fetchCompany();
 
+    const fetchUnread = async () => {
+      try {
+        const count = await notificationService.getUnreadCount();
+        setUnreadNotifCount(count);
+      } catch {
+        // ignore
+      }
+    };
+    fetchUnread();
+
     const handleCompanyUpdated = (e: Event) => {
       const custom = e as CustomEvent<{ name?: string }>;
       if (custom.detail?.name) {
@@ -42,11 +53,31 @@ export const EmployerHeader: React.FC<EmployerHeaderProps> = ({
       }
     };
 
+    const handleNotifsChanged = () => {
+      fetchUnread();
+    };
+
+    const handleProfileUpdated = (e: Event) => {
+      const custom = e as CustomEvent<{ full_name?: string }>;
+      if (custom.detail?.full_name) {
+        // Triggers re-render if needed
+      }
+    };
+
     window.addEventListener('kth_company_profile_updated', handleCompanyUpdated);
+    window.addEventListener('kth_profile_updated', handleProfileUpdated);
+    window.addEventListener('kth_notifications_changed', handleNotifsChanged);
+    window.addEventListener('kth_applications_changed', handleNotifsChanged);
+    window.addEventListener('kth_interviews_changed', handleNotifsChanged);
+
     return () => {
       window.removeEventListener('kth_company_profile_updated', handleCompanyUpdated);
+      window.removeEventListener('kth_profile_updated', handleProfileUpdated);
+      window.removeEventListener('kth_notifications_changed', handleNotifsChanged);
+      window.removeEventListener('kth_applications_changed', handleNotifsChanged);
+      window.removeEventListener('kth_interviews_changed', handleNotifsChanged);
     };
-  }, [user]);
+  }, [user, profile]);
 
   const fullName =
     profile?.full_name ||
@@ -90,9 +121,11 @@ export const EmployerHeader: React.FC<EmployerHeaderProps> = ({
         </button>
 
         {/* Notifications */}
-        <a href="/employer/notifications" className="relative p-2 rounded-md text-kth-slate-600 hover:bg-kth-slate-100 no-underline">
+        <a href="/employer/notifications" className="relative p-2 rounded-md text-kth-slate-600 hover:bg-kth-slate-100 no-underline" title={`${unreadNotifCount} unread notifications`}>
           <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-kth-primary-600 ring-2 ring-white" />
+          {unreadNotifCount > 0 && (
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-kth-primary-600 ring-2 ring-white" />
+          )}
         </a>
 
         {/* Interactive Employer Account Dropdown */}

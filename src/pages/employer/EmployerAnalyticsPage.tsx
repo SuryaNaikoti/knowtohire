@@ -69,6 +69,24 @@ export const EmployerAnalyticsPage: React.FC = () => {
 
   useEffect(() => {
     loadAnalytics();
+
+    const handleDataChanged = () => {
+      loadAnalytics();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('kth_applications_changed', handleDataChanged);
+      window.addEventListener('kth_interviews_changed', handleDataChanged);
+      window.addEventListener('kth_jobs_changed', handleDataChanged);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('kth_applications_changed', handleDataChanged);
+        window.removeEventListener('kth_interviews_changed', handleDataChanged);
+        window.removeEventListener('kth_jobs_changed', handleDataChanged);
+      }
+    };
   }, [loadAnalytics]);
 
   const avgTimeText = overview?.avgTimeToHireDays ? `${overview.avgTimeToHireDays} Days` : 'N/A';

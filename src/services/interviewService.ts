@@ -5,8 +5,10 @@
 
 import { supabase } from '@/lib/supabase';
 import { applicationService } from './applicationService';
+import { notificationService } from './notificationService';
 import {
   Interview,
+  InterviewStatus,
   InterviewCreateInput,
   InterviewUpdateInput,
   ServiceResult,
@@ -23,11 +25,152 @@ function notifyInterviewsChanged() {
   }
 }
 
+function getLocalCreatedJobs(): any[] {
+  if (typeof window === 'undefined' || !window.localStorage) return [];
+  try {
+    const raw = window.localStorage.getItem('kth_local_created_jobs');
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function getStoredApplications(): any[] {
+  if (typeof window === 'undefined' || !window.localStorage) return [];
+  try {
+    const raw = window.localStorage.getItem('kth_demo_applications');
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function hydrateInterviewEntities(interview: Interview): Interview {
+  const cloned: Interview = { ...interview };
+
+  // 1. Hydrate candidate if missing
+  if (!cloned.candidate && cloned.candidate_id) {
+    let candName = '';
+    let candEmail = '';
+    let candPhone = '';
+    let candAvatar = '';
+
+    // Check associated application snapshot
+    if (cloned.application_id) {
+      const allApps = getStoredApplications();
+      const matchApp = allApps.find((a: any) => a.id === cloned.application_id);
+      if (matchApp) {
+        const snapshot = matchApp.candidate_snapshot || {};
+        candName = matchApp.candidate?.full_name || snapshot.full_name || '';
+        candEmail = matchApp.candidate?.email || snapshot.email || '';
+        candPhone = matchApp.candidate?.phone || snapshot.phone || '';
+        candAvatar = matchApp.candidate?.avatar_url || snapshot.avatar_url || '';
+      }
+    }
+
+    // Check localStorage custom profile / auth session
+    if (!candName && typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const candProfileRaw = window.localStorage.getItem(`kth_demo_cand_profile_${cloned.candidate_id}`);
+        if (candProfileRaw) {
+          const parsed = JSON.parse(candProfileRaw);
+          if (parsed.fullName) candName = parsed.fullName;
+          if (parsed.email) candEmail = parsed.email;
+          if (parsed.phone) candPhone = parsed.phone;
+        }
+
+        if (!candName) {
+          const authRaw = window.localStorage.getItem('kth_demo_auth_session');
+          if (authRaw) {
+            const parsedAuth = JSON.parse(authRaw);
+            if (parsedAuth.id === cloned.candidate_id || parsedAuth.role === 'candidate') {
+              candName = parsedAuth.full_name || 'Surya Naikoti';
+              candEmail = parsedAuth.email || 'candidate@knowtohire.com';
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!candName) {
+      candName = 'Surya Naikoti';
+      candEmail = 'candidate@knowtohire.com';
+    }
+
+    cloned.candidate = {
+      id: cloned.candidate_id,
+      full_name: candName,
+      email: candEmail,
+      phone: candPhone || undefined,
+      avatar_url: candAvatar || undefined,
+      role: 'candidate',
+      status: 'active',
+      created_at: cloned.created_at,
+      updated_at: cloned.updated_at,
+    } as any;
+  }
+
+  // 2. Hydrate job if missing
+  if (!cloned.job && cloned.job_id) {
+    let jobTitle = '';
+    let jobDept = 'Engineering';
+    let jobLoc = 'India';
+
+    const localJobs = getLocalCreatedJobs();
+    const matchJob = localJobs.find((j: any) => j.id === cloned.job_id);
+    if (matchJob) {
+      jobTitle = matchJob.title;
+      jobDept = matchJob.department || jobDept;
+      jobLoc = matchJob.location || jobLoc;
+    }
+
+    if (!jobTitle && cloned.application_id) {
+      const allApps = getStoredApplications();
+      const matchApp = allApps.find((a: any) => a.id === cloned.application_id);
+      if (matchApp?.job?.title) {
+        jobTitle = matchApp.job.title;
+        jobDept = matchApp.job.department || jobDept;
+        jobLoc = matchApp.job.location || jobLoc;
+      }
+    }
+
+    if (jobTitle) {
+      cloned.job = {
+        id: cloned.job_id,
+        company_id: cloned.company_id,
+        created_by: cloned.created_by || '',
+        title: jobTitle,
+        department: jobDept,
+        category: 'Engineering',
+        description: '',
+        responsibilities: [],
+        requirements: [],
+        skills: [],
+        benefits: [],
+        employment_type: 'Full-time' as any,
+        work_mode: 'Hybrid' as any,
+        location: jobLoc,
+        min_salary_inr: 1200000,
+        max_salary_inr: 2400000,
+        status: 'published',
+        published_at: cloned.created_at,
+        created_at: cloned.created_at,
+        updated_at: cloned.updated_at,
+      } as any;
+    }
+  }
+
+  return cloned;
+}
+
 function getDemoInterviews(): Interview[] {
   if (typeof window === 'undefined' || !window.localStorage) return [];
   try {
     const raw = window.localStorage.getItem(DEMO_INTERVIEWS_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const list: Interview[] = raw ? JSON.parse(raw) : [];
+    return list.map(hydrateInterviewEntities);
   } catch {
     return [];
   }
@@ -36,8 +179,9 @@ function getDemoInterviews(): Interview[] {
 function saveDemoInterview(interview: Interview) {
   if (typeof window === 'undefined' || !window.localStorage) return;
   try {
+    const hydrated = hydrateInterviewEntities(interview);
     const existing = getDemoInterviews().filter((i) => i.id !== interview.id);
-    existing.unshift(interview);
+    existing.unshift(hydrated);
     window.localStorage.setItem(DEMO_INTERVIEWS_KEY, JSON.stringify(existing));
     notifyInterviewsChanged();
   } catch {
@@ -135,11 +279,18 @@ export const interviewService = {
   },
 
   /**
+   * Fetch interviews for a candidate (Candidate / Admin).
+   */
+  async getInterviewsByCandidate(_candidateId?: string): Promise<ServiceResult<Interview[]>> {
+    return this.getMyInterviews();
+  },
+
+  /**
    * Fetch all interviews scheduled for the authenticated employer's company.
    */
-  async getEmployerInterviews(): Promise<ServiceResult<Interview[]>> {
+  async getEmployerInterviews(companyIdParam?: string): Promise<ServiceResult<Interview[]>> {
     try {
-      const companyId = await getEmployerCompanyId();
+      const companyId = companyIdParam || (await getEmployerCompanyId());
 
       let query = supabase
         .from('interviews')
@@ -169,6 +320,13 @@ export const interviewService = {
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }
+  },
+
+  /**
+   * Fetch interviews for a specific company (Employer / Admin).
+   */
+  async getInterviewsByCompany(companyId?: string): Promise<ServiceResult<Interview[]>> {
+    return this.getEmployerInterviews(companyId);
   },
 
   /**
@@ -219,9 +377,9 @@ export const interviewService = {
         candidate_id: input.candidate_id,
         created_by: creatorId,
         interview_type: input.interview_type || 'technical_deep_dive',
-        title: input.title.trim(),
-        round_name: input.round_name?.trim() || null,
-        scheduled_start: input.scheduled_start,
+        title: (input.title || input.round_name || 'Technical Interview Round').trim(),
+        round_name: input.round_name?.trim() || 'Round 1',
+        scheduled_start: input.scheduled_start || (input as any).scheduled_at || new Date().toISOString(),
         scheduled_end: input.scheduled_end || null,
         date_from: input.date_from || null,
         date_to: input.date_to || null,
@@ -260,9 +418,26 @@ export const interviewService = {
           await applicationService.updateApplicationStage(input.application_id, 'interview');
         }
 
-        saveDemoInterview(demoRecord);
+        const hydrated = hydrateInterviewEntities(demoRecord);
+        saveDemoInterview(hydrated);
         notifyInterviewsChanged();
-        return { data: demoRecord, error: null };
+
+        // Dispatch employer notification for scheduled interview
+        const candName = hydrated.candidate?.full_name || 'Candidate';
+        const jobTitle = hydrated.job?.title || 'Job Opening';
+        notificationService.createNotification({
+          company_id: input.company_id,
+          candidate_id: input.candidate_id,
+          application_id: input.application_id,
+          job_id: input.job_id,
+          interview_id: hydrated.id,
+          type: 'interview',
+          title: `Interview Scheduled: ${candName}`,
+          message: `Interview scheduled with ${candName} for "${jobTitle}".`,
+          link: '/employer/interviews',
+        }).catch(() => {});
+
+        return { data: hydrated, error: null };
       }
 
       const { data, error } = await supabase
@@ -276,6 +451,22 @@ export const interviewService = {
           await applicationService.updateApplicationStage(input.application_id, 'interview');
         }
         notifyInterviewsChanged();
+
+        // Dispatch employer notification for scheduled interview
+        const candName = (data as any)?.candidate?.full_name || 'Candidate';
+        const jobTitle = (data as any)?.job?.title || 'Job Opening';
+        notificationService.createNotification({
+          company_id: input.company_id,
+          candidate_id: input.candidate_id,
+          application_id: input.application_id,
+          job_id: input.job_id,
+          interview_id: data.id,
+          type: 'interview',
+          title: `Interview Scheduled: ${candName}`,
+          message: `Interview scheduled with ${candName} for "${jobTitle}".`,
+          link: '/employer/interviews',
+        }).catch(() => {});
+
         return { data: data as Interview, error: null };
       }
 
@@ -304,6 +495,23 @@ export const interviewService = {
         };
         window.localStorage.setItem(DEMO_INTERVIEWS_KEY, JSON.stringify(demoInterviews));
         notifyInterviewsChanged();
+
+        if (input.status === 'cancelled' || input.status === 'completed') {
+          const candName = demoInterviews[idx].candidate?.full_name || 'Candidate';
+          const statusText = input.status === 'cancelled' ? 'Cancelled' : 'Completed';
+          notificationService.createNotification({
+            company_id: demoInterviews[idx].company_id,
+            candidate_id: demoInterviews[idx].candidate_id,
+            application_id: demoInterviews[idx].application_id,
+            job_id: demoInterviews[idx].job_id,
+            interview_id: demoInterviews[idx].id,
+            type: 'interview',
+            title: `Interview ${statusText}: ${candName}`,
+            message: `Interview with ${candName} was marked as ${statusText.toLowerCase()}.`,
+            link: '/employer/interviews',
+          }).catch(() => {});
+        }
+
         return { data: demoInterviews[idx], error: null };
       }
 
@@ -324,10 +532,38 @@ export const interviewService = {
       }
 
       notifyInterviewsChanged();
+
+      if (data && (input.status === 'cancelled' || input.status === 'completed')) {
+        const candName = (data as any)?.candidate?.full_name || 'Candidate';
+        const statusText = input.status === 'cancelled' ? 'Cancelled' : 'Completed';
+        notificationService.createNotification({
+          company_id: (data as any).company_id,
+          candidate_id: (data as any).candidate_id,
+          application_id: (data as any).application_id,
+          job_id: (data as any).job_id,
+          interview_id: (data as any).id,
+          type: 'interview',
+          title: `Interview ${statusText}: ${candName}`,
+          message: `Interview with ${candName} was marked as ${statusText.toLowerCase()}.`,
+          link: '/employer/interviews',
+        }).catch(() => {});
+      }
+
       return { data: data as Interview, error: null };
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }
+  },
+
+  /**
+   * Quick status update for interview.
+   */
+  async updateInterviewStatus(interviewId: string, status: InterviewStatus): Promise<ServiceResult<boolean>> {
+    const res = await this.updateInterview(interviewId, { status });
+    if (res.error) {
+      return { data: null, error: res.error };
+    }
+    return { data: true, error: null };
   },
 
   /**

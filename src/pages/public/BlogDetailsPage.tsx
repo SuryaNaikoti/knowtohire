@@ -21,7 +21,7 @@ export const BlogDetailsPage: React.FC<BlogDetailsPageProps> = ({ slug }) => {
     const fetchPost = async () => {
       setIsLoading(true);
       setError(null);
-      const res = await blogService.getBlogPostBySlug(activeSlug);
+      const res = await blogService.getBlogPostBySlug(activeSlug, { requirePublished: true });
       if (!isMounted) return;
       if (res.error) {
         setError(res.error.message);

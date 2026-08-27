@@ -76,6 +76,7 @@ import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import { AdminEmployersPage } from '@/pages/admin/AdminEmployersPage';
 import { AdminJobsPage } from '@/pages/admin/AdminJobsPage';
+import { AdminJobInspectPage } from '@/pages/admin/AdminJobInspectPage';
 import { AdminApplicationsPage } from '@/pages/admin/AdminApplicationsPage';
 import { AdminResourcesPage } from '@/pages/admin/AdminResourcesPage';
 import { AdminTemplatesPage } from '@/pages/admin/AdminTemplatesPage';
@@ -122,23 +123,27 @@ export function App() {
 
     // Admin Routes (Guarded: ProtectedRoute + RoleGuard allowedRoles=['admin'])
     if (isAdminRoute) {
-      let adminComponent: React.ReactNode = <AdminDashboardPage />;
+      let adminComponent: React.ReactNode = <AdminDashboardPage onNavigate={navigateTo} />;
 
-      if (path === '/admin' || path === '/admin/') adminComponent = <AdminDashboardPage />;
-      else if (path === '/admin/users') adminComponent = <AdminUsersPage />;
-      else if (path === '/admin/employers') adminComponent = <AdminEmployersPage />;
-      else if (path === '/admin/jobs') adminComponent = <AdminJobsPage />;
-      else if (path === '/admin/applications') adminComponent = <AdminApplicationsPage />;
-      else if (path === '/admin/resources') adminComponent = <AdminResourcesPage />;
-      else if (path === '/admin/templates') adminComponent = <AdminTemplatesPage />;
+      if (path === '/admin' || path === '/admin/') adminComponent = <AdminDashboardPage onNavigate={navigateTo} />;
+      else if (path === '/admin/users') adminComponent = <AdminUsersPage onNavigate={navigateTo} />;
+      else if (path === '/admin/employers') adminComponent = <AdminEmployersPage onNavigate={navigateTo} />;
+      else if (path.startsWith('/admin/jobs/') && path !== '/admin/jobs') {
+        const jobId = path.replace('/admin/jobs/', '');
+        adminComponent = <AdminJobInspectPage jobId={jobId} onNavigate={navigateTo} />;
+      }
+      else if (path === '/admin/jobs') adminComponent = <AdminJobsPage onNavigate={navigateTo} />;
+      else if (path === '/admin/applications') adminComponent = <AdminApplicationsPage onNavigate={navigateTo} />;
+      else if (path === '/admin/resources') adminComponent = <AdminResourcesPage onNavigate={navigateTo} />;
+      else if (path === '/admin/templates') adminComponent = <AdminTemplatesPage onNavigate={navigateTo} />;
       else if (path.startsWith('/admin/requests/') && path !== '/admin/requests') {
         const reqId = path.replace('/admin/requests/', '').replace('/fulfill', '');
         adminComponent = <AdminFulfillRequestPage requestId={reqId} onNavigate={navigateTo} />;
       }
       else if (path === '/admin/requests') adminComponent = <AdminRequestsPage onNavigate={navigateTo} />;
-      else if (path === '/admin/blog') adminComponent = <AdminBlogPage />;
+      else if (path === '/admin/blog') adminComponent = <AdminBlogPage onNavigate={navigateTo} />;
       else if (path === '/admin/taxonomy') adminComponent = <AdminTaxonomyPage />;
-      else if (path === '/admin/settings') adminComponent = <AdminSettingsPage />;
+      else if (path === '/admin/settings') adminComponent = <AdminSettingsPage onNavigate={navigateTo} />;
 
       return (
         <ProtectedRoute currentPath={currentPath} onNavigate={navigateTo}>

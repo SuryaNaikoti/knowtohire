@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { adminService, AdminMetrics } from '@/services/adminService';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import {
   Users,
   Building2,
@@ -18,7 +19,11 @@ import {
   Loader2,
 } from 'lucide-react';
 
-export const AdminDashboardPage: React.FC = () => {
+export interface AdminDashboardPageProps {
+  onNavigate?: (path: string) => void;
+}
+
+export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNavigate }) => {
   const [metrics, setMetrics] = useState<AdminMetrics>({
     totalUsers: 0,
     totalCandidates: 0,
@@ -32,6 +37,24 @@ export const AdminDashboardPage: React.FC = () => {
     totalBlogPosts: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const isLiveConnected = isSupabaseConfigured();
+
+  const handleNavigate = (path: string) => {
+    if (onNavigate) {
+      onNavigate(path);
+    } else {
+      window.history.pushState({}, '', path);
+      window.dispatchEvent(new Event('popstate'));
+    }
+  };
+
+  const fetchMetrics = useCallback(async () => {
+    const res = await adminService.getAdminDashboardMetrics();
+    if (res.data) {
+      setMetrics(res.data);
+    }
+    setIsLoading(false);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -42,10 +65,39 @@ export const AdminDashboardPage: React.FC = () => {
       }
       setIsLoading(false);
     });
+
+    // Reactive listeners across recruitment, content, and profile domains
+    const handleSync = () => {
+      fetchMetrics();
+    };
+
+    window.addEventListener('kth_jobs_changed', handleSync);
+    window.addEventListener('kth_applications_changed', handleSync);
+    window.addEventListener('kth_interviews_changed', handleSync);
+    window.addEventListener('kth_resources_changed', handleSync);
+    window.addEventListener('kth_templates_changed', handleSync);
+    window.addEventListener('kth_requests_changed', handleSync);
+    window.addEventListener('kth_blog_changed', handleSync);
+    window.addEventListener('kth_users_changed', handleSync);
+    window.addEventListener('kth_employers_changed', handleSync);
+    window.addEventListener('kth_company_profile_updated', handleSync);
+    window.addEventListener('kth_taxonomy_changed', handleSync);
+
     return () => {
       isMounted = false;
+      window.removeEventListener('kth_jobs_changed', handleSync);
+      window.removeEventListener('kth_applications_changed', handleSync);
+      window.removeEventListener('kth_interviews_changed', handleSync);
+      window.removeEventListener('kth_resources_changed', handleSync);
+      window.removeEventListener('kth_templates_changed', handleSync);
+      window.removeEventListener('kth_requests_changed', handleSync);
+      window.removeEventListener('kth_blog_changed', handleSync);
+      window.removeEventListener('kth_users_changed', handleSync);
+      window.removeEventListener('kth_employers_changed', handleSync);
+      window.removeEventListener('kth_company_profile_updated', handleSync);
+      window.removeEventListener('kth_taxonomy_changed', handleSync);
     };
-  }, []);
+  }, [fetchMetrics]);
 
   const metricCards = [
     { label: 'Total Platform Users', value: metrics.totalUsers, icon: Users, link: '/admin/users', color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -67,8 +119,17 @@ export const AdminDashboardPage: React.FC = () => {
         <div className="bg-gradient-to-r from-kth-slate-900 via-kth-slate-800 to-kth-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Badge variant="emerald" hasPulse>Live PostgREST Feed</Badge>
-              <Badge variant="slate">PostgreSQL RLS Protected</Badge>
+              {isLiveConnected ? (
+                <>
+                  <Badge variant="emerald" hasPulse>Live PostgREST Feed</Badge>
+                  <Badge variant="slate">PostgreSQL RLS Protected</Badge>
+                </>
+              ) : (
+                <>
+                  <Badge variant="emerald">Canonical Data Engine</Badge>
+                  <Badge variant="slate">Master Governance Scope</Badge>
+                </>
+              )}
             </div>
             <h2 className="font-display text-2xl font-extrabold text-white mb-1">
               Platform Master Operations
@@ -79,10 +140,10 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
 
           <div className="flex gap-2">
-            <Button variant="secondary" size="sm" onClick={() => (window.location.href = '/admin/employers')}>
+            <Button variant="secondary" size="sm" onClick={() => handleNavigate('/admin/employers')}>
               Verify Employers
             </Button>
-            <Button variant="primary" size="sm" onClick={() => (window.location.href = '/admin/resources')}>
+            <Button variant="primary" size="sm" onClick={() => handleNavigate('/admin/resources')}>
               Manage Hub CMS
             </Button>
           </div>
@@ -102,7 +163,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <Card
                   key={idx}
                   variant="interactive"
-                  onClick={() => (window.location.href = m.link)}
+                  onClick={() => handleNavigate(m.link)}
                   className="p-5 flex flex-col justify-between hover:shadow-xs transition-all cursor-pointer"
                 >
                   <div className="flex justify-between items-start mb-3">
@@ -134,7 +195,7 @@ export const AdminDashboardPage: React.FC = () => {
             <p className="text-xs text-kth-slate-600 leading-relaxed mb-4">
               Review pending employer company registrations, certificate numbers, and grant verified recruiter status.
             </p>
-            <Button variant="outline" size="sm" className="w-full" onClick={() => (window.location.href = '/admin/employers')}>
+            <Button variant="outline" size="sm" className="w-full" onClick={() => handleNavigate('/admin/employers')}>
               Review Employers
             </Button>
           </Card>
@@ -146,7 +207,7 @@ export const AdminDashboardPage: React.FC = () => {
             <p className="text-xs text-kth-slate-600 leading-relaxed mb-4">
               Moderate published jobs, manage approval status, pause listings, or archive closed corporate postings.
             </p>
-            <Button variant="outline" size="sm" className="w-full" onClick={() => (window.location.href = '/admin/jobs')}>
+            <Button variant="outline" size="sm" className="w-full" onClick={() => handleNavigate('/admin/jobs')}>
               Moderate Listings
             </Button>
           </Card>
@@ -158,7 +219,7 @@ export const AdminDashboardPage: React.FC = () => {
             <p className="text-xs text-kth-slate-600 leading-relaxed mb-4">
               Inspect user submissions for custom study handbooks, legal templates, and attach deliverable files.
             </p>
-            <Button variant="outline" size="sm" className="w-full" onClick={() => (window.location.href = '/admin/requests')}>
+            <Button variant="outline" size="sm" className="w-full" onClick={() => handleNavigate('/admin/requests')}>
               View Requests
             </Button>
           </Card>

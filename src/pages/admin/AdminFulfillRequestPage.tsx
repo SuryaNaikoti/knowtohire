@@ -175,7 +175,7 @@ export const AdminFulfillRequestPage: React.FC<AdminFulfillRequestPageProps> = (
 
   if (isLoading) {
     return (
-      <AdminShell title="Review & Fulfill Request" currentPath="/admin/requests">
+      <AdminShell title="Review & Fulfill Request" currentPath="/admin/requests" onNavigate={onNavigate}>
         <div className="py-32 flex flex-col items-center justify-center bg-white rounded-2xl border border-kth-slate-200">
           <Loader2 className="w-8 h-8 text-kth-primary-600 animate-spin mb-3" />
           <p className="text-xs text-kth-slate-500 font-medium">Loading content request details...</p>
@@ -186,7 +186,7 @@ export const AdminFulfillRequestPage: React.FC<AdminFulfillRequestPageProps> = (
 
   if (errorMessage && !request) {
     return (
-      <AdminShell title="Review & Fulfill Request" currentPath="/admin/requests">
+      <AdminShell title="Review & Fulfill Request" currentPath="/admin/requests" onNavigate={onNavigate}>
         <div className="max-w-xl mx-auto bg-white p-8 rounded-2xl border border-kth-slate-200 text-center shadow-xs">
           <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
           <h2 className="font-display text-lg font-bold text-kth-slate-900 mb-1">Request Not Found</h2>
@@ -202,7 +202,7 @@ export const AdminFulfillRequestPage: React.FC<AdminFulfillRequestPageProps> = (
   if (!request) return null;
 
   return (
-    <AdminShell title={`Fulfill: ${request.title}`} currentPath="/admin/requests">
+    <AdminShell title={`Fulfill: ${request.title}`} currentPath="/admin/requests" onNavigate={onNavigate}>
       <div className="space-y-6 max-w-5xl mx-auto">
         {/* Back Link & Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-kth-slate-200 shadow-xs">

@@ -33,6 +33,15 @@ export const EmployerInterviewsPage: React.FC = () => {
 
   useEffect(() => {
     loadInterviews();
+
+    const handleSync = () => {
+      loadInterviews();
+    };
+
+    window.addEventListener('kth_interviews_changed', handleSync);
+    return () => {
+      window.removeEventListener('kth_interviews_changed', handleSync);
+    };
   }, [loadInterviews]);
 
   const handleMarkCompleted = async (interviewId: string) => {

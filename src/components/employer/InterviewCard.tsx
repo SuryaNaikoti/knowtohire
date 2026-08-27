@@ -18,8 +18,8 @@ export const InterviewCard: React.FC<InterviewCardProps> = ({
   onCancel,
   isActionLoading = false,
 }) => {
-  const candidateName = interview.candidate?.full_name || 'Candidate';
-  const jobTitle = interview.job?.title || 'Job Opening';
+  const candidateName = interview.candidate?.full_name || '—';
+  const jobTitle = interview.job?.title || '—';
 
   const getStatusBadge = (status: InterviewStatus) => {
     switch (status) {

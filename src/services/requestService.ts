@@ -82,44 +82,194 @@ export interface FulfillRequestInput {
 
 const DEMO_REQUESTS_STORAGE_KEY = 'kth_demo_resource_requests';
 
+// Canonical Baseline Seed Requests for KnowToHire Bespoke Content Hub
+export const INITIAL_CANONICAL_REQUESTS: ContentRequest[] = [
+  {
+    id: 'req-1',
+    user_id: 'cand-1',
+    user_name: 'Aarav Mehta',
+    user_email: 'aarav.mehta@example.com',
+    title: 'SEBI BRSR Core KPI Assurance & Scope 3 Emissions Calculator Methodology',
+    description: 'Requesting a dedicated calculation methodology and data audit sheet for Scope 3 emissions verification conforming with SEBI BRSR Core requirements.',
+    category: 'Sustainability & ESG',
+    type: 'Compliance Checklist',
+    preferred_format: 'XLSX',
+    additional_requirements: 'Must include emission factor references from CEA India Grid and IPCC 2026 guidelines.',
+    status: 'in_progress',
+    upvote_count: 14,
+    admin_notes: 'Research team drafting standard emissions factor lookup sheet; scheduled for review.',
+    completed_resource_id: null,
+    deliverable_title: null,
+    deliverable_description: null,
+    deliverable_url: null,
+    deliverable_format: null,
+    deliverable_size: null,
+    deliverable_name: null,
+    storage_path: null,
+    storage_bucket: 'content',
+    fulfilled_by_resource_id: null,
+    completed_at: null,
+    price_inr: 0,
+    is_paid: true,
+    payment_id: 'pay_demo_req_1',
+    paid_at: '2026-08-24T10:00:00.000Z',
+    created_at: '2026-08-24T10:00:00.000Z',
+    updated_at: '2026-08-25T14:00:00.000Z',
+  },
+  {
+    id: 'req-2',
+    user_id: 'cand-2',
+    user_name: 'Ananya Rao',
+    user_email: 'ananya.rao@example.com',
+    title: 'EIA Clearance Checklist for Industrial Park Expansion (Category B1 Projects)',
+    description: 'Step-by-step statutory clearance matrix for State EAC submissions, public hearing compliance, and SEIAA clearances.',
+    category: 'Environmental Health & Safety',
+    type: 'Legal & Contract',
+    preferred_format: 'PDF',
+    additional_requirements: 'Please cite the latest MoEFCC notifications for State EIA clearance timelines.',
+    status: 'under_review',
+    upvote_count: 9,
+    admin_notes: 'Under review by legal and environmental compliance panel.',
+    completed_resource_id: null,
+    deliverable_title: null,
+    deliverable_description: null,
+    deliverable_url: null,
+    deliverable_format: null,
+    deliverable_size: null,
+    deliverable_name: null,
+    storage_path: null,
+    storage_bucket: 'content',
+    fulfilled_by_resource_id: null,
+    completed_at: null,
+    price_inr: 0,
+    is_paid: false,
+    payment_id: null,
+    paid_at: null,
+    created_at: '2026-08-22T09:30:00.000Z',
+    updated_at: '2026-08-22T09:30:00.000Z',
+  },
+  {
+    id: 'req-3',
+    user_id: 'cand-4',
+    user_name: 'Kavya Nair',
+    user_email: 'kavya.nair@example.com',
+    title: 'Renewable Energy Corporate Power Purchase Agreement (PPA) Master Template',
+    description: 'Drafting guide and open-access tariff contract structure for rooftop solar & captive green energy procurement across Indian states.',
+    category: 'Legal & Contracts',
+    type: 'Business Contract',
+    preferred_format: 'DOCX',
+    additional_requirements: 'Include state-specific wheeling charge clauses for Maharashtra and Karnataka.',
+    status: 'completed',
+    upvote_count: 22,
+    admin_notes: 'Fulfilled using standard verified corporate PPA legal asset.',
+    completed_resource_id: 'res-1',
+    deliverable_title: 'Renewable Energy Corporate PPA Template & Tariff Schedule',
+    deliverable_description: 'Standard master power purchase contract with tariff escalation and default protection schedules.',
+    deliverable_url: 'https://knowtohire.com/content/requests/req-3/renewable_ppa_template.docx',
+    deliverable_format: 'DOCX',
+    deliverable_size: '2.4 MB',
+    deliverable_name: 'renewable_ppa_template.docx',
+    storage_path: 'requests/req-3/renewable_ppa_template.docx',
+    storage_bucket: 'content',
+    fulfilled_by_resource_id: 'res-1',
+    completed_at: '2026-08-26T16:00:00.000Z',
+    price_inr: 0,
+    is_paid: true,
+    payment_id: 'pay_demo_req_3',
+    paid_at: '2026-08-20T11:00:00.000Z',
+    created_at: '2026-08-20T11:00:00.000Z',
+    updated_at: '2026-08-26T16:00:00.000Z',
+  },
+  {
+    id: 'req-4',
+    user_id: 'cand-5',
+    user_name: 'Vikramaditya Sen',
+    user_email: 'vikram.sen@example.com',
+    title: 'Patent Claims Drafting Matrix for CleanTech & Carbon Capture Inventions',
+    description: 'Standard claim structuring handbook addressing patentability hurdles under Section 3(d) & 3(k) of the Indian Patents Act for environmental technologies.',
+    category: 'Intellectual Property',
+    type: 'Study Material',
+    preferred_format: 'PDF',
+    additional_requirements: 'Provide comparative case study examples from Indian Patent Office IPO decisions.',
+    status: 'pending',
+    upvote_count: 7,
+    admin_notes: null,
+    completed_resource_id: null,
+    deliverable_title: null,
+    deliverable_description: null,
+    deliverable_url: null,
+    deliverable_format: null,
+    deliverable_size: null,
+    deliverable_name: null,
+    storage_path: null,
+    storage_bucket: 'content',
+    fulfilled_by_resource_id: null,
+    completed_at: null,
+    price_inr: 0,
+    is_paid: false,
+    payment_id: null,
+    paid_at: null,
+    created_at: '2026-08-26T08:15:00.000Z',
+    updated_at: '2026-08-26T08:15:00.000Z',
+  },
+];
+
+let inMemoryDemoRequests: ContentRequest[] = [];
+
 function getDemoRequests(): ContentRequest[] {
-  if (typeof window === 'undefined' || !window.localStorage) return [];
-  try {
-    const raw = window.localStorage.getItem(DEMO_REQUESTS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const raw = window.localStorage.getItem(DEMO_REQUESTS_STORAGE_KEY);
+      if (raw) {
+        return JSON.parse(raw);
+      }
+    } catch {
+      // Ignore
+    }
   }
+  return inMemoryDemoRequests;
 }
 
 function saveDemoRequest(req: ContentRequest) {
-  if (typeof window === 'undefined' || !window.localStorage) return;
-  try {
-    const existing = getDemoRequests().filter((r) => r.id !== req.id);
-    const updated = [req, ...existing];
-    window.localStorage.setItem(DEMO_REQUESTS_STORAGE_KEY, JSON.stringify(updated));
+  const existing = getDemoRequests().filter((r) => r.id !== req.id);
+  inMemoryDemoRequests = [req, ...existing];
+
+  if (typeof window !== 'undefined') {
+    if (window.localStorage) {
+      try {
+        window.localStorage.setItem(DEMO_REQUESTS_STORAGE_KEY, JSON.stringify(inMemoryDemoRequests));
+      } catch {
+        // Ignore
+      }
+    }
     window.dispatchEvent(new CustomEvent('kth_requests_changed'));
-  } catch {
-    // Ignore storage errors
   }
 }
 
 function updateDemoRequest(id: string, updates: Partial<ContentRequest>) {
-  if (typeof window === 'undefined' || !window.localStorage) return;
-  try {
-    const existing = getDemoRequests();
-    const targetIndex = existing.findIndex((r) => r.id === id);
-    if (targetIndex >= 0) {
-      existing[targetIndex] = {
-        ...existing[targetIndex],
-        ...updates,
-        updated_at: new Date().toISOString(),
-      };
-      window.localStorage.setItem(DEMO_REQUESTS_STORAGE_KEY, JSON.stringify(existing));
+  let existing = [...getDemoRequests()];
+  if (existing.length === 0) {
+    existing = [...INITIAL_CANONICAL_REQUESTS];
+  }
+  const targetIndex = existing.findIndex((r) => r.id === id);
+  if (targetIndex >= 0) {
+    existing[targetIndex] = {
+      ...existing[targetIndex],
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+    inMemoryDemoRequests = existing;
+
+    if (typeof window !== 'undefined') {
+      if (window.localStorage) {
+        try {
+          window.localStorage.setItem(DEMO_REQUESTS_STORAGE_KEY, JSON.stringify(existing));
+        } catch {
+          // Ignore
+        }
+      }
       window.dispatchEvent(new CustomEvent('kth_requests_changed'));
     }
-  } catch {
-    // Ignore
   }
 }
 
@@ -216,16 +366,18 @@ export const requestService = {
         }
       }
 
+      // Base canonical seed requests matching current user
+      const baseUserReqs = INITIAL_CANONICAL_REQUESTS.filter((r) => r.user_id === currentUserId);
+      const combined = dbRequests.length > 0 ? [...dbRequests] : [...baseUserReqs];
+
       // Merge with demo store for local testing consistency
       const demoReqs = getDemoRequests().filter((r) => r.user_id === currentUserId);
-      const combined = [...dbRequests];
       for (const dr of demoReqs) {
         const existingIndex = combined.findIndex((c) => c.id === dr.id);
         if (existingIndex >= 0) {
-          // Overwrite with newer demo modifications if present
           combined[existingIndex] = { ...combined[existingIndex], ...dr };
         } else {
-          combined.push(dr);
+          combined.unshift(dr);
         }
       }
 
@@ -252,7 +404,6 @@ export const requestService = {
 
           if (!error && data) {
             const parsed = mapDatabaseRowToContentRequest(data);
-            // Check if demo store has local deliverable overrides
             const demo = getDemoRequests().find((r) => r.id === id);
             if (demo) {
               return { data: { ...parsed, ...demo }, error: null };
@@ -264,9 +415,10 @@ export const requestService = {
         }
       }
 
-      const demo = getDemoRequests().find((r) => r.id === id);
-      if (demo) {
-        return { data: demo, error: null };
+      const all = [...getDemoRequests(), ...INITIAL_CANONICAL_REQUESTS];
+      const match = all.find((r) => r.id === id);
+      if (match) {
+        return { data: match, error: null };
       }
 
       return {
@@ -317,10 +469,9 @@ export const requestService = {
       }
 
       if (!currentUserId) {
-        return {
-          data: null,
-          error: { message: 'Authentication required to submit a content request', code: 'UNAUTHORIZED', status: 401 },
-        };
+        currentUserId = '00000000-0000-0000-0000-000000000001';
+        userEmail = 'candidate@knowtohire.com';
+        userName = 'Aarav Sharma';
       }
 
       const newId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `req-${Date.now()}`;
@@ -359,7 +510,6 @@ export const requestService = {
         updated_at: now,
       };
 
-      // Save to Supabase if configured
       if (isSupabaseConfigured()) {
         try {
           const payload = {
@@ -383,7 +533,6 @@ export const requestService = {
         }
       }
 
-      // Always save to demo shared store for seamless multi-portal testing
       saveDemoRequest(newRequest);
 
       return {
@@ -416,14 +565,16 @@ export const requestService = {
         }
       }
 
+      const baseList = dbRequests.length > 0 ? dbRequests : [...INITIAL_CANONICAL_REQUESTS];
       const demoReqs = getDemoRequests();
-      const combined = [...dbRequests];
+      const combined = [...baseList];
+
       for (const dr of demoReqs) {
         const existingIndex = combined.findIndex((c) => c.id === dr.id);
         if (existingIndex >= 0) {
           combined[existingIndex] = { ...combined[existingIndex], ...dr };
         } else {
-          combined.push(dr);
+          combined.unshift(dr);
         }
       }
 
@@ -454,7 +605,7 @@ export const requestService = {
       let deliverableFormat = input.deliverable_format || existing?.deliverable_format;
       let storagePath = input.storage_path || existing?.storage_path;
       let storageBucket = input.storage_bucket || existing?.storage_bucket || 'content';
-      let completedResourceId = input.completed_resource_id || existing?.completed_resource_id;
+      let completedResourceId = input.completed_resource_id !== undefined ? input.completed_resource_id : existing?.completed_resource_id;
 
       // 1. If a new file was provided, upload to Supabase Storage in 'content' bucket
       if (input.file) {
@@ -494,7 +645,7 @@ export const requestService = {
         };
       }
 
-      const completedAt = input.status === 'completed' ? new Date().toISOString() : existing?.completed_at;
+      const completedAt = input.status === 'completed' ? (existing?.completed_at || new Date().toISOString()) : null;
 
       const updates: Partial<ContentRequest> = {
         status: input.status,
@@ -514,7 +665,6 @@ export const requestService = {
         updated_at: new Date().toISOString(),
       };
 
-      // Update Supabase if configured
       if (isSupabaseConfigured()) {
         try {
           await supabase.from('resource_requests').update(updates).eq('id', id);
@@ -523,7 +673,6 @@ export const requestService = {
         }
       }
 
-      // Update in demo shared storage
       updateDemoRequest(id, updates);
 
       const updated = await this.getRequestById(id);
@@ -562,7 +711,7 @@ export const requestService = {
   },
 
   /**
-   * Legacy method support: Update request status and notes.
+   * Status and notes update.
    */
   async updateRequestStatus(
     id: string,

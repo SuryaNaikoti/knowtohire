@@ -220,6 +220,11 @@ export interface JobUpdateInput {
   country_id?: string | null;
   state_id?: string | null;
   city_id?: string | null;
+  moderation_status?: 'approved' | 'rejected' | 'changes_requested' | 'pending_review';
+  moderation_notes?: string | null;
+  moderation_flags?: string[];
+  moderated_at?: string | null;
+  moderated_by?: string | null;
 }
 
 // ====================================================================

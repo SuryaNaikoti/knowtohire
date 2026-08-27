@@ -8,11 +8,19 @@ import { Dialog } from '@/components/ui/Dialog';
 import { Select } from '@/components/ui/Select';
 import { FileUploader } from '@/components/ui/FileUploader';
 import { knowledgeService, KnowledgeResource, ResourceStatus } from '@/services/knowledgeService';
-import { Plus, Trash2, Loader2, Edit3, FileText } from 'lucide-react';
+import { Plus, Trash2, Loader2, Edit3, FileText, Search } from 'lucide-react';
 
-export const AdminResourcesPage: React.FC = () => {
+export interface AdminResourcesPageProps {
+  onNavigate?: (route: string) => void;
+}
+
+export const AdminResourcesPage: React.FC<AdminResourcesPageProps> = ({ onNavigate }) => {
   const [resources, setResources] = useState<KnowledgeResource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -31,16 +39,23 @@ export const AdminResourcesPage: React.FC = () => {
 
   const fetchResources = useCallback(async () => {
     setIsLoading(true);
-    const res = await knowledgeService.getResources({ status: 'all' });
+    const res = await knowledgeService.getResources({
+      status: statusFilter === 'all' ? 'all' : (statusFilter as ResourceStatus),
+      category: categoryFilter === 'all' ? undefined : categoryFilter,
+      search: searchTerm.trim() || undefined,
+    });
     if (res.data) {
       setResources(res.data);
     }
     setIsLoading(false);
-  }, []);
+  }, [searchTerm, categoryFilter, statusFilter]);
 
   useEffect(() => {
-    fetchResources();
+    const timer = setTimeout(fetchResources, 150);
+    return () => clearTimeout(timer);
+  }, [fetchResources]);
 
+  useEffect(() => {
     const handleStorageChange = () => {
       fetchResources();
     };
@@ -145,7 +160,7 @@ export const AdminResourcesPage: React.FC = () => {
   };
 
   return (
-    <AdminShell title="Knowledge Hub CMS" currentPath="/admin/resources">
+    <AdminShell title="Knowledge Hub CMS" currentPath="/admin/resources" onNavigate={onNavigate}>
       <div className="space-y-6">
         {/* Header Bar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-2xl border border-kth-slate-200 shadow-xs">
@@ -158,6 +173,44 @@ export const AdminResourcesPage: React.FC = () => {
           <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />} onClick={handleOpenCreateModal}>
             Add New Resource
           </Button>
+        </div>
+
+        {/* Filters and Search Bar */}
+        <div className="bg-white p-4 rounded-xl border border-kth-slate-200 shadow-xs flex flex-col md:flex-row gap-3">
+          <div className="flex-1">
+            <Input
+              placeholder="Search resources by title, description, keywords..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              leftIcon={<Search className="w-4 h-4 text-kth-slate-400" />}
+            />
+          </div>
+          <div className="w-full md:w-56">
+            <Select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              options={[
+                { value: 'all', label: 'All Categories' },
+                { value: 'Environmental & ESG', label: 'Environmental & ESG' },
+                { value: 'Technology', label: 'Technology' },
+                { value: 'Sustainability', label: 'Sustainability' },
+                { value: 'Patent & IPR', label: 'Patent & IPR' },
+                { value: 'Public Policy', label: 'Public Policy' },
+              ]}
+            />
+          </div>
+          <div className="w-full md:w-48">
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              options={[
+                { value: 'all', label: 'All Statuses' },
+                { value: 'published', label: 'Published' },
+                { value: 'draft', label: 'Draft' },
+                { value: 'archived', label: 'Archived' },
+              ]}
+            />
+          </div>
         </div>
 
         {/* Resources Table */}

@@ -6,9 +6,14 @@ import { Button } from '@/components/ui/Button';
 import { adminService, AdminCompanyRecord } from '@/services/adminService';
 import { Building2, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
-export const AdminEmployersPage: React.FC = () => {
+interface AdminEmployersPageProps {
+  onNavigate?: (path: string) => void;
+}
+
+export const AdminEmployersPage: React.FC<AdminEmployersPageProps> = ({ onNavigate }) => {
   const [companies, setCompanies] = useState<AdminCompanyRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const fetchCompanies = async () => {
     setIsLoading(true);
@@ -21,17 +26,34 @@ export const AdminEmployersPage: React.FC = () => {
 
   useEffect(() => {
     fetchCompanies();
+
+    const handleEmployersChanged = () => {
+      fetchCompanies();
+    };
+
+    window.addEventListener('kth_employers_changed', handleEmployersChanged);
+    window.addEventListener('kth_company_profile_updated', handleEmployersChanged);
+
+    return () => {
+      window.removeEventListener('kth_employers_changed', handleEmployersChanged);
+      window.removeEventListener('kth_company_profile_updated', handleEmployersChanged);
+    };
   }, []);
 
   const handleUpdateStatus = async (companyId: string, status: 'verified' | 'rejected' | 'pending_review') => {
-    await adminService.updateCompanyVerification(companyId, status);
-    setCompanies((prev) =>
-      prev.map((c) => (c.id === companyId ? { ...c, verification_status: status } : c))
-    );
+    setActionLoadingId(companyId);
+    const res = await adminService.updateCompanyVerification(companyId, status);
+    setActionLoadingId(null);
+
+    if (res.data) {
+      setCompanies((prev) =>
+        prev.map((c) => (c.id === companyId ? { ...c, verification_status: status } : c))
+      );
+    }
   };
 
   return (
-    <AdminShell title="Employer Enterprise Verification" currentPath="/admin/employers">
+    <AdminShell title="Employer Enterprise Verification" currentPath="/admin/employers" onNavigate={onNavigate}>
       <div className="space-y-6">
         <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-kth-slate-200 shadow-xs">
           <div>
@@ -90,6 +112,7 @@ export const AdminEmployersPage: React.FC = () => {
                           size="sm"
                           className="flex-1 min-h-[38px]"
                           leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
+                          isLoading={actionLoadingId === c.id}
                           onClick={() => handleUpdateStatus(c.id, 'verified')}
                         >
                           Verify
@@ -101,6 +124,7 @@ export const AdminEmployersPage: React.FC = () => {
                           size="sm"
                           className="flex-1 min-h-[38px]"
                           leftIcon={<XCircle className="w-3.5 h-3.5" />}
+                          isLoading={actionLoadingId === c.id}
                           onClick={() => handleUpdateStatus(c.id, 'rejected')}
                         >
                           Reject
@@ -153,6 +177,7 @@ export const AdminEmployersPage: React.FC = () => {
                                 variant="primary"
                                 size="sm"
                                 leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
+                                isLoading={actionLoadingId === c.id}
                                 onClick={() => handleUpdateStatus(c.id, 'verified')}
                               >
                                 Verify
@@ -163,6 +188,7 @@ export const AdminEmployersPage: React.FC = () => {
                                 variant="destructive"
                                 size="sm"
                                 leftIcon={<XCircle className="w-3.5 h-3.5" />}
+                                isLoading={actionLoadingId === c.id}
                                 onClick={() => handleUpdateStatus(c.id, 'rejected')}
                               >
                                 Reject

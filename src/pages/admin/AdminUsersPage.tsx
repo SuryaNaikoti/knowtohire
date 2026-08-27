@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -8,30 +8,64 @@ import { Select } from '@/components/ui/Select';
 import { adminService, AdminUserRecord } from '@/services/adminService';
 import { Search, Loader2 } from 'lucide-react';
 
-export const AdminUsersPage: React.FC = () => {
+export interface AdminUsersPageProps {
+  onNavigate?: (path: string) => void;
+}
+
+export const AdminUsersPage: React.FC<AdminUsersPageProps> = () => {
   const [users, setUsers] = useState<AdminUserRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     const res = await adminService.getUsers(searchTerm, roleFilter);
     if (res.data) {
       setUsers(res.data);
     }
     setIsLoading(false);
-  };
+  }, [searchTerm, roleFilter]);
 
   useEffect(() => {
     const debounce = setTimeout(fetchUsers, 250);
     return () => clearTimeout(debounce);
-  }, [searchTerm, roleFilter]);
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    const handleSync = () => {
+      fetchUsers();
+    };
+
+    window.addEventListener('kth_users_changed', handleSync);
+    window.addEventListener('kth_profile_updated', handleSync);
+
+    return () => {
+      window.removeEventListener('kth_users_changed', handleSync);
+      window.removeEventListener('kth_profile_updated', handleSync);
+    };
+  }, [fetchUsers]);
 
   const handleToggleStatus = async (user: AdminUserRecord) => {
     const nextStatus = user.status === 'active' ? 'suspended' : 'active';
-    await adminService.updateUserStatus(user.id, nextStatus);
-    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u)));
+    const res = await adminService.updateUserStatus(user.id, nextStatus);
+    if (res.data) {
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u)));
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '—';
+      return d.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch {
+      return '—';
+    }
   };
 
   return (
@@ -107,11 +141,7 @@ export const AdminUsersPage: React.FC = () => {
                         </Badge>
                       </div>
                       <span className="font-mono text-[11px]">
-                        {new Date(u.created_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
+                        {formatDate(u.created_at)}
                       </span>
                     </div>
 
@@ -167,11 +197,7 @@ export const AdminUsersPage: React.FC = () => {
                           </Badge>
                         </td>
                         <td className="p-4 text-kth-slate-500 font-mono text-[11px]">
-                          {new Date(u.created_at).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
+                          {formatDate(u.created_at)}
                         </td>
                         <td className="p-4 text-right">
                           {u.role !== 'admin' && (

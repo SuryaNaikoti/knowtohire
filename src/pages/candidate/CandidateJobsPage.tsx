@@ -73,9 +73,15 @@ export const CandidateJobsPage: React.FC = () => {
       }
     };
 
+    const handleJobsChanged = () => {
+      loadData();
+    };
+
     window.addEventListener('kth_saved_jobs_changed', handleSavedJobsChanged);
+    window.addEventListener('kth_jobs_changed', handleJobsChanged);
     return () => {
       window.removeEventListener('kth_saved_jobs_changed', handleSavedJobsChanged);
+      window.removeEventListener('kth_jobs_changed', handleJobsChanged);
     };
   }, [loadData]);
 

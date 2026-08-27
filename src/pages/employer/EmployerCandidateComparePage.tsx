@@ -10,15 +10,65 @@ export const EmployerCandidateComparePage: React.FC = () => {
   const [candidates, setCandidates] = useState<DiscoverableCandidate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const removeCandidateFromCompare = (idToRemove: string) => {
+    setCandidates((prev) => {
+      const next = prev.filter((c) => c.id !== idToRemove);
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        try {
+          window.sessionStorage.setItem('kth_compare_candidate_ids', JSON.stringify(next.map((c) => c.id)));
+        } catch {
+          // ignore
+        }
+      }
+      return next;
+    });
+  };
+
   useEffect(() => {
     let isMounted = true;
-    candidateDiscoveryService.searchCandidates({ limit: 4 }).then((res) => {
-      if (!isMounted) return;
-      if (res.data) {
-        setCandidates(res.data.slice(0, 3));
+    const loadComparisonCandidates = async () => {
+      setIsLoading(true);
+      let targetIds: string[] = [];
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        try {
+          const raw = window.sessionStorage.getItem('kth_compare_candidate_ids');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              targetIds = parsed;
+            }
+          }
+        } catch {
+          // ignore
+        }
       }
-      setIsLoading(false);
-    });
+
+      if (targetIds.length > 0) {
+        // Fetch canonical profiles for each selected candidate
+        const fetchedList: DiscoverableCandidate[] = [];
+        for (const cid of targetIds) {
+          const res = await candidateDiscoveryService.getCandidateById(cid);
+          if (res.data && !fetchedList.some((c) => c.id === res.data!.id)) {
+            fetchedList.push(res.data);
+          }
+        }
+        if (isMounted) {
+          setCandidates(fetchedList);
+          setIsLoading(false);
+        }
+      } else {
+        // Fallback to top discoverable candidates
+        const res = await candidateDiscoveryService.searchCandidates({ limit: 4 });
+        if (isMounted) {
+          if (res.data) {
+            setCandidates(res.data.slice(0, 3));
+          }
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadComparisonCandidates();
     return () => {
       isMounted = false;
     };
@@ -31,7 +81,14 @@ export const EmployerCandidateComparePage: React.FC = () => {
           <span className="text-kth-slate-500">
             Comparing <strong className="text-kth-slate-900">{candidates.length} Candidates</strong> from Live Talent Pool
           </span>
-          <Button variant="outline" size="sm" onClick={() => (window.location.href = '/employer/candidates')}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              window.history.pushState({}, '', '/employer/candidates');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+          >
             + Select Other Candidates
           </Button>
         </div>
@@ -46,7 +103,14 @@ export const EmployerCandidateComparePage: React.FC = () => {
             <Users className="w-10 h-10 text-kth-slate-300 mx-auto mb-2" />
             <h4 className="font-bold text-sm text-kth-slate-900">No Candidates to Compare</h4>
             <p className="text-xs text-kth-slate-500 mb-4">Select candidates from the discovery page to view side-by-side.</p>
-            <Button variant="primary" size="sm" onClick={() => (window.location.href = '/employer/candidates')}>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                window.history.pushState({}, '', '/employer/candidates');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+            >
               Browse Candidates
             </Button>
           </Card>
@@ -73,10 +137,22 @@ export const EmployerCandidateComparePage: React.FC = () => {
 
                 {/* Candidate Columns */}
                 {candidates.map((cand) => (
-                  <div key={cand.id} className="p-6 space-y-8 text-xs text-kth-slate-800">
-                    <div className="h-16 flex flex-col justify-center">
-                      <strong className="font-bold text-sm text-kth-slate-900 block">{cand.name}</strong>
-                      <span className="text-kth-slate-500 text-[11px] font-medium line-clamp-1">{cand.headline}</span>
+                  <div key={cand.id} className="p-6 space-y-8 text-xs text-kth-slate-800 relative group">
+                    <div className="h-16 flex flex-col justify-center relative">
+                      <div className="flex justify-between items-start">
+                        <div className="pr-4">
+                          <strong className="font-bold text-sm text-kth-slate-900 block">{cand.name}</strong>
+                          <span className="text-kth-slate-500 text-[11px] font-medium line-clamp-1">{cand.headline}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeCandidateFromCompare(cand.id)}
+                          className="text-kth-slate-400 hover:text-kth-rose-600 transition-colors p-1 rounded hover:bg-kth-slate-100"
+                          title="Remove from comparison"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                     <div className="py-2">
                       <Badge variant="emerald" className="font-mono text-xs">

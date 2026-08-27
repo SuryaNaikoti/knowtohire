@@ -73,11 +73,24 @@ function createDemoAuthUser(demo: typeof DEMO_CREDENTIALS.candidate | typeof DEM
 
 function createDemoProfile(demo: typeof DEMO_CREDENTIALS.candidate | typeof DEMO_CREDENTIALS.employer | typeof DEMO_CREDENTIALS.admin): Profile {
   let customOverrides: Partial<Profile> = {};
+  let effectiveStatus = demo.status;
+
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
       const stored = window.localStorage.getItem(`kth_demo_profile_custom_${demo.id}`);
       if (stored) {
         customOverrides = JSON.parse(stored);
+      }
+      const adminOverridesRaw = window.localStorage.getItem('kth_admin_user_status_overrides');
+      if (adminOverridesRaw) {
+        const adminOverrides = JSON.parse(adminOverridesRaw);
+        if (adminOverrides[demo.id]) {
+          effectiveStatus = adminOverrides[demo.id];
+        } else if (demo.role === 'candidate' && adminOverrides['demo-candidate-001']) {
+          effectiveStatus = adminOverrides['demo-candidate-001'];
+        } else if (demo.role === 'employer' && adminOverrides['demo-employer-002']) {
+          effectiveStatus = adminOverrides['demo-employer-002'];
+        }
       }
     } catch {
       // Ignore parse error
@@ -89,7 +102,7 @@ function createDemoProfile(demo: typeof DEMO_CREDENTIALS.candidate | typeof DEMO
     email: customOverrides.email || demo.email,
     full_name: customOverrides.full_name || demo.full_name,
     role: demo.role,
-    status: demo.status,
+    status: effectiveStatus,
     phone: customOverrides.phone !== undefined ? customOverrides.phone : demo.phone,
     avatar_url: customOverrides.avatar_url || demo.avatar_url,
     created_at: '2026-08-01T00:00:00Z',
@@ -106,21 +119,21 @@ export const resolveEffectiveStatus = (
 ): AccountStatus | null => {
   if (!user) return null;
 
-  // Demo user overrides
-  if (user.id?.startsWith('demo-')) {
+  // 1. If profile is suspended, preserve suspended state authoritatively (including demo accounts)
+  if (profile && (profile.status as string) === 'suspended') {
+    return 'suspended';
+  }
+
+  // Demo user overrides default active
+  if (user.id?.startsWith('demo-') || user.id === DEMO_CREDENTIALS.candidate.id || user.id === DEMO_CREDENTIALS.employer.id) {
     return 'active';
   }
 
   const isEmailConfirmed = Boolean(user.email_confirmed_at || (user as any).confirmed_at);
 
-  // 1. If email is not confirmed in Supabase Auth, account is strictly 'unverified'
+  // 2. If email is not confirmed in Supabase Auth, account is strictly 'unverified'
   if (!isEmailConfirmed) {
     return 'unverified';
-  }
-
-  // 2. If profile is suspended, preserve suspended state
-  if (profile?.status === 'suspended') {
-    return 'suspended';
   }
 
   // 3. If email is confirmed but profile is unverified or missing, transition to 'pending_onboarding'
@@ -303,11 +316,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const demoProfile = createDemoProfile(parsedDemo);
 
               if (isMounted) {
+                const effectiveStatus = resolveEffectiveStatus(demoUser, demoProfile);
                 setState({
                   user: demoUser,
                   profile: demoProfile,
                   role: parsedDemo.role,
-                  status: 'active',
+                  status: effectiveStatus || 'active',
                   isAuthenticated: true,
                   isLoading: false,
                   isInitialized: true,
@@ -474,6 +488,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Allow any standard password entered by user for demo accounts
       const demoUser = createDemoAuthUser(demoData);
       const demoProfile = createDemoProfile(demoData);
+      const effectiveStatus = resolveEffectiveStatus(demoUser, demoProfile);
 
       if (typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(demoData));
@@ -483,7 +498,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user: demoUser,
         profile: demoProfile,
         role: demoData.role,
-        status: 'active',
+        status: effectiveStatus || 'active',
         isAuthenticated: true,
         isLoading: false,
         isInitialized: true,

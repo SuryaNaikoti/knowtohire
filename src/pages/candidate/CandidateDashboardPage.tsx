@@ -130,10 +130,16 @@ export const CandidateDashboardPage: React.FC = () => {
 
     window.addEventListener('kth_applications_changed', handleSync);
     window.addEventListener('kth_saved_jobs_changed', handleSync);
+    window.addEventListener('kth_jobs_changed', handleSync);
+    window.addEventListener('kth_profile_updated', handleSync);
+    window.addEventListener('kth_interviews_changed', handleSync);
 
     return () => {
       window.removeEventListener('kth_applications_changed', handleSync);
       window.removeEventListener('kth_saved_jobs_changed', handleSync);
+      window.removeEventListener('kth_jobs_changed', handleSync);
+      window.removeEventListener('kth_profile_updated', handleSync);
+      window.removeEventListener('kth_interviews_changed', handleSync);
     };
   }, [profile?.id]);
 

@@ -9,6 +9,7 @@ import {
   ServiceResult,
   normalizeServiceError,
 } from './types';
+import { candidateDiscoveryService } from './candidateDiscoveryService';
 
 function getDemoSavedCandidates(): SavedCandidate[] {
   if (typeof window === 'undefined' || !window.localStorage) return [];
@@ -63,6 +64,34 @@ export const savedCandidateService = {
           list.unshift(newRecord);
         }
         saveDemoSavedCandidates(list);
+
+        // Hydrate the candidate profile onto the saved record
+        const candRes = await candidateDiscoveryService.getCandidateById(candidateId);
+        if (candRes.data) {
+          newRecord.candidate = {
+            id: candRes.data.id,
+            full_name: candRes.data.name,
+            email: candRes.data.email,
+            phone: candRes.data.phone,
+            avatar_url: candRes.data.avatarUrl,
+            role: 'candidate' as const,
+            status: 'active',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            candidate_profile: {
+              headline: candRes.data.headline,
+              location: candRes.data.location,
+              domain_specialization: candRes.data.domain,
+              skills: candRes.data.skills,
+              bio: candRes.data.bio || '',
+              experience: candRes.data.experienceList || [],
+              education: candRes.data.educationList || [],
+              certifications: candRes.data.certifications || [],
+              resume_url: candRes.data.resumeUrl,
+            } as any,
+          };
+        }
+
         return { data: newRecord, error: null };
       }
 
@@ -181,6 +210,38 @@ export const savedCandidateService = {
         const demoAuth = JSON.parse(window.localStorage.getItem('kth_demo_auth_session') || '{}');
         const companyId = demoAuth.company_id || 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
         const list = getDemoSavedCandidates().filter((s) => s.company_id === companyId);
+
+        // Hydrate candidate profiles for any records missing the candidate join
+        for (const record of list) {
+          if (!record.candidate || !record.candidate.full_name || record.candidate.full_name === 'Candidate') {
+            const candRes = await candidateDiscoveryService.getCandidateById(record.candidate_id);
+            if (candRes.data) {
+              record.candidate = {
+                id: candRes.data.id,
+                full_name: candRes.data.name,
+                email: candRes.data.email,
+                phone: candRes.data.phone,
+                avatar_url: candRes.data.avatarUrl,
+                role: 'candidate' as const,
+                status: 'active',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                candidate_profile: {
+                  headline: candRes.data.headline,
+                  location: candRes.data.location,
+                  domain_specialization: candRes.data.domain,
+                  skills: candRes.data.skills,
+                  bio: candRes.data.bio || '',
+                  experience: candRes.data.experienceList || [],
+                  education: candRes.data.educationList || [],
+                  certifications: candRes.data.certifications || [],
+                  resume_url: candRes.data.resumeUrl,
+                } as any,
+              };
+            }
+          }
+        }
+
         return { data: list, error: null };
       }
 

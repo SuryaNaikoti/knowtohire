@@ -183,6 +183,40 @@ export const EmployerJobDetailsPage: React.FC<EmployerJobDetailsPageProps> = ({ 
           </Alert>
         )}
 
+        {/* Admin Moderation Notice & Change Request Banner */}
+        {job.moderation_notes && (
+          <div className="bg-amber-50 p-4 sm:p-5 rounded-2xl border border-amber-300 shadow-xs space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-200 text-amber-900">
+                    Admin Moderation Notice
+                  </span>
+                  <span className="text-xs font-semibold text-amber-800">
+                    {job.moderation_status === 'changes_requested' ? 'Changes Required by Platform Admin' : 'Moderator Feedback'}
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-amber-950 font-medium whitespace-pre-line leading-relaxed pt-1">
+                  &ldquo;{job.moderation_notes}&rdquo;
+                </p>
+                <p className="text-[11px] text-amber-800">
+                  Please update the requisition details to align with platform publishing standards and click &ldquo;Publish Job&rdquo; to resubmit.
+                </p>
+              </div>
+
+              <Button
+                variant="primary"
+                size="sm"
+                className="bg-amber-600 hover:bg-amber-700 text-white border-transparent shrink-0 font-bold"
+                onClick={() => handleNavigate(`/employer/jobs/${job.id}/edit`)}
+                leftIcon={<Edit3 className="w-3.5 h-3.5" />}
+              >
+                Edit & Resubmit
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Job Header */}
         <Card className="p-6 md:p-8 space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

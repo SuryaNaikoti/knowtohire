@@ -14,12 +14,58 @@ export const EmployerCandidatesPage: React.FC = () => {
   const [candidates, setCandidates] = useState<DiscoverableCandidate[]>([]);
   const [categories, setCategories] = useState<CareerCategory[]>([]);
   const [selectedCandidate, setSelectedCandidate] = useState<DiscoverableCandidate | null>(null);
+  const [selectedCompareIds, setSelectedCompareIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDomain, setSelectedDomain] = useState('all');
   const [sortBy, setSortBy] = useState<'completion' | 'experience_high' | 'experience_low' | 'salary_low' | 'salary_high' | 'notice_fast'>('completion');
   const [minExp, setMinExp] = useState<string>('all');
   const [maxNotice, setMaxNotice] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
+
+  // Load existing comparison selections if available
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      try {
+        const raw = window.sessionStorage.getItem('kth_compare_candidate_ids');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) setSelectedCompareIds(parsed);
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
+  const toggleCompareCandidate = (id: string) => {
+    setSelectedCompareIds((prev) => {
+      let next: string[];
+      if (prev.includes(id)) {
+        next = prev.filter((item) => item !== id);
+      } else {
+        if (prev.length >= 4) return prev; // Maximum 4 candidates for comparison
+        next = [...prev, id];
+      }
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        try {
+          window.sessionStorage.setItem('kth_compare_candidate_ids', JSON.stringify(next));
+        } catch {
+          // ignore
+        }
+      }
+      return next;
+    });
+  };
+
+  const handleLaunchCompare = () => {
+    if (typeof window !== 'undefined') {
+      if (selectedCompareIds.length > 0 && window.sessionStorage) {
+        window.sessionStorage.setItem('kth_compare_candidate_ids', JSON.stringify(selectedCompareIds));
+      }
+      window.history.pushState({}, '', '/employer/candidates/compare');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+  };
 
   useEffect(() => {
     async function loadTaxonomy() {
@@ -110,9 +156,9 @@ export const EmployerCandidatesPage: React.FC = () => {
             <Button
               variant="secondary"
               leftIcon={<GitCompare className="w-4 h-4" />}
-              onClick={() => (window.location.href = '/employer/candidates/compare')}
+              onClick={handleLaunchCompare}
             >
-              Compare Candidates
+              Compare Candidates {selectedCompareIds.length > 0 && `(${selectedCompareIds.length})`}
             </Button>
           </div>
 
@@ -199,9 +245,27 @@ export const EmployerCandidatesPage: React.FC = () => {
                         <span className="text-xs text-kth-slate-500 font-medium block line-clamp-1">{cand.headline}</span>
                       </div>
                     </div>
-                    <Badge variant="emerald" className="font-mono text-xs">
-                      {cand.profileCompletion}% Complete
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleCompareCandidate(cand.id);
+                        }}
+                        className={`text-xs px-2 py-1 rounded-md font-medium border transition-colors flex items-center gap-1 ${
+                          selectedCompareIds.includes(cand.id)
+                            ? 'bg-kth-primary-50 border-kth-primary-300 text-kth-primary-700 font-semibold'
+                            : 'bg-white border-kth-slate-200 text-kth-slate-600 hover:border-kth-slate-300'
+                        }`}
+                        title="Select for comparison"
+                      >
+                        <GitCompare className="w-3 h-3" />
+                        {selectedCompareIds.includes(cand.id) ? 'Selected' : 'Compare'}
+                      </button>
+                      <Badge variant="emerald" className="font-mono text-xs">
+                        {cand.profileCompletion}% Complete
+                      </Badge>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-3 text-xs text-kth-slate-500 mb-3">
@@ -227,7 +291,10 @@ export const EmployerCandidatesPage: React.FC = () => {
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={() => (window.location.href = `/employer/candidates/${cand.id}`)}
+                    onClick={() => {
+                      window.history.pushState({}, '', `/employer/candidates/${cand.id}`);
+                      window.dispatchEvent(new PopStateEvent('popstate'));
+                    }}
                   >
                     View Profile <ArrowRight className="w-3.5 h-3.5" />
                   </Button>
@@ -240,32 +307,7 @@ export const EmployerCandidatesPage: React.FC = () => {
 
       {/* Quick View Drawer */}
       <CandidateQuickView
-        candidate={
-          selectedCandidate
-            ? {
-                id: selectedCandidate.id,
-                name: selectedCandidate.name,
-                title: selectedCandidate.headline,
-                location: selectedCandidate.location,
-                experienceYears: selectedCandidate.experienceYears,
-                salaryExpectationINR: `₹${(selectedCandidate.expectedSalaryINR / 100000).toFixed(1)}L/yr`,
-                matchScore: selectedCandidate.profileCompletion,
-                stage: 'New',
-                skills: selectedCandidate.skills,
-                summary: selectedCandidate.experienceSummary,
-                education: selectedCandidate.educationSummary || 'Degree',
-                certifications: ['ISO 14001', 'BRSR Reporting'],
-                availability: `${selectedCandidate.noticePeriodDays} days notice`,
-                isSaved: false,
-                skillsMatch: 85,
-                experienceMatch: 80,
-                locationMatch: 90,
-                roleAlignment: 88,
-                appliedDate: 'Active Talent',
-                appliedRole: selectedCandidate.headline,
-              }
-            : null
-        }
+        candidate={selectedCandidate}
         isOpen={selectedCandidate !== null}
         onClose={() => setSelectedCandidate(null)}
       />

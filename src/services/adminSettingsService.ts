@@ -1,9 +1,15 @@
 /**
  * KnowToHire Admin Settings Service
  * Manages platform configuration, admin profile, role governance, security session policies, and notification preferences.
+ *
+ * ARCHITECTURE NOTE:
+ * Dual-layer architecture:
+ * 1. REAL SUPABASE MODE: When configured, reads admin profile and settings.
+ * 2. LOCAL / DEMO RESILIENT LAYER: Synchronizes in-memory & localStorage store,
+ *    emitting 'kth_admin_settings_changed' for live reactive updates across Admin console.
  */
 
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { ServiceResult, normalizeServiceError } from './types';
 
 export interface AdminProfileSettings {
@@ -54,7 +60,7 @@ export interface MasterAdminSettings {
 
 const STORAGE_KEY = 'kth_master_admin_settings';
 
-const DEFAULT_ADMIN_SETTINGS: MasterAdminSettings = {
+export const DEFAULT_ADMIN_SETTINGS: MasterAdminSettings = {
   profile: {
     fullName: 'KnowToHire Platform Administrator',
     email: 'admin@knowtohire.com',
@@ -89,6 +95,8 @@ const DEFAULT_ADMIN_SETTINGS: MasterAdminSettings = {
   },
 };
 
+let inMemorySettings: MasterAdminSettings | null = null;
+
 export const adminSettingsService = {
   /**
    * Get all master admin settings.
@@ -101,39 +109,60 @@ export const adminSettingsService = {
         if (stored) {
           try {
             const parsed = JSON.parse(stored);
-            return { data: { ...DEFAULT_ADMIN_SETTINGS, ...parsed }, error: null };
+            return {
+              data: {
+                ...DEFAULT_ADMIN_SETTINGS,
+                ...parsed,
+                profile: { ...DEFAULT_ADMIN_SETTINGS.profile, ...parsed.profile },
+                platform: { ...DEFAULT_ADMIN_SETTINGS.platform, ...parsed.platform },
+                governance: { ...DEFAULT_ADMIN_SETTINGS.governance, ...parsed.governance },
+                security: { ...DEFAULT_ADMIN_SETTINGS.security, ...parsed.security },
+                notifications: { ...DEFAULT_ADMIN_SETTINGS.notifications, ...parsed.notifications },
+              },
+              error: null,
+            };
           } catch {
             // ignore
           }
         }
       }
 
-      // 2. Query Supabase for current admin profile
-      const { data: userData } = await supabase.auth.getUser();
-      if (userData?.user?.id) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, email, phone')
-          .eq('id', userData.user.id)
-          .maybeSingle();
+      if (inMemorySettings) {
+        return { data: inMemorySettings, error: null };
+      }
 
-        if (profile) {
-          const settings = {
-            ...DEFAULT_ADMIN_SETTINGS,
-            profile: {
-              ...DEFAULT_ADMIN_SETTINGS.profile,
-              fullName: profile.full_name || DEFAULT_ADMIN_SETTINGS.profile.fullName,
-              email: profile.email || DEFAULT_ADMIN_SETTINGS.profile.email,
-              phone: profile.phone || DEFAULT_ADMIN_SETTINGS.profile.phone,
-            },
-          };
-          return { data: settings, error: null };
+      // 2. Query Supabase for current admin profile if available
+      if (isSupabaseConfigured()) {
+        try {
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData?.user?.id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('full_name, email, phone')
+              .eq('id', userData.user.id)
+              .maybeSingle();
+
+            if (profile) {
+              const settings: MasterAdminSettings = {
+                ...DEFAULT_ADMIN_SETTINGS,
+                profile: {
+                  ...DEFAULT_ADMIN_SETTINGS.profile,
+                  fullName: profile.full_name || DEFAULT_ADMIN_SETTINGS.profile.fullName,
+                  email: profile.email || DEFAULT_ADMIN_SETTINGS.profile.email,
+                  phone: profile.phone || DEFAULT_ADMIN_SETTINGS.profile.phone,
+                },
+              };
+              return { data: settings, error: null };
+            }
+          }
+        } catch {
+          // Fallback
         }
       }
 
       return { data: DEFAULT_ADMIN_SETTINGS, error: null };
     } catch (err) {
-      return { data: DEFAULT_ADMIN_SETTINGS, error: null };
+      return { data: inMemorySettings || DEFAULT_ADMIN_SETTINGS, error: null };
     }
   },
 
@@ -142,27 +171,56 @@ export const adminSettingsService = {
    */
   async updateSettings(settings: MasterAdminSettings): Promise<ServiceResult<boolean>> {
     try {
+      inMemorySettings = settings;
+
       // 1. Save to local storage
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      if (typeof window !== 'undefined') {
+        if (window.localStorage) {
+          try {
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+          } catch {
+            // ignore
+          }
+        }
+        window.dispatchEvent(new CustomEvent('kth_admin_settings_changed'));
       }
 
       // 2. Persist profile updates to Supabase if authenticated
-      const { data: userData } = await supabase.auth.getUser();
-      if (userData?.user?.id) {
-        await supabase
-          .from('profiles')
-          .update({
-            full_name: settings.profile.fullName,
-            phone: settings.profile.phone,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', userData.user.id);
+      if (isSupabaseConfigured()) {
+        try {
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData?.user?.id) {
+            await supabase
+              .from('profiles')
+              .update({
+                full_name: settings.profile.fullName,
+                phone: settings.profile.phone,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', userData.user.id);
+          }
+        } catch {
+          // Table catch
+        }
       }
 
       return { data: true, error: null };
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }
+  },
+
+  /**
+   * Reset settings to canonical defaults (used for testing cleanup).
+   */
+  async resetSettings(): Promise<ServiceResult<boolean>> {
+    inMemorySettings = { ...DEFAULT_ADMIN_SETTINGS };
+    if (typeof window !== 'undefined') {
+      if (window.localStorage) {
+        window.localStorage.removeItem(STORAGE_KEY);
+      }
+      window.dispatchEvent(new CustomEvent('kth_admin_settings_changed'));
+    }
+    return { data: true, error: null };
   },
 };

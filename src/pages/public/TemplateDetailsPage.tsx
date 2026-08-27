@@ -25,7 +25,7 @@ export const TemplateDetailsPage: React.FC<TemplateDetailsPageProps> = ({ templa
     const fetchTemplate = async () => {
       setIsLoading(true);
       setError(null);
-      const res = await templateService.getTemplateByIdOrSlug(activeId);
+      const res = await templateService.getTemplateByIdOrSlug(activeId, { requirePublished: true });
       if (!isMounted) return;
       if (res.error) {
         setError(res.error.message);

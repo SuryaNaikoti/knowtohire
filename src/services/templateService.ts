@@ -1,6 +1,6 @@
 /**
  * KnowToHire Template Marketplace Service
- * Real Supabase operations for ATS Resume Templates, EIA Contracts, ESG Audits, and Compliance Toolkits.
+ * Operations for ATS Resume Templates, EIA Contracts, ESG Audits, and Compliance Toolkits.
  * Supports status management (Draft, Published, Archived) and file uploads to Supabase Storage.
  */
 
@@ -66,40 +66,218 @@ export interface CreateTemplateInput {
 
 const DEMO_TEMPLATES_KEY = 'kth_demo_marketplace_templates';
 
+// Canonical Baseline Seed Templates for KnowToHire Template Marketplace
+export const INITIAL_CANONICAL_TEMPLATES: MarketplaceTemplate[] = [
+  {
+    id: 'tmpl-1',
+    title: 'Executive ATS Resume — Sustainability & ESG Consultant',
+    slug: 'executive-ats-resume-sustainability-esg-consultant',
+    description: 'ATS-optimized resume and cover letter template tailored specifically for environmental, ESG, and sustainability professionals in India.',
+    category: 'Resume & CV Templates',
+    formats: ['DOCX', 'PDF'],
+    cover_url: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&w=400&h=250&q=80',
+    file_url: 'https://knowtohire.com/templates/sustainability_esg_ats_resume.docx',
+    download_url: 'https://knowtohire.com/templates/sustainability_esg_ats_resume.docx',
+    file_name: 'sustainability_esg_ats_resume.docx',
+    file_path: 'templates/tmpl-1/sustainability_esg_ats_resume.docx',
+    file_size: '1.4 MB',
+    mime_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    storage_bucket: 'templates',
+    rating: 4.95,
+    downloads_count: 8420,
+    price_inr: 499,
+    is_free: false,
+    is_active: true,
+    status: 'published',
+    published_at: '2026-08-01T10:00:00.000Z',
+    tags: ['ATS Resume', 'Sustainability', 'ESG Career', 'Cover Letter'],
+    created_at: '2026-08-01T10:00:00.000Z',
+    updated_at: '2026-08-01T10:00:00.000Z',
+  },
+  {
+    id: 'tmpl-2',
+    title: 'Environmental Impact Assessment (EIA) Consultancy Agreement',
+    slug: 'eia-consultancy-master-services-agreement',
+    description: 'Lawyer-vetted Master Services Agreement (MSA) for environmental consultants rendering EIA, clearance, and monitoring services in India.',
+    category: 'Legal & Contracts',
+    formats: ['DOCX', 'PDF'],
+    cover_url: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=400&h=250&q=80',
+    file_url: 'https://knowtohire.com/templates/eia_consultancy_agreement_template.docx',
+    download_url: 'https://knowtohire.com/templates/eia_consultancy_agreement_template.docx',
+    file_name: 'eia_consultancy_agreement_template.docx',
+    file_path: 'templates/tmpl-2/eia_consultancy_agreement_template.docx',
+    file_size: '2.1 MB',
+    mime_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    storage_bucket: 'templates',
+    rating: 4.9,
+    downloads_count: 4150,
+    price_inr: 999,
+    is_free: false,
+    is_active: true,
+    status: 'published',
+    published_at: '2026-08-03T11:00:00.000Z',
+    tags: ['EIA', 'Consultancy Contract', 'Legal MSA', 'MoEFCC Compliance'],
+    created_at: '2026-08-03T11:00:00.000Z',
+    updated_at: '2026-08-03T11:00:00.000Z',
+  },
+  {
+    id: 'tmpl-3',
+    title: 'Corporate ESG Compliance Audit Checklist & Scoring Matrix',
+    slug: 'corporate-esg-compliance-audit-checklist',
+    description: 'Ready-to-print audit matrix for internal compliance teams conducting quarterly ESG reviews across manufacturing and commercial plants.',
+    category: 'Compliance Toolkits',
+    formats: ['PDF', 'XLSX'],
+    cover_url: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=400&h=250&q=80',
+    file_url: 'https://knowtohire.com/templates/corporate_esg_audit_matrix_toolkit.xlsx',
+    download_url: 'https://knowtohire.com/templates/corporate_esg_audit_matrix_toolkit.xlsx',
+    file_name: 'corporate_esg_audit_matrix_toolkit.xlsx',
+    file_path: 'templates/tmpl-3/corporate_esg_audit_matrix_toolkit.xlsx',
+    file_size: '1.8 MB',
+    mime_type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    storage_bucket: 'templates',
+    rating: 4.98,
+    downloads_count: 12600,
+    price_inr: 0,
+    is_free: true,
+    is_active: true,
+    status: 'published',
+    published_at: '2026-08-05T09:00:00.000Z',
+    tags: ['Audit Matrix', 'BRSR Scoring', 'ISO 14001', 'Free Toolkit'],
+    created_at: '2026-08-05T09:00:00.000Z',
+    updated_at: '2026-08-05T09:00:00.000Z',
+  },
+  {
+    id: 'tmpl-4',
+    title: 'Independent Patent Research & Prior Art Search Contract',
+    slug: 'patent-research-consultant-agreement',
+    description: 'Standard NDA and freelance research service agreement protecting proprietary patent prior art searches and technical disclosures.',
+    category: 'Legal & Contracts',
+    formats: ['DOCX', 'PDF'],
+    cover_url: 'https://images.unsplash.com/photo-1434626881859-194d67b2b86f?auto=format&fit=crop&w=400&h=250&q=80',
+    file_url: 'https://knowtohire.com/templates/patent_research_consultant_contract.docx',
+    download_url: 'https://knowtohire.com/templates/patent_research_consultant_contract.docx',
+    file_name: 'patent_research_consultant_contract.docx',
+    file_path: 'templates/tmpl-4/patent_research_consultant_contract.docx',
+    file_size: '1.6 MB',
+    mime_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    storage_bucket: 'templates',
+    rating: 4.88,
+    downloads_count: 5900,
+    price_inr: 799,
+    is_free: false,
+    is_active: true,
+    status: 'published',
+    published_at: '2026-08-07T14:00:00.000Z',
+    tags: ['Patent Law', 'IP Agreement', 'NDA', 'Prior Art Search'],
+    created_at: '2026-08-07T14:00:00.000Z',
+    updated_at: '2026-08-07T14:00:00.000Z',
+  },
+  {
+    id: 'tmpl-5',
+    title: 'Chief Sustainability Officer (CSO) Executive Bio & Deck',
+    slug: 'cso-executive-bio-portfolio-deck',
+    description: 'Executive board-level presentation deck and strategic CV format for C-suite sustainability and climate leadership roles.',
+    category: 'Professional Documents',
+    formats: ['PPTX', 'PDF'],
+    cover_url: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=400&h=250&q=80',
+    file_url: 'https://knowtohire.com/templates/cso_executive_bio_presentation.pptx',
+    download_url: 'https://knowtohire.com/templates/cso_executive_bio_presentation.pptx',
+    file_name: 'cso_executive_bio_presentation.pptx',
+    file_path: 'templates/tmpl-5/cso_executive_bio_presentation.pptx',
+    file_size: '4.5 MB',
+    mime_type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    storage_bucket: 'templates',
+    rating: 4.92,
+    downloads_count: 3200,
+    price_inr: 1299,
+    is_free: false,
+    is_active: true,
+    status: 'published',
+    published_at: '2026-08-10T12:00:00.000Z',
+    tags: ['CSO Bio', 'Executive Deck', 'Board Level', 'Climate Leadership'],
+    created_at: '2026-08-10T12:00:00.000Z',
+    updated_at: '2026-08-10T12:00:00.000Z',
+  },
+  {
+    id: 'tmpl-6',
+    title: 'SEBI BRSR Core Readiness & Assurance Workflow Guide',
+    slug: 'sebi-brsr-core-readiness-workflow-guide',
+    description: 'Comprehensive step-by-step readiness toolkit for top 1000 listed Indian entities adhering to SEBI BRSR Core mandates.',
+    category: 'Compliance Toolkits',
+    formats: ['PDF', 'DOCX'],
+    cover_url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=400&h=250&q=80',
+    file_url: 'https://knowtohire.com/templates/sebi_brsr_readiness_toolkit.pdf',
+    download_url: 'https://knowtohire.com/templates/sebi_brsr_readiness_toolkit.pdf',
+    file_name: 'sebi_brsr_readiness_toolkit.pdf',
+    file_path: 'templates/tmpl-6/sebi_brsr_readiness_toolkit.pdf',
+    file_size: '3.1 MB',
+    mime_type: 'application/pdf',
+    storage_bucket: 'templates',
+    rating: 4.96,
+    downloads_count: 9800,
+    price_inr: 0,
+    is_free: true,
+    is_active: true,
+    status: 'published',
+    published_at: '2026-08-12T15:00:00.000Z',
+    tags: ['SEBI BRSR', 'Assurance', 'Free Toolkit', 'ESG Reporting'],
+    created_at: '2026-08-12T15:00:00.000Z',
+    updated_at: '2026-08-12T15:00:00.000Z',
+  },
+];
+
+let inMemoryDemoTemplates: MarketplaceTemplate[] = [];
+
 function getDemoTemplates(): MarketplaceTemplate[] {
-  if (typeof window === 'undefined' || !window.localStorage) return [];
-  try {
-    const raw = window.localStorage.getItem(DEMO_TEMPLATES_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const raw = window.localStorage.getItem(DEMO_TEMPLATES_KEY);
+      if (raw) {
+        return JSON.parse(raw);
+      }
+    } catch {
+      // Ignore
+    }
   }
+  return inMemoryDemoTemplates;
 }
 
 function saveDemoTemplate(tmpl: MarketplaceTemplate) {
-  if (typeof window === 'undefined' || !window.localStorage) return;
-  try {
-    const existing = getDemoTemplates().filter((t) => t.id !== tmpl.id && t.slug !== tmpl.slug);
-    const updated = [tmpl, ...existing];
-    window.localStorage.setItem(DEMO_TEMPLATES_KEY, JSON.stringify(updated));
+  const existing = getDemoTemplates().filter((t) => t.id !== tmpl.id && t.slug !== tmpl.slug);
+  inMemoryDemoTemplates = [tmpl, ...existing];
+
+  if (typeof window !== 'undefined') {
+    if (window.localStorage) {
+      try {
+        window.localStorage.setItem(DEMO_TEMPLATES_KEY, JSON.stringify(inMemoryDemoTemplates));
+      } catch {
+        // Ignore
+      }
+    }
     window.dispatchEvent(new CustomEvent('kth_templates_changed'));
-  } catch {
-    // Ignore
   }
 }
 
 function updateDemoTemplate(id: string, updates: Partial<MarketplaceTemplate>) {
-  if (typeof window === 'undefined' || !window.localStorage) return;
-  try {
-    const existing = getDemoTemplates();
-    const idx = existing.findIndex((t) => t.id === id);
-    if (idx >= 0) {
-      existing[idx] = { ...existing[idx], ...updates, updated_at: new Date().toISOString() };
-      window.localStorage.setItem(DEMO_TEMPLATES_KEY, JSON.stringify(existing));
+  let existing = [...getDemoTemplates()];
+  if (existing.length === 0) {
+    existing = [...INITIAL_CANONICAL_TEMPLATES];
+  }
+  const idx = existing.findIndex((t) => t.id === id || t.slug === id);
+  if (idx >= 0) {
+    existing[idx] = { ...existing[idx], ...updates, updated_at: new Date().toISOString() };
+    inMemoryDemoTemplates = existing;
+
+    if (typeof window !== 'undefined') {
+      if (window.localStorage) {
+        try {
+          window.localStorage.setItem(DEMO_TEMPLATES_KEY, JSON.stringify(existing));
+        } catch {
+          // Ignore
+        }
+      }
       window.dispatchEvent(new CustomEvent('kth_templates_changed'));
     }
-  } catch {
-    // Ignore
   }
 }
 
@@ -147,13 +325,12 @@ export const templateService = {
             .from('templates')
             .select('*')
             .is('deleted_at', null)
-            .eq('is_active', true)
             .order('created_at', { ascending: false });
 
           if (params?.status && params.status !== 'all') {
             query = query.eq('status', params.status);
           } else if (!params?.status) {
-            query = query.eq('status', 'published');
+            query = query.eq('status', 'published').eq('is_active', true);
           }
 
           if (params?.search && params.search.trim()) {
@@ -162,7 +339,7 @@ export const templateService = {
           }
 
           if (params?.category && params.category !== 'all') {
-            query = query.ilike('title', `%${params.category}%`);
+            query = query.ilike('category', `%${params.category}%`);
           }
 
           if (params?.isFree !== undefined) {
@@ -186,33 +363,56 @@ export const templateService = {
         }
       }
 
-      // Merge with demo store
+      // Base templates from db or fallback seed
+      let baseList: MarketplaceTemplate[] = dbTemplates.length > 0 ? dbTemplates : [...INITIAL_CANONICAL_TEMPLATES];
+
+      // Merge with localStorage overrides
       const demoTmpls = getDemoTemplates();
-      const combined = [...dbTemplates];
+      const combined = [...baseList];
 
       for (const dt of demoTmpls) {
         const existingIdx = combined.findIndex((c) => c.id === dt.id || c.slug === dt.slug);
         if (existingIdx >= 0) {
           combined[existingIdx] = { ...combined[existingIdx], ...dt };
         } else {
-          if (!params?.status && dt.status !== 'published') continue;
-          if (params?.status && params.status !== 'all' && dt.status !== params.status) continue;
-          combined.push(dt);
+          combined.unshift(dt);
         }
       }
 
       let filtered = combined;
-      if (params?.category && params.category !== 'all') {
-        filtered = filtered.filter((t) => t.category.toLowerCase().includes(params.category!.toLowerCase()));
+
+      // Status Filtering
+      const targetStatus = params?.status || 'published';
+      if (targetStatus !== 'all') {
+        filtered = filtered.filter((t) => t.status === targetStatus && (targetStatus !== 'published' || t.is_active));
       }
+
+      // Category Filtering
+      if (params?.category && params.category !== 'all') {
+        const cat = params.category.toLowerCase();
+        filtered = filtered.filter((t) => t.category.toLowerCase().includes(cat) || t.title.toLowerCase().includes(cat));
+      }
+
+      // Search Query Filtering
       if (params?.search && params.search.trim()) {
-        const term = params.search.toLowerCase();
+        const term = params.search.toLowerCase().trim();
         filtered = filtered.filter(
-          (t) => t.title.toLowerCase().includes(term) || t.description.toLowerCase().includes(term)
+          (t) =>
+            t.title.toLowerCase().includes(term) ||
+            t.description.toLowerCase().includes(term) ||
+            t.category.toLowerCase().includes(term) ||
+            (t.tags && t.tags.some((tag) => tag.toLowerCase().includes(term)))
         );
       }
+
+      // Free / Paid Filtering
       if (params?.isFree !== undefined) {
         filtered = filtered.filter((t) => (params.isFree ? t.is_free : !t.is_free));
+      }
+
+      // Limit
+      if (params?.limit && params.limit > 0) {
+        filtered = filtered.slice(0, params.limit);
       }
 
       return { data: filtered, error: null };
@@ -222,9 +422,12 @@ export const templateService = {
   },
 
   /**
-   * Fetch a single template by ID or Slug.
+   * Fetch a single template by ID or Slug with optional published-only enforcement.
    */
-  async getTemplateByIdOrSlug(idOrSlug: string): Promise<ServiceResult<MarketplaceTemplate>> {
+  async getTemplateByIdOrSlug(
+    idOrSlug: string,
+    options?: { requirePublished?: boolean }
+  ): Promise<ServiceResult<MarketplaceTemplate>> {
     try {
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
 
@@ -238,21 +441,38 @@ export const templateService = {
             query = query.eq('slug', idOrSlug);
           }
 
+          if (options?.requirePublished) {
+            query = query.eq('status', 'published').eq('is_active', true);
+          }
+
           const { data, error } = await query.maybeSingle();
 
           if (!error && data) {
             const mapped = mapDatabaseRowToTemplate(data);
             const demo = getDemoTemplates().find((t) => t.id === data.id || t.slug === data.slug);
-            return { data: demo ? { ...mapped, ...demo } : mapped, error: null };
+            const finalTmpl = demo ? { ...mapped, ...demo } : mapped;
+            if (options?.requirePublished && (finalTmpl.status !== 'published' || !finalTmpl.is_active)) {
+              return { data: null, error: { message: 'Template not available or unpublished.', code: 'NOT_FOUND', status: 404 } };
+            }
+            return { data: finalTmpl, error: null };
           }
         } catch {
           // Fallback
         }
       }
 
-      const demo = getDemoTemplates().find((t) => t.id === idOrSlug || t.slug === idOrSlug);
-      if (demo) {
-        return { data: demo, error: null };
+      // Fallback search in demo store + canonical seed
+      const allTmpls = [...getDemoTemplates(), ...INITIAL_CANONICAL_TEMPLATES];
+      const match = allTmpls.find((t) => t.id === idOrSlug || t.slug === idOrSlug);
+
+      if (match) {
+        if (options?.requirePublished && (match.status !== 'published' || !match.is_active)) {
+          return {
+            data: null,
+            error: { message: 'Template not available or unpublished.', code: 'NOT_FOUND', status: 404 },
+          };
+        }
+        return { data: match, error: null };
       }
 
       return {
@@ -262,6 +482,13 @@ export const templateService = {
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }
+  },
+
+  /**
+   * Fetch a single published template by Slug (Public marketplace).
+   */
+  async getTemplateBySlug(slug: string): Promise<ServiceResult<MarketplaceTemplate>> {
+    return this.getTemplateByIdOrSlug(slug, { requirePublished: true });
   },
 
   /**
@@ -297,7 +524,7 @@ export const templateService = {
   },
 
   /**
-   * Admin: Create new template with file upload.
+   * Admin: Create new template with file upload and status handling.
    */
   async createTemplate(input: CreateTemplateInput): Promise<ServiceResult<MarketplaceTemplate>> {
     try {
@@ -354,7 +581,7 @@ export const templateService = {
         downloads_count: 0,
         price_inr: input.price_inr || 0,
         is_free: !input.price_inr || input.price_inr === 0,
-        is_active: true,
+        is_active: input.status !== 'archived',
         status: input.status || 'published',
         published_at: input.status === 'published' ? now : null,
         tags: ['ATS Resume', 'Legal', 'ESG'],
@@ -381,6 +608,7 @@ export const templateService = {
             mime_type: newTemplate.mime_type,
             storage_bucket: 'templates',
             status: newTemplate.status,
+            is_active: newTemplate.is_active,
             published_at: newTemplate.published_at,
           };
 
@@ -444,6 +672,8 @@ export const templateService = {
         file_size: fileSize,
         mime_type: mimeType,
         formats,
+        is_free: input.price_inr !== undefined ? input.price_inr === 0 : existing?.is_free,
+        is_active: input.status ? input.status !== 'archived' : existing?.is_active,
         updated_at: new Date().toISOString(),
       };
 
@@ -467,25 +697,47 @@ export const templateService = {
   },
 
   /**
-   * Admin: Soft-delete or archive a template.
+   * Admin: Update template status directly (published, draft, archived).
    */
-  async deleteTemplate(id: string): Promise<ServiceResult<boolean>> {
+  async updateTemplateStatus(id: string, status: TemplateStatus): Promise<ServiceResult<boolean>> {
     try {
+      const updates = {
+        status,
+        is_active: status !== 'archived',
+        published_at: status === 'published' ? new Date().toISOString() : undefined,
+        updated_at: new Date().toISOString(),
+      };
+
       if (isSupabaseConfigured()) {
         try {
-          await supabase
-            .from('templates')
-            .update({ deleted_at: new Date().toISOString(), status: 'archived', is_active: false })
-            .eq('id', id);
+          await supabase.from('templates').update(updates).eq('id', id);
         } catch {
           // Ignore
         }
       }
 
-      updateDemoTemplate(id, { status: 'archived', is_active: false });
+      updateDemoTemplate(id, updates);
       return { data: true, error: null };
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }
+  },
+
+  /**
+   * Admin: Soft-delete or archive a template.
+   */
+  async deleteTemplate(id: string): Promise<ServiceResult<boolean>> {
+    try {
+      return this.updateTemplateStatus(id, 'archived');
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
+   * Admin: Archive a template.
+   */
+  async archiveTemplate(id: string): Promise<ServiceResult<boolean>> {
+    return this.updateTemplateStatus(id, 'archived');
   },
 };

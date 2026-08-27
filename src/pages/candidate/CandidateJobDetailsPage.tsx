@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { ApplyModal } from '@/components/candidate/ApplyModal';
 import { jobService, savedJobService, applicationService, Job } from '@/services';
 import { formatINR } from '@/design-system/tokens';
-import { MapPin, CheckCircle2, Bookmark, Sparkles, Building2, ArrowLeft, Briefcase, Check, AlertTriangle } from 'lucide-react';
+import { MapPin, CheckCircle2, Bookmark, Building2, ArrowLeft, Check, AlertTriangle, Briefcase } from 'lucide-react';
 
 export interface CandidateJobDetailsPageProps {
   jobId?: string;
@@ -126,13 +126,15 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
             {errorMessage ? 'Unable to Load Position' : 'Job Not Found'}
           </h3>
           <p className="text-xs text-kth-slate-500 leading-relaxed">
-            {errorMessage || 'This job opening is no longer accepting applications or has been closed by the hiring enterprise.'}
+            {errorMessage || 'This job opening is no longer accepting applications or has been closed by the employer.'}
           </p>
-          <div className="pt-2">
-            <Button variant="primary" size="sm" onClick={handleBack} leftIcon={<ArrowLeft className="w-4 h-4" />}>
-              Back to Job Feed
-            </Button>
-          </div>
+          <button
+            onClick={handleBack}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Browse Other Openings
+          </button>
         </div>
       </CandidateShell>
     );
@@ -143,7 +145,7 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
     ? `${formatINR(job.min_salary_inr)} - ${formatINR(job.max_salary_inr, true)}`
     : 'Salary not disclosed';
 
-  const companyName = job.company?.name || (job as any).company_name || 'EcoStrategy India';
+  const companyName = job.company?.name || (job as any).company_name || 'EcoStrategy India Pvt Ltd';
   const responsibilities = Array.isArray(job.responsibilities) ? job.responsibilities : [];
   const requirements = Array.isArray(job.requirements) ? job.requirements : [];
   const skills = Array.isArray(job.skills) ? job.skills : [];
@@ -175,7 +177,9 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
                 <Badge variant="indigo" className="capitalize">
                   {(job.employment_type || 'full_time').replace('_', '-')}
                 </Badge>
-                <Badge variant="emerald" hasPulse>94% AI Skill Match</Badge>
+                <Badge variant="slate" className="capitalize">
+                  {(job.work_mode || 'hybrid').replace('_', '-')}
+                </Badge>
               </div>
               <h1 className="font-display text-2xl md:text-3xl font-extrabold text-kth-slate-900">{job.title}</h1>
               <div className="flex items-center gap-3 text-xs sm:text-sm text-kth-slate-600 mt-1">
@@ -229,31 +233,6 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
               <div className="font-mono text-xl font-bold text-kth-primary-600">{salaryText}</div>
             </div>
             <Badge variant="indigo" className="capitalize">{(job.work_mode || 'hybrid').replace('_', '-')}</Badge>
-          </div>
-
-          {/* Distinctive Section: Why This Job Matches You */}
-          <div className="bg-cyan-50/60 p-5 rounded-xl border border-cyan-200 mb-6">
-            <h3 className="font-display font-bold text-sm text-cyan-950 mb-3 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-cyan-600" /> Why This Job Matches You (94%)
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="bg-white p-3 rounded-lg border border-cyan-100">
-                <span className="text-kth-slate-500 block text-[10px]">Skills Match</span>
-                <strong className="font-mono text-sm text-cyan-700 font-bold">94%</strong>
-              </div>
-              <div className="bg-white p-3 rounded-lg border border-cyan-100">
-                <span className="text-kth-slate-500 block text-[10px]">Experience Match</span>
-                <strong className="font-mono text-sm text-cyan-700 font-bold">91%</strong>
-              </div>
-              <div className="bg-white p-3 rounded-lg border border-cyan-100">
-                <span className="text-kth-slate-500 block text-[10px]">Location Match</span>
-                <strong className="font-mono text-sm text-cyan-700 font-bold">100%</strong>
-              </div>
-              <div className="bg-white p-3 rounded-lg border border-cyan-100">
-                <span className="text-kth-slate-500 block text-[10px]">Career Alignment</span>
-                <strong className="font-mono text-sm text-cyan-700 font-bold">89%</strong>
-              </div>
-            </div>
           </div>
 
           {/* Job Overview */}

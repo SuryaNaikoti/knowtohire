@@ -85,6 +85,7 @@ export const EmployerEditJobPage: React.FC<EmployerEditJobPageProps> = ({ jobId:
       setTitle(data.title);
       setDepartment(data.department);
       setCategory(data.category);
+      setSelectedCategoryId(data.career_category_id || '');
       setWorkMode(data.work_mode);
       setEmploymentType(data.employment_type);
       setExperienceLevel(data.experience_level);

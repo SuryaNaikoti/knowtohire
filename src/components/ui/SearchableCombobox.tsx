@@ -50,8 +50,56 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
   const customInputRef = useRef<HTMLInputElement>(null);
 
   const selectedOption = useMemo(() => {
-    return options.find((opt) => opt.value === value || opt.label.toLowerCase() === value.toLowerCase());
+    if (!value || !value.trim()) return undefined;
+    const vTrim = value.trim();
+    const vLower = vTrim.toLowerCase();
+    const vClean = vLower.replace(/[^a-z0-9]+/g, ' ').trim();
+    const vCompact = vLower.replace(/[^a-z0-9]/g, '');
+
+    // 1. Direct exact match on value or label
+    const exact = options.find((opt) => opt.value === vTrim || opt.label === vTrim || opt.value.toLowerCase() === vLower || opt.label.toLowerCase() === vLower);
+    if (exact) return exact;
+
+    // 2. Normalized token / alphanumeric match
+    const normalized = options.find((opt) => {
+      const optValNorm = opt.value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      const optValCompact = opt.value.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const optLblNorm = opt.label.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      const optLblCompact = opt.label.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return (
+        optValNorm === vClean ||
+        optValCompact === vCompact ||
+        optLblNorm === vClean ||
+        optLblCompact === vCompact
+      );
+    });
+    if (normalized) return normalized;
+
+    // 3. Location / city prefix or substring token match (e.g. "Bengaluru, Karnataka, India" vs "Bengaluru, India" or "Bengaluru")
+    const vFirstToken = vTrim.split(',')[0].trim().toLowerCase();
+    const cityOrPrefixMatch = options.find((opt) => {
+      const optLbl = opt.label.toLowerCase();
+      const optVal = opt.value.toLowerCase();
+      const optFirstToken = opt.label.split(',')[0].trim().toLowerCase();
+      return (
+        optLbl.startsWith(vLower) ||
+        vLower.startsWith(optLbl) ||
+        optVal.startsWith(vLower) ||
+        vLower.startsWith(optVal) ||
+        (vFirstToken && (optFirstToken === vFirstToken || optLbl.includes(vFirstToken) || vLower.includes(optFirstToken)))
+      );
+    });
+    if (cityOrPrefixMatch) return cityOrPrefixMatch;
+
+    return undefined;
   }, [options, value]);
+
+  // Display text: resolved option label, or persisted non-empty value, or placeholder
+  const displayText = useMemo(() => {
+    if (selectedOption) return selectedOption.label;
+    if (value && value.trim()) return value.trim();
+    return placeholder;
+  }, [selectedOption, value, placeholder]);
 
   // Filter options with max 50 items rendered to prevent DOM lag
   const filteredOptions = useMemo(() => {
@@ -111,12 +159,12 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
           disabled && 'bg-kth-slate-100 cursor-not-allowed opacity-60'
         )}
       >
-        <span className={cn('truncate font-medium', selectedOption ? 'text-kth-slate-900' : 'text-kth-slate-400')}>
-          {selectedOption ? selectedOption.label : placeholder}
+        <span className={cn('truncate font-medium', (selectedOption || (value && value.trim())) ? 'text-kth-slate-900' : 'text-kth-slate-400')}>
+          {displayText}
         </span>
 
         <div className="flex items-center gap-1.5 ml-2 shrink-0">
-          {allowClear && selectedOption && !disabled && (
+          {allowClear && (selectedOption || (value && value.trim())) && !disabled && (
             <span
               role="button"
               onClick={handleClear}

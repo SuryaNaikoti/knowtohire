@@ -125,7 +125,7 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
             {errorMessage ? 'Unable to Load Position' : 'Position Not Found'}
           </h2>
           <p className="text-xs sm:text-sm text-kth-slate-500 leading-relaxed max-w-sm mx-auto">
-            {errorMessage || 'This job opening does not exist, has expired, or is currently closed by the hiring enterprise.'}
+            {errorMessage || 'This job opening does not exist, has expired, or is currently closed by the employer.'}
           </p>
           <div className="pt-3">
             <Button variant="primary" size="md" onClick={handleBackToJobs} leftIcon={<ArrowLeft className="w-4 h-4" />}>

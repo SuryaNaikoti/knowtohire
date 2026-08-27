@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -24,7 +24,11 @@ import {
 
 type TabKey = 'profile' | 'platform' | 'governance' | 'security' | 'notifications';
 
-export const AdminSettingsPage: React.FC = () => {
+export interface AdminSettingsPageProps {
+  onNavigate?: (path: string) => void;
+}
+
+export const AdminSettingsPage: React.FC<AdminSettingsPageProps> = ({ onNavigate }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('profile');
   const [settings, setSettings] = useState<MasterAdminSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,19 +36,38 @@ export const AdminSettingsPage: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
-    adminSettingsService.getSettings().then((res) => {
-      if (!isMounted) return;
-      if (res.data) {
-        setSettings(res.data);
-      }
-      setIsLoading(false);
-    });
-    return () => {
-      isMounted = false;
-    };
+  const fetchSettings = useCallback(async () => {
+    setIsLoading(true);
+    const res = await adminSettingsService.getSettings();
+    if (res.data) {
+      setSettings(res.data);
+    }
+    setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchSettings();
+
+    const handleSettingsChanged = () => {
+      fetchSettings();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('kth_admin_settings_changed', handleSettingsChanged);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('kth_admin_settings_changed', handleSettingsChanged);
+      }
+    };
+  }, [fetchSettings]);
+
+  const handleDiscard = async () => {
+    await fetchSettings();
+    setErrorMessage(null);
+    setSaveSuccess(false);
+  };
 
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -67,7 +90,7 @@ export const AdminSettingsPage: React.FC = () => {
 
   if (isLoading || !settings) {
     return (
-      <AdminShell title="Platform Administration Settings" currentPath="/admin/settings">
+      <AdminShell title="Platform Administration Settings" currentPath="/admin/settings" onNavigate={onNavigate}>
         <div className="py-24 flex flex-col items-center justify-center">
           <Loader2 className="w-8 h-8 text-kth-primary-600 animate-spin mb-3" />
           <p className="text-xs text-kth-slate-500 font-medium">Loading administrative settings...</p>
@@ -77,7 +100,7 @@ export const AdminSettingsPage: React.FC = () => {
   }
 
   return (
-    <AdminShell title="Platform Administration Settings" currentPath="/admin/settings">
+    <AdminShell title="Platform Administration Settings" currentPath="/admin/settings" onNavigate={onNavigate}>
       <div className="space-y-6 font-sans max-w-6xl mx-auto">
         {/* Header with Save Status */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-2xl border border-kth-slate-200 shadow-xs">
@@ -100,6 +123,14 @@ export const AdminSettingsPage: React.FC = () => {
                 <CheckCircle2 className="w-4 h-4" /> Settings Saved!
               </span>
             )}
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={isSaving}
+              onClick={handleDiscard}
+            >
+              Discard
+            </Button>
             <Button
               variant="primary"
               size="sm"

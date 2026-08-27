@@ -16,8 +16,8 @@ export const CandidatePipelineCard: React.FC<CandidatePipelineCardProps> = ({
 }) => {
   const snapshot = (application.candidate_snapshot || {}) as Record<string, any>;
   const candidateName = application.candidate?.full_name || snapshot.full_name || 'Candidate';
-  const headline = snapshot.headline || 'Sustainability Specialist';
-  const location = snapshot.location || 'India';
+  const headline = snapshot.headline || '';
+  const location = snapshot.location || '—';
   const jobTitle = application.job?.title || 'Requisition';
 
   const getNextStage = (current: ApplicationStage): ApplicationStage | null => {
@@ -51,7 +51,7 @@ export const CandidatePipelineCard: React.FC<CandidatePipelineCardProps> = ({
         )}
       </div>
 
-      <p className="text-[11px] text-kth-slate-600 font-medium truncate mb-1.5">{headline}</p>
+      {headline && <p className="text-[11px] text-kth-slate-600 font-medium truncate mb-1.5">{headline}</p>}
 
       <div className="flex items-center gap-1 text-[10px] text-kth-slate-500 mb-2 truncate">
         <span className="font-semibold text-kth-slate-700 truncate">{jobTitle}</span>

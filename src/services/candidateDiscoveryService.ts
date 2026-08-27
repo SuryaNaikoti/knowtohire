@@ -29,6 +29,7 @@ export interface DiscoverableCandidate {
   resumeUrl?: string;
   resumeFileName?: string;
   educationSummary?: string;
+  workModePreference?: string;
 }
 
 export interface CandidateSearchParams {
@@ -91,15 +92,49 @@ export const candidateDiscoveryService = {
         const isActive = demoCandSettings.isActive !== undefined ? Boolean(demoCandSettings.isActive) : true;
 
         if (rawCandList.length === 0 && isDiscoverable && isActive) {
-          // Inject mock discoverable candidate if permitted
+          const defaultExp = [
+            {
+              company: 'Enterprise Cloud Solutions India',
+              title: 'Senior Full Stack & Cloud Solutions Engineer',
+              location: 'Hyderabad',
+              period: '2023 - Present',
+              description: 'Leading cloud architecture migrations and enterprise full stack systems in React, TypeScript, Node.js, and AWS/GCP.',
+            },
+            {
+              company: 'Innovate Tech Labs',
+              title: 'Full Stack Engineer',
+              location: 'Hyderabad',
+              period: '2020 - 2022',
+              description: 'Built high-throughput REST APIs and React dashboards with PostgreSQL and Dockerized deployments.',
+            },
+          ];
+
+          const defaultEdu = [
+            {
+              institution: 'JNTU Hyderabad',
+              degree: 'B.Tech in Computer Science & Engineering',
+              graduation_year: '2020',
+            },
+          ];
+
+          const canonicalBio = (demoCandSettings.bio as string) || 'Senior Solutions Engineer with 6+ years architecting scalable full-stack applications, distributed cloud architectures on AWS/GCP, and CI/CD automation.';
+
+          // Inject canonical discoverable candidate if permitted
           rawCandList = [
             {
               profile_id: candidateId,
-              headline: (demoCandSettings.headline as string) || 'Senior Solutions Engineer',
+              headline: (demoCandSettings.headline as string) || 'Senior Full Stack & Cloud Solutions Engineer',
               domain_specialization: (demoCandSettings.domainSpecialization as string) || 'Engineering & Technology Advisory',
               location: (demoCandSettings.location as string) || 'Hyderabad, Telangana',
-              skills: Array.isArray(demoCandSettings.skills) ? demoCandSettings.skills : ['React & TypeScript', 'Node.js & API Architecture', 'Cloud Infrastructure (AWS/GCP)'],
-              profile_completion_pct: 90,
+              bio: canonicalBio,
+              skills: Array.isArray(demoCandSettings.skills) ? demoCandSettings.skills : ['React & TypeScript', 'Node.js & API Architecture', 'Cloud Infrastructure (AWS/GCP)', 'Database Systems & SQL'],
+              certifications: Array.isArray(demoCandSettings.certifications) ? demoCandSettings.certifications : ['AWS Certified Solutions Architect', 'Professional Cloud Developer'],
+              experience: Array.isArray(demoCandSettings.experience) && (demoCandSettings.experience as any[]).length > 0 ? demoCandSettings.experience : defaultExp,
+              education: Array.isArray(demoCandSettings.education) && (demoCandSettings.education as any[]).length > 0 ? demoCandSettings.education : defaultEdu,
+              notice_period_days: Number(demoCandSettings.noticePeriodDays) || 30,
+              preferred_salary_min: Number(demoCandSettings.expectedSalary) || 1800000,
+              employment_preference: (demoCandSettings.workModePreference as string) || (demoCandSettings.remotePreference as string) || 'Hybrid / Remote',
+              profile_completion_pct: 92,
               profile: {
                 id: candidateId,
                 full_name: 'Surya Naikoti',
@@ -138,6 +173,8 @@ export const candidateDiscoveryService = {
           }
         }
 
+        let workMode = cp.employment_preference || (cp.career_preferences?.remotePreference as string) || (cp.career_preferences?.workMode as string) || undefined;
+
         return {
           id: cp.profile_id || p.id || cp.id,
           name: p.full_name || 'Candidate',
@@ -146,7 +183,11 @@ export const candidateDiscoveryService = {
           phone: p.phone || undefined,
           location: cp.location || 'India',
           domain: cp.domain_specialization || 'Environmental Engineering',
+          bio: cp.bio || cp.summary || expSummary,
           skills: Array.isArray(cp.skills) && cp.skills.length > 0 ? cp.skills : ['EIA', 'ESG Compliance', 'Environmental Auditing'],
+          certifications: Array.isArray(cp.certifications) ? cp.certifications : [],
+          experienceList: Array.isArray(cp.experience) ? cp.experience : [],
+          educationList: Array.isArray(cp.education) ? cp.education : [],
           experienceYears: expYears,
           experienceSummary: expSummary,
           noticePeriodDays: Number(cp.notice_period_days) || 30,
@@ -155,8 +196,15 @@ export const candidateDiscoveryService = {
           avatarUrl: p.avatar_url,
           resumeUrl: cp.resume_url,
           educationSummary: eduSummary,
+          workModePreference: workMode,
         };
       });
+
+      // Filter in-memory for domain specialization if specified
+      if (params?.domain && params.domain !== 'all') {
+        const d = params.domain.toLowerCase();
+        results = results.filter((c) => (c.domain || '').toLowerCase().includes(d));
+      }
 
       // Filter in-memory for skills / text search if needed
       if (params?.search && params.search.trim()) {
@@ -168,6 +216,16 @@ export const candidateDiscoveryService = {
             c.domain.toLowerCase().includes(s) ||
             c.skills.some((sk) => sk.toLowerCase().includes(s))
         );
+      }
+
+      // Filter by minExperience if provided
+      if (params?.minExperience !== undefined && !isNaN(params.minExperience)) {
+        results = results.filter((c) => (c.experienceYears || 0) >= params.minExperience!);
+      }
+
+      // Filter by maxNoticeDays if provided
+      if (params?.maxNoticeDays !== undefined && !isNaN(params.maxNoticeDays)) {
+        results = results.filter((c) => (c.noticePeriodDays || 0) <= params.maxNoticeDays!);
       }
 
       // Sort results
@@ -230,6 +288,8 @@ export const candidateDiscoveryService = {
           }
         }
 
+        let workMode = data.employment_preference || (data.career_preferences?.remotePreference as string) || (data.career_preferences?.workMode as string) || undefined;
+
         const candidate: DiscoverableCandidate = {
           id: data.profile_id || p.id,
           name: p.full_name || 'Candidate',
@@ -238,7 +298,7 @@ export const candidateDiscoveryService = {
           phone: p.phone,
           location: data.location || 'India',
           domain: data.domain_specialization || 'Environmental Engineering',
-          bio: data.bio || '',
+          bio: data.bio || expSummary,
           skills: Array.isArray(data.skills) && data.skills.length > 0 ? data.skills : ['EIA', 'ESG Compliance', 'Environmental Auditing'],
           certifications: Array.isArray(data.certifications) ? data.certifications : [],
           experienceList: Array.isArray(data.experience) ? data.experience : [],
@@ -252,6 +312,7 @@ export const candidateDiscoveryService = {
           resumeUrl: data.resume_url,
           resumeFileName: data.resume_file_name || (data.resume_url ? data.resume_url.split('/').pop() : 'Candidate_Resume.pdf'),
           educationSummary: eduSummary,
+          workModePreference: workMode,
         };
 
         return { data: candidate, error: null };
@@ -330,6 +391,7 @@ export const candidateDiscoveryService = {
             resumeUrl: activeResumeUrl,
             resumeFileName: activeFileName,
             educationSummary: 'B.Tech in Computer Science & Engineering - JNTU Hyderabad',
+            workModePreference: (candSettings.workModePreference as string) || (candSettings.remotePreference as string) || 'Hybrid / Remote',
           };
 
           return { data: demoCandidate, error: null };

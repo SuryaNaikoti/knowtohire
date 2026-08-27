@@ -5,13 +5,36 @@ import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Select } from '@/components/ui/Select';
 import { ScheduleInterviewModal } from './ScheduleInterviewModal';
-import { applicationService, savedCandidateService, resumeService, JobApplication, ApplicationStage } from '@/services';
+import {
+  applicationService,
+  savedCandidateService,
+  resumeService,
+  JobApplication,
+  ApplicationStage,
+  DiscoverableCandidate,
+  CandidateExperienceItem,
+  CandidateEducationItem,
+} from '@/services';
 import { EmployerCandidate } from '@/data/employerMockData';
-import { MapPin, FileText, Bookmark, Calendar, Star, Check, ExternalLink, Download } from 'lucide-react';
+import {
+  MapPin,
+  FileText,
+  Bookmark,
+  Calendar,
+  Star,
+  Check,
+  ExternalLink,
+  Download,
+  ArrowRight,
+  Briefcase,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 
 export interface CandidateQuickViewProps {
   application?: JobApplication | null;
-  candidate?: EmployerCandidate | null;
+  candidate?: DiscoverableCandidate | EmployerCandidate | null;
   isOpen: boolean;
   onClose: () => void;
   onApplicationUpdated?: (updatedApp: JobApplication) => void;
@@ -29,6 +52,7 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isBioExpanded, setIsBioExpanded] = useState(false);
 
   // Recruiter notes and rating state
   const [notes, setNotes] = useState('');
@@ -48,6 +72,7 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
     } else {
       setRating(0);
     }
+    setIsBioExpanded(false);
 
     // Check saved state
     const targetId = application?.candidate_id || candidate?.id;
@@ -56,30 +81,116 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
         setIsSaved(Boolean(res.data));
       });
     }
-  }, [application, candidate]);
+  }, [application, candidate, isOpen]);
 
-  // Candidate Data Resolution
+  // Candidate Data Resolution from Canonical Entities
   const snapshot = (currentApp?.candidate_snapshot || {}) as Record<string, any>;
+  const discCand = candidate as DiscoverableCandidate | undefined;
+  const legacyCand = candidate as EmployerCandidate | undefined;
+
+  const candidateId = currentApp?.candidate_id || candidate?.id || '';
+
   const candidateName =
     currentApp?.candidate?.full_name ||
     snapshot.full_name ||
-    candidate?.name ||
+    discCand?.name ||
+    legacyCand?.name ||
     'Candidate';
-  const candidateEmail = currentApp?.candidate?.email || snapshot.email || '';
-  const candidateHeadline = snapshot.headline || candidate?.title || 'Sustainability Professional';
-  const candidateLocation = snapshot.location || candidate?.location || 'India';
-  const candidateSkills: string[] = Array.isArray(snapshot.skills)
+
+  const candidateEmail =
+    currentApp?.candidate?.email ||
+    snapshot.email ||
+    discCand?.email ||
+    '';
+
+  const candidateHeadline =
+    snapshot.headline ||
+    discCand?.headline ||
+    legacyCand?.title ||
+    '';
+
+  const candidateLocation =
+    snapshot.location ||
+    discCand?.location ||
+    legacyCand?.location ||
+    '—';
+
+  const candidateSkills: string[] = Array.isArray(snapshot.skills) && snapshot.skills.length > 0
     ? snapshot.skills
-    : candidate?.skills || [];
+    : Array.isArray(discCand?.skills) && discCand.skills.length > 0
+    ? discCand.skills
+    : legacyCand?.skills || [];
+
   const candidateBio =
     snapshot.bio ||
     snapshot.summary ||
-    candidate?.summary ||
-    'No candidate bio provided.';
-  
-  let rawResume = currentApp?.resume_url || snapshot.resume_url;
+    discCand?.bio ||
+    discCand?.experienceSummary ||
+    legacyCand?.summary ||
+    'No professional summary available.';
+
+  // Snapshot Attributes
+  const profileCompletion =
+    typeof discCand?.profileCompletion === 'number'
+      ? discCand.profileCompletion
+      : typeof legacyCand?.matchScore === 'number'
+      ? legacyCand.matchScore
+      : undefined;
+
+  const experienceYears =
+    typeof discCand?.experienceYears === 'number'
+      ? discCand.experienceYears
+      : typeof legacyCand?.experienceYears === 'number'
+      ? legacyCand.experienceYears
+      : undefined;
+
+  const domain =
+    discCand?.domain ||
+    (snapshot.domain_specialization as string) ||
+    '—';
+
+  const educationText =
+    discCand?.educationSummary ||
+    legacyCand?.education ||
+    (Array.isArray(discCand?.educationList) && discCand.educationList.length > 0
+      ? `${(discCand.educationList[0] as CandidateEducationItem).degree || 'Degree'} · ${(discCand.educationList[0] as CandidateEducationItem).institution || 'University'}`
+      : 'Graduate Degree');
+
+  const expectedSalaryFormatted = discCand?.expectedSalaryINR
+    ? `₹${(discCand.expectedSalaryINR / 100000).toFixed(1)}L/yr`
+    : legacyCand?.salaryExpectationINR || 'Not specified';
+
+  const noticePeriodFormatted = discCand?.noticePeriodDays !== undefined
+    ? discCand.noticePeriodDays === 0
+      ? 'Immediate (0 Days)'
+      : `${discCand.noticePeriodDays} Days`
+    : legacyCand?.availability || 'Not specified';
+
+  const workModeText =
+    discCand?.workModePreference ||
+    (snapshot.work_mode_preference as string) ||
+    (snapshot.remote_preference as string) ||
+    'Not specified';
+
+  // Key Strengths: Top 4-5 core competencies derived from verified skills and certifications
+  const keyStrengths: string[] = Array.from(
+    new Set([
+      ...candidateSkills.slice(0, 4),
+      ...(discCand?.certifications || []),
+      ...(legacyCand?.certifications || []),
+    ])
+  ).slice(0, 5);
+
+  // Relevant Experience Timeline
+  const experienceItems: CandidateExperienceItem[] =
+    Array.isArray(discCand?.experienceList) && discCand.experienceList.length > 0
+      ? discCand.experienceList
+      : [];
+
+  // Resume Document Resolution
+  let rawResume = currentApp?.resume_url || snapshot.resume_url || discCand?.resumeUrl;
   if (!rawResume || rawResume.includes('knowtohire.com/resumes')) {
-    const fallbackId = currentApp?.candidate_id || candidate?.id || '00000000-0000-0000-0000-000000000001';
+    const fallbackId = candidateId || '00000000-0000-0000-0000-000000000001';
     const stored = resumeService.getStoredDemoResume(fallbackId);
     if (stored?.url) {
       rawResume = stored.url;
@@ -101,6 +212,7 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
       window.open(candidateResume, '_blank');
     }
   };
+
   const currentStage: ApplicationStage = currentApp?.stage || 'new';
 
   // Stage advancement
@@ -140,7 +252,6 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
 
   // Save/Unsave Candidate to Bench
   const handleToggleSaveCandidate = async () => {
-    const candidateId = currentApp?.candidate_id || candidate?.id;
     if (!candidateId) return;
 
     const nextSavedState = !isSaved;
@@ -151,6 +262,16 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
     } else {
       await savedCandidateService.unsaveCandidate(candidateId);
     }
+  };
+
+  const handleNavigateToFullProfile = () => {
+    onClose();
+    if (currentApp) {
+      window.history.pushState({}, '', `/employer/applications/${currentApp.id}`);
+    } else if (candidateId) {
+      window.history.pushState({}, '', `/employer/candidates/${candidateId}`);
+    }
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   const getStageVariant = (st: ApplicationStage): 'indigo' | 'cyan' | 'emerald' | 'slate' => {
@@ -171,43 +292,76 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
         isOpen={isOpen}
         onClose={onClose}
         title={`Candidate Quick View — ${candidateName}`}
+        width="max-w-lg"
       >
-        <div className="space-y-6 font-sans text-left">
-          {/* Candidate Identity Header */}
-          <div className="flex items-start gap-4 pb-4 border-b border-kth-slate-200">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-kth-primary-600 to-kth-slate-900 text-white font-extrabold text-lg flex items-center justify-center shrink-0">
-              {candidateName.split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
+        <div className="space-y-5 font-sans text-left">
+          {/* Section 1: Candidate Identity Header */}
+          <div className="flex items-start gap-3.5 pb-4 border-b border-kth-slate-200">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-kth-primary-600 to-kth-slate-900 text-white font-extrabold text-base flex items-center justify-center shrink-0 shadow-xs">
+              {candidateName
+                .split(' ')
+                .map((n: string) => n[0])
+                .slice(0, 2)
+                .join('')}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h3 className="font-display font-bold text-lg text-kth-slate-900">{candidateName}</h3>
-                <Badge variant={getStageVariant(currentStage)} className="capitalize">
-                  {currentStage.replace('_', ' ')}
-                </Badge>
+              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                <h3 className="font-display font-bold text-base text-kth-slate-900 truncate">
+                  {candidateName}
+                </h3>
+                {currentApp && (
+                  <Badge variant={getStageVariant(currentStage)} className="capitalize text-[10px]">
+                    {currentStage.replace('_', ' ')}
+                  </Badge>
+                )}
               </div>
-              <p className="text-xs font-semibold text-kth-slate-700 mb-1">{candidateHeadline}</p>
-              <div className="flex items-center gap-3 text-xs text-kth-slate-500">
-                <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {candidateLocation}</span>
+              <p className="text-xs font-medium text-kth-slate-700 mb-1 line-clamp-1">{candidateHeadline}</p>
+              <div className="flex items-center gap-3 text-[11px] text-kth-slate-500 flex-wrap">
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-kth-slate-400" /> {candidateLocation}
+                </span>
                 {candidateEmail && <span>{candidateEmail}</span>}
               </div>
             </div>
           </div>
 
-          {/* Recruiter Quick Actions Bar */}
-          <div className="flex gap-2 flex-wrap bg-kth-slate-50 p-3 rounded-xl border border-kth-slate-200">
-            {currentApp && (
+          {/* Section 2: Recruiter Quick Actions Bar */}
+          <div className="flex gap-2 flex-wrap bg-kth-slate-50 p-2.5 rounded-xl border border-kth-slate-200 items-center">
+            {candidateResume ? (
               <Button
-                variant="primary"
+                variant="outline"
                 size="sm"
-                onClick={() => {
-                  onClose();
-                  window.history.pushState({}, '', `/employer/applications/${currentApp.id}`);
-                  window.dispatchEvent(new PopStateEvent('popstate'));
-                }}
+                onClick={() => setIsPreviewOpen(true)}
+                leftIcon={<FileText className="w-3.5 h-3.5" />}
               >
-                View Full Candidate
+                View Resume
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsPreviewOpen(true)}
+                leftIcon={<FileText className="w-3.5 h-3.5" />}
+              >
+                Profile Snapshot
               </Button>
             )}
+
+            <Button
+              variant={isSaved ? 'secondary' : 'outline'}
+              size="sm"
+              onClick={handleToggleSaveCandidate}
+              leftIcon={
+                <Bookmark
+                  className={`w-3.5 h-3.5 ${
+                    isSaved ? 'fill-kth-primary-600 text-kth-primary-600' : ''
+                  }`}
+                />
+              }
+            >
+              {isSaved ? 'Saved to Bench' : 'Save Candidate'}
+            </Button>
+
             {currentApp && (
               <Button
                 variant="outline"
@@ -215,32 +369,188 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
                 onClick={() => setIsScheduleModalOpen(true)}
                 leftIcon={<Calendar className="w-3.5 h-3.5" />}
               >
-                Schedule Interview
+                Interview
               </Button>
             )}
-            {candidateResume ? (
-              <Button variant="outline" size="sm" onClick={() => setIsPreviewOpen(true)} leftIcon={<FileText className="w-3.5 h-3.5" />}>
-                View Resume
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" onClick={() => setIsPreviewOpen(true)} leftIcon={<FileText className="w-3.5 h-3.5" />}>
-                Profile Snapshot
-              </Button>
-            )}
+
             <Button
-              variant={isSaved ? "secondary" : "outline"}
+              variant="primary"
               size="sm"
-              onClick={handleToggleSaveCandidate}
-              leftIcon={<Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-kth-primary-600 text-kth-primary-600' : ''}`} />}
+              onClick={handleNavigateToFullProfile}
+              className="ml-auto"
             >
-              {isSaved ? 'Saved to Bench' : 'Save Candidate'}
+              View Full Profile <ArrowRight className="w-3.5 h-3.5 ml-1" />
             </Button>
           </div>
 
-          {/* Stage Movement Selector (Only when application is present) */}
+          {/* Section 3: Candidate Quick Snapshot Grid */}
+          <div className="bg-white p-3.5 rounded-xl border border-kth-slate-200 space-y-2.5">
+            <h4 className="font-bold text-[10px] text-kth-slate-400 uppercase tracking-wider font-mono">
+              Candidate Snapshot
+            </h4>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
+              <div>
+                <span className="text-[10px] text-kth-slate-400 uppercase font-bold block">
+                  Profile Completion
+                </span>
+                <span className="font-bold font-mono text-emerald-700">
+                  {profileCompletion !== undefined ? `${profileCompletion}% Complete` : 'Completed Profile'}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-kth-slate-400 uppercase font-bold block">
+                  Experience
+                </span>
+                <span className="font-semibold text-kth-slate-900">
+                  {experienceYears !== undefined ? `${experienceYears}+ Years` : 'Demonstrated Track Record'}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-kth-slate-400 uppercase font-bold block">
+                  Domain / Specialty
+                </span>
+                <span className="font-semibold text-kth-primary-700 truncate block" title={domain}>
+                  {domain}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-kth-slate-400 uppercase font-bold block">
+                  Location
+                </span>
+                <span className="font-semibold text-kth-slate-800 truncate block">
+                  {candidateLocation}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-kth-slate-400 uppercase font-bold block">
+                  Education
+                </span>
+                <span className="font-semibold text-kth-slate-800 truncate block" title={educationText}>
+                  {educationText}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-kth-slate-400 uppercase font-bold block">
+                  Expected Salary
+                </span>
+                <span className="font-mono font-bold text-kth-slate-900">
+                  {expectedSalaryFormatted}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-kth-slate-400 uppercase font-bold block">
+                  Notice Period
+                </span>
+                <span className="font-semibold text-kth-slate-800">
+                  {noticePeriodFormatted}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-kth-slate-400 uppercase font-bold block">
+                  Work Mode
+                </span>
+                <span className="font-semibold text-kth-slate-800">
+                  {workModeText}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Verified Skills */}
+          {candidateSkills.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="font-bold text-[10px] text-kth-slate-500 uppercase tracking-wider font-mono">
+                Verified Skills ({candidateSkills.length})
+              </h4>
+              <div className="flex gap-1.5 flex-wrap">
+                {candidateSkills.slice(0, 10).map((skill, idx) => (
+                  <Badge key={idx} variant="indigo" className="text-[11px] py-0.5">
+                    {skill}
+                  </Badge>
+                ))}
+                {candidateSkills.length > 10 && (
+                  <span className="text-[11px] text-kth-slate-500 self-center font-medium">
+                    +{candidateSkills.length - 10} more in profile
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Section 5: Professional Summary */}
+          <div className="space-y-1.5">
+            <h4 className="font-bold text-[10px] text-kth-slate-500 uppercase tracking-wider font-mono">
+              Professional Summary
+            </h4>
+            <div className="bg-kth-slate-50 p-3 rounded-xl border border-kth-slate-200 text-xs text-kth-slate-700 leading-relaxed">
+              <p className={isBioExpanded ? '' : 'line-clamp-4'}>
+                {candidateBio}
+              </p>
+              {candidateBio.length > 200 && (
+                <button
+                  type="button"
+                  onClick={() => setIsBioExpanded(!isBioExpanded)}
+                  className="mt-1.5 text-xs text-kth-primary-600 hover:text-kth-primary-800 font-semibold inline-flex items-center gap-1 cursor-pointer"
+                >
+                  {isBioExpanded ? (
+                    <>Show less <ChevronUp className="w-3 h-3" /></>
+                  ) : (
+                    <>Read full summary <ChevronDown className="w-3 h-3" /></>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Section 6: Key Strengths */}
+          {keyStrengths.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="font-bold text-[10px] text-kth-slate-500 uppercase tracking-wider font-mono flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-500" /> Key Strengths & Focus Areas
+              </h4>
+              <div className="flex gap-1.5 flex-wrap">
+                {keyStrengths.map((str, idx) => (
+                  <Badge key={idx} variant="amber" className="text-[11px] py-0.5">
+                    {str}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Section 7: Relevant Experience (Concise Timeline) */}
+          {experienceItems.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="font-bold text-[10px] text-kth-slate-500 uppercase tracking-wider font-mono flex items-center gap-1">
+                <Briefcase className="w-3 h-3 text-kth-primary-600" /> Relevant Experience
+              </h4>
+              <div className="space-y-2">
+                {experienceItems.slice(0, 2).map((exp, idx) => (
+                  <div
+                    key={idx}
+                    className="p-2.5 bg-white rounded-lg border border-kth-slate-200 text-xs flex justify-between items-start gap-2"
+                  >
+                    <div>
+                      <strong className="font-bold text-kth-slate-900 block truncate">
+                        {exp.title}
+                      </strong>
+                      <span className="text-kth-slate-600 text-[11px] block truncate">
+                        {exp.company} {exp.location ? `· ${exp.location}` : ''}
+                      </span>
+                    </div>
+                    <span className="font-mono text-[10px] text-kth-slate-500 shrink-0 bg-kth-slate-50 px-2 py-0.5 rounded border border-kth-slate-200">
+                      {exp.period}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Section 8: ATS Pipeline Stage Movement (Only when in ATS pipeline mode) */}
           {currentApp && (
-            <div className="bg-white p-4 rounded-xl border border-kth-slate-200 space-y-2">
-              <label className="text-xs font-bold text-kth-slate-700 uppercase tracking-wider block">
+            <div className="bg-white p-3.5 rounded-xl border border-kth-slate-200 space-y-2">
+              <label className="text-[10px] font-bold text-kth-slate-700 uppercase tracking-wider block font-mono">
                 ATS Pipeline Stage
               </label>
               <div className="flex items-center gap-2">
@@ -264,11 +574,11 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
             </div>
           )}
 
-          {/* Recruiter Evaluation Rating & Private Notes */}
+          {/* Section 9: Recruiter Evaluation Rating & Private Notes (Only when in ATS application mode) */}
           {currentApp && (
-            <div className="bg-kth-slate-50 p-4 rounded-xl border border-kth-slate-200 space-y-3">
+            <div className="bg-kth-slate-50 p-3.5 rounded-xl border border-kth-slate-200 space-y-2.5">
               <div className="flex justify-between items-center">
-                <label className="text-xs font-bold text-kth-slate-700 uppercase tracking-wider">
+                <label className="text-[10px] font-bold text-kth-slate-700 uppercase tracking-wider font-mono">
                   Recruiter Rating & Private Notes
                 </label>
                 {notesSuccess && (
@@ -298,11 +608,11 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
               </div>
 
               <textarea
-                rows={3}
+                rows={2}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add internal evaluation feedback, technical ratings, or questions for subsequent interviewers..."
-                className="w-full rounded-xl border border-kth-slate-200 p-2.5 text-xs text-kth-slate-900 bg-white placeholder:text-kth-slate-400 outline-none focus:ring-2 focus:ring-kth-primary-500/20 focus:border-kth-primary-600 transition-colors resize-none"
+                placeholder="Add internal recruiter feedback..."
+                className="w-full rounded-lg border border-kth-slate-200 p-2.5 text-xs text-kth-slate-900 bg-white placeholder:text-kth-slate-400 outline-none focus:ring-2 focus:ring-kth-primary-500/20 focus:border-kth-primary-600 transition-colors resize-none"
               />
 
               <div className="flex justify-end">
@@ -313,49 +623,25 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
                   disabled={isSavingNotes}
                   isLoading={isSavingNotes}
                 >
-                  Save Recruiter Notes
+                  Save Notes
                 </Button>
               </div>
             </div>
           )}
 
-          {/* Candidate Skills List */}
-          {candidateSkills.length > 0 && (
-            <div>
-              <h4 className="font-bold text-xs text-kth-slate-500 uppercase tracking-wider mb-2">Verified Skills</h4>
-              <div className="flex gap-1.5 flex-wrap">
-                {candidateSkills.map((s, idx) => (
-                  <Badge key={idx} variant="indigo" className="text-[11px]">{s}</Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Summary / Bio */}
-          <div>
-            <h4 className="font-bold text-xs text-kth-slate-500 uppercase tracking-wider mb-1">Candidate Profile Bio</h4>
-            <p className="text-xs text-kth-slate-700 leading-relaxed whitespace-pre-line">{candidateBio}</p>
+          {/* Section 10: Bottom Full Profile Action CTA */}
+          <div className="pt-3 border-t border-kth-slate-200 flex justify-between items-center">
+            <span className="text-xs text-kth-slate-500">
+              Need full experience & education history?
+            </span>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleNavigateToFullProfile}
+            >
+              View Full Profile <ArrowRight className="w-3.5 h-3.5 ml-1" />
+            </Button>
           </div>
-
-          {/* Application Metadata if available */}
-          {currentApp && (
-            <div className="space-y-2 text-xs text-kth-slate-600 bg-white p-3.5 rounded-xl border border-kth-slate-200">
-              <div className="flex justify-between">
-                <span>Applied Position:</span>
-                <strong className="text-kth-slate-900">{currentApp.job?.title || 'Position'}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span>Application Date:</span>
-                <strong className="text-kth-slate-900">
-                  {new Date(currentApp.applied_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </strong>
-              </div>
-              <div className="flex justify-between">
-                <span>Application ID:</span>
-                <strong className="font-mono text-kth-slate-500">{currentApp.id.slice(0, 8)}</strong>
-              </div>
-            </div>
-          )}
         </div>
       </Drawer>
 
@@ -428,8 +714,7 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
           isOpen={isScheduleModalOpen}
           onClose={() => setIsScheduleModalOpen(false)}
           onSuccess={() => {
-            // Advance local stage to 'interview'
-            setCurrentApp((prev) => prev ? { ...prev, stage: 'interview' } : null);
+            setCurrentApp((prev) => (prev ? { ...prev, stage: 'interview' } : null));
             onApplicationUpdated?.({ ...currentApp, stage: 'interview' });
           }}
         />

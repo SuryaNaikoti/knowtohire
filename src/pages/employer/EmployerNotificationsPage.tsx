@@ -21,6 +21,20 @@ export const EmployerNotificationsPage: React.FC = () => {
 
   useEffect(() => {
     fetchNotifications();
+
+    const handleRefresh = () => {
+      fetchNotifications();
+    };
+
+    window.addEventListener('kth_notifications_changed', handleRefresh);
+    window.addEventListener('kth_applications_changed', handleRefresh);
+    window.addEventListener('kth_interviews_changed', handleRefresh);
+
+    return () => {
+      window.removeEventListener('kth_notifications_changed', handleRefresh);
+      window.removeEventListener('kth_applications_changed', handleRefresh);
+      window.removeEventListener('kth_interviews_changed', handleRefresh);
+    };
   }, []);
 
   const handleMarkAllRead = async () => {
@@ -88,7 +102,14 @@ export const EmployerNotificationsPage: React.FC = () => {
             {notifications.map((notif) => (
               <Card
                 key={notif.id}
-                onClick={() => !notif.is_read && handleMarkSingleRead(notif.id)}
+                onClick={async () => {
+                  if (!notif.is_read) {
+                    await handleMarkSingleRead(notif.id);
+                  }
+                  if (notif.link) {
+                    window.location.href = notif.link;
+                  }
+                }}
                 className={`p-4 transition-all cursor-pointer ${
                   !notif.is_read
                     ? 'bg-kth-primary-50/40 border-kth-primary-200 shadow-xs'

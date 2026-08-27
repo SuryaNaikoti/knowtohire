@@ -43,6 +43,15 @@ export const EmployerJobsPage: React.FC = () => {
 
   useEffect(() => {
     loadJobs();
+
+    const handleJobsChanged = () => {
+      loadJobs();
+    };
+
+    window.addEventListener('kth_jobs_changed', handleJobsChanged);
+    return () => {
+      window.removeEventListener('kth_jobs_changed', handleJobsChanged);
+    };
   }, [loadJobs]);
 
   const filteredJobs = jobs.filter((job) => {

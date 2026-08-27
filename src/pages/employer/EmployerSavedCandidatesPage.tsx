@@ -157,7 +157,7 @@ export const EmployerSavedCandidatesPage: React.FC = () => {
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => handleNavigate('/employer/pipeline')}
+                      onClick={() => handleNavigate(`/employer/candidates/${record.candidate_id}`)}
                     >
                       View in Pipeline <ArrowRight className="w-3.5 h-3.5" />
                     </Button>

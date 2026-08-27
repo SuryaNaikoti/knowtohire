@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { EmployerShell } from '@/components/employer/EmployerShell';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -6,33 +6,170 @@ import { Switch } from '@/components/ui/Switch';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
-import { User, Bell, Lock, LogOut, Check } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { User, Bell, Lock, LogOut, Check, AlertCircle } from 'lucide-react';
 
 export const EmployerSettingsPage: React.FC = () => {
-  const { logout, profile, user } = useAuth();
+  const { logout, profile, user, refreshProfile } = useAuth();
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [phone, setPhone] = useState(profile?.phone || '');
+  const [initialFullName, setInitialFullName] = useState(profile?.full_name || '');
+  const [initialPhone, setInitialPhone] = useState(profile?.phone || '');
+
   const [applicantAlerts, setApplicantAlerts] = useState(true);
   const [interviewReminders, setInterviewReminders] = useState(true);
+
   const [isConfirmLogoutOpen, setIsConfirmLogoutOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Load preferences and sync profile
+  useEffect(() => {
+    if (profile?.full_name) {
+      setFullName(profile.full_name);
+      setInitialFullName(profile.full_name);
+    }
+    if (profile?.phone) {
+      setPhone(profile.phone);
+      setInitialPhone(profile.phone);
+    }
+
+    // Load user-scoped notification preferences
+    const userId = user?.id || '00000000-0000-0000-0000-000000000002';
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const raw = window.localStorage.getItem(`kth_employer_prefs_${userId}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.applicantAlerts !== undefined) setApplicantAlerts(Boolean(parsed.applicantAlerts));
+          if (parsed.interviewReminders !== undefined) setInterviewReminders(Boolean(parsed.interviewReminders));
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [profile, user]);
+
+  const handleToggleApplicantAlerts = (checked: boolean) => {
+    setApplicantAlerts(checked);
+    const userId = user?.id || '00000000-0000-0000-0000-000000000002';
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const raw = window.localStorage.getItem(`kth_employer_prefs_${userId}`);
+        const existing = raw ? JSON.parse(raw) : {};
+        existing.applicantAlerts = checked;
+        window.localStorage.setItem(`kth_employer_prefs_${userId}`, JSON.stringify(existing));
+      } catch {
+        // ignore
+      }
+    }
+  };
+
+  const handleToggleInterviewReminders = (checked: boolean) => {
+    setInterviewReminders(checked);
+    const userId = user?.id || '00000000-0000-0000-0000-000000000002';
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const raw = window.localStorage.getItem(`kth_employer_prefs_${userId}`);
+        const existing = raw ? JSON.parse(raw) : {};
+        existing.interviewReminders = checked;
+        window.localStorage.setItem(`kth_employer_prefs_${userId}`, JSON.stringify(existing));
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   const handleSaveAccount = async () => {
-    if (!user) return;
+    setErrorMessage(null);
+    setSaveSuccess(false);
+
+    const trimmedName = fullName.trim();
+    if (!trimmedName) {
+      setErrorMessage('Full name is required.');
+      return;
+    }
+    if (trimmedName.length < 2) {
+      setErrorMessage('Full name must be at least 2 characters.');
+      return;
+    }
+
+    const trimmedPhone = phone.trim();
+    if (trimmedPhone && trimmedPhone.length < 7) {
+      setErrorMessage('Please provide a valid phone number (at least 7 digits).');
+      return;
+    }
+
     setIsSaving(true);
-    await supabase.from('profiles').update({
-      full_name: fullName.trim(),
-      phone: phone.trim(),
-      updated_at: new Date().toISOString(),
-    }).eq('id', user.id);
+    const targetUserId = user?.id || '00000000-0000-0000-0000-000000000002';
+
+    // 1. Save to demo custom profile store
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const customStoreKey = `kth_demo_profile_custom_${targetUserId}`;
+        const raw = window.localStorage.getItem(customStoreKey);
+        const existing = raw ? JSON.parse(raw) : {};
+        const updated = {
+          ...existing,
+          full_name: trimmedName,
+          phone: trimmedPhone || null,
+          updated_at: new Date().toISOString(),
+        };
+        window.localStorage.setItem(customStoreKey, JSON.stringify(updated));
+
+        // Also update session cache if employer
+        const authRaw = window.localStorage.getItem('kth_demo_auth_session');
+        if (authRaw) {
+          const authObj = JSON.parse(authRaw);
+          if (authObj.role === 'employer' || authObj.id === targetUserId) {
+            authObj.full_name = trimmedName;
+            authObj.phone = trimmedPhone;
+            window.localStorage.setItem('kth_demo_auth_session', JSON.stringify(authObj));
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // 2. Persist to Supabase if configured
+    if (isSupabaseConfigured() && user?.id) {
+      try {
+        await supabase.from('profiles').update({
+          full_name: trimmedName,
+          phone: trimmedPhone || null,
+          updated_at: new Date().toISOString(),
+        }).eq('id', user.id);
+      } catch {
+        // ignore
+      }
+    }
+
+    // 3. Refresh context and trigger reactivity
+    if (refreshProfile) {
+      await refreshProfile();
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('kth_profile_updated', { detail: { full_name: trimmedName } }));
+    }
 
     setIsSaving(false);
     setSaveSuccess(true);
+    setInitialFullName(trimmedName);
+    setInitialPhone(trimmedPhone);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
+
+  const handleCancelAccount = () => {
+    setFullName(initialFullName);
+    setPhone(initialPhone);
+    setErrorMessage(null);
+  };
+
+  const isAccountDirty = fullName.trim() !== initialFullName.trim() || phone.trim() !== initialPhone.trim();
 
   const handleLogout = async () => {
     try {
@@ -63,23 +200,37 @@ export const EmployerSettingsPage: React.FC = () => {
               </span>
             )}
           </div>
+
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-md text-xs text-rose-700 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <Input
               label="Full Name"
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              onChange={(e) => {
+                setFullName(e.target.value);
+                if (errorMessage) setErrorMessage(null);
+              }}
               placeholder="e.g. Talent Acquisition Lead"
             />
             <Input
               label="Phone Number"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                if (errorMessage) setErrorMessage(null);
+              }}
               placeholder="+91 98765 43210"
             />
             <Input
               label="Work Email"
               type="email"
-              value={profile?.email || user?.email || ''}
+              value={profile?.email || user?.email || 'employer@knowtohire.com'}
               disabled
             />
             <Input
@@ -88,8 +239,19 @@ export const EmployerSettingsPage: React.FC = () => {
               disabled
             />
           </div>
-          <div className="flex justify-end">
-            <Button variant="primary" size="sm" isLoading={isSaving} onClick={handleSaveAccount}>
+          <div className="flex justify-end gap-2.5">
+            {isAccountDirty && (
+              <Button variant="secondary" size="sm" onClick={handleCancelAccount}>
+                Cancel
+              </Button>
+            )}
+            <Button
+              variant="primary"
+              size="sm"
+              isLoading={isSaving}
+              onClick={handleSaveAccount}
+              disabled={!isAccountDirty && !errorMessage}
+            >
               Save Changes
             </Button>
           </div>
@@ -106,14 +268,14 @@ export const EmployerSettingsPage: React.FC = () => {
                 <h4 className="font-bold text-xs text-kth-slate-900">New Applicant Notifications</h4>
                 <p className="text-xs text-kth-slate-500">Receive alerts when candidates apply to active jobs.</p>
               </div>
-              <Switch checked={applicantAlerts} onChange={setApplicantAlerts} />
+              <Switch checked={applicantAlerts} onChange={handleToggleApplicantAlerts} />
             </div>
             <div className="flex items-center justify-between pt-3 border-t border-kth-slate-100">
               <div>
                 <h4 className="font-bold text-xs text-kth-slate-900">Interview Schedule Reminders</h4>
                 <p className="text-xs text-kth-slate-500">Daily alerts for scheduled candidate rounds.</p>
               </div>
-              <Switch checked={interviewReminders} onChange={setInterviewReminders} />
+              <Switch checked={interviewReminders} onChange={handleToggleInterviewReminders} />
             </div>
           </div>
         </Card>
@@ -127,7 +289,7 @@ export const EmployerSettingsPage: React.FC = () => {
             <div>
               <h4 className="font-bold text-xs text-kth-slate-900">Active Recruiter Session</h4>
               <p className="text-xs text-kth-slate-500 mt-0.5">
-                Signed in as <span className="font-semibold text-kth-slate-700">{profile?.email || user?.email}</span>
+                Signed in as <span className="font-semibold text-kth-slate-700">{profile?.email || user?.email || 'employer@knowtohire.com'}</span>
               </p>
             </div>
             <Button

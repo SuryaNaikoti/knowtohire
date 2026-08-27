@@ -108,44 +108,62 @@ export const companyProfileService = {
             ...dbComp,
             ...(localOverride || {}),
             name: localOverride?.name || dbComp.name,
-            industry: localOverride?.industry || dbComp.industry,
-            headquarters_location: localOverride?.headquarters_location || dbComp.headquarters_location,
-            website_url: localOverride?.website_url || dbComp.website_url,
-            company_size: localOverride?.company_size || dbComp.company_size,
-            description: localOverride?.description !== undefined ? localOverride.description : (dbComp.description || ''),
-            culture_benefits: localOverride?.culture_benefits || [
-              'Hybrid & Flexible Work Policy across major Indian hubs',
-              'Comprehensive Health & Group Term Life Insurance',
-              'Continuous Professional Development & SPCB/BRSR Certifications',
-              'Decarbonization & Clean Energy R&D projects',
-            ],
+            industry: localOverride?.industry !== undefined ? localOverride.industry : dbComp.industry,
+            headquarters_location: localOverride?.headquarters_location !== undefined ? localOverride.headquarters_location : dbComp.headquarters_location,
+            website_url: localOverride?.website_url !== undefined ? localOverride.website_url : dbComp.website_url,
+            company_size: localOverride?.company_size !== undefined ? localOverride.company_size : dbComp.company_size,
+            description: localOverride?.description !== undefined ? localOverride.description : dbComp.description,
+            culture_benefits: localOverride?.culture_benefits !== undefined ? localOverride.culture_benefits : (dbComp as any).culture_benefits,
           };
           return { data: merged, error: null };
         }
       }
 
-      // Fallback default enterprise record
-      const defaultCompany: ExtendedCompanyProfile = localOverride || {
+      if (localOverride) {
+        return { data: localOverride, error: null };
+      }
+
+      // Canonical seed demo record for primary demo employer workspace
+      if (companyId === 'fa97faee-1cdf-41e6-a151-f51c7fa4c396') {
+        const defaultCompany: ExtendedCompanyProfile = {
+          id: companyId,
+          name: 'EcoStrategy India Pvt Ltd',
+          legal_name: 'EcoStrategy Sustainability Solutions India Private Limited',
+          industry: 'Environmental & ESG Advisory',
+          headquarters_location: 'Bengaluru, Karnataka, India',
+          company_size: '51–200 Employees',
+          website_url: 'https://knowtohire.com',
+          description: 'Leading enterprise dedicated to environmental stewardship, corporate sustainability advisory, ESG compliance, and decarbonization engineering.',
+          verification_status: 'verified',
+          created_at: '2026-08-01T00:00:00Z',
+          updated_at: new Date().toISOString(),
+          culture_benefits: [
+            'Hybrid & Flexible Work Policy across major Indian hubs',
+            'Comprehensive Health & Group Term Life Insurance',
+            'Continuous Professional Development & SPCB/BRSR Certifications',
+            'Decarbonization & Clean Energy R&D projects',
+          ],
+        };
+        return { data: defaultCompany, error: null };
+      }
+
+      // Isolated default profile for unseeded/new enterprise tenants
+      const isolatedCompany: ExtendedCompanyProfile = {
         id: companyId,
-        name: 'EcoStrategy India Pvt Ltd',
-        legal_name: 'EcoStrategy Sustainability Solutions India Private Limited',
-        industry: 'Environmental & ESG Advisory',
-        headquarters_location: 'Bengaluru, Karnataka, India',
-        company_size: '51–200 Employees',
-        website_url: 'https://knowtohire.com',
-        description: 'Leading enterprise dedicated to environmental stewardship, corporate sustainability advisory, ESG compliance, and decarbonization engineering.',
-        verification_status: 'verified',
-        created_at: '2026-08-01T00:00:00Z',
+        name: 'Enterprise Workspace',
+        legal_name: null,
+        industry: null,
+        headquarters_location: null,
+        company_size: null,
+        website_url: null,
+        description: null,
+        verification_status: 'unverified',
+        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        culture_benefits: [
-          'Hybrid & Flexible Work Policy across major Indian hubs',
-          'Comprehensive Health & Group Term Life Insurance',
-          'Continuous Professional Development & SPCB/BRSR Certifications',
-          'Decarbonization & Clean Energy R&D projects',
-        ],
+        culture_benefits: [],
       };
 
-      return { data: defaultCompany, error: null };
+      return { data: isolatedCompany, error: null };
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }
