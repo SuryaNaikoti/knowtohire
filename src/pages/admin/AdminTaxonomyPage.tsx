@@ -2,10 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Dialog } from '@/components/ui/Dialog';
 import {
   taxonomyService,
   CareerCategory,
@@ -44,21 +42,6 @@ export const AdminTaxonomyPage: React.FC = () => {
   const [countries, setCountries] = useState<Country[]>([]);
   const [states, setStates] = useState<StateRegion[]>([]);
   const [cities, setCities] = useState<CityItem[]>([]);
-
-  // Create Modals
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [newCatName, setNewCatName] = useState('');
-  const [newCatDesc, setNewCatDesc] = useState('');
-
-  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
-  const [newRoleName, setNewRoleName] = useState('');
-  const [newRoleCategory] = useState('');
-  const [newRoleSeniority, setNewRoleSeniority] = useState('mid_level');
-
-  const [isSkillModalOpen, setIsSkillModalOpen] = useState(false);
-  const [newSkillName, setNewSkillName] = useState('');
-  const [newSkillCategory, setNewSkillCategory] = useState('Software Engineering');
-
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const loadData = async () => {
@@ -67,7 +50,7 @@ export const AdminTaxonomyPage: React.FC = () => {
       taxonomyService.getIndustries(true),
       taxonomyService.getDomains(),
       taxonomyService.searchJobRoles(),
-      taxonomyService.searchSkills(),
+      taxonomyService.searchSkills('', 'all'),
       taxonomyService.getCountries(),
       taxonomyService.getStates('country-in'),
       taxonomyService.searchCities('', 'country-in'),
@@ -85,60 +68,18 @@ export const AdminTaxonomyPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    const handleTaxChange = () => loadData();
+
+    const handleTaxChange = () => {
+      loadData();
+    };
     window.addEventListener('kth_taxonomy_changed', handleTaxChange);
     return () => window.removeEventListener('kth_taxonomy_changed', handleTaxChange);
   }, []);
 
-  const handleCreateCategory = async () => {
-    if (!newCatName.trim()) return;
-    const res = await taxonomyService.createCareerCategory({
-      name: newCatName.trim(),
-      description: newCatDesc.trim(),
-    });
-    if (res.data) {
-      setSuccessMessage(`Created category: ${res.data.name}`);
-      setNewCatName('');
-      setNewCatDesc('');
-      setIsCategoryModalOpen(false);
-      loadData();
-      setTimeout(() => setSuccessMessage(null), 3000);
-    }
-  };
-
-  const handleCreateRole = async () => {
-    if (!newRoleName.trim()) return;
-    const res = await taxonomyService.createJobRole({
-      name: newRoleName.trim(),
-      career_category_id: newRoleCategory || undefined,
-      seniority_level: newRoleSeniority,
-    });
-    if (res.data) {
-      setSuccessMessage(`Created job role: ${res.data.name}`);
-      setNewRoleName('');
-      setIsRoleModalOpen(false);
-      loadData();
-      setTimeout(() => setSuccessMessage(null), 3000);
-    }
-  };
-
-  const handleCreateSkill = async () => {
-    if (!newSkillName.trim()) return;
-    const res = await taxonomyService.createSkill({
-      name: newSkillName.trim(),
-      category: newSkillCategory,
-    });
-    if (res.data) {
-      setSuccessMessage(`Created skill: ${res.data.name}`);
-      setNewSkillName('');
-      setIsSkillModalOpen(false);
-      loadData();
-      setTimeout(() => setSuccessMessage(null), 3000);
-    }
-  };
-
   const handleToggleCategoryActive = async (cat: CareerCategory) => {
     await taxonomyService.updateCareerCategory(cat.id, { is_active: !cat.is_active });
+    setSuccessMessage(`Category "${cat.name}" status updated.`);
+    setTimeout(() => setSuccessMessage(null), 3000);
     loadData();
   };
 
@@ -162,24 +103,14 @@ export const AdminTaxonomyPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2.5">
-            {activeTab === 'categories' && (
-              <Button size="sm" onClick={() => setIsCategoryModalOpen(true)} className="bg-kth-slate-900 text-white hover:bg-black gap-1.5 text-xs">
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Category</span>
-              </Button>
-            )}
-            {activeTab === 'roles' && (
-              <Button size="sm" onClick={() => setIsRoleModalOpen(true)} className="bg-kth-slate-900 text-white hover:bg-black gap-1.5 text-xs">
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Job Role</span>
-              </Button>
-            )}
-            {activeTab === 'skills' && (
-              <Button size="sm" onClick={() => setIsSkillModalOpen(true)} className="bg-kth-slate-900 text-white hover:bg-black gap-1.5 text-xs">
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Skill</span>
-              </Button>
-            )}
+            <Button
+              size="sm"
+              onClick={() => { window.location.href = '/admin/taxonomy/new'; }}
+              className="bg-kth-slate-900 text-white hover:bg-black gap-1.5 text-xs font-bold"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Taxonomy Record</span>
+            </Button>
           </div>
         </div>
 
@@ -373,95 +304,6 @@ export const AdminTaxonomyPage: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* Dialog: Add Category */}
-        <Dialog
-          isOpen={isCategoryModalOpen}
-          onClose={() => setIsCategoryModalOpen(false)}
-          title="Create New Career Category"
-          description="Add a new top-level classification category to KnowToHire."
-        >
-          <div className="space-y-4 pt-2">
-            <div>
-              <label className="text-xs font-bold text-kth-slate-700 block mb-1">Category Name</label>
-              <Input placeholder="e.g. Cleantech & Carbon Management" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-kth-slate-700 block mb-1">Description</label>
-              <Input placeholder="Brief explanation of career path..." value={newCatDesc} onChange={(e) => setNewCatDesc(e.target.value)} />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" size="sm" onClick={() => setIsCategoryModalOpen(false)}>Cancel</Button>
-              <Button size="sm" onClick={handleCreateCategory} className="bg-kth-slate-900 text-white">Save Category</Button>
-            </div>
-          </div>
-        </Dialog>
-
-        {/* Dialog: Add Role */}
-        <Dialog
-          isOpen={isRoleModalOpen}
-          onClose={() => setIsRoleModalOpen(false)}
-          title="Create Canonical Job Role"
-          description="Define a normalized job role to link with employer titles."
-        >
-          <div className="space-y-4 pt-2">
-            <div>
-              <label className="text-xs font-bold text-kth-slate-700 block mb-1">Role Name</label>
-              <Input placeholder="e.g. Solutions Architect" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-kth-slate-700 block mb-1">Seniority Level</label>
-              <Select
-                value={newRoleSeniority}
-                onChange={(e) => setNewRoleSeniority(e.target.value)}
-                options={[
-                  { value: 'fresher', label: 'Fresher' },
-                  { value: 'associate', label: 'Associate' },
-                  { value: 'mid_level', label: 'Mid Level' },
-                  { value: 'senior', label: 'Senior' },
-                  { value: 'lead', label: 'Lead / Principal' },
-                ]}
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" size="sm" onClick={() => setIsRoleModalOpen(false)}>Cancel</Button>
-              <Button size="sm" onClick={handleCreateRole} className="bg-kth-slate-900 text-white">Save Role</Button>
-            </div>
-          </div>
-        </Dialog>
-
-        {/* Dialog: Add Skill */}
-        <Dialog
-          isOpen={isSkillModalOpen}
-          onClose={() => setIsSkillModalOpen(false)}
-          title="Create Standardized Skill"
-          description="Add a verified technical, ESG, or domain skill."
-        >
-          <div className="space-y-4 pt-2">
-            <div>
-              <label className="text-xs font-bold text-kth-slate-700 block mb-1">Skill Name</label>
-              <Input placeholder="e.g. GraphQL Federation" value={newSkillName} onChange={(e) => setNewSkillName(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-kth-slate-700 block mb-1">Category</label>
-              <Select
-                value={newSkillCategory}
-                onChange={(e) => setNewSkillCategory(e.target.value)}
-                options={[
-                  { value: 'Software Engineering', label: 'Software Engineering' },
-                  { value: 'ESG & Reporting', label: 'ESG & Reporting' },
-                  { value: 'Sustainability', label: 'Sustainability' },
-                  { value: 'Intellectual Property', label: 'Intellectual Property' },
-                  { value: 'Environmental Engineering', label: 'Environmental Engineering' },
-                ]}
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" size="sm" onClick={() => setIsSkillModalOpen(false)}>Cancel</Button>
-              <Button size="sm" onClick={handleCreateSkill} className="bg-kth-slate-900 text-white">Save Skill</Button>
-            </div>
-          </div>
-        </Dialog>
       </div>
     </AdminShell>
   );

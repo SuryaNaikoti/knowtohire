@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { Dialog } from '@/components/ui/Dialog';
 import { adminService, AdminApplicationRecord } from '@/services/adminService';
 import {
   Search,
@@ -14,7 +13,6 @@ import {
   UserCheck,
   Building2,
   Eye,
-  ExternalLink,
   CheckCircle2,
   Filter,
 } from 'lucide-react';
@@ -29,12 +27,6 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({ on
   const [searchTerm, setSearchTerm] = useState('');
   const [stageFilter, setStageFilter] = useState('all');
 
-  // Inspect / Moderation Modal State
-  const [selectedApp, setSelectedApp] = useState<AdminApplicationRecord | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [targetStage, setTargetStage] = useState<AdminApplicationRecord['stage']>('new');
-  const [isUpdating, setIsUpdating] = useState(false);
-
   const fetchApplications = useCallback(async () => {
     setIsLoading(true);
     const res = await adminService.getApplications(searchTerm, stageFilter);
@@ -45,8 +37,7 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({ on
   }, [searchTerm, stageFilter]);
 
   useEffect(() => {
-    const timer = setTimeout(fetchApplications, 150);
-    return () => clearTimeout(timer);
+    fetchApplications();
   }, [fetchApplications]);
 
   // Real-time synchronization with cross-portal events
@@ -62,23 +53,6 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({ on
       };
     }
   }, [fetchApplications]);
-
-  const handleOpenInspect = (app: AdminApplicationRecord) => {
-    setSelectedApp(app);
-    setTargetStage(app.stage);
-    setIsModalOpen(true);
-  };
-
-  const handleSaveStage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedApp) return;
-
-    setIsUpdating(true);
-    await adminService.updateApplicationStage(selectedApp.id, targetStage);
-    setIsUpdating(false);
-    setIsModalOpen(false);
-    fetchApplications();
-  };
 
   const getStageBadge = (stage: string) => {
     switch (stage) {
@@ -243,7 +217,10 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({ on
                         size="sm"
                         className="w-full min-h-[38px]"
                         leftIcon={<Eye className="w-3.5 h-3.5" />}
-                        onClick={() => handleOpenInspect(app)}
+                        onClick={() => {
+                          if (onNavigate) onNavigate(`/admin/applications/${app.id}`);
+                          else window.location.href = `/admin/applications/${app.id}`;
+                        }}
                       >
                         Inspect & Moderate Stage
                       </Button>
@@ -296,12 +273,15 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({ on
                             year: 'numeric',
                           })}
                         </td>
-                        <td className="p-4 text-right">
+                        <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <Button
                             variant="secondary"
                             size="sm"
                             leftIcon={<Eye className="w-3.5 h-3.5" />}
-                            onClick={() => handleOpenInspect(app)}
+                            onClick={() => {
+                              if (onNavigate) onNavigate(`/admin/applications/${app.id}`);
+                              else window.location.href = `/admin/applications/${app.id}`;
+                            }}
                           >
                             Inspect & Manage
                           </Button>
@@ -314,95 +294,7 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({ on
             </>
           )}
         </Card>
-
-        {/* Application Inspection & Status Management Modal */}
-        <Dialog
-          isOpen={isModalOpen}
-          onClose={() => !isUpdating && setIsModalOpen(false)}
-          title="Application Details & Lifecycle Management"
-          description={selectedApp ? `${selectedApp.candidate_name} → ${selectedApp.job_title}` : ''}
-          maxWidth="lg"
-        >
-          {selectedApp && (
-            <form onSubmit={handleSaveStage} className="space-y-5 pt-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-kth-slate-50 p-4 rounded-xl border border-kth-slate-200 text-xs">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-kth-slate-400 block mb-0.5">Candidate</span>
-                  <strong className="text-sm text-kth-slate-900 block">{selectedApp.candidate_name}</strong>
-                  <span className="text-kth-slate-600 font-mono">{selectedApp.candidate_email}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-kth-slate-400 block mb-0.5">Employer & Role</span>
-                  <strong className="text-sm text-kth-slate-900 block">{selectedApp.job_title}</strong>
-                  <span className="text-kth-slate-600">{selectedApp.company_name}</span>
-                </div>
-              </div>
-
-              {/* Match Score & Cover Letter */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs pb-2 border-b border-kth-slate-100">
-                  <span className="font-bold text-kth-slate-700">Semantic Fit Score:</span>
-                  <span className="font-mono font-bold text-emerald-600">{selectedApp.match_score > 0 ? `${selectedApp.match_score}% Alignment` : '—'}</span>
-                </div>
-
-                {selectedApp.cover_letter && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-kth-slate-700 uppercase tracking-wider block">Candidate Cover Note</label>
-                    <div className="bg-kth-slate-50 p-3 rounded-xl border border-kth-slate-200 text-xs text-kth-slate-700 leading-relaxed max-h-32 overflow-y-auto">
-                      {selectedApp.cover_letter}
-                    </div>
-                  </div>
-                )}
-
-                {selectedApp.resume_url && (
-                  <div className="pt-1">
-                    <a
-                      href={selectedApp.resume_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-kth-primary-600 hover:text-kth-primary-700 hover:underline"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" /> View Attached Resume Document
-                    </a>
-                  </div>
-                )}
-              </div>
-
-              {/* Stage Management Selector */}
-              <div className="space-y-2 pt-2 border-t border-kth-slate-200">
-                <label className="text-xs font-bold text-kth-slate-800 uppercase tracking-wider block">
-                  Admin Stage Moderation
-                </label>
-                <select
-                  value={targetStage}
-                  onChange={(e) => setTargetStage(e.target.value as typeof targetStage)}
-                  className="w-full rounded-xl border border-kth-slate-200 p-2.5 text-xs font-bold text-kth-slate-900 bg-white"
-                >
-                  <option value="new">New (Submitted)</option>
-                  <option value="screening">Screening (Under Review)</option>
-                  <option value="shortlisted">Shortlisted</option>
-                  <option value="interview">Interview (Scheduled)</option>
-                  <option value="offer">Offer (Extended)</option>
-                  <option value="hired">Hired (Completed)</option>
-                  <option value="rejected">Declined / Rejected</option>
-                  <option value="withdrawn">Withdrawn</option>
-                </select>
-              </div>
-
-              {/* Modal Actions */}
-              <div className="flex justify-end gap-2 pt-3 border-t border-kth-slate-100">
-                <Button type="button" variant="secondary" size="sm" onClick={() => setIsModalOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" variant="primary" size="sm" isLoading={isUpdating}>
-                  Save Stage Update
-                </Button>
-              </div>
-            </form>
-          )}
-        </Dialog>
       </div>
     </AdminShell>
   );
 };
-

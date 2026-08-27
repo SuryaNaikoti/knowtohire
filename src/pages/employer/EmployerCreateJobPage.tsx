@@ -5,12 +5,9 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { SearchableCombobox } from '@/components/ui/SearchableCombobox';
 import { Button } from '@/components/ui/Button';
-import { Dialog } from '@/components/ui/Dialog';
-import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
-import { jobService, taxonomyService, JobCreateInput, WorkMode, EmploymentType, ExperienceLevel, Job, CareerCategory, CityItem } from '@/services';
-import { formatINR } from '@/design-system/tokens';
-import { CheckCircle2, Eye, Save, Send, AlertCircle, ArrowLeft, Sparkles } from 'lucide-react';
+import { jobService, taxonomyService, JobCreateInput, WorkMode, EmploymentType, ExperienceLevel, CareerCategory, CityItem } from '@/services';
+import { Eye, Save, Send, AlertCircle, ArrowLeft, Sparkles } from 'lucide-react';
 
 export const EmployerCreateJobPage: React.FC = () => {
   // Form State
@@ -39,10 +36,8 @@ export const EmployerCreateJobPage: React.FC = () => {
   const [canonicalRoleId, setCanonicalRoleId] = useState<string | null>(null);
 
   // UI state
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [createdJob, setCreatedJob] = useState<Job | null>(null);
 
   React.useEffect(() => {
     async function fetchTaxonomy() {
@@ -85,29 +80,16 @@ export const EmployerCreateJobPage: React.FC = () => {
         setCanonicalRoleId(null);
       }
     }
-    const timer = setTimeout(resolveRole, 250);
-    return () => clearTimeout(timer);
+    resolveRole();
   }, [title]);
 
-  const validateForm = (): string | null => {
-    if (!title.trim()) return 'Job title is required.';
-    if (!department.trim()) return 'Department is required.';
-    if (!description.trim()) return 'Job description is required.';
-
-    const minSal = parseInt(minSalary, 10);
-    const maxSal = parseInt(maxSalary, 10);
-
-    if (isNaN(minSal) || minSal <= 0) return 'Please provide a valid minimum salary in INR.';
-    if (isNaN(maxSal) || maxSal <= 0) return 'Please provide a valid maximum salary in INR.';
-    if (maxSal < minSal) return 'Maximum salary cannot be less than minimum salary.';
-
-    return null;
-  };
-
-  const handleSave = async (targetStatus: 'draft' | 'published') => {
-    const valError = validateForm();
-    if (valError) {
-      setErrorMessage(valError);
+  const handleSave = async (status: 'draft' | 'published') => {
+    if (!title.trim()) {
+      setErrorMessage('Please provide a job title.');
+      return;
+    }
+    if (!description.trim()) {
+      setErrorMessage('Please provide a job overview description.');
       return;
     }
 
@@ -117,41 +99,41 @@ export const EmployerCreateJobPage: React.FC = () => {
     const responsibilities = responsibilitiesText
       .split('\n')
       .map((r) => r.trim())
-      .filter(Boolean);
+      .filter((r) => r.length > 0);
 
     const requirements = requirementsText
       .split('\n')
       .map((r) => r.trim())
-      .filter(Boolean);
+      .filter((r) => r.length > 0);
 
     const skills = skillsText
       .split(',')
       .map((s) => s.trim())
-      .filter(Boolean);
+      .filter((s) => s.length > 0);
 
     const benefits = benefitsText
       .split(',')
       .map((b) => b.trim())
-      .filter(Boolean);
+      .filter((b) => b.length > 0);
 
     const payload: JobCreateInput = {
       title: title.trim(),
-      department: department.trim(),
-      category: category.trim(),
-      location: location.trim(),
+      department: department.trim() || 'General',
+      category,
+      career_category_id: selectedCategoryId,
+      canonical_role_id: canonicalRoleId || undefined,
       work_mode: workMode,
       employment_type: employmentType,
       experience_level: experienceLevel,
-      min_salary_inr: parseInt(minSalary, 10),
-      max_salary_inr: parseInt(maxSalary, 10),
+      location: location.trim(),
+      min_salary_inr: parseInt(minSalary, 10) || 0,
+      max_salary_inr: parseInt(maxSalary, 10) || 0,
       description: description.trim(),
       responsibilities: responsibilities.length > 0 ? responsibilities : undefined,
       requirements: requirements.length > 0 ? requirements : undefined,
       skills: skills.length > 0 ? skills : undefined,
       benefits: benefits.length > 0 ? benefits : undefined,
-      status: targetStatus,
-      career_category_id: selectedCategoryId || undefined,
-      canonical_role_id: canonicalRoleId || undefined,
+      status,
     };
 
     const { data, error } = await jobService.createJob(payload);
@@ -160,7 +142,7 @@ export const EmployerCreateJobPage: React.FC = () => {
     if (error) {
       setErrorMessage(error.message);
     } else if (data) {
-      setCreatedJob(data);
+      window.location.href = '/employer/jobs';
     }
   };
 
@@ -168,8 +150,6 @@ export const EmployerCreateJobPage: React.FC = () => {
     window.history.pushState({}, '', path);
     window.dispatchEvent(new Event('popstate'));
   };
-
-  const previewSalary = `${formatINR(parseInt(minSalary, 10) || 0)} - ${formatINR(parseInt(maxSalary, 10) || 0, true)}`;
 
   return (
     <EmployerShell title="Post a New Job Opening" currentPath="/employer/jobs">
@@ -400,7 +380,21 @@ export const EmployerCreateJobPage: React.FC = () => {
                 variant="outline"
                 type="button"
                 leftIcon={<Eye className="w-4 h-4" />}
-                onClick={() => setIsPreviewOpen(true)}
+                onClick={() => {
+                  const previewPayload = {
+                    title,
+                    department,
+                    location,
+                    min_salary_inr: Number(minSalary) || 0,
+                    max_salary_inr: Number(maxSalary) || 0,
+                    description,
+                    responsibilities: responsibilitiesText.split('\n').map((s) => s.trim()).filter(Boolean),
+                    requirements: requirementsText.split('\n').map((s) => s.trim()).filter(Boolean),
+                    skills: skillsText.split(',').map((s) => s.trim()).filter(Boolean),
+                  };
+                  sessionStorage.setItem('kth_job_preview_data', JSON.stringify(previewPayload));
+                  window.location.href = '/employer/jobs/preview';
+                }}
               >
                 Preview Listing
               </Button>
@@ -417,69 +411,6 @@ export const EmployerCreateJobPage: React.FC = () => {
           </div>
         </form>
       </div>
-
-      {/* Public Job Preview Modal */}
-      <Dialog
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        title="Public Job Listing Preview"
-        description="How job seekers will view your posting on KnowToHire."
-      >
-        <div className="p-4 bg-kth-slate-50 rounded-xl border border-kth-slate-200 space-y-4 text-left">
-          <div className="flex justify-between items-start">
-            <div>
-              <div className="flex gap-1.5 mb-1">
-                <Badge variant="cyan">Verified Role</Badge>
-                <Badge variant="indigo" className="capitalize">{employmentType.replace('_', '-')}</Badge>
-              </div>
-              <h3 className="font-display font-bold text-lg text-kth-slate-900 mt-1">
-                {title || 'Untitled Requisition'}
-              </h3>
-              <span className="text-xs text-kth-slate-500">{department || 'Department'} • {location}</span>
-            </div>
-            <div className="font-mono text-sm font-bold text-kth-primary-600">
-              {previewSalary}
-            </div>
-          </div>
-          <p className="text-xs text-kth-slate-700 leading-relaxed whitespace-pre-line">
-            {description || 'No description provided.'}
-          </p>
-          <div className="flex justify-end">
-            <Button variant="primary" size="sm" onClick={() => setIsPreviewOpen(false)}>
-              Close Preview
-            </Button>
-          </div>
-        </div>
-      </Dialog>
-
-      {/* Created / Published Confirmation Modal */}
-      <Dialog
-        isOpen={Boolean(createdJob)}
-        onClose={() => setCreatedJob(null)}
-        title={createdJob?.status === 'published' ? "Job Published Successfully!" : "Draft Saved"}
-        description={`Requisition ID: ${createdJob?.id?.slice(0, 8)}`}
-      >
-        <div className="text-center py-4 space-y-4">
-          <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-100">
-            <CheckCircle2 className="w-8 h-8" />
-          </div>
-          <div className="space-y-1">
-            <h4 className="font-display font-extrabold text-lg text-kth-slate-900">
-              {createdJob?.status === 'published' ? "Your Job Opening is Now Live" : "Draft Saved Successfully"}
-            </h4>
-            <p className="text-xs text-kth-slate-500 max-w-sm mx-auto leading-relaxed">
-              {createdJob?.status === 'published'
-                ? "This requisition is active and immediately discoverable by verified candidates across India."
-                : "Your draft has been saved. You can edit and publish it anytime from your job openings dashboard."}
-            </p>
-          </div>
-          <div className="flex justify-center gap-2 pt-2">
-            <Button variant="primary" size="sm" onClick={() => handleNavigate('/employer/jobs')}>
-              Return to Jobs Dashboard
-            </Button>
-          </div>
-        </div>
-      </Dialog>
     </EmployerShell>
   );
 };

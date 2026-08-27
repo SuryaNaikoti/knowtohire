@@ -4,25 +4,23 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Dialog } from '@/components/ui/Dialog';
 import { Select } from '@/components/ui/Select';
-import { FileUploader } from '@/components/ui/FileUploader';
 import { templateService, MarketplaceTemplate, TemplateStatus } from '@/services/templateService';
 import {
-  Plus,
-  Trash2,
-  Loader2,
-  Edit3,
   FileText,
+  Plus,
   Search,
-  Download,
   ExternalLink,
+  Trash2,
+  Edit,
+  Loader2,
   Layers,
   CheckCircle2,
   Clock,
   Play,
   Pause,
   AlertCircle,
+  Download,
 } from 'lucide-react';
 
 export interface AdminTemplatesPageProps {
@@ -37,20 +35,29 @@ export const AdminTemplatesPage: React.FC<AdminTemplatesPageProps> = ({ onNaviga
   const [statusFilter, setStatusFilter] = useState('all');
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  // Modal / Form State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [selectedTemplate, setSelectedTemplate] = useState<MarketplaceTemplate | null>(null);
+  const handleNavigateEdit = (t: MarketplaceTemplate) => {
+    if (onNavigate) {
+      onNavigate(`/admin/templates/${t.id}/edit`);
+    } else {
+      window.location.href = `/admin/templates/${t.id}/edit`;
+    }
+  };
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Professional Documents');
-  const [priceINR, setPriceINR] = useState('0');
-  const [status, setStatus] = useState<TemplateStatus>('published');
-  const [formatsInput, setFormatsInput] = useState('DOCX, PDF');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
+  const handleQuickStatusChange = async (id: string, st: 'draft' | 'published') => {
+    setActionLoadingId(id);
+    await templateService.updateTemplate(id, { status: st });
+    setActionLoadingId(null);
+    fetchTemplates();
+  };
+
+  const handleDeleteTemplate = async (id: string, title: string) => {
+    if (confirm(`Are you sure you want to permanently delete template "${title}"?`)) {
+      setActionLoadingId(id);
+      await templateService.deleteTemplate(id);
+      setActionLoadingId(null);
+      fetchTemplates();
+    }
+  };
 
   const fetchTemplates = useCallback(async () => {
     setIsLoading(true);
@@ -78,97 +85,6 @@ export const AdminTemplatesPage: React.FC<AdminTemplatesPageProps> = ({ onNaviga
       }
     };
   }, [fetchTemplates]);
-
-  const handleOpenCreateModal = () => {
-    setSelectedTemplate(null);
-    setTitle('');
-    setDescription('');
-    setCategory('Professional Documents');
-    setPriceINR('0');
-    setStatus('published');
-    setFormatsInput('DOCX, PDF');
-    setSelectedFile(null);
-    setUploadProgress(0);
-    setFormError(null);
-    setIsModalOpen(true);
-  };
-
-  const handleOpenEditModal = (t: MarketplaceTemplate) => {
-    setSelectedTemplate(t);
-    setTitle(t.title);
-    setDescription(t.description);
-    setCategory(t.category);
-    setPriceINR(String(t.price_inr || 0));
-    setStatus(t.status);
-    setFormatsInput((t.formats || ['DOCX', 'PDF']).join(', '));
-    setSelectedFile(null);
-    setUploadProgress(0);
-    setFormError(null);
-    setIsModalOpen(true);
-  };
-
-  const handleSaveTemplate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim() || !description.trim()) {
-      setFormError('Please enter both title and description.');
-      return;
-    }
-
-    setIsSaving(true);
-    setFormError(null);
-
-    const formats = formatsInput
-      .split(',')
-      .map((f) => f.trim().toUpperCase())
-      .filter(Boolean);
-
-    let res;
-    if (selectedTemplate) {
-      res = await templateService.updateTemplate(selectedTemplate.id, {
-        title: title.trim(),
-        description: description.trim(),
-        category,
-        price_inr: parseFloat(priceINR) || 0,
-        formats: formats.length > 0 ? formats : ['DOCX', 'PDF'],
-        status,
-        file: selectedFile || undefined,
-        onProgress: (pct) => setUploadProgress(pct),
-      });
-    } else {
-      res = await templateService.createTemplate({
-        title: title.trim(),
-        description: description.trim(),
-        category,
-        price_inr: parseFloat(priceINR) || 0,
-        formats: formats.length > 0 ? formats : ['DOCX', 'PDF'],
-        status,
-        file: selectedFile || undefined,
-        onProgress: (pct) => setUploadProgress(pct),
-      });
-    }
-
-    setIsSaving(false);
-
-    if (res.error) {
-      setFormError(res.error.message);
-    } else {
-      setIsModalOpen(false);
-      fetchTemplates();
-    }
-  };
-
-  const handleQuickStatusChange = async (id: string, newStatus: TemplateStatus) => {
-    setActionLoadingId(id);
-    await templateService.updateTemplateStatus(id, newStatus);
-    setActionLoadingId(null);
-    fetchTemplates();
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to archive this template?')) return;
-    await templateService.deleteTemplate(id);
-    fetchTemplates();
-  };
 
   // Filter templates
   const filteredTemplates = templates.filter((t) => {
@@ -313,7 +229,14 @@ export const AdminTemplatesPage: React.FC<AdminTemplatesPageProps> = ({ onNaviga
             <span className="text-xs font-mono text-kth-slate-500 font-bold shrink-0">
               {filteredTemplates.length} of {templates.length} Assets
             </span>
-            <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />} onClick={handleOpenCreateModal}>
+            <Button
+              variant="primary"
+              leftIcon={<Plus className="w-4 h-4" />}
+              onClick={() => {
+                if (onNavigate) onNavigate('/admin/templates/new');
+                else window.location.href = '/admin/templates/new';
+              }}
+            >
               Add Template
             </Button>
           </div>
@@ -379,6 +302,15 @@ export const AdminTemplatesPage: React.FC<AdminTemplatesPageProps> = ({ onNaviga
 
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="text-xs font-semibold"
+                            leftIcon={<Edit className="w-3.5 h-3.5" />}
+                            onClick={() => handleNavigateEdit(t)}
+                          >
+                            Edit
+                          </Button>
                           {t.status !== 'published' ? (
                             <Button
                               variant="outline"
@@ -402,37 +334,25 @@ export const AdminTemplatesPage: React.FC<AdminTemplatesPageProps> = ({ onNaviga
                               Draft
                             </Button>
                           )}
-
                           <a
                             href={`/templates/${t.slug || t.id}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-2 rounded-lg border border-kth-slate-200 text-kth-slate-600 hover:text-kth-primary-600 hover:bg-white transition-colors"
-                            title="Preview Public Listing"
+                            className="p-1.5 text-kth-slate-400 hover:text-kth-slate-700 rounded-lg hover:bg-kth-slate-100 transition-colors"
+                            title="Preview Template Page"
                           >
-                            <ExternalLink className="w-3.5 h-3.5" />
+                            <ExternalLink className="w-4 h-4" />
                           </a>
-
                           <Button
-                            variant="secondary"
+                            variant="destructive"
                             size="sm"
-                            leftIcon={<Edit3 className="w-3.5 h-3.5" />}
-                            onClick={() => handleOpenEditModal(t)}
+                            className="text-xs font-semibold p-2"
+                            isLoading={actionLoadingId === t.id}
+                            onClick={() => handleDeleteTemplate(t.id, t.title)}
+                            title="Delete Template"
                           >
-                            Edit
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
-
-                          {t.status !== 'archived' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-rose-600 hover:bg-rose-50"
-                              title="Archive Template"
-                              onClick={() => handleDelete(t.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -442,108 +362,6 @@ export const AdminTemplatesPage: React.FC<AdminTemplatesPageProps> = ({ onNaviga
             </div>
           )}
         </Card>
-
-        {/* Create / Edit Template Dialog */}
-        <Dialog
-          isOpen={isModalOpen}
-          onClose={() => !isSaving && setIsModalOpen(false)}
-          title={selectedTemplate ? 'Edit Template Asset' : 'Add Template Product'}
-          description="Publish a new ATS resume or contract template to the marketplace."
-          maxWidth="lg"
-        >
-          <form onSubmit={handleSaveTemplate} className="space-y-4 pt-2 max-h-[75vh] overflow-y-auto pr-1">
-            {formError && (
-              <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">{formError}</div>
-            )}
-
-            <Input
-              label="Template Title *"
-              placeholder="e.g. ATS-Optimised Sustainability Consultant Resume"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-kth-slate-700 uppercase tracking-wider block">
-                Description & Structure *
-              </label>
-              <textarea
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Details on formatting, industry compliance, and sections..."
-                className="w-full rounded-xl border border-kth-slate-200 p-3 text-xs text-kth-slate-900 outline-hidden focus:ring-2 focus:ring-kth-primary-500/20 resize-none bg-white"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Select
-                label="Category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                options={[
-                  { value: 'Professional Documents', label: 'Professional Documents' },
-                  { value: 'Resume & CV Templates', label: 'Resume & CV Templates' },
-                  { value: 'Legal & Contracts', label: 'Legal & Contracts' },
-                  { value: 'Compliance Toolkits', label: 'Compliance Toolkits' },
-                  { value: 'Interview Preparation', label: 'Interview Preparation' },
-                ]}
-              />
-
-              <Input
-                label="Price (INR) — Set 0 for Free"
-                type="number"
-                value={priceINR}
-                onChange={(e) => setPriceINR(e.target.value)}
-                required
-              />
-
-              <Select
-                label="Publication Status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value as TemplateStatus)}
-                options={[
-                  { value: 'published', label: 'Published (Live to Marketplace)' },
-                  { value: 'draft', label: 'Draft (Admin Only)' },
-                  { value: 'archived', label: 'Archived' },
-                ]}
-              />
-            </div>
-
-            <Input
-              label="Supported Formats (Comma Separated)"
-              placeholder="DOCX, PDF, XLSX"
-              value={formatsInput}
-              onChange={(e) => setFormatsInput(e.target.value)}
-            />
-
-            {/* File Upload Component */}
-            <FileUploader
-              label="Template File Asset"
-              description="Drag & drop your template document (.docx, .pdf, .xlsx, .zip)"
-              selectedFile={selectedFile}
-              uploadedFileName={selectedTemplate?.file_name || selectedTemplate?.title}
-              uploadedFileSize={selectedTemplate?.file_size}
-              uploadedFormat={selectedTemplate?.formats[0]}
-              onFileSelect={(f) => setSelectedFile(f)}
-              onFileRemove={() => setSelectedFile(null)}
-              isUploading={isSaving}
-              uploadProgress={uploadProgress}
-              uploadSuccess={Boolean(selectedTemplate?.file_url || selectedFile)}
-            />
-
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-kth-slate-100">
-              <Button type="button" variant="secondary" size="sm" disabled={isSaving} onClick={() => setIsModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary" size="sm" isLoading={isSaving}>
-                {status === 'published' ? 'Publish Template' : 'Save Draft'}
-              </Button>
-            </div>
-          </form>
-        </Dialog>
       </div>
     </AdminShell>
   );

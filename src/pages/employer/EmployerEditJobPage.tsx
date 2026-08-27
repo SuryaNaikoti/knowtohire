@@ -5,10 +5,9 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { SearchableCombobox } from '@/components/ui/SearchableCombobox';
 import { Button } from '@/components/ui/Button';
-import { Dialog } from '@/components/ui/Dialog';
 import { Alert } from '@/components/ui/Alert';
 import { jobService, taxonomyService, Job, JobUpdateInput, WorkMode, EmploymentType, ExperienceLevel, CareerCategory, CityItem } from '@/services';
-import { Save, CheckCircle2, AlertCircle, ArrowLeft, Briefcase } from 'lucide-react';
+import { Save, AlertCircle, ArrowLeft, Briefcase } from 'lucide-react';
 
 export interface EmployerEditJobPageProps {
   jobId?: string;
@@ -46,7 +45,6 @@ export const EmployerEditJobPage: React.FC<EmployerEditJobPageProps> = ({ jobId:
 
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -174,8 +172,7 @@ export const EmployerEditJobPage: React.FC<EmployerEditJobPageProps> = ({ jobId:
     if (error) {
       setFormError(error.message);
     } else if (data) {
-      setJob(data);
-      setSaveSuccess(true);
+      window.location.href = '/employer/jobs';
     }
   };
 
@@ -436,29 +433,6 @@ export const EmployerEditJobPage: React.FC<EmployerEditJobPageProps> = ({ jobId:
           </div>
         </form>
       </div>
-
-      {/* Success Confirmation Dialog */}
-      <Dialog
-        isOpen={saveSuccess}
-        onClose={() => setSaveSuccess(false)}
-        title="Changes Saved"
-        description="Job details updated successfully."
-      >
-        <div className="text-center py-4 space-y-4">
-          <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-100">
-            <CheckCircle2 className="w-8 h-8" />
-          </div>
-          <h4 className="font-bold text-base text-kth-slate-900">Job Requisition Updated</h4>
-          <p className="text-xs text-kth-slate-500">
-            Your modifications to <strong>{job.title}</strong> have been saved to the database.
-          </p>
-          <div className="flex justify-center gap-2 pt-2">
-            <Button variant="primary" size="sm" onClick={() => handleNavigate('/employer/jobs')}>
-              Back to Job Openings
-            </Button>
-          </div>
-        </div>
-      </Dialog>
     </EmployerShell>
   );
 };

@@ -3,7 +3,6 @@ import { CandidateShell } from '@/components/candidate/CandidateShell';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { ApplyModal } from '@/components/candidate/ApplyModal';
 import { jobService, savedJobService, applicationService, Job } from '@/services';
 import { formatINR } from '@/design-system/tokens';
 import { MapPin, CheckCircle2, Bookmark, Building2, ArrowLeft, Check, AlertTriangle, Briefcase } from 'lucide-react';
@@ -20,7 +19,6 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
-  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
 
   const loadJobData = useCallback(async () => {
     if (!resolvedJobId) {
@@ -219,7 +217,9 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
                 <Button
                   variant="primary"
                   size="md"
-                  onClick={() => setIsApplyModalOpen(true)}
+                  onClick={() => {
+                    window.location.href = `/jobs/${job.id}/apply`;
+                  }}
                 >
                   Apply Now
                 </Button>
@@ -287,18 +287,6 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
           </div>
         </Card>
       </div>
-
-      {/* Apply Modal */}
-      {job && (
-        <ApplyModal
-          job={job}
-          isOpen={isApplyModalOpen}
-          onClose={() => setIsApplyModalOpen(false)}
-          onSuccess={() => {
-            setHasApplied(true);
-          }}
-        />
-      )}
     </CandidateShell>
   );
 };

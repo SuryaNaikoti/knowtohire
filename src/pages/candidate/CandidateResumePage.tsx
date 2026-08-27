@@ -5,7 +5,6 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
-import { Dialog } from '@/components/ui/Dialog';
 import { useAuth } from '@/context/AuthContext';
 import {
   candidateProfileService,
@@ -39,9 +38,6 @@ export const CandidateResumePage: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // ─── Modal Preview State ───────────────────────────────────────────────────
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   // ─── ATS Analysis & Recommendations State ─────────────────────────────────
   const [atsScore, setAtsScore] = useState<number>(87);
@@ -344,7 +340,7 @@ export const CandidateResumePage: React.FC = () => {
               isPDF={isPDF}
               fileFormat={fileFormat}
               isUploading={isUploading}
-              onPreview={() => setIsPreviewModalOpen(true)}
+              onPreview={() => { window.location.href = '/candidate/resume/preview'; }}
               onReplace={handleTriggerUpload}
             />
 
@@ -545,76 +541,6 @@ export const CandidateResumePage: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* ─── Fullscreen / Dedicated PDF Preview Modal ─────────────────────────── */}
-      <Dialog
-        isOpen={isPreviewModalOpen}
-        onClose={() => setIsPreviewModalOpen(false)}
-        title={fileName}
-        description={
-          isPDF
-            ? `Uploaded on ${uploadDate} • Verified PDF Document`
-            : `Uploaded on ${uploadDate} • ${fileFormat} Document (PDF Required for Preview)`
-        }
-        maxWidth="xl"
-      >
-        <div className="space-y-4">
-          {hasResume && isPDF && profile?.resumeUrl ? (
-            <div className="w-full rounded-xl overflow-hidden border border-kth-slate-200 bg-kth-slate-50">
-              <iframe
-                src={`${profile.resumeUrl}#toolbar=1&navpanes=0`}
-                title="Resume Full Preview"
-                className="w-full h-[620px] border-0 rounded-xl bg-white"
-              />
-            </div>
-          ) : hasResume && !isPDF ? (
-            <div className="py-12 text-center text-kth-slate-600 text-xs space-y-3">
-              <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
-              <p className="font-semibold text-kth-slate-800">
-                Word documents ({fileFormat}) cannot be previewed in the PDF viewer.
-              </p>
-              <p className="text-kth-slate-500 max-w-sm mx-auto">
-                Please upload a PDF version of your resume to enable full document preview and ATS parsing.
-              </p>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => {
-                  setIsPreviewModalOpen(false);
-                  handleTriggerUpload();
-                }}
-              >
-                Upload PDF Now
-              </Button>
-            </div>
-          ) : (
-            <div className="py-12 text-center text-kth-slate-500 text-xs">
-              No resume document available for preview.
-            </div>
-          )}
-
-          <div className="flex justify-between items-center pt-2 border-t border-kth-slate-100">
-            {hasResume && isPDF && profile?.resumeUrl && (
-              <Button
-                variant="ghost"
-                size="sm"
-                leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
-                onClick={() => window.open(profile.resumeUrl!, '_blank')}
-              >
-                Open Full Window
-              </Button>
-            )}
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setIsPreviewModalOpen(false)}
-              className="ml-auto"
-            >
-              Close
-            </Button>
-          </div>
-        </div>
-      </Dialog>
     </CandidateShell>
   );
 };

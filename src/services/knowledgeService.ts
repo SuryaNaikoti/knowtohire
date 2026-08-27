@@ -459,6 +459,13 @@ export const knowledgeService = {
   },
 
   /**
+   * Fetch a single resource by ID.
+   */
+  async getResourceById(id: string): Promise<ServiceResult<KnowledgeResource>> {
+    return this.getResourceByIdOrSlug(id);
+  },
+
+  /**
    * Track a download event and increment download counter.
    */
   async trackDownload(resourceId: string): Promise<ServiceResult<{ downloadUrl: string }>> {

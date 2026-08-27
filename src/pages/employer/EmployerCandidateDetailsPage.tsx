@@ -4,9 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { Dialog } from '@/components/ui/Dialog';
 import { Alert } from '@/components/ui/Alert';
-import { ScheduleInterviewModal } from '@/components/employer/ScheduleInterviewModal';
 import {
   applicationService,
   jobService,
@@ -34,11 +32,8 @@ import {
   Briefcase,
   GraduationCap,
   Award,
-  Video,
-  ExternalLink,
   Trash2,
   CheckCircle2,
-  Clock,
   Download,
   Eye,
 } from 'lucide-react';
@@ -85,12 +80,6 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
 
   // ATS Stage transition
   const [stageLoading, setStageLoading] = useState(false);
-
-  // Interview Modals
-  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [cancelInterviewId, setCancelInterviewId] = useState<string | null>(null);
-  const [isCancelling, setIsCancelling] = useState(false);
-  const [resumePreviewOpen, setResumePreviewOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -170,9 +159,6 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
       setErrorMessage(error.message);
     } else if (data) {
       setApplication(data);
-      if (newStage === 'interview') {
-        setIsScheduleModalOpen(true);
-      }
     }
   };
 
@@ -209,16 +195,6 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
       await savedCandidateService.unsaveCandidate(activeId);
     }
     setSavingState(false);
-  };
-
-  // Confirm Interview Cancel
-  const handleConfirmCancelInterview = async () => {
-    if (!cancelInterviewId) return;
-    setIsCancelling(true);
-    await interviewService.cancelInterview(cancelInterviewId);
-    setIsCancelling(false);
-    setCancelInterviewId(null);
-    loadData();
   };
 
   const handleNavigate = (path: string) => {
@@ -320,7 +296,9 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => setIsScheduleModalOpen(true)}
+                onClick={() => {
+                  window.location.href = `/employer/candidates/${resolvedCandidateId || application.id}/schedule?applicationId=${application.id}`;
+                }}
                 leftIcon={<Calendar className="w-3.5 h-3.5" />}
               >
                 Schedule Interview
@@ -578,7 +556,9 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setResumePreviewOpen(true)}
+                    onClick={() => {
+                      if (resumeUrl) window.open(resumeUrl, '_blank');
+                    }}
                     leftIcon={<Eye className="w-3.5 h-3.5" />}
                   >
                     Preview
@@ -668,99 +648,81 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setIsScheduleModalOpen(true)}
+                    onClick={() => {
+                      window.location.href = `/employer/candidates/${resolvedCandidateId || application.id}/schedule?applicationId=${application.id}`;
+                    }}
                   >
-                    + Add Round
+                    + Schedule Interview Round
                   </Button>
                 )}
               </div>
 
               {interviews.length === 0 ? (
-                <div className="bg-kth-slate-50 p-6 rounded-xl border border-kth-slate-200 text-center space-y-2">
-                  <Clock className="w-8 h-8 text-kth-slate-300 mx-auto" />
-                  <p className="text-xs font-semibold text-kth-slate-700">No Interview Rounds Scheduled</p>
-                  <p className="text-[11px] text-kth-slate-400">
-                    Schedule a video, phone, on-site, or walk-in interview with external meeting details.
+                <div className="p-8 text-center bg-kth-slate-50 rounded-xl border border-kth-slate-200 space-y-2">
+                  <Calendar className="w-8 h-8 text-kth-slate-400 mx-auto" />
+                  <p className="text-xs font-bold text-kth-slate-700">No Interview Rounds Scheduled</p>
+                  <p className="text-xs text-kth-slate-500">
+                    Schedule technical assessments, HR screenings, or panel reviews with this candidate.
                   </p>
                   {application && (
                     <Button
                       variant="primary"
                       size="sm"
-                      onClick={() => setIsScheduleModalOpen(true)}
-                      className="mt-2 text-xs"
+                      onClick={() => {
+                        window.location.href = `/employer/candidates/${resolvedCandidateId || application.id}/schedule?applicationId=${application.id}`;
+                      }}
+                      className="mt-2"
                     >
-                      Schedule First Round
+                      Schedule First Interview
                     </Button>
                   )}
                 </div>
               ) : (
                 <div className="space-y-3">
                   {interviews.map((item) => {
-                    const startDate = new Date(item.scheduled_start);
-                    const formattedDate = startDate.toLocaleDateString('en-IN', {
+                    const formattedDate = new Date(item.scheduled_start).toLocaleDateString('en-IN', {
                       weekday: 'short',
                       month: 'short',
                       day: 'numeric',
                     });
-                    const formattedTime = startDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    const formattedTime = new Date(item.scheduled_start).toLocaleTimeString('en-IN', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    });
 
                     return (
                       <div
                         key={item.id}
-                        className={`p-4 rounded-xl border transition-all space-y-2.5 text-xs ${
-                          item.status === 'cancelled'
-                            ? 'bg-kth-slate-50/60 border-kth-slate-200 opacity-75'
-                            : 'bg-white border-kth-slate-200 shadow-xs'
-                        }`}
+                        className="p-4 rounded-xl border border-kth-slate-200 bg-kth-slate-50/50 space-y-2 text-xs"
                       >
-                        <div className="flex justify-between items-start gap-2">
+                        <div className="flex justify-between items-start">
                           <div>
-                            <span className="font-bold text-xs text-kth-slate-900 block">
+                            <strong className="font-bold text-sm text-kth-slate-900 block">
                               {item.title || 'Technical Assessment Round'}
-                            </span>
+                            </strong>
                             <span className="text-[11px] text-kth-slate-500 capitalize">
-                              Format: {item.interview_type.replace('_', ' ')}
+                              {item.interview_type.replace(/_/g, ' ')}
                             </span>
                           </div>
                           <Badge
                             variant={
-                              item.status === 'scheduled' || item.status === 'confirmed'
+                              item.status === 'scheduled'
                                 ? 'emerald'
-                                : item.status === 'cancelled'
-                                ? 'rose'
-                                : 'slate'
+                                : item.status === 'completed'
+                                ? 'slate'
+                                : 'rose'
                             }
-                            className="capitalize text-[10px]"
+                            className="capitalize font-mono text-[10px]"
                           >
                             {item.status}
                           </Badge>
                         </div>
 
-                        <div className="bg-kth-slate-50 p-2.5 rounded-lg border border-kth-slate-200 space-y-1 text-kth-slate-700">
+                        <div className="space-y-1 pt-1 border-t border-kth-slate-200/60">
                           <div className="flex items-center gap-1.5 font-mono font-semibold text-kth-slate-800">
                             <Calendar className="w-3.5 h-3.5 text-kth-primary-600" />
                             <span>{formattedDate} at {formattedTime}</span>
                           </div>
-
-                          {item.meeting_link ? (
-                            <div className="flex items-center gap-1.5 text-kth-primary-600 font-bold truncate">
-                              <Video className="w-3.5 h-3.5 shrink-0" />
-                              <a
-                                href={item.meeting_link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hover:underline truncate inline-flex items-center gap-1"
-                              >
-                                {item.meeting_platform ? `${item.meeting_platform}: ` : ''}{item.meeting_link}
-                                <ExternalLink className="w-2.5 h-2.5 shrink-0" />
-                              </a>
-                            </div>
-                          ) : item.location ? (
-                            <div className="flex items-center gap-1.5 text-kth-slate-600">
-                              <MapPin className="w-3.5 h-3.5 text-kth-slate-400 shrink-0" />
-                              <span className="truncate">{item.location}</span>
-                            </div>
-                          ) : null}
                         </div>
 
                         {item.status === 'scheduled' && (
@@ -768,7 +730,12 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setCancelInterviewId(item.id)}
+                              onClick={async () => {
+                                if (confirm('Cancel this scheduled interview round?')) {
+                                  await interviewService.cancelInterview(item.id);
+                                  loadData();
+                                }
+                              }}
                               className="text-rose-600 hover:bg-rose-50 text-[11px] h-7 px-2"
                               leftIcon={<Trash2 className="w-3 h-3" />}
                             >
@@ -785,95 +752,6 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
           </div>
         </div>
       </div>
-
-      {/* Schedule Interview Modal */}
-      {application && (
-        <ScheduleInterviewModal
-          application={application}
-          isOpen={isScheduleModalOpen}
-          onClose={() => setIsScheduleModalOpen(false)}
-          onSuccess={() => {
-            loadData();
-          }}
-        />
-      )}
-
-      {/* Cancel Interview Confirmation Modal */}
-      <Dialog
-        isOpen={cancelInterviewId !== null}
-        onClose={() => setCancelInterviewId(null)}
-        title="Cancel Scheduled Interview?"
-        description="This will mark the interview round as cancelled and notify the candidate."
-      >
-        <div className="space-y-4 text-left font-sans text-xs">
-          <p className="text-kth-slate-600">
-            Are you sure you want to cancel this interview round? The candidate will no longer see the join CTA.
-          </p>
-          <div className="flex justify-end gap-2 pt-3 border-t border-kth-slate-100">
-            <Button variant="secondary" size="sm" onClick={() => setCancelInterviewId(null)} disabled={isCancelling}>
-              Keep Interview
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleConfirmCancelInterview}
-              disabled={isCancelling}
-              isLoading={isCancelling}
-              className="bg-rose-600 hover:bg-rose-700"
-            >
-              Confirm Cancellation
-            </Button>
-          </div>
-        </div>
-      </Dialog>
-
-      {/* Resume Document Preview Modal */}
-      <Dialog
-        isOpen={resumePreviewOpen}
-        onClose={() => setResumePreviewOpen(false)}
-        title={`Candidate Resume Document — ${name}`}
-        description={`Submitted PDF Dossier • ${resumeFileName}`}
-        maxWidth="xl"
-      >
-        <div className="space-y-4 text-left font-sans text-xs">
-          {resumeUrl ? (
-            <div className="w-full rounded-xl overflow-hidden border border-kth-slate-200 bg-kth-slate-50">
-              <iframe
-                src={`${resumeUrl}#toolbar=1&navpanes=0`}
-                title="Application Resume Full Preview"
-                className="w-full h-[620px] border-0 rounded-xl bg-white"
-              />
-            </div>
-          ) : (
-            <div className="p-8 text-center bg-kth-slate-50 border border-kth-slate-200 rounded-xl space-y-2">
-              <FileText className="w-8 h-8 text-kth-slate-400 mx-auto" />
-              <p className="font-semibold text-kth-slate-700">No attached PDF document found for this application snapshot.</p>
-              <p className="text-kth-slate-400">The candidate profile summary is displayed below.</p>
-              <div className="border-t border-kth-slate-200 pt-3 text-left space-y-1 text-kth-slate-600">
-                <div><strong>Location:</strong> {location}</div>
-                <div><strong>Email:</strong> {email}</div>
-                <div><strong>Skills:</strong> {skills.join(', ')}</div>
-              </div>
-            </div>
-          )}
-
-          <div className="flex justify-between items-center pt-2 border-t border-kth-slate-100">
-            {resumeUrl && (
-              <Button
-                variant="ghost"
-                size="sm"
-                leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
-                onClick={() => window.open(resumeUrl, '_blank')}
-              >
-                Open Full Window
-              </Button>
-            )}
-            <Button variant="secondary" size="sm" onClick={() => setResumePreviewOpen(false)} className="ml-auto">
-              Close
-            </Button>
-          </div>
-        </div>
-      </Dialog>
     </EmployerShell>
   );
 };

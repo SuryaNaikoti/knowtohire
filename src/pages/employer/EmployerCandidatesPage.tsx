@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { CandidateQuickView } from '@/components/employer/CandidateQuickView';
 import { candidateDiscoveryService, DiscoverableCandidate } from '@/services/candidateDiscoveryService';
 import { taxonomyService, CareerCategory } from '@/services';
 import { Search, MapPin, ArrowRight, GitCompare, Loader2, Users } from 'lucide-react';
@@ -13,7 +12,6 @@ import { Search, MapPin, ArrowRight, GitCompare, Loader2, Users } from 'lucide-r
 export const EmployerCandidatesPage: React.FC = () => {
   const [candidates, setCandidates] = useState<DiscoverableCandidate[]>([]);
   const [categories, setCategories] = useState<CareerCategory[]>([]);
-  const [selectedCandidate, setSelectedCandidate] = useState<DiscoverableCandidate | null>(null);
   const [selectedCompareIds, setSelectedCompareIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDomain, setSelectedDomain] = useState('all');
@@ -285,18 +283,17 @@ export const EmployerCandidatesPage: React.FC = () => {
                 </div>
 
                 <div className="pt-3 border-t border-kth-slate-100 flex items-center justify-between gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedCandidate(cand)}>
-                    Quick View
-                  </Button>
+                  <span className="text-[11px] text-kth-slate-400 font-mono">Notice: {cand.noticePeriodDays} Days</span>
                   <Button
                     variant="primary"
                     size="sm"
+                    className="font-bold text-xs"
                     onClick={() => {
-                      window.history.pushState({}, '', `/employer/candidates/${cand.id}`);
-                      window.dispatchEvent(new PopStateEvent('popstate'));
+                      window.location.href = `/employer/candidates/${cand.id}`;
                     }}
                   >
-                    View Profile <ArrowRight className="w-3.5 h-3.5" />
+                    <span>View Full Profile</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </Button>
                 </div>
               </Card>
@@ -304,13 +301,6 @@ export const EmployerCandidatesPage: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Quick View Drawer */}
-      <CandidateQuickView
-        candidate={selectedCandidate}
-        isOpen={selectedCandidate !== null}
-        onClose={() => setSelectedCandidate(null)}
-      />
     </EmployerShell>
   );
 };

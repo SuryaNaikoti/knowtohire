@@ -3,7 +3,6 @@ import { CandidateShell } from '@/components/candidate/CandidateShell';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Dialog } from '@/components/ui/Dialog';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { Alert } from '@/components/ui/Alert';
 import { interviewService, Interview, InterviewType, InterviewStatus } from '@/services/interviewService';
@@ -19,7 +18,6 @@ import {
   User,
   Info,
   Navigation,
-  CheckCircle2,
 } from 'lucide-react';
 
 function isValidUrl(urlString?: string | null): boolean {
@@ -36,8 +34,6 @@ export const CandidateInterviewsPage: React.FC = () => {
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const loadInterviews = useCallback(async () => {
     setIsLoading(true);
@@ -157,11 +153,6 @@ export const CandidateInterviewsPage: React.FC = () => {
     }
 
     return `${dateStr} · ${startTimeStr}${endTimeStr}`;
-  };
-
-  const handleOpenDetails = (interview: Interview) => {
-    setSelectedInterview(interview);
-    setIsDetailsOpen(true);
   };
 
   const handleNavigateJobs = () => {
@@ -284,8 +275,13 @@ export const CandidateInterviewsPage: React.FC = () => {
 
         {/* Action Button Strip */}
         <div className="pt-4 mt-3 border-t border-kth-slate-100 flex items-center justify-between gap-3">
-          <Button variant="ghost" size="sm" onClick={() => handleOpenDetails(interview)} className="text-xs text-kth-slate-600">
-            View Details
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { window.location.href = `/candidate/interviews/${interview.id}`; }}
+            className="text-xs text-kth-slate-600 font-semibold"
+          >
+            View Full Briefing
           </Button>
 
           {isJoinable && (
@@ -326,7 +322,7 @@ export const CandidateInterviewsPage: React.FC = () => {
                   variant="secondary"
                   size="sm"
                   leftIcon={<Info className="w-3.5 h-3.5" />}
-                  onClick={() => handleOpenDetails(interview)}
+                  onClick={() => { window.location.href = `/candidate/interviews/${interview.id}`; }}
                   className="text-xs font-semibold"
                 >
                   View Interview Details
@@ -429,157 +425,6 @@ export const CandidateInterviewsPage: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Full Interview Details Modal */}
-      {selectedInterview && (
-        <Dialog
-          isOpen={isDetailsOpen}
-          onClose={() => setIsDetailsOpen(false)}
-          title={selectedInterview.title || 'Interview Details'}
-          description={`Requisition: ${selectedInterview.job?.title || 'Open Position'}`}
-        >
-          <div className="space-y-4 text-left font-sans text-xs">
-            {/* Type & Status Bar */}
-            <div className="flex justify-between items-center bg-kth-slate-50 p-3 rounded-xl border border-kth-slate-200">
-              <div className="flex items-center gap-2">
-                <Badge variant={getInterviewTypeMeta(selectedInterview.interview_type, selectedInterview.meeting_platform).variant}>
-                  {getInterviewTypeMeta(selectedInterview.interview_type, selectedInterview.meeting_platform).label}
-                </Badge>
-                {selectedInterview.round_name && (
-                  <span className="font-semibold text-kth-slate-700">{selectedInterview.round_name}</span>
-                )}
-              </div>
-              {getStatusBadge(selectedInterview.status)}
-            </div>
-
-            {/* Enterprise & Position */}
-            <div className="bg-white p-3.5 rounded-xl border border-kth-slate-200 space-y-1.5">
-              <span className="text-[10px] font-bold text-kth-slate-400 uppercase block">COMPANY & ROLE</span>
-              <div className="font-semibold text-sm text-kth-slate-900">
-                {selectedInterview.company?.name || 'Recruiting Enterprise'}
-              </div>
-              <div className="text-kth-slate-600">{selectedInterview.job?.title}</div>
-            </div>
-
-            {/* Date & Time Window */}
-            <div className="bg-white p-3.5 rounded-xl border border-kth-slate-200 space-y-1.5">
-              <span className="text-[10px] font-bold text-kth-slate-400 uppercase block">INTERVIEW SCHEDULE</span>
-              <div className="font-mono text-xs font-semibold text-kth-slate-900 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-kth-primary-600" />
-                <span>{formatSchedule(selectedInterview)}</span>
-              </div>
-            </div>
-
-            {/* Venue / Location Details */}
-            {(selectedInterview.venue_address || selectedInterview.location) && (
-              <div className="bg-white p-3.5 rounded-xl border border-kth-slate-200 space-y-1.5">
-                <span className="text-[10px] font-bold text-kth-slate-400 uppercase block">VENUE / LOCATION</span>
-                <div className="text-kth-slate-900 font-medium leading-relaxed">
-                  {selectedInterview.venue_address || selectedInterview.location}
-                </div>
-                {selectedInterview.map_url && (
-                  <a
-                    href={selectedInterview.map_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-kth-primary-600 font-bold hover:underline pt-1"
-                  >
-                    <Navigation className="w-3.5 h-3.5" /> Open Google Maps Directions
-                  </a>
-                )}
-              </div>
-            )}
-
-            {/* Meeting Link for Video / External */}
-            {selectedInterview.meeting_link && isValidUrl(selectedInterview.meeting_link) ? (
-              <div className="bg-cyan-50/70 p-3.5 rounded-xl border border-cyan-200 space-y-1.5">
-                <span className="text-[10px] font-bold text-cyan-900 uppercase block">
-                  {selectedInterview.meeting_platform ? `${selectedInterview.meeting_platform} MEETING LINK` : 'ONLINE MEETING LINK'}
-                </span>
-                <a
-                  href={selectedInterview.meeting_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-kth-primary-600 font-bold text-xs hover:underline break-all"
-                >
-                  <Video className="w-4 h-4 shrink-0" />
-                  <span>{selectedInterview.meeting_link}</span>
-                  <ExternalLink className="w-3 h-3 shrink-0" />
-                </a>
-              </div>
-            ) : (selectedInterview.interview_type === 'video' || selectedInterview.interview_type === 'external' || selectedInterview.interview_type === 'technical_deep_dive') ? (
-              <div className="bg-kth-slate-50 p-3.5 rounded-xl border border-kth-slate-200 space-y-1">
-                <span className="text-[10px] font-bold text-kth-slate-400 uppercase block">MEETING LINK STATUS</span>
-                <p className="text-kth-slate-600">Meeting link will be provided by the employer.</p>
-              </div>
-            ) : null}
-
-            {/* Phone Contact */}
-            {selectedInterview.contact_phone && (
-              <div className="bg-white p-3.5 rounded-xl border border-kth-slate-200 space-y-1.5">
-                <span className="text-[10px] font-bold text-kth-slate-400 uppercase block">RECRUITER CONTACT NUMBER</span>
-                <div className="font-mono text-sm font-semibold text-kth-slate-900 flex items-center gap-2">
-                  <Phone className="w-3.5 h-3.5 text-kth-primary-600" />
-                  <span>{selectedInterview.contact_phone}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Interviewer Info */}
-            {(selectedInterview.interviewer_name || selectedInterview.interviewer_role) && (
-              <div className="bg-white p-3.5 rounded-xl border border-kth-slate-200 space-y-1.5">
-                <span className="text-[10px] font-bold text-kth-slate-400 uppercase block">INTERVIEWER / RECRUITER</span>
-                <div className="font-semibold text-kth-slate-900">
-                  {selectedInterview.interviewer_name || 'Hiring Manager'}
-                  {selectedInterview.interviewer_role ? ` · ${selectedInterview.interviewer_role}` : ''}
-                </div>
-              </div>
-            )}
-
-            {/* Required Documents for Walk-in or In-person */}
-            {selectedInterview.required_documents && selectedInterview.required_documents.length > 0 && (
-              <div className="bg-amber-50/70 p-3.5 rounded-xl border border-amber-200 space-y-2">
-                <span className="text-[10px] font-bold text-amber-900 uppercase block">MANDATORY DOCUMENTS TO BRING</span>
-                <ul className="space-y-1 list-none pl-0">
-                  {selectedInterview.required_documents.map((doc, idx) => (
-                    <li key={idx} className="flex items-center gap-2 text-amber-950 font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                      <span>{doc}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Instructions & Notes */}
-            {(selectedInterview.instructions || selectedInterview.notes) && (
-              <div className="bg-kth-slate-50 p-3.5 rounded-xl border border-kth-slate-200 space-y-1.5">
-                <span className="text-[10px] font-bold text-kth-slate-400 uppercase block">CANDIDATE INSTRUCTIONS & NOTES</span>
-                <p className="text-kth-slate-700 whitespace-pre-line leading-relaxed">
-                  {selectedInterview.instructions || selectedInterview.notes}
-                </p>
-              </div>
-            )}
-
-            {/* Action Footer */}
-            <div className="flex justify-end gap-2.5 pt-3 border-t border-kth-slate-100">
-              <Button variant="secondary" size="sm" onClick={() => setIsDetailsOpen(false)}>
-                Close
-              </Button>
-              {selectedInterview.meeting_link && isValidUrl(selectedInterview.meeting_link) && (selectedInterview.status === 'scheduled' || selectedInterview.status === 'confirmed' || selectedInterview.status === 'rescheduled') && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  leftIcon={<Video className="w-3.5 h-3.5" />}
-                  onClick={() => window.open(selectedInterview.meeting_link!, '_blank')}
-                >
-                  Join Meeting Call
-                </Button>
-              )}
-            </div>
-          </div>
-        </Dialog>
-      )}
     </CandidateShell>
   );
 };

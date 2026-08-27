@@ -492,6 +492,13 @@ export const templateService = {
   },
 
   /**
+   * Fetch a single template by ID.
+   */
+  async getTemplateById(id: string): Promise<ServiceResult<MarketplaceTemplate>> {
+    return this.getTemplateByIdOrSlug(id);
+  },
+
+  /**
    * Track template download / acquisition.
    */
   async trackDownload(templateId: string): Promise<ServiceResult<{ downloadUrl: string }>> {

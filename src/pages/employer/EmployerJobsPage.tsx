@@ -5,10 +5,9 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Alert } from '@/components/ui/Alert';
-import { Dialog } from '@/components/ui/Dialog';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { jobService, Job, JobStatus } from '@/services';
-import { Plus, Search, RefreshCw, Briefcase, AlertTriangle } from 'lucide-react';
+import { Plus, Search, RefreshCw, Briefcase } from 'lucide-react';
 
 export const EmployerJobsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,10 +17,6 @@ export const EmployerJobsPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-
-  // Delete Draft Confirmation Modal state
-  const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadJobs = useCallback(async () => {
     setIsLoading(true);
@@ -115,22 +110,6 @@ export const EmployerJobsPage: React.FC = () => {
       setActionError(error.message);
     } else if (data) {
       setJobs((prev) => prev.map((j) => (j.id === jobId ? data : j)));
-    }
-  };
-
-  const handleConfirmDeleteDraft = async () => {
-    if (!jobToDelete) return;
-    setIsDeleting(true);
-    setActionError(null);
-
-    const { error } = await jobService.deleteDraftJob(jobToDelete.id);
-    setIsDeleting(false);
-
-    if (error) {
-      setActionError(error.message);
-    } else {
-      setJobs((prev) => prev.filter((j) => j.id !== jobToDelete.id));
-      setJobToDelete(null);
     }
   };
 
@@ -242,7 +221,12 @@ export const EmployerJobsPage: React.FC = () => {
                 onPause={() => handlePause(job.id)}
                 onCloseJob={() => handleClose(job.id)}
                 onReopen={() => handleReopen(job.id)}
-                onDeleteDraft={() => setJobToDelete(job)}
+                onDeleteDraft={async () => {
+                  if (confirm(`Permanently delete unpublished draft "${job.title}"?`)) {
+                    await jobService.deleteDraftJob(job.id);
+                    loadJobs();
+                  }
+                }}
                 onViewApplicants={() => handleNavigate(`/employer/jobs/${job.id}/applicants`)}
                 onEdit={() => handleNavigate(`/employer/jobs/${job.id}/edit`)}
               />
@@ -250,46 +234,6 @@ export const EmployerJobsPage: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Delete Draft Confirmation Dialog */}
-      <Dialog
-        isOpen={Boolean(jobToDelete)}
-        onClose={() => setJobToDelete(null)}
-        title="Delete Draft Job"
-        description="Are you sure you want to permanently delete this unpublished draft?"
-      >
-        <div className="space-y-4 text-left">
-          <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-xs text-rose-800 flex items-start gap-2.5">
-            <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-            <span>
-              This will permanently remove the draft for <strong>{jobToDelete?.title}</strong>. This action cannot be undone.
-            </span>
-          </div>
-
-          <div className="flex justify-end gap-2.5 pt-3 border-t border-kth-slate-100">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => setJobToDelete(null)}
-              disabled={isDeleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleConfirmDeleteDraft}
-              disabled={isDeleting}
-              isLoading={isDeleting}
-              className="bg-rose-600 text-white hover:bg-rose-700 border-transparent font-bold"
-            >
-              {isDeleting ? 'Deleting...' : 'Delete Draft'}
-            </Button>
-          </div>
-        </div>
-      </Dialog>
     </EmployerShell>
   );
 };

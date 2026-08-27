@@ -42,14 +42,19 @@ import { CandidateDashboardPage } from '@/pages/candidate/CandidateDashboardPage
 import { CandidateProfilePage } from '@/pages/candidate/CandidateProfilePage';
 import { CandidateEditProfilePage } from '@/pages/candidate/CandidateEditProfilePage';
 import { CandidateResumePage } from '@/pages/candidate/CandidateResumePage';
+import { CandidateResumePreviewPage } from '@/pages/candidate/CandidateResumePreviewPage';
 import { CandidateJobsPage } from '@/pages/candidate/CandidateJobsPage';
 import { CandidateJobDetailsPage } from '@/pages/candidate/CandidateJobDetailsPage';
+import { CandidateApplyPage } from '@/pages/candidate/CandidateApplyPage';
 import { CandidateSavedJobsPage } from '@/pages/candidate/CandidateSavedJobsPage';
 import { CandidateApplicationsPage } from '@/pages/candidate/CandidateApplicationsPage';
 import { CandidateApplicationDetailsPage } from '@/pages/candidate/CandidateApplicationDetailsPage';
 import { CandidateInterviewsPage } from '@/pages/candidate/CandidateInterviewsPage';
+import { CandidateInterviewDetailsPage } from '@/pages/candidate/CandidateInterviewDetailsPage';
 import { CandidateCareerInsightsPage } from '@/pages/candidate/CandidateCareerInsightsPage';
 import { CandidateRequestsPage } from '@/pages/candidate/CandidateRequestsPage';
+import { CandidateNewRequestPage } from '@/pages/candidate/CandidateNewRequestPage';
+import { CandidateRequestDetailsPage } from '@/pages/candidate/CandidateRequestDetailsPage';
 import { CandidateNotificationsPage } from '@/pages/candidate/CandidateNotificationsPage';
 import { CandidateSettingsPage } from '@/pages/candidate/CandidateSettingsPage';
 
@@ -57,11 +62,13 @@ import { CandidateSettingsPage } from '@/pages/candidate/CandidateSettingsPage';
 import { EmployerDashboardPage } from '@/pages/employer/EmployerDashboardPage';
 import { EmployerJobsPage } from '@/pages/employer/EmployerJobsPage';
 import { EmployerCreateJobPage } from '@/pages/employer/EmployerCreateJobPage';
+import { EmployerJobPreviewPage } from '@/pages/employer/EmployerJobPreviewPage';
 import { EmployerJobDetailsPage } from '@/pages/employer/EmployerJobDetailsPage';
 import { EmployerEditJobPage } from '@/pages/employer/EmployerEditJobPage';
 import { EmployerJobApplicantsPage } from '@/pages/employer/EmployerJobApplicantsPage';
 import { EmployerCandidatesPage } from '@/pages/employer/EmployerCandidatesPage';
 import { EmployerCandidateDetailsPage } from '@/pages/employer/EmployerCandidateDetailsPage';
+import { EmployerScheduleInterviewPage } from '@/pages/employer/EmployerScheduleInterviewPage';
 import { EmployerCandidateComparePage } from '@/pages/employer/EmployerCandidateComparePage';
 import { EmployerPipelinePage } from '@/pages/employer/EmployerPipelinePage';
 import { EmployerInterviewsPage } from '@/pages/employer/EmployerInterviewsPage';
@@ -75,15 +82,21 @@ import { EmployerSettingsPage } from '@/pages/employer/EmployerSettingsPage';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import { AdminEmployersPage } from '@/pages/admin/AdminEmployersPage';
+import { AdminEmployerDossierPage } from '@/pages/admin/AdminEmployerDossierPage';
 import { AdminJobsPage } from '@/pages/admin/AdminJobsPage';
 import { AdminJobInspectPage } from '@/pages/admin/AdminJobInspectPage';
 import { AdminApplicationsPage } from '@/pages/admin/AdminApplicationsPage';
+import { AdminApplicationDetailsPage } from '@/pages/admin/AdminApplicationDetailsPage';
 import { AdminResourcesPage } from '@/pages/admin/AdminResourcesPage';
+import { AdminResourceEditPage } from '@/pages/admin/AdminResourceEditPage';
 import { AdminTemplatesPage } from '@/pages/admin/AdminTemplatesPage';
+import { AdminTemplateEditPage } from '@/pages/admin/AdminTemplateEditPage';
 import { AdminRequestsPage } from '@/pages/admin/AdminRequestsPage';
 import { AdminFulfillRequestPage } from '@/pages/admin/AdminFulfillRequestPage';
 import { AdminBlogPage } from '@/pages/admin/AdminBlogPage';
+import { AdminBlogEditPage } from '@/pages/admin/AdminBlogEditPage';
 import { AdminTaxonomyPage } from '@/pages/admin/AdminTaxonomyPage';
+import { AdminTaxonomyNewPage } from '@/pages/admin/AdminTaxonomyNewPage';
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
 
 export function App() {
@@ -127,21 +140,45 @@ export function App() {
 
       if (path === '/admin' || path === '/admin/') adminComponent = <AdminDashboardPage onNavigate={navigateTo} />;
       else if (path === '/admin/users') adminComponent = <AdminUsersPage onNavigate={navigateTo} />;
+      else if (path.startsWith('/admin/employers/') && path !== '/admin/employers') {
+        const empId = path.replace('/admin/employers/', '');
+        adminComponent = <AdminEmployerDossierPage employerId={empId} onNavigate={navigateTo} />;
+      }
       else if (path === '/admin/employers') adminComponent = <AdminEmployersPage onNavigate={navigateTo} />;
       else if (path.startsWith('/admin/jobs/') && path !== '/admin/jobs') {
         const jobId = path.replace('/admin/jobs/', '');
         adminComponent = <AdminJobInspectPage jobId={jobId} onNavigate={navigateTo} />;
       }
       else if (path === '/admin/jobs') adminComponent = <AdminJobsPage onNavigate={navigateTo} />;
+      else if (path.startsWith('/admin/applications/') && path !== '/admin/applications') {
+        const appId = path.replace('/admin/applications/', '');
+        adminComponent = <AdminApplicationDetailsPage applicationId={appId} onNavigate={navigateTo} />;
+      }
       else if (path === '/admin/applications') adminComponent = <AdminApplicationsPage onNavigate={navigateTo} />;
+      else if (path === '/admin/resources/new') adminComponent = <AdminResourceEditPage onNavigate={navigateTo} />;
+      else if (path.startsWith('/admin/resources/') && path.endsWith('/edit')) {
+        const resId = path.replace('/admin/resources/', '').replace('/edit', '');
+        adminComponent = <AdminResourceEditPage resourceId={resId} onNavigate={navigateTo} />;
+      }
       else if (path === '/admin/resources') adminComponent = <AdminResourcesPage onNavigate={navigateTo} />;
+      else if (path === '/admin/templates/new') adminComponent = <AdminTemplateEditPage onNavigate={navigateTo} />;
+      else if (path.startsWith('/admin/templates/') && path.endsWith('/edit')) {
+        const tmplId = path.replace('/admin/templates/', '').replace('/edit', '');
+        adminComponent = <AdminTemplateEditPage templateId={tmplId} onNavigate={navigateTo} />;
+      }
       else if (path === '/admin/templates') adminComponent = <AdminTemplatesPage onNavigate={navigateTo} />;
       else if (path.startsWith('/admin/requests/') && path !== '/admin/requests') {
         const reqId = path.replace('/admin/requests/', '').replace('/fulfill', '');
         adminComponent = <AdminFulfillRequestPage requestId={reqId} onNavigate={navigateTo} />;
       }
       else if (path === '/admin/requests') adminComponent = <AdminRequestsPage onNavigate={navigateTo} />;
+      else if (path === '/admin/blog/new') adminComponent = <AdminBlogEditPage onNavigate={navigateTo} />;
+      else if (path.startsWith('/admin/blog/') && path.endsWith('/edit')) {
+        const blogId = path.replace('/admin/blog/', '').replace('/edit', '');
+        adminComponent = <AdminBlogEditPage blogId={blogId} onNavigate={navigateTo} />;
+      }
       else if (path === '/admin/blog') adminComponent = <AdminBlogPage onNavigate={navigateTo} />;
+      else if (path === '/admin/taxonomy/new') adminComponent = <AdminTaxonomyNewPage onNavigate={navigateTo} />;
       else if (path === '/admin/taxonomy') adminComponent = <AdminTaxonomyPage />;
       else if (path === '/admin/settings') adminComponent = <AdminSettingsPage onNavigate={navigateTo} />;
 
@@ -190,6 +227,7 @@ export function App() {
       if (path === '/employer' || path === '/employer/') pageComponent = <EmployerDashboardPage />;
       else if (path === '/employer/jobs') pageComponent = <EmployerJobsPage />;
       else if (path === '/employer/jobs/new') pageComponent = <EmployerCreateJobPage />;
+      else if (path === '/employer/jobs/preview') pageComponent = <EmployerJobPreviewPage onNavigate={navigateTo} />;
       else if (path.endsWith('/edit') && path.startsWith('/employer/jobs/')) {
         const jobId = path.replace('/employer/jobs/', '').replace('/edit', '');
         pageComponent = <EmployerEditJobPage jobId={jobId} />;
@@ -204,6 +242,9 @@ export function App() {
       }
       else if (path === '/employer/candidates') pageComponent = <EmployerCandidatesPage />;
       else if (path === '/employer/candidates/compare') pageComponent = <EmployerCandidateComparePage />;
+      else if (path.startsWith('/employer/candidates/') && path.endsWith('/schedule')) {
+        pageComponent = <EmployerScheduleInterviewPage onNavigate={navigateTo} />;
+      }
       else if (path.startsWith('/employer/candidates/')) {
         const candidateId = path.replace('/employer/candidates/', '');
         pageComponent = <EmployerCandidateDetailsPage candidateId={candidateId} />;
@@ -236,8 +277,12 @@ export function App() {
       if (path === '/candidate' || path === '/candidate/') pageComponent = <CandidateDashboardPage />;
       else if (path === '/candidate/profile/edit') pageComponent = <CandidateEditProfilePage onNavigate={navigateTo} />;
       else if (path === '/candidate/profile') pageComponent = <CandidateProfilePage onNavigate={navigateTo} />;
+      else if (path === '/candidate/resume/preview') pageComponent = <CandidateResumePreviewPage onNavigate={navigateTo} />;
       else if (path === '/candidate/resume') pageComponent = <CandidateResumePage />;
       else if (path === '/candidate/jobs') pageComponent = <CandidateJobsPage />;
+      else if (path.startsWith('/candidate/jobs/') && path.endsWith('/apply')) {
+        pageComponent = <CandidateApplyPage onNavigate={navigateTo} />;
+      }
       else if (path.startsWith('/candidate/jobs/')) {
         const jobId = path.replace('/candidate/jobs/', '');
         pageComponent = <CandidateJobDetailsPage jobId={jobId} />;
@@ -248,8 +293,15 @@ export function App() {
         const appId = path.replace('/candidate/applications/', '');
         pageComponent = <CandidateApplicationDetailsPage appId={appId} />;
       }
+      else if (path.startsWith('/candidate/interviews/') && path !== '/candidate/interviews') {
+        pageComponent = <CandidateInterviewDetailsPage onNavigate={navigateTo} />;
+      }
       else if (path === '/candidate/interviews') pageComponent = <CandidateInterviewsPage />;
       else if (path === '/candidate/career-insights' || path === '/candidate/insights') pageComponent = <CandidateCareerInsightsPage />;
+      else if (path === '/candidate/requests/new') pageComponent = <CandidateNewRequestPage onNavigate={navigateTo} />;
+      else if (path.startsWith('/candidate/requests/') && path !== '/candidate/requests') {
+        pageComponent = <CandidateRequestDetailsPage onNavigate={navigateTo} />;
+      }
       else if (path === '/candidate/requests') pageComponent = <CandidateRequestsPage />;
       else if (path === '/candidate/notifications') pageComponent = <CandidateNotificationsPage />;
       else if (path === '/candidate/settings') pageComponent = <CandidateSettingsPage />;
@@ -303,6 +355,9 @@ export function App() {
 
     // Public Routes
     if (path === '/' || path === '') return <HomePage />;
+    if (path.startsWith('/jobs/') && path.endsWith('/apply')) {
+      return <CandidateApplyPage onNavigate={navigateTo} />;
+    }
     if (path === '/jobs') return <JobsPage />;
     if (path.startsWith('/jobs/')) {
       const jobId = path.replace('/jobs/', '');
