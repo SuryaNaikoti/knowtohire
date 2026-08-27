@@ -476,7 +476,7 @@ export const blogService = {
    */
   async updateBlogPost(id: string, input: UpdateBlogPostInput): Promise<ServiceResult<BlogPost>> {
     try {
-      const existingRes = await this.getBlogPostBySlug(id);
+      const existingRes = await this.getBlogPostBySlug(id, { requirePublished: false });
       const existing = existingRes.data;
 
       const updates: Partial<BlogPost> = {
@@ -498,7 +498,7 @@ export const blogService = {
 
       updateDemoBlogPost(id, updates);
 
-      const updated = await this.getBlogPostBySlug(id);
+      const updated = await this.getBlogPostBySlug(id, { requirePublished: false });
       return updated;
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
@@ -546,5 +546,12 @@ export const blogService = {
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }
+  },
+
+  /**
+   * Admin: Archive blog post.
+   */
+  async archiveBlogPost(id: string): Promise<ServiceResult<boolean>> {
+    return this.updateBlogPostStatus(id, 'archived');
   },
 };

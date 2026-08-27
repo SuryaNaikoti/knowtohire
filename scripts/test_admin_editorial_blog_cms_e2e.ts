@@ -165,7 +165,7 @@ async function runSuite() {
   const archiveRes = await blogService.deleteBlogPost(createdId);
   assert(archiveRes.data === true, 'Admin archives article');
 
-  const fetchedArchived = await blogService.getBlogPostBySlug(createdId);
+  const fetchedArchived = await blogService.getBlogPostBySlug(createdId, { requirePublished: false });
   assert(fetchedArchived.data?.status === 'archived', 'Article status updated to "archived"');
   assert(fetchedArchived.data?.is_active === false, 'Archived article is_active set to false');
 
