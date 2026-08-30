@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Bell, Menu } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { notificationService } from '@/services';
 import { UserMenuDropdown } from '@/components/navigation/UserMenuDropdown';
 
 export interface CandidateHeaderProps {
@@ -15,6 +16,33 @@ export const CandidateHeader: React.FC<CandidateHeaderProps> = ({
   onMobileMenuToggle,
 }) => {
   const { profile } = useAuth();
+  const [unreadNotifCount, setUnreadNotifCount] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const count = await notificationService.getUnreadCount();
+        setUnreadNotifCount(count);
+      } catch {
+        // ignore
+      }
+    };
+    fetchUnread();
+
+    const handleNotifsChanged = () => {
+      fetchUnread();
+    };
+
+    window.addEventListener('kth_notifications_changed', handleNotifsChanged);
+    window.addEventListener('kth_applications_changed', handleNotifsChanged);
+    window.addEventListener('kth_interviews_changed', handleNotifsChanged);
+
+    return () => {
+      window.removeEventListener('kth_notifications_changed', handleNotifsChanged);
+      window.removeEventListener('kth_applications_changed', handleNotifsChanged);
+      window.removeEventListener('kth_interviews_changed', handleNotifsChanged);
+    };
+  }, []);
 
   const fullName = profile?.full_name || 'Candidate';
   const getInitials = (name: string) => {
@@ -46,10 +74,16 @@ export const CandidateHeader: React.FC<CandidateHeaderProps> = ({
           <kbd className="font-mono text-[10px] bg-white px-1.5 py-0.5 rounded border border-kth-slate-200">Cmd+K</kbd>
         </button>
 
-        {/* Notifications Icon with Unread Indicator */}
-        <a href="/candidate/notifications" className="relative p-2 rounded-md text-kth-slate-600 hover:bg-kth-slate-100 no-underline">
+        {/* Notifications Icon with Dynamic Unread Indicator */}
+        <a
+          href="/candidate/notifications"
+          className="relative p-2 rounded-md text-kth-slate-600 hover:bg-kth-slate-100 no-underline"
+          title={`${unreadNotifCount} unread notifications`}
+        >
           <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-kth-primary-600 ring-2 ring-white" />
+          {unreadNotifCount > 0 && (
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-kth-primary-600 ring-2 ring-white" />
+          )}
         </a>
 
         {/* Interactive Candidate Account Dropdown */}
