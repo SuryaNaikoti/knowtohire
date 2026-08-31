@@ -253,7 +253,7 @@ export const jobService = {
       }
 
       // 11. Pagination Range
-      const { data, count, error } = await query.range(from, to);
+      const { data, error } = await query.range(from, to);
 
       let dbJobs: Job[] = (!error && data) ? ((data as any[]) || []).map(normalizeJobEntity) : [];
 
@@ -277,71 +277,104 @@ export const jobService = {
         publishedLocal = publishedLocal.filter((j) => (j.category || '').toLowerCase().includes(cat));
       }
 
-      let combined = [...publishedLocal, ...dbJobs.filter(j => !publishedLocal.some(lj => lj.id === j.id))];
-
-      // If offline/demo mode and combined is empty, load active MOCK_JOBS (excluding non-published ones)
-      if (combined.length === 0 && dbJobs.length === 0) {
-        const { MOCK_JOBS } = await import('@/data/mockData');
-        const localCreated = getLocalCreatedJobs();
-        const activeMocks: Job[] = MOCK_JOBS.filter(mj => {
-          const override = localCreated.find(lj => lj.id === mj.id);
-          return override ? override.status === 'published' : true;
-        }).map(mj => ({
-          id: mj.id,
-          company_id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-          created_by: '00000000-0000-0000-0000-000000000002',
-          title: mj.title,
-          department: mj.department,
-          category: mj.department || 'Technology',
-          description: mj.description,
-          responsibilities: mj.responsibilities,
-          requirements: mj.requirements,
-          skills: mj.skills,
-          benefits: mj.benefits,
-          employment_type: (mj.employmentType || 'full_time') as any,
-          work_mode: mj.isRemote ? 'remote' : 'on_site',
-          experience_level: 'mid_level',
-          location: mj.location,
-          is_remote: mj.isRemote,
-          min_salary_inr: mj.minSalaryINR,
-          max_salary_inr: mj.maxSalaryINR,
-          salary_currency: 'INR',
-          status: 'published',
-          is_verified: true,
-          published_at: new Date().toISOString(),
+      // Load and convert active canonical MOCK_JOBS
+      const { MOCK_JOBS } = await import('@/data/mockData');
+      const localCreated = getLocalCreatedJobs();
+      const activeMocks: Job[] = MOCK_JOBS.filter(mj => {
+        const override = localCreated.find(lj => lj.id === mj.id);
+        return override ? override.status === 'published' : true;
+      }).map(mj => ({
+        id: mj.id,
+        company_id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
+        created_by: '00000000-0000-0000-0000-000000000002',
+        title: mj.title,
+        department: mj.department,
+        category: mj.department || 'Sustainability & ESG',
+        description: mj.description,
+        responsibilities: mj.responsibilities,
+        requirements: mj.requirements,
+        skills: mj.skills,
+        benefits: mj.benefits,
+        employment_type: (mj.employmentType?.toLowerCase().replace('-', '_') || 'full_time') as any,
+        work_mode: mj.isRemote ? 'remote' : (mj.employmentType === 'Hybrid' ? 'hybrid' : 'on_site'),
+        experience_level: 'mid_level',
+        location: mj.location,
+        is_remote: mj.isRemote,
+        min_salary_inr: mj.minSalaryINR,
+        max_salary_inr: mj.maxSalaryINR,
+        salary_currency: 'INR',
+        status: 'published',
+        is_verified: true,
+        published_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        company: {
+          id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
+          name: mj.company,
+          industry: mj.department || 'Enterprise Solutions',
+          headquarters_location: mj.location,
+          verification_status: 'verified',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          company: {
-            id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-            name: mj.company,
-            industry: 'Technology & Enterprise',
-            headquarters_location: mj.location,
-            verification_status: 'verified',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        }));
+        },
+      }));
 
-        let filteredMocks = activeMocks;
-        if (filters.keyword && filters.keyword.trim()) {
-          const kw = filters.keyword.trim().toLowerCase();
-          filteredMocks = filteredMocks.filter(
-            (j) =>
-              j.title.toLowerCase().includes(kw) ||
-              j.department.toLowerCase().includes(kw) ||
-              j.description.toLowerCase().includes(kw) ||
-              (j.company?.name || '').toLowerCase().includes(kw)
-          );
+      let filteredMocks = activeMocks;
+      if (filters.keyword && filters.keyword.trim()) {
+        const kw = filters.keyword.trim().toLowerCase();
+        filteredMocks = filteredMocks.filter(
+          (j) =>
+            j.title.toLowerCase().includes(kw) ||
+            j.department.toLowerCase().includes(kw) ||
+            j.description.toLowerCase().includes(kw) ||
+            (j.company?.name || '').toLowerCase().includes(kw) ||
+            (j.skills || []).some(s => s.toLowerCase().includes(kw))
+        );
+      }
+      if (filters.location && filters.location.trim()) {
+        const loc = filters.location.trim().toLowerCase();
+        filteredMocks = filteredMocks.filter((j) => j.location.toLowerCase().includes(loc));
+      }
+      if (filters.category && filters.category.trim() && filters.category !== 'all') {
+        const cat = filters.category.trim().toLowerCase();
+        filteredMocks = filteredMocks.filter((j) => (j.category || j.department || '').toLowerCase().includes(cat));
+      }
+      if (filters.work_mode) {
+        filteredMocks = filteredMocks.filter((j) => j.work_mode === filters.work_mode);
+      }
+      if (filters.employment_type) {
+        filteredMocks = filteredMocks.filter((j) => j.employment_type === filters.employment_type);
+      }
+      if (filters.min_salary) {
+        filteredMocks = filteredMocks.filter((j) => (j.max_salary_inr || 0) >= filters.min_salary!);
+      }
+      if (filters.max_salary) {
+        filteredMocks = filteredMocks.filter((j) => (j.min_salary_inr || 0) <= filters.max_salary!);
+      }
+
+      // Blend local jobs, database jobs, and canonical jobs (without duplicates)
+      const existingIds = new Set<string>();
+      const combined: Job[] = [];
+
+      for (const j of publishedLocal) {
+        if (!existingIds.has(j.id)) {
+          existingIds.add(j.id);
+          combined.push(j);
         }
-        if (filters.location && filters.location.trim()) {
-          const loc = filters.location.trim().toLowerCase();
-          filteredMocks = filteredMocks.filter((j) => j.location.toLowerCase().includes(loc));
+      }
+
+      for (const j of dbJobs) {
+        if (!existingIds.has(j.id)) {
+          existingIds.add(j.id);
+          combined.push(j);
         }
-        if (filters.category && filters.category.trim() && filters.category !== 'all') {
-          const cat = filters.category.trim().toLowerCase();
-          filteredMocks = filteredMocks.filter((j) => (j.category || '').toLowerCase().includes(cat));
+      }
+
+      for (const j of filteredMocks) {
+        if (!existingIds.has(j.id)) {
+          existingIds.add(j.id);
+          combined.push(j);
         }
-        combined = filteredMocks;
       }
 
       // Apply in-memory sort on combined list
@@ -369,13 +402,14 @@ export const jobService = {
           break;
       }
 
-      const totalCount = (count || 0) + publishedLocal.length;
+      const totalCount = combined.length;
       const totalPages = Math.ceil(totalCount / pageSize);
+      const paginatedData = combined.slice(from, from + pageSize);
 
       return {
         data: {
-          data: combined,
-          count: combined.length,
+          data: paginatedData,
+          count: totalCount,
           page,
           pageSize,
           totalPages: totalPages > 0 ? totalPages : 1,
@@ -426,14 +460,14 @@ export const jobService = {
           created_by: '00000000-0000-0000-0000-000000000002',
           title: mockJob.title,
           department: mockJob.department,
-          category: mockJob.department || 'Technology',
+          category: mockJob.department || 'Sustainability & ESG',
           description: mockJob.description,
           responsibilities: mockJob.responsibilities,
           requirements: mockJob.requirements,
           skills: mockJob.skills,
           benefits: mockJob.benefits,
-          employment_type: (mockJob.employmentType || 'full_time') as any,
-          work_mode: mockJob.isRemote ? 'remote' : 'on_site',
+          employment_type: (mockJob.employmentType?.toLowerCase().replace('-', '_') || 'full_time') as any,
+          work_mode: mockJob.isRemote ? 'remote' : (mockJob.employmentType === 'Hybrid' ? 'hybrid' : 'on_site'),
           experience_level: 'mid_level',
           location: mockJob.location,
           is_remote: mockJob.isRemote,
@@ -448,7 +482,7 @@ export const jobService = {
           company: {
             id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
             name: mockJob.company,
-            industry: 'Technology & Enterprise',
+            industry: mockJob.department || 'Enterprise Solutions',
             headquarters_location: mockJob.location,
             verification_status: 'verified',
             created_at: new Date().toISOString(),
@@ -466,6 +500,116 @@ export const jobService = {
         data: null,
         error: { message: 'Job posting not found or is no longer active.', code: 'NOT_FOUND', status: 404 },
       };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
+   * Calculates tailored match scores and returns jobs matching a candidate's profile.
+   * Matches candidate skills, domain specialization, title/headline, preferred location, and salary.
+   */
+  async getMatchingJobsForCandidate(
+    candidateProfile?: any | null,
+    limit: number = 20
+  ): Promise<ServiceResult<Job[]>> {
+    try {
+      const allJobsRes = await this.getPublishedJobs({ pageSize: 100, sort_by: 'latest' });
+      const allJobs = allJobsRes.data?.data || [];
+
+      if (!candidateProfile || allJobs.length === 0) {
+        return { data: allJobs.slice(0, limit), error: null };
+      }
+
+      const candidateSkills = (candidateProfile.skills || []).map((s: string) => s.toLowerCase().trim());
+      const domainSpec = (candidateProfile.domainSpecialization || candidateProfile.domain_specialization || '').toLowerCase().trim();
+      const headline = (candidateProfile.headline || '').toLowerCase().trim();
+      const prefLocations = (candidateProfile.preferredLocations || []).map((l: string) => l.toLowerCase().trim());
+      const candidateLoc = (candidateProfile.location || '').toLowerCase().trim();
+      const prefSalaryMin = candidateProfile.preferredSalaryMinINR || 0;
+      const prefSalaryMax = candidateProfile.preferredSalaryMaxINR || 0;
+
+      const scoredJobs = allJobs.map(job => {
+        let score = 0;
+        const jobSkills = (job.skills || []).map(s => s.toLowerCase().trim());
+        const jobTitle = (job.title || '').toLowerCase();
+        const jobDept = (job.department || '').toLowerCase();
+        const jobCategory = (job.category || '').toLowerCase();
+        const jobDesc = (job.description || '').toLowerCase();
+        const jobLocation = (job.location || '').toLowerCase();
+
+        // 1. Skill Overlap (up to 50 points)
+        if (candidateSkills.length > 0 && jobSkills.length > 0) {
+          let matchedCount = 0;
+          for (const cSkill of candidateSkills) {
+            if (jobSkills.some(jSkill => jSkill.includes(cSkill) || cSkill.includes(jSkill))) {
+              matchedCount++;
+            }
+          }
+          const overlapRatio = matchedCount / Math.max(jobSkills.length, candidateSkills.length);
+          score += Math.round(overlapRatio * 50);
+          if (matchedCount > 0 && score < 25) score = 30; // Base boost for skill match
+        } else {
+          score += 20; // Default base skill score
+        }
+
+        // 2. Domain / Category / Headline Match (up to 30 points)
+        let domainMatched = false;
+        if (domainSpec) {
+          if (
+            jobDept.includes(domainSpec) ||
+            jobCategory.includes(domainSpec) ||
+            jobTitle.includes(domainSpec) ||
+            jobDesc.includes(domainSpec)
+          ) {
+            score += 25;
+            domainMatched = true;
+          }
+        }
+        if (headline) {
+          const headlineWords = headline.split(/\s+/).filter((w: string) => w.length > 3);
+          const matchedHeadlineWords = headlineWords.filter((w: string) => jobTitle.includes(w) || jobDept.includes(w));
+          if (matchedHeadlineWords.length > 0) {
+            score += Math.min(15, matchedHeadlineWords.length * 8);
+          }
+        }
+        if (!domainMatched && !headline) {
+          score += 15;
+        }
+
+        // 3. Location Match (up to 15 points)
+        if (job.is_remote) {
+          score += 15; // Remote is universal match
+        } else if (candidateLoc && jobLocation.includes(candidateLoc)) {
+          score += 15;
+        } else if (prefLocations.some((pl: string) => jobLocation.includes(pl))) {
+          score += 12;
+        } else {
+          score += 5;
+        }
+
+        // 4. Salary Alignment (up to 5 points)
+        if (prefSalaryMin > 0 && job.max_salary_inr && job.max_salary_inr >= prefSalaryMin) {
+          score += 5;
+        } else if (prefSalaryMax > 0 && job.min_salary_inr && job.min_salary_inr <= prefSalaryMax) {
+          score += 5;
+        } else {
+          score += 3;
+        }
+
+        // Ensure score stays bounded between 65% and 99% for presentation
+        const finalMatchScore = Math.min(99, Math.max(65, score));
+
+        return {
+          ...job,
+          match_score: finalMatchScore,
+        };
+      });
+
+      // Sort descending by match score
+      scoredJobs.sort((a, b) => (b.match_score || 0) - (a.match_score || 0));
+
+      return { data: scoredJobs.slice(0, limit), error: null };
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }
@@ -550,6 +694,47 @@ export const jobService = {
       const localJob = getLocalCreatedJobs().find((j) => j.id === jobId);
       if (localJob) {
         return { data: normalizeJobEntity(localJob), error: null };
+      }
+
+      const { MOCK_JOBS } = await import('@/data/mockData');
+      const mockJob = MOCK_JOBS.find((mj) => mj.id === jobId);
+      if (mockJob) {
+        const mockEntity: Job = {
+          id: mockJob.id,
+          company_id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
+          created_by: '00000000-0000-0000-0000-000000000002',
+          title: mockJob.title,
+          department: mockJob.department,
+          category: mockJob.department || 'Sustainability & ESG',
+          description: mockJob.description,
+          responsibilities: mockJob.responsibilities,
+          requirements: mockJob.requirements,
+          skills: mockJob.skills,
+          benefits: mockJob.benefits,
+          employment_type: (mockJob.employmentType?.toLowerCase().replace('-', '_') || 'full_time') as any,
+          work_mode: mockJob.isRemote ? 'remote' : (mockJob.employmentType === 'Hybrid' ? 'hybrid' : 'on_site'),
+          experience_level: 'mid_level',
+          location: mockJob.location,
+          is_remote: mockJob.isRemote,
+          min_salary_inr: mockJob.minSalaryINR,
+          max_salary_inr: mockJob.maxSalaryINR,
+          salary_currency: 'INR',
+          status: 'published',
+          is_verified: true,
+          published_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          company: {
+            id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
+            name: mockJob.company,
+            industry: mockJob.department || 'Enterprise Solutions',
+            headquarters_location: mockJob.location,
+            verification_status: 'verified',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        };
+        return { data: normalizeJobEntity(mockEntity), error: null };
       }
 
       if (error) {

@@ -5,15 +5,19 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
-import { jobService, savedJobService, Job } from '@/services';
-import { Search, Briefcase, RefreshCw, XCircle } from 'lucide-react';
+import { jobService, savedJobService, candidateProfileService, Job } from '@/services';
+import { Search, Briefcase, RefreshCw, XCircle, Sparkles } from 'lucide-react';
 
 export const CandidateJobsPage: React.FC = () => {
+  const queryParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  const initialMatch = queryParams.get('match') === 'profile' || queryParams.get('filter') === 'matching';
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLoc, setSelectedLoc] = useState('all');
   const [sortBy, setSortBy] = useState<'latest' | 'salary_high' | 'salary_low' | 'deadline'>('latest');
   const [workMode, setWorkMode] = useState<string>('all');
   const [employmentType, setEmploymentType] = useState<string>('all');
+  const [isMatchOnly, setIsMatchOnly] = useState(initialMatch);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
@@ -24,31 +28,66 @@ export const CandidateJobsPage: React.FC = () => {
     setIsLoading(true);
     setErrorMessage(null);
 
-    const [jobsRes, savedRes] = await Promise.all([
-      jobService.getPublishedJobs({
-        keyword: searchTerm.trim() || undefined,
-        location: selectedLoc !== 'all' ? selectedLoc : undefined,
-        work_mode: workMode !== 'all' ? (workMode as any) : undefined,
-        employment_type: employmentType !== 'all' ? (employmentType as any) : undefined,
-        pageSize: 50,
-        sort_by: sortBy,
-      }),
+    const [savedRes, cpRes] = await Promise.all([
       savedJobService.getMySavedJobs(),
+      candidateProfileService.getMyCandidateProfile(),
     ]);
-
-    if (jobsRes.error) {
-      setErrorMessage(jobsRes.error.message);
-      setJobs([]);
-    } else if (jobsRes.data) {
-      setJobs(jobsRes.data.data);
-    }
 
     if (savedRes.data) {
       setSavedJobIds(new Set(savedRes.data.map((s) => s.job_id)));
     }
 
+    let loadedJobs: Job[] = [];
+
+    if (isMatchOnly && cpRes.data) {
+      const matchRes = await jobService.getMatchingJobsForCandidate(cpRes.data, 60);
+      if (matchRes.data) {
+        loadedJobs = matchRes.data;
+      }
+    } else {
+      const jobsRes = await jobService.getPublishedJobs({
+        keyword: searchTerm.trim() || undefined,
+        location: selectedLoc !== 'all' ? selectedLoc : undefined,
+        work_mode: workMode !== 'all' ? (workMode as any) : undefined,
+        employment_type: employmentType !== 'all' ? (employmentType as any) : undefined,
+        pageSize: 60,
+        sort_by: sortBy,
+      });
+
+      if (jobsRes.error) {
+        setErrorMessage(jobsRes.error.message);
+      } else if (jobsRes.data) {
+        loadedJobs = jobsRes.data.data;
+      }
+    }
+
+    // Apply client filters if in match mode
+    if (isMatchOnly && loadedJobs.length > 0) {
+      if (searchTerm.trim()) {
+        const kw = searchTerm.trim().toLowerCase();
+        loadedJobs = loadedJobs.filter(
+          (j) =>
+            j.title.toLowerCase().includes(kw) ||
+            j.department.toLowerCase().includes(kw) ||
+            j.description.toLowerCase().includes(kw) ||
+            (j.company?.name || '').toLowerCase().includes(kw) ||
+            (j.skills || []).some((s) => s.toLowerCase().includes(kw))
+        );
+      }
+      if (selectedLoc !== 'all') {
+        loadedJobs = loadedJobs.filter((j) => j.location.toLowerCase().includes(selectedLoc.toLowerCase()));
+      }
+      if (workMode !== 'all') {
+        loadedJobs = loadedJobs.filter((j) => j.work_mode?.toLowerCase() === workMode.toLowerCase());
+      }
+      if (employmentType !== 'all') {
+        loadedJobs = loadedJobs.filter((j) => j.employment_type?.toLowerCase() === employmentType.toLowerCase().replace('-', '_'));
+      }
+    }
+
+    setJobs(loadedJobs);
     setIsLoading(false);
-  }, [searchTerm, selectedLoc, sortBy, workMode, employmentType]);
+  }, [searchTerm, selectedLoc, sortBy, workMode, employmentType, isMatchOnly]);
 
   useEffect(() => {
     loadData();
@@ -179,8 +218,23 @@ export const CandidateJobsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-kth-slate-100 text-xs text-kth-slate-500">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-kth-slate-100 text-xs text-kth-slate-500">
             <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsMatchOnly(!isMatchOnly)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                  isMatchOnly
+                    ? 'bg-kth-primary-600 text-white shadow-xs'
+                    : 'bg-kth-primary-50 text-kth-primary-700 hover:bg-kth-primary-100 border border-kth-primary-200'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {isMatchOnly ? 'Matched for My Profile (Active)' : 'Match My Profile'}
+              </button>
+
+              <span className="text-kth-slate-300">|</span>
+
               <span className="font-medium text-kth-slate-700">Filter By:</span>
               <select
                 value={workMode}
@@ -188,9 +242,9 @@ export const CandidateJobsPage: React.FC = () => {
                 className="bg-kth-slate-50 border border-kth-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-kth-slate-700 focus:outline-none focus:ring-1 focus:ring-kth-primary-500 font-medium"
               >
                 <option value="all">All Work Modes</option>
-                <option value="On-site">On-site</option>
-                <option value="Hybrid">Hybrid</option>
-                <option value="Remote">Remote</option>
+                <option value="on_site">On-site</option>
+                <option value="hybrid">Hybrid</option>
+                <option value="remote">Remote</option>
               </select>
 
               <select
@@ -199,13 +253,13 @@ export const CandidateJobsPage: React.FC = () => {
                 className="bg-kth-slate-50 border border-kth-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-kth-slate-700 focus:outline-none focus:ring-1 focus:ring-kth-primary-500 font-medium"
               >
                 <option value="all">All Employment Types</option>
-                <option value="Full-Time">Full-Time</option>
-                <option value="Part-Time">Part-Time</option>
-                <option value="Contract">Contract</option>
-                <option value="Internship">Internship</option>
+                <option value="full_time">Full-Time</option>
+                <option value="part_time">Part-Time</option>
+                <option value="contract">Contract</option>
+                <option value="internship">Internship</option>
               </select>
 
-              {(searchTerm || selectedLoc !== 'all' || workMode !== 'all' || employmentType !== 'all' || sortBy !== 'latest') && (
+              {(searchTerm || selectedLoc !== 'all' || workMode !== 'all' || employmentType !== 'all' || sortBy !== 'latest' || isMatchOnly) && (
                 <button
                   type="button"
                   onClick={() => {
@@ -214,6 +268,7 @@ export const CandidateJobsPage: React.FC = () => {
                     setWorkMode('all');
                     setEmploymentType('all');
                     setSortBy('latest');
+                    setIsMatchOnly(false);
                   }}
                   className="text-xs text-kth-primary-600 hover:text-kth-primary-800 font-semibold underline ml-1 cursor-pointer"
                 >
@@ -227,6 +282,25 @@ export const CandidateJobsPage: React.FC = () => {
             </span>
           </div>
         </div>
+
+        {/* Matched Profile Notice Banner */}
+        {isMatchOnly && (
+          <div className="bg-kth-primary-50 border border-kth-primary-100 rounded-xl p-3.5 flex items-center justify-between gap-3 text-xs text-kth-primary-800">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-kth-primary-600 shrink-0" />
+              <span>
+                <strong>Profile Match Enabled:</strong> Showing positions ranked by compatibility with your verified skills, headline, and domain specialization.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsMatchOnly(false)}
+              className="text-kth-primary-700 hover:text-kth-primary-900 font-bold underline shrink-0 cursor-pointer"
+            >
+              View All Jobs
+            </button>
+          </div>
+        )}
 
         {/* Error Alert with Retry */}
         {errorMessage && (

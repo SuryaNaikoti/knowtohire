@@ -105,20 +105,32 @@ export const CandidateDashboardPage: React.FC = () => {
     const loadDashboardData = async () => {
       setIsLoading(true);
 
-      const [jobsRes, appsRes, savedRes, intRes, cpRes] = await Promise.all([
-        jobService.getPublishedJobs({ pageSize: 4, sort_by: 'latest' }),
+      const [appsRes, savedRes, intRes, cpRes] = await Promise.all([
         applicationService.getMyApplications(),
         savedJobService.getMySavedJobs(),
         interviewService.getMyInterviews(),
         candidateProfileService.getMyCandidateProfile(),
       ]);
 
-      if (jobsRes.data) setRecommendedJobs(jobsRes.data.data);
       if (appsRes.data) setApplications(appsRes.data);
       if (savedRes.data) setSavedCount(savedRes.data.length);
       if (intRes.data) setInterviews(intRes.data);
       if (cpRes.data) setCandidateProfile(cpRes.data);
 
+      let matched: Job[] = [];
+      if (cpRes.data) {
+        const matchRes = await jobService.getMatchingJobsForCandidate(cpRes.data, 4);
+        if (matchRes.data && matchRes.data.length > 0) {
+          matched = matchRes.data;
+        }
+      }
+
+      if (matched.length === 0) {
+        const jobsRes = await jobService.getPublishedJobs({ pageSize: 4, sort_by: 'latest' });
+        if (jobsRes.data) matched = jobsRes.data.data;
+      }
+
+      setRecommendedJobs(matched);
       setIsLoading(false);
     };
 
@@ -187,10 +199,10 @@ export const CandidateDashboardPage: React.FC = () => {
           <Button
             variant="primary"
             size="sm"
-            onClick={() => handleNavigate('/candidate/jobs')}
-            className="shrink-0"
+            onClick={() => handleNavigate('/candidate/jobs?match=profile')}
+            className="shrink-0 font-bold"
           >
-            Find Matching Jobs <ArrowRight className="w-3 h-3" />
+            Find Matching Jobs <ArrowRight className="w-3.5 h-3.5" />
           </Button>
         </div>
 
