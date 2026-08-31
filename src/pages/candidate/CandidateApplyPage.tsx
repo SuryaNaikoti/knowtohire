@@ -22,13 +22,25 @@ import {
 } from 'lucide-react';
 
 interface CandidateApplyPageProps {
+  jobId?: string;
   onNavigate?: (path: string) => void;
 }
 
-export const CandidateApplyPage: React.FC<CandidateApplyPageProps> = ({ onNavigate }) => {
-  const { id } = useParams<{ id: string }>();
+export const CandidateApplyPage: React.FC<CandidateApplyPageProps> = ({ jobId: propJobId, onNavigate }) => {
+  const { id: routerId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, isAuthenticated, role, loginWithDemo } = useAuth();
+
+  const resolvedJobId =
+    propJobId ||
+    routerId ||
+    (window.location.pathname.startsWith('/jobs/')
+      ? window.location.pathname.replace('/jobs/', '').replace('/apply', '')
+      : '') ||
+    (window.location.pathname.startsWith('/candidate/jobs/')
+      ? window.location.pathname.replace('/candidate/jobs/', '').replace('/apply', '')
+      : '') ||
+    '';
 
   const [job, setJob] = useState<Job | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,22 +50,45 @@ export const CandidateApplyPage: React.FC<CandidateApplyPageProps> = ({ onNaviga
   const [createdApplication, setCreatedApplication] = useState<JobApplication | null>(null);
 
   useEffect(() => {
-    if (id) {
+    if (resolvedJobId) {
       setIsLoading(true);
-      jobService.getJobById(id).then((res) => {
+      setErrorMessage(null);
+      jobService.getPublishedJobById(resolvedJobId).then((res) => {
         if (res.data) {
           setJob(res.data);
+          setIsLoading(false);
         } else {
-          setErrorMessage('Job requisition not found.');
+          // fallback to getJobById
+          jobService.getJobById(resolvedJobId).then((fallbackRes) => {
+            if (fallbackRes.data) {
+              setJob(fallbackRes.data);
+            } else {
+              setErrorMessage('Job requisition not found.');
+            }
+            setIsLoading(false);
+          }).catch(() => {
+            setErrorMessage('Job requisition not found.');
+            setIsLoading(false);
+          });
         }
+      }).catch(() => {
+        setErrorMessage('Failed to load position.');
         setIsLoading(false);
       });
+    } else {
+      setIsLoading(false);
+      setErrorMessage('No Job ID specified.');
     }
-  }, [id]);
+  }, [resolvedJobId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!job || isSubmitting) return;
+
+    if (!isAuthenticated) {
+      setErrorMessage('Please sign in as a candidate to submit your application.');
+      return;
+    }
 
     setIsSubmitting(true);
     setErrorMessage(null);
@@ -73,18 +108,22 @@ export const CandidateApplyPage: React.FC<CandidateApplyPageProps> = ({ onNaviga
   };
 
   const handleBack = () => {
+    const backPath = job ? `/jobs/${job.id}` : '/jobs';
     if (onNavigate) {
-      onNavigate(job ? `/jobs/${job.id}` : '/jobs');
+      onNavigate(backPath);
     } else {
-      navigate(job ? `/jobs/${job.id}` : '/jobs');
+      window.history.pushState({}, '', backPath);
+      window.dispatchEvent(new Event('popstate'));
     }
   };
 
   const handleNavigateTracker = (appId: string) => {
+    const targetPath = `/candidate/applications/${appId}`;
     if (onNavigate) {
-      onNavigate(`/candidate/applications/${appId}`);
+      onNavigate(targetPath);
     } else {
-      navigate(`/candidate/applications/${appId}`);
+      window.history.pushState({}, '', targetPath);
+      window.dispatchEvent(new Event('popstate'));
     }
   };
 
@@ -209,16 +248,55 @@ export const CandidateApplyPage: React.FC<CandidateApplyPageProps> = ({ onNaviga
                     <User className="w-4 h-4 text-kth-primary-600" />
                     Verified Candidate Snapshot
                   </h3>
-                  <Badge variant="emerald" className="text-[10px] font-bold">
-                    Profile Linked
+                  <Badge variant={isAuthenticated ? "emerald" : "amber"} className="text-[10px] font-bold">
+                    {isAuthenticated ? "Profile Linked" : "Sign-in Recommended"}
                   </Badge>
                 </div>
+
+                {!isAuthenticated && (
+                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <span className="font-semibold block">You are currently browsing as a guest.</span>
+                        <span className="text-amber-800 text-[11px]">
+                          Sign in or authenticate as a candidate to link your verified ATS profile and submit.
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="text-xs font-semibold py-1 px-3 bg-white"
+                        onClick={() => {
+                          if (onNavigate) onNavigate(`/login?redirect=/jobs/${resolvedJobId}/apply`);
+                          else window.location.href = `/login?redirect=/jobs/${resolvedJobId}/apply`;
+                        }}
+                      >
+                        Sign In
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        className="text-xs font-bold py-1 px-3 bg-amber-600 hover:bg-amber-700 text-white"
+                        onClick={async () => {
+                          await loginWithDemo('candidate');
+                        }}
+                      >
+                        Quick Candidate Demo
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div className="p-3.5 rounded-xl bg-kth-slate-50 border border-kth-slate-200/80">
                     <span className="text-[11px] text-kth-slate-500 font-medium block">Applicant Name</span>
                     <strong className="text-sm text-kth-slate-900 block mt-0.5">
-                      {profile?.full_name || user?.email?.split('@')[0] || 'Authenticated Candidate'}
+                      {profile?.full_name || user?.email?.split('@')[0] || (isAuthenticated ? 'Authenticated Candidate' : 'Candidate (Guest)')}
                     </strong>
                   </div>
 

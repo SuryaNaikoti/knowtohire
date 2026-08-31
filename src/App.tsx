@@ -281,11 +281,12 @@ export function App() {
       else if (path === '/candidate/resume') pageComponent = <CandidateResumePage />;
       else if (path === '/candidate/jobs') pageComponent = <CandidateJobsPage />;
       else if (path.startsWith('/candidate/jobs/') && path.endsWith('/apply')) {
-        pageComponent = <CandidateApplyPage onNavigate={navigateTo} />;
+        const jobId = path.replace('/candidate/jobs/', '').replace('/apply', '');
+        pageComponent = <CandidateApplyPage jobId={jobId} onNavigate={navigateTo} />;
       }
       else if (path.startsWith('/candidate/jobs/')) {
         const jobId = path.replace('/candidate/jobs/', '');
-        pageComponent = <CandidateJobDetailsPage jobId={jobId} />;
+        pageComponent = <CandidateJobDetailsPage jobId={jobId} onNavigate={navigateTo} />;
       }
       else if (path === '/candidate/saved-jobs' || path === '/candidate/saved') pageComponent = <CandidateSavedJobsPage />;
       else if (path === '/candidate/applications') pageComponent = <CandidateApplicationsPage />;
@@ -356,12 +357,13 @@ export function App() {
     // Public Routes
     if (path === '/' || path === '') return <HomePage />;
     if (path.startsWith('/jobs/') && path.endsWith('/apply')) {
-      return <CandidateApplyPage onNavigate={navigateTo} />;
+      const jobId = path.replace('/jobs/', '').replace('/apply', '');
+      return <CandidateApplyPage jobId={jobId} onNavigate={navigateTo} />;
     }
     if (path === '/jobs') return <JobsPage />;
     if (path.startsWith('/jobs/')) {
       const jobId = path.replace('/jobs/', '');
-      return <JobDetailsPage jobId={jobId} />;
+      return <JobDetailsPage jobId={jobId} onNavigate={navigateTo} />;
     }
     if (path === '/careers') return <CareersPage />;
     if (path === '/knowledge') return <KnowledgePage />;

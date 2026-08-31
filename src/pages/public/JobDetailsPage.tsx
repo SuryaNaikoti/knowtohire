@@ -8,11 +8,12 @@ import { formatINR } from '@/design-system/tokens';
 
 export interface JobDetailsPageProps {
   jobId?: string;
+  onNavigate?: (path: string) => void;
 }
 
-export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId }) => {
+export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId, onNavigate }) => {
   // Extract Job ID from prop or window location pathname (/jobs/:id)
-  const resolvedJobId = propJobId || window.location.pathname.split('/jobs/')[1] || '';
+  const resolvedJobId = propJobId || window.location.pathname.split('/jobs/')[1]?.replace(/\/apply$/, '') || '';
 
   const [job, setJob] = useState<Job | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,12 +53,22 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
   }, [resolvedJobId]);
 
   const handleBackToJobs = () => {
-    window.history.pushState({}, '', '/jobs');
-    window.dispatchEvent(new Event('popstate'));
+    if (onNavigate) {
+      onNavigate('/jobs');
+    } else {
+      window.history.pushState({}, '', '/jobs');
+      window.dispatchEvent(new Event('popstate'));
+    }
   };
 
   const handleApplyClick = () => {
-    window.location.href = `/jobs/${resolvedJobId}/apply`;
+    const applyPath = `/jobs/${resolvedJobId}/apply`;
+    if (onNavigate) {
+      onNavigate(applyPath);
+    } else {
+      window.history.pushState({}, '', applyPath);
+      window.dispatchEvent(new Event('popstate'));
+    }
   };
 
   const handleShare = () => {

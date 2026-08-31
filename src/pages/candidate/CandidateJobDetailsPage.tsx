@@ -9,10 +9,11 @@ import { MapPin, CheckCircle2, Bookmark, Building2, ArrowLeft, Check, AlertTrian
 
 export interface CandidateJobDetailsPageProps {
   jobId?: string;
+  onNavigate?: (path: string) => void;
 }
 
-export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = ({ jobId: propJobId }) => {
-  const resolvedJobId = propJobId || window.location.pathname.split('/candidate/jobs/')[1] || '';
+export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = ({ jobId: propJobId, onNavigate }) => {
+  const resolvedJobId = propJobId || window.location.pathname.split('/candidate/jobs/')[1]?.replace(/\/apply$/, '') || '';
 
   const [job, setJob] = useState<Job | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -85,13 +86,21 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
   };
 
   const handleBack = () => {
-    window.history.pushState({}, '', '/candidate/jobs');
-    window.dispatchEvent(new PopStateEvent('popstate'));
+    if (onNavigate) {
+      onNavigate('/candidate/jobs');
+    } else {
+      window.history.pushState({}, '', '/candidate/jobs');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
   };
 
   const handleNavigateApplications = () => {
-    window.history.pushState({}, '', '/candidate/applications');
-    window.dispatchEvent(new PopStateEvent('popstate'));
+    if (onNavigate) {
+      onNavigate('/candidate/applications');
+    } else {
+      window.history.pushState({}, '', '/candidate/applications');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
   };
 
   if (isLoading) {
@@ -218,7 +227,13 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
                   variant="primary"
                   size="md"
                   onClick={() => {
-                    window.location.href = `/jobs/${job.id}/apply`;
+                    const applyPath = `/jobs/${job.id}/apply`;
+                    if (onNavigate) {
+                      onNavigate(applyPath);
+                    } else {
+                      window.history.pushState({}, '', applyPath);
+                      window.dispatchEvent(new PopStateEvent('popstate'));
+                    }
                   }}
                 >
                   Apply Now
