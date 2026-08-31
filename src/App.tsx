@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Navbar } from '@/components/navigation/Navbar';
 import { Footer } from '@/components/public/Footer';
 import { CommandPalette } from '@/components/ui/CommandPalette';
@@ -6,98 +6,101 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { RoleGuard } from '@/components/auth/RoleGuard';
 import { GuestRoute } from '@/components/auth/GuestRoute';
 import { useAuth } from '@/context/AuthContext';
+import { PageLoading } from '@/components/ui/PageLoading';
 
-// Import Auth Pages
-import { LoginPage } from '@/pages/auth/LoginPage';
-import { RegisterPage } from '@/pages/auth/RegisterPage';
-import { VerifyEmailPage } from '@/pages/auth/VerifyEmailPage';
-import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
-import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
-import { AuthCallbackPage } from '@/pages/auth/AuthCallbackPage';
-
-// Import Onboarding Pages
-import { CandidateOnboardingPage } from '@/pages/onboarding/CandidateOnboardingPage';
-import { EmployerOnboardingPage } from '@/pages/onboarding/EmployerOnboardingPage';
-
-// Import Public Pages
+// Statically keep HomePage for instant first-paint
 import { HomePage } from '@/pages/public/HomePage';
-import { JobsPage } from '@/pages/public/JobsPage';
-import { JobDetailsPage } from '@/pages/public/JobDetailsPage';
-import { CareersPage } from '@/pages/public/CareersPage';
-import { KnowledgePage } from '@/pages/public/KnowledgePage';
-import { ResourceDetailsPage } from '@/pages/public/ResourceDetailsPage';
-import { TemplatesPage } from '@/pages/public/TemplatesPage';
-import { TemplateDetailsPage } from '@/pages/public/TemplateDetailsPage';
-import { BlogPage } from '@/pages/public/BlogPage';
-import { BlogDetailsPage } from '@/pages/public/BlogDetailsPage';
-import { PricingPage } from '@/pages/public/PricingPage';
-import { AboutPage } from '@/pages/public/AboutPage';
-import { ContactPage } from '@/pages/public/ContactPage';
-import { PrivacyPage } from '@/pages/public/PrivacyPage';
-import { TermsPage } from '@/pages/public/TermsPage';
-import { NotFoundPage } from '@/pages/NotFoundPage';
 
-// Import Candidate Pages
-import { CandidateDashboardPage } from '@/pages/candidate/CandidateDashboardPage';
-import { CandidateProfilePage } from '@/pages/candidate/CandidateProfilePage';
-import { CandidateEditProfilePage } from '@/pages/candidate/CandidateEditProfilePage';
-import { CandidateResumePage } from '@/pages/candidate/CandidateResumePage';
-import { CandidateResumePreviewPage } from '@/pages/candidate/CandidateResumePreviewPage';
-import { CandidateJobsPage } from '@/pages/candidate/CandidateJobsPage';
-import { CandidateJobDetailsPage } from '@/pages/candidate/CandidateJobDetailsPage';
-import { CandidateApplyPage } from '@/pages/candidate/CandidateApplyPage';
-import { CandidateSavedJobsPage } from '@/pages/candidate/CandidateSavedJobsPage';
-import { CandidateApplicationsPage } from '@/pages/candidate/CandidateApplicationsPage';
-import { CandidateApplicationDetailsPage } from '@/pages/candidate/CandidateApplicationDetailsPage';
-import { CandidateInterviewsPage } from '@/pages/candidate/CandidateInterviewsPage';
-import { CandidateInterviewDetailsPage } from '@/pages/candidate/CandidateInterviewDetailsPage';
-import { CandidateCareerInsightsPage } from '@/pages/candidate/CandidateCareerInsightsPage';
-import { CandidateRequestsPage } from '@/pages/candidate/CandidateRequestsPage';
-import { CandidateNewRequestPage } from '@/pages/candidate/CandidateNewRequestPage';
-import { CandidateRequestDetailsPage } from '@/pages/candidate/CandidateRequestDetailsPage';
-import { CandidateNotificationsPage } from '@/pages/candidate/CandidateNotificationsPage';
-import { CandidateSettingsPage } from '@/pages/candidate/CandidateSettingsPage';
+// Lazy-loaded Auth Pages
+const LoginPage = lazy(() => import('@/pages/auth/LoginPage').then(m => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage').then(m => ({ default: m.RegisterPage })));
+const VerifyEmailPage = lazy(() => import('@/pages/auth/VerifyEmailPage').then(m => ({ default: m.VerifyEmailPage })));
+const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })));
+const AuthCallbackPage = lazy(() => import('@/pages/auth/AuthCallbackPage').then(m => ({ default: m.AuthCallbackPage })));
 
-// Import Employer Pages
-import { EmployerDashboardPage } from '@/pages/employer/EmployerDashboardPage';
-import { EmployerJobsPage } from '@/pages/employer/EmployerJobsPage';
-import { EmployerCreateJobPage } from '@/pages/employer/EmployerCreateJobPage';
-import { EmployerJobPreviewPage } from '@/pages/employer/EmployerJobPreviewPage';
-import { EmployerJobDetailsPage } from '@/pages/employer/EmployerJobDetailsPage';
-import { EmployerEditJobPage } from '@/pages/employer/EmployerEditJobPage';
-import { EmployerJobApplicantsPage } from '@/pages/employer/EmployerJobApplicantsPage';
-import { EmployerCandidatesPage } from '@/pages/employer/EmployerCandidatesPage';
-import { EmployerCandidateDetailsPage } from '@/pages/employer/EmployerCandidateDetailsPage';
-import { EmployerScheduleInterviewPage } from '@/pages/employer/EmployerScheduleInterviewPage';
-import { EmployerCandidateComparePage } from '@/pages/employer/EmployerCandidateComparePage';
-import { EmployerPipelinePage } from '@/pages/employer/EmployerPipelinePage';
-import { EmployerInterviewsPage } from '@/pages/employer/EmployerInterviewsPage';
-import { EmployerSavedCandidatesPage } from '@/pages/employer/EmployerSavedCandidatesPage';
-import { EmployerAnalyticsPage } from '@/pages/employer/EmployerAnalyticsPage';
-import { EmployerCompanyProfilePage } from '@/pages/employer/EmployerCompanyProfilePage';
-import { EmployerNotificationsPage } from '@/pages/employer/EmployerNotificationsPage';
-import { EmployerSettingsPage } from '@/pages/employer/EmployerSettingsPage';
+// Lazy-loaded Onboarding Pages
+const CandidateOnboardingPage = lazy(() => import('@/pages/onboarding/CandidateOnboardingPage').then(m => ({ default: m.CandidateOnboardingPage })));
+const EmployerOnboardingPage = lazy(() => import('@/pages/onboarding/EmployerOnboardingPage').then(m => ({ default: m.EmployerOnboardingPage })));
 
-// Import Admin Pages
-import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
-import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
-import { AdminEmployersPage } from '@/pages/admin/AdminEmployersPage';
-import { AdminEmployerDossierPage } from '@/pages/admin/AdminEmployerDossierPage';
-import { AdminJobsPage } from '@/pages/admin/AdminJobsPage';
-import { AdminJobInspectPage } from '@/pages/admin/AdminJobInspectPage';
-import { AdminApplicationsPage } from '@/pages/admin/AdminApplicationsPage';
-import { AdminApplicationDetailsPage } from '@/pages/admin/AdminApplicationDetailsPage';
-import { AdminResourcesPage } from '@/pages/admin/AdminResourcesPage';
-import { AdminResourceEditPage } from '@/pages/admin/AdminResourceEditPage';
-import { AdminTemplatesPage } from '@/pages/admin/AdminTemplatesPage';
-import { AdminTemplateEditPage } from '@/pages/admin/AdminTemplateEditPage';
-import { AdminRequestsPage } from '@/pages/admin/AdminRequestsPage';
-import { AdminFulfillRequestPage } from '@/pages/admin/AdminFulfillRequestPage';
-import { AdminBlogPage } from '@/pages/admin/AdminBlogPage';
-import { AdminBlogEditPage } from '@/pages/admin/AdminBlogEditPage';
-import { AdminTaxonomyPage } from '@/pages/admin/AdminTaxonomyPage';
-import { AdminTaxonomyNewPage } from '@/pages/admin/AdminTaxonomyNewPage';
-import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
+// Lazy-loaded Public Pages
+const JobsPage = lazy(() => import('@/pages/public/JobsPage').then(m => ({ default: m.JobsPage })));
+const JobDetailsPage = lazy(() => import('@/pages/public/JobDetailsPage').then(m => ({ default: m.JobDetailsPage })));
+const CareersPage = lazy(() => import('@/pages/public/CareersPage').then(m => ({ default: m.CareersPage })));
+const KnowledgePage = lazy(() => import('@/pages/public/KnowledgePage').then(m => ({ default: m.KnowledgePage })));
+const ResourceDetailsPage = lazy(() => import('@/pages/public/ResourceDetailsPage').then(m => ({ default: m.ResourceDetailsPage })));
+const TemplatesPage = lazy(() => import('@/pages/public/TemplatesPage').then(m => ({ default: m.TemplatesPage })));
+const TemplateDetailsPage = lazy(() => import('@/pages/public/TemplateDetailsPage').then(m => ({ default: m.TemplateDetailsPage })));
+const BlogPage = lazy(() => import('@/pages/public/BlogPage').then(m => ({ default: m.BlogPage })));
+const BlogDetailsPage = lazy(() => import('@/pages/public/BlogDetailsPage').then(m => ({ default: m.BlogDetailsPage })));
+const PricingPage = lazy(() => import('@/pages/public/PricingPage').then(m => ({ default: m.PricingPage })));
+const AboutPage = lazy(() => import('@/pages/public/AboutPage').then(m => ({ default: m.AboutPage })));
+const ContactPage = lazy(() => import('@/pages/public/ContactPage').then(m => ({ default: m.ContactPage })));
+const PrivacyPage = lazy(() => import('@/pages/public/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
+const TermsPage = lazy(() => import('@/pages/public/TermsPage').then(m => ({ default: m.TermsPage })));
+const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
+
+// Lazy-loaded Candidate Pages
+const CandidateDashboardPage = lazy(() => import('@/pages/candidate/CandidateDashboardPage').then(m => ({ default: m.CandidateDashboardPage })));
+const CandidateProfilePage = lazy(() => import('@/pages/candidate/CandidateProfilePage').then(m => ({ default: m.CandidateProfilePage })));
+const CandidateEditProfilePage = lazy(() => import('@/pages/candidate/CandidateEditProfilePage').then(m => ({ default: m.CandidateEditProfilePage })));
+const CandidateResumePage = lazy(() => import('@/pages/candidate/CandidateResumePage').then(m => ({ default: m.CandidateResumePage })));
+const CandidateResumePreviewPage = lazy(() => import('@/pages/candidate/CandidateResumePreviewPage').then(m => ({ default: m.CandidateResumePreviewPage })));
+const CandidateJobsPage = lazy(() => import('@/pages/candidate/CandidateJobsPage').then(m => ({ default: m.CandidateJobsPage })));
+const CandidateJobDetailsPage = lazy(() => import('@/pages/candidate/CandidateJobDetailsPage').then(m => ({ default: m.CandidateJobDetailsPage })));
+const CandidateApplyPage = lazy(() => import('@/pages/candidate/CandidateApplyPage').then(m => ({ default: m.CandidateApplyPage })));
+const CandidateSavedJobsPage = lazy(() => import('@/pages/candidate/CandidateSavedJobsPage').then(m => ({ default: m.CandidateSavedJobsPage })));
+const CandidateApplicationsPage = lazy(() => import('@/pages/candidate/CandidateApplicationsPage').then(m => ({ default: m.CandidateApplicationsPage })));
+const CandidateApplicationDetailsPage = lazy(() => import('@/pages/candidate/CandidateApplicationDetailsPage').then(m => ({ default: m.CandidateApplicationDetailsPage })));
+const CandidateInterviewsPage = lazy(() => import('@/pages/candidate/CandidateInterviewsPage').then(m => ({ default: m.CandidateInterviewsPage })));
+const CandidateInterviewDetailsPage = lazy(() => import('@/pages/candidate/CandidateInterviewDetailsPage').then(m => ({ default: m.CandidateInterviewDetailsPage })));
+const CandidateCareerInsightsPage = lazy(() => import('@/pages/candidate/CandidateCareerInsightsPage').then(m => ({ default: m.CandidateCareerInsightsPage })));
+const CandidateRequestsPage = lazy(() => import('@/pages/candidate/CandidateRequestsPage').then(m => ({ default: m.CandidateRequestsPage })));
+const CandidateNewRequestPage = lazy(() => import('@/pages/candidate/CandidateNewRequestPage').then(m => ({ default: m.CandidateNewRequestPage })));
+const CandidateRequestDetailsPage = lazy(() => import('@/pages/candidate/CandidateRequestDetailsPage').then(m => ({ default: m.CandidateRequestDetailsPage })));
+const CandidateNotificationsPage = lazy(() => import('@/pages/candidate/CandidateNotificationsPage').then(m => ({ default: m.CandidateNotificationsPage })));
+const CandidateSettingsPage = lazy(() => import('@/pages/candidate/CandidateSettingsPage').then(m => ({ default: m.CandidateSettingsPage })));
+
+// Lazy-loaded Employer Pages
+const EmployerDashboardPage = lazy(() => import('@/pages/employer/EmployerDashboardPage').then(m => ({ default: m.EmployerDashboardPage })));
+const EmployerJobsPage = lazy(() => import('@/pages/employer/EmployerJobsPage').then(m => ({ default: m.EmployerJobsPage })));
+const EmployerCreateJobPage = lazy(() => import('@/pages/employer/EmployerCreateJobPage').then(m => ({ default: m.EmployerCreateJobPage })));
+const EmployerJobPreviewPage = lazy(() => import('@/pages/employer/EmployerJobPreviewPage').then(m => ({ default: m.EmployerJobPreviewPage })));
+const EmployerJobDetailsPage = lazy(() => import('@/pages/employer/EmployerJobDetailsPage').then(m => ({ default: m.EmployerJobDetailsPage })));
+const EmployerEditJobPage = lazy(() => import('@/pages/employer/EmployerEditJobPage').then(m => ({ default: m.EmployerEditJobPage })));
+const EmployerJobApplicantsPage = lazy(() => import('@/pages/employer/EmployerJobApplicantsPage').then(m => ({ default: m.EmployerJobApplicantsPage })));
+const EmployerCandidatesPage = lazy(() => import('@/pages/employer/EmployerCandidatesPage').then(m => ({ default: m.EmployerCandidatesPage })));
+const EmployerCandidateDetailsPage = lazy(() => import('@/pages/employer/EmployerCandidateDetailsPage').then(m => ({ default: m.EmployerCandidateDetailsPage })));
+const EmployerScheduleInterviewPage = lazy(() => import('@/pages/employer/EmployerScheduleInterviewPage').then(m => ({ default: m.EmployerScheduleInterviewPage })));
+const EmployerCandidateComparePage = lazy(() => import('@/pages/employer/EmployerCandidateComparePage').then(m => ({ default: m.EmployerCandidateComparePage })));
+const EmployerPipelinePage = lazy(() => import('@/pages/employer/EmployerPipelinePage').then(m => ({ default: m.EmployerPipelinePage })));
+const EmployerInterviewsPage = lazy(() => import('@/pages/employer/EmployerInterviewsPage').then(m => ({ default: m.EmployerInterviewsPage })));
+const EmployerSavedCandidatesPage = lazy(() => import('@/pages/employer/EmployerSavedCandidatesPage').then(m => ({ default: m.EmployerSavedCandidatesPage })));
+const EmployerAnalyticsPage = lazy(() => import('@/pages/employer/EmployerAnalyticsPage').then(m => ({ default: m.EmployerAnalyticsPage })));
+const EmployerCompanyProfilePage = lazy(() => import('@/pages/employer/EmployerCompanyProfilePage').then(m => ({ default: m.EmployerCompanyProfilePage })));
+const EmployerNotificationsPage = lazy(() => import('@/pages/employer/EmployerNotificationsPage').then(m => ({ default: m.EmployerNotificationsPage })));
+const EmployerSettingsPage = lazy(() => import('@/pages/employer/EmployerSettingsPage').then(m => ({ default: m.EmployerSettingsPage })));
+
+// Lazy-loaded Admin Pages
+const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
+const AdminUsersPage = lazy(() => import('@/pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
+const AdminEmployersPage = lazy(() => import('@/pages/admin/AdminEmployersPage').then(m => ({ default: m.AdminEmployersPage })));
+const AdminEmployerDossierPage = lazy(() => import('@/pages/admin/AdminEmployerDossierPage').then(m => ({ default: m.AdminEmployerDossierPage })));
+const AdminJobsPage = lazy(() => import('@/pages/admin/AdminJobsPage').then(m => ({ default: m.AdminJobsPage })));
+const AdminJobInspectPage = lazy(() => import('@/pages/admin/AdminJobInspectPage').then(m => ({ default: m.AdminJobInspectPage })));
+const AdminApplicationsPage = lazy(() => import('@/pages/admin/AdminApplicationsPage').then(m => ({ default: m.AdminApplicationsPage })));
+const AdminApplicationDetailsPage = lazy(() => import('@/pages/admin/AdminApplicationDetailsPage').then(m => ({ default: m.AdminApplicationDetailsPage })));
+const AdminResourcesPage = lazy(() => import('@/pages/admin/AdminResourcesPage').then(m => ({ default: m.AdminResourcesPage })));
+const AdminResourceEditPage = lazy(() => import('@/pages/admin/AdminResourceEditPage').then(m => ({ default: m.AdminResourceEditPage })));
+const AdminTemplatesPage = lazy(() => import('@/pages/admin/AdminTemplatesPage').then(m => ({ default: m.AdminTemplatesPage })));
+const AdminTemplateEditPage = lazy(() => import('@/pages/admin/AdminTemplateEditPage').then(m => ({ default: m.AdminTemplateEditPage })));
+const AdminRequestsPage = lazy(() => import('@/pages/admin/AdminRequestsPage').then(m => ({ default: m.AdminRequestsPage })));
+const AdminFulfillRequestPage = lazy(() => import('@/pages/admin/AdminFulfillRequestPage').then(m => ({ default: m.AdminFulfillRequestPage })));
+const AdminBlogPage = lazy(() => import('@/pages/admin/AdminBlogPage').then(m => ({ default: m.AdminBlogPage })));
+const AdminBlogEditPage = lazy(() => import('@/pages/admin/AdminBlogEditPage').then(m => ({ default: m.AdminBlogEditPage })));
+const AdminTaxonomyPage = lazy(() => import('@/pages/admin/AdminTaxonomyPage').then(m => ({ default: m.AdminTaxonomyPage })));
+const AdminTaxonomyNewPage = lazy(() => import('@/pages/admin/AdminTaxonomyNewPage').then(m => ({ default: m.AdminTaxonomyNewPage })));
+const AdminSettingsPage = lazy(() => import('@/pages/admin/AdminSettingsPage').then(m => ({ default: m.AdminSettingsPage })));
 
 export function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
@@ -395,7 +398,9 @@ export function App() {
       {/* Conditionally Render Shell based on route type */}
       {isAdminRoute || isEmployerRoute || isCandidateRoute || isOnboardingRoute || isAuthRoute ? (
         <div className="flex-1 flex flex-col">
-          {renderRouteContent()}
+          <Suspense fallback={<PageLoading />}>
+            {renderRouteContent()}
+          </Suspense>
         </div>
       ) : (
         <>
@@ -420,7 +425,9 @@ export function App() {
             }}
           />
           <div className="flex-1">
-            {renderRouteContent()}
+            <Suspense fallback={<PageLoading />}>
+              {renderRouteContent()}
+            </Suspense>
           </div>
           <Footer />
         </>

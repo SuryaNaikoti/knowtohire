@@ -1,12 +1,6 @@
 import { CandidateExperienceItem, CandidateEducationItem } from './types';
 import { ATSAnalysisResult, ATSOptimizationRecommendation } from './atsAnalysisTypes';
 import { performATSAnalysis } from './atsAnalysisService';
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Set worker source for pdfjs-dist
-if (typeof window !== 'undefined' && 'Worker' in window) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '3.11.174'}/pdf.worker.min.js`;
-}
 
 export interface ParsedResumeData {
   fullName?: string;
@@ -30,6 +24,10 @@ export interface ParsedResumeData {
  */
 export async function extractTextFromPDFFile(file: File): Promise<string> {
   try {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (typeof window !== 'undefined' && 'Worker' in window && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '3.11.174'}/pdf.worker.min.js`;
+    }
     const arrayBuffer = await file.arrayBuffer();
     const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
     const pdfDoc = await loadingTask.promise;

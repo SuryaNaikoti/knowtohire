@@ -348,10 +348,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       try {
+        const timeoutPromise = new Promise<{ data: { session: null }; error: Error }>((_, reject) =>
+          setTimeout(() => reject(new Error('Auth init timeout')), 3000)
+        );
+
         const {
           data: { session },
           error: sessionError,
-        } = await supabase.auth.getSession();
+        } = await Promise.race([
+          supabase.auth.getSession(),
+          timeoutPromise,
+        ]).catch((err) => {
+          console.warn('[AuthContext] Auth session timeout/error, proceeding with unauthenticated fallback:', err?.message);
+          return { data: { session: null }, error: null };
+        });
 
         if (sessionError) {
           console.warn('[AuthContext] Session retrieval error:', sessionError.message);
