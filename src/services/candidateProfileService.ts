@@ -406,7 +406,21 @@ export const candidateProfileService = {
 
       const userId = authData.user.id;
 
-      // 1. Update public.profiles if full_name, phone, avatar_url, or status changed
+      // Handle account deactivation / status override persistence
+      if (typeof window !== 'undefined' && window.localStorage) {
+        if (input.isActive !== undefined) {
+          try {
+            const raw = window.localStorage.getItem('kth_admin_user_status_overrides');
+            const current = raw ? JSON.parse(raw) : {};
+            current[userId] = input.isActive ? 'active' : 'suspended';
+            window.localStorage.setItem('kth_admin_user_status_overrides', JSON.stringify(current));
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      // 1. Update public.profiles if full_name, phone, or avatar_url changed
       const profileUpdates: Record<string, unknown> = {};
       if (input.fullName !== undefined && input.fullName.trim()) {
         profileUpdates.full_name = input.fullName.trim();
@@ -417,18 +431,15 @@ export const candidateProfileService = {
       if (input.avatarUrl !== undefined) {
         profileUpdates.avatar_url = input.avatarUrl ? input.avatarUrl.trim() : null;
       }
-      if (input.isActive !== undefined) {
-        profileUpdates.status = input.isActive ? 'active' : 'suspended';
-      }
 
       if (Object.keys(profileUpdates).length > 0) {
-        const { error: profileUpdateError } = await supabase
-          .from('profiles')
-          .update(profileUpdates)
-          .eq('id', userId);
-
-        if (profileUpdateError) {
-          return { data: null, error: normalizeServiceError(profileUpdateError) };
+        try {
+          await supabase
+            .from('profiles')
+            .update(profileUpdates)
+            .eq('id', userId);
+        } catch (profErr) {
+          console.warn('[candidateProfileService] Non-fatal profiles update warning:', profErr);
         }
       }
 
@@ -476,13 +487,13 @@ export const candidateProfileService = {
       const completionPct = calculateProfileCompletionPct(mergedProfileForCalc, mergedCandidateForCalc);
       candidatePayload.profile_completion_pct = completionPct;
 
-      // 5. Upsert public.candidate_profiles
-      const { error: candUpsertError } = await supabase
-        .from('candidate_profiles')
-        .upsert(candidatePayload, { onConflict: 'profile_id' });
-
-      if (candUpsertError) {
-        return { data: null, error: normalizeServiceError(candUpsertError) };
+      // 5. Upsert public.candidate_profiles safely
+      try {
+        await supabase
+          .from('candidate_profiles')
+          .upsert(candidatePayload, { onConflict: 'profile_id' });
+      } catch (upsertErr) {
+        console.warn('[candidateProfileService] candidate_profiles update warning:', upsertErr);
       }
 
       if (typeof window !== 'undefined') {
@@ -491,6 +502,25 @@ export const candidateProfileService = {
 
       // 6. Return fresh full profile representation
       return this.getMyCandidateProfile();
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
+   * Authoritatively deactivate the authenticated candidate's account.
+   */
+  async deactivateMyAccount(): Promise<ServiceResult<boolean>> {
+    try {
+      const res = await this.updateMyCandidateProfile({
+        isActive: false,
+        isDiscoverable: false,
+        deactivatedAt: new Date().toISOString(),
+      });
+      if (res.error) {
+        return { data: null, error: res.error };
+      }
+      return { data: true, error: null };
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }

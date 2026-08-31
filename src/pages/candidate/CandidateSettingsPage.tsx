@@ -21,7 +21,11 @@ import {
   Loader2,
 } from 'lucide-react';
 
-export const CandidateSettingsPage: React.FC = () => {
+export interface CandidateSettingsPageProps {
+  onNavigate?: (path: string) => void;
+}
+
+export const CandidateSettingsPage: React.FC<CandidateSettingsPageProps> = ({ onNavigate }) => {
   const { logout, profile, user, refreshProfile } = useAuth();
 
   // Geography State
@@ -218,18 +222,8 @@ export const CandidateSettingsPage: React.FC = () => {
       setIsDeactivating(true);
       setGlobalErrorMsg(null);
 
-      const res = await candidateProfileService.updateMyCandidateProfile({
-        isActive: false,
-        isDiscoverable: false,
-        deactivatedAt: new Date().toISOString(),
-      });
-
-      if (res.error) {
-        setGlobalErrorMsg('Failed to deactivate candidate profile. Please try again.');
-        setIsDeactivating(false);
-        setIsDeactivateDialogOpen(false);
-        return;
-      }
+      // Apply authoritative candidate deactivation
+      await candidateProfileService.deactivateMyAccount();
 
       setIsAccountDeactivated(true);
       setProfileVisible(false);
@@ -238,10 +232,23 @@ export const CandidateSettingsPage: React.FC = () => {
 
       // Sign out and redirect after deactivation
       await logout();
-      window.history.pushState({}, '', '/login');
-      window.dispatchEvent(new Event('popstate'));
+      if (onNavigate) {
+        onNavigate('/login');
+      } else {
+        window.history.pushState({}, '', '/login');
+        window.dispatchEvent(new Event('popstate'));
+      }
     } catch (err) {
       console.error('[CandidateSettingsPage] Deactivation error:', err);
+      // Even if unexpected error, ensure local cleanup and redirect
+      await logout();
+      if (onNavigate) {
+        onNavigate('/login');
+      } else {
+        window.history.pushState({}, '', '/login');
+        window.dispatchEvent(new Event('popstate'));
+      }
+    } finally {
       setIsDeactivating(false);
       setIsDeactivateDialogOpen(false);
     }

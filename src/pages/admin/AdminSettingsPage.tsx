@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { Dialog } from '@/components/ui/Dialog';
+import { useAuth } from '@/context/AuthContext';
 import {
   adminSettingsService,
   MasterAdminSettings,
@@ -16,6 +18,7 @@ import {
   Bell,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   Save,
   Loader2,
   ShieldCheck,
@@ -29,12 +32,15 @@ export interface AdminSettingsPageProps {
 }
 
 export const AdminSettingsPage: React.FC<AdminSettingsPageProps> = ({ onNavigate }) => {
+  const { logout, user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabKey>('profile');
   const [settings, setSettings] = useState<MasterAdminSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isDeactivateDialogOpen, setIsDeactivateDialogOpen] = useState(false);
+  const [isDeactivating, setIsDeactivating] = useState(false);
 
   const fetchSettings = useCallback(async () => {
     setIsLoading(true);
@@ -85,6 +91,49 @@ export const AdminSettingsPage: React.FC<AdminSettingsPageProps> = ({ onNavigate
     } else {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3500);
+    }
+  };
+
+  const handleDeactivateAdminAccount = async () => {
+    try {
+      setIsDeactivating(true);
+      const userId = user?.id || '00000000-0000-0000-0000-000000000003';
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const raw = window.localStorage.getItem('kth_admin_user_status_overrides');
+          const current = raw ? JSON.parse(raw) : {};
+          current[userId] = 'suspended';
+          current['demo-admin-003'] = 'suspended';
+          window.localStorage.setItem('kth_admin_user_status_overrides', JSON.stringify(current));
+
+          const profileCustomRaw = window.localStorage.getItem(`kth_demo_profile_custom_${userId}`);
+          const profileCustom = profileCustomRaw ? JSON.parse(profileCustomRaw) : {};
+          profileCustom.status = 'suspended';
+          profileCustom.deactivated_at = new Date().toISOString();
+          window.localStorage.setItem(`kth_demo_profile_custom_${userId}`, JSON.stringify(profileCustom));
+        } catch {
+          // ignore
+        }
+      }
+      await logout();
+      if (onNavigate) {
+        onNavigate('/login');
+      } else {
+        window.history.pushState({}, '', '/login');
+        window.dispatchEvent(new Event('popstate'));
+      }
+    } catch (err) {
+      console.error('[AdminSettingsPage] Deactivation error:', err);
+      await logout();
+      if (onNavigate) {
+        onNavigate('/login');
+      } else {
+        window.history.pushState({}, '', '/login');
+        window.dispatchEvent(new Event('popstate'));
+      }
+    } finally {
+      setIsDeactivating(false);
+      setIsDeactivateDialogOpen(false);
     }
   };
 
@@ -540,6 +589,24 @@ export const AdminSettingsPage: React.FC<AdminSettingsPageProps> = ({ onNavigate
                       />
                     </div>
                   </div>
+
+                  {/* Danger Zone: Administrator Session & Superuser Access */}
+                  <div className="mt-6 p-5 bg-rose-50/40 border border-rose-200 rounded-2xl">
+                    <div className="flex items-center gap-2 text-rose-900 font-bold text-sm mb-1">
+                      <AlertTriangle className="w-4 h-4 text-rose-600" />
+                      <span>Danger Zone — Administrative Session Suspension</span>
+                    </div>
+                    <p className="text-xs text-rose-800/80 mb-4">
+                      Deactivating your administrator account immediately locks down active superuser privileges and terminates all governance sessions.
+                    </p>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setIsDeactivateDialogOpen(true)}
+                    >
+                      Deactivate Administrator Account
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -655,6 +722,44 @@ export const AdminSettingsPage: React.FC<AdminSettingsPageProps> = ({ onNavigate
           </div>
         </div>
       </div>
+
+      {/* Administrator Deactivation Confirmation Dialog */}
+      <Dialog
+        isOpen={isDeactivateDialogOpen}
+        onClose={() => !isDeactivating && setIsDeactivateDialogOpen(false)}
+        title="Deactivate Administrator Account?"
+        description="Are you sure you want to deactivate administrative access and terminate this session?"
+        maxWidth="sm"
+      >
+        <div className="space-y-4 pt-2">
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <span>
+              All platform data remains intact. To restore governance privileges later, root database access or another superuser will be required.
+            </span>
+          </div>
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-kth-slate-100">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={isDeactivating}
+              onClick={() => setIsDeactivateDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              isLoading={isDeactivating}
+              onClick={handleDeactivateAdminAccount}
+            >
+              Confirm Deactivation
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </AdminShell>
   );
 };

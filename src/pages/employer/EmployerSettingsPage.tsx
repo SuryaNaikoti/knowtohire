@@ -7,9 +7,13 @@ import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { useAuth } from '@/context/AuthContext';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { User, Bell, Lock, LogOut, Check, AlertCircle } from 'lucide-react';
+import { User, Bell, Lock, LogOut, Check, AlertCircle, AlertTriangle } from 'lucide-react';
 
-export const EmployerSettingsPage: React.FC = () => {
+export interface EmployerSettingsPageProps {
+  onNavigate?: (path: string) => void;
+}
+
+export const EmployerSettingsPage: React.FC<EmployerSettingsPageProps> = ({ onNavigate }) => {
   const { logout, profile, user, refreshProfile } = useAuth();
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [phone, setPhone] = useState(profile?.phone || '');
@@ -24,6 +28,18 @@ export const EmployerSettingsPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [isDeactivateDialogOpen, setIsDeactivateDialogOpen] = useState(false);
+  const [isDeactivating, setIsDeactivating] = useState(false);
+
+  const navigate = (path: string) => {
+    if (onNavigate) {
+      onNavigate(path);
+    } else {
+      window.history.pushState({}, '', path);
+      window.dispatchEvent(new Event('popstate'));
+    }
+  };
 
   // Load preferences and sync profile
   useEffect(() => {
@@ -52,89 +68,67 @@ export const EmployerSettingsPage: React.FC = () => {
     }
   }, [profile, user]);
 
-  const handleToggleApplicantAlerts = (checked: boolean) => {
-    setApplicantAlerts(checked);
+  const saveLocalPrefs = (newAppAlerts: boolean, newIntAlerts: boolean) => {
     const userId = user?.id || '00000000-0000-0000-0000-000000000002';
     if (typeof window !== 'undefined' && window.localStorage) {
       try {
-        const raw = window.localStorage.getItem(`kth_employer_prefs_${userId}`);
-        const existing = raw ? JSON.parse(raw) : {};
-        existing.applicantAlerts = checked;
-        window.localStorage.setItem(`kth_employer_prefs_${userId}`, JSON.stringify(existing));
+        window.localStorage.setItem(`kth_employer_prefs_${userId}`, JSON.stringify({
+          applicantAlerts: newAppAlerts,
+          interviewReminders: newIntAlerts,
+          updated_at: new Date().toISOString(),
+        }));
       } catch {
         // ignore
       }
     }
+  };
+
+  const handleToggleApplicantAlerts = (checked: boolean) => {
+    setApplicantAlerts(checked);
+    saveLocalPrefs(checked, interviewReminders);
   };
 
   const handleToggleInterviewReminders = (checked: boolean) => {
     setInterviewReminders(checked);
-    const userId = user?.id || '00000000-0000-0000-0000-000000000002';
-    if (typeof window !== 'undefined' && window.localStorage) {
-      try {
-        const raw = window.localStorage.getItem(`kth_employer_prefs_${userId}`);
-        const existing = raw ? JSON.parse(raw) : {};
-        existing.interviewReminders = checked;
-        window.localStorage.setItem(`kth_employer_prefs_${userId}`, JSON.stringify(existing));
-      } catch {
-        // ignore
-      }
-    }
+    saveLocalPrefs(applicantAlerts, checked);
   };
 
   const handleSaveAccount = async () => {
-    setErrorMessage(null);
-    setSaveSuccess(false);
-
     const trimmedName = fullName.trim();
-    if (!trimmedName) {
-      setErrorMessage('Full name is required.');
-      return;
-    }
-    if (trimmedName.length < 2) {
+    const trimmedPhone = phone.trim();
+
+    if (!trimmedName || trimmedName.length < 2) {
       setErrorMessage('Full name must be at least 2 characters.');
       return;
     }
 
-    const trimmedPhone = phone.trim();
-    if (trimmedPhone && trimmedPhone.length < 7) {
-      setErrorMessage('Please provide a valid phone number (at least 7 digits).');
-      return;
-    }
-
     setIsSaving(true);
-    const targetUserId = user?.id || '00000000-0000-0000-0000-000000000002';
+    setErrorMessage(null);
 
-    // 1. Save to demo custom profile store
+    const userId = user?.id || '00000000-0000-0000-0000-000000000002';
+
+    // 1. Update local custom profile for instant offline/demo reflection
     if (typeof window !== 'undefined' && window.localStorage) {
       try {
-        const customStoreKey = `kth_demo_profile_custom_${targetUserId}`;
-        const raw = window.localStorage.getItem(customStoreKey);
-        const existing = raw ? JSON.parse(raw) : {};
-        const updated = {
-          ...existing,
-          full_name: trimmedName,
-          phone: trimmedPhone || null,
-          updated_at: new Date().toISOString(),
-        };
-        window.localStorage.setItem(customStoreKey, JSON.stringify(updated));
+        const raw = window.localStorage.getItem(`kth_demo_profile_custom_${userId}`);
+        const current = raw ? JSON.parse(raw) : {};
+        current.full_name = trimmedName;
+        current.phone = trimmedPhone || null;
+        current.updated_at = new Date().toISOString();
+        window.localStorage.setItem(`kth_demo_profile_custom_${userId}`, JSON.stringify(current));
 
-        // Also update session cache if employer
-        const authRaw = window.localStorage.getItem('kth_demo_auth_session');
-        if (authRaw) {
-          const authObj = JSON.parse(authRaw);
-          if (authObj.role === 'employer' || authObj.id === targetUserId) {
-            authObj.full_name = trimmedName;
-            authObj.phone = trimmedPhone;
-            window.localStorage.setItem('kth_demo_auth_session', JSON.stringify(authObj));
-          }
+        const storedAuth = window.localStorage.getItem('kth_demo_auth_session');
+        if (storedAuth) {
+          const authObj = JSON.parse(storedAuth);
+          authObj.full_name = trimmedName;
+          window.localStorage.setItem('kth_demo_auth_session', JSON.stringify(authObj));
         }
       } catch {
         // ignore
       }
     }
 
-    // 2. Persist to Supabase if configured
+    // 2. Update real Supabase DB if session active
     if (isSupabaseConfigured() && user?.id) {
       try {
         await supabase.from('profiles').update({
@@ -175,13 +169,53 @@ export const EmployerSettingsPage: React.FC = () => {
     try {
       setIsLoggingOut(true);
       await logout();
-      window.history.pushState({}, '', '/login');
-      window.dispatchEvent(new Event('popstate'));
+      navigate('/login');
     } catch (err) {
       console.error('[EmployerSettingsPage] Logout error:', err);
+      navigate('/login');
     } finally {
       setIsLoggingOut(false);
       setIsConfirmLogoutOpen(false);
+    }
+  };
+
+  // Authoritative Employer Account Deactivation
+  const handleDeactivateAccount = async () => {
+    try {
+      setIsDeactivating(true);
+      const userId = user?.id || '00000000-0000-0000-0000-000000000002';
+
+      // 1. Record suspended status override in localStorage
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const raw = window.localStorage.getItem('kth_admin_user_status_overrides');
+          const current = raw ? JSON.parse(raw) : {};
+          current[userId] = 'suspended';
+          if (userId === '00000000-0000-0000-0000-000000000002') {
+            current['demo-employer-002'] = 'suspended';
+          }
+          window.localStorage.setItem('kth_admin_user_status_overrides', JSON.stringify(current));
+
+          const profileCustomRaw = window.localStorage.getItem(`kth_demo_profile_custom_${userId}`);
+          const profileCustom = profileCustomRaw ? JSON.parse(profileCustomRaw) : {};
+          profileCustom.status = 'suspended';
+          profileCustom.deactivated_at = new Date().toISOString();
+          window.localStorage.setItem(`kth_demo_profile_custom_${userId}`, JSON.stringify(profileCustom));
+        } catch {
+          // ignore
+        }
+      }
+
+      // 2. Sign out and redirect to login
+      await logout();
+      navigate('/login');
+    } catch (err) {
+      console.error('[EmployerSettingsPage] Deactivation error:', err);
+      await logout();
+      navigate('/login');
+    } finally {
+      setIsDeactivating(false);
+      setIsDeactivateDialogOpen(false);
     }
   };
 
@@ -303,6 +337,23 @@ export const EmployerSettingsPage: React.FC = () => {
             </Button>
           </div>
         </Card>
+
+        {/* Danger Zone: Account Deactivation */}
+        <Card className="p-6 border-rose-200 bg-rose-50/20">
+          <h3 className="font-display font-bold text-base text-rose-950 mb-2 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-rose-600" /> Danger Zone
+          </h3>
+          <p className="text-xs text-rose-800/80 mb-4">
+            Deactivating your employer account will pause all active job postings and restrict recruiter access to applicant data.
+          </p>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setIsDeactivateDialogOpen(true)}
+          >
+            Deactivate Employer Account
+          </Button>
+        </Card>
       </div>
 
       {/* Sign Out Confirmation Dialog */}
@@ -336,6 +387,44 @@ export const EmployerSettingsPage: React.FC = () => {
               leftIcon={<LogOut className="w-3.5 h-3.5" />}
             >
               Sign Out
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Employer Account Deactivation Confirmation Dialog */}
+      <Dialog
+        isOpen={isDeactivateDialogOpen}
+        onClose={() => !isDeactivating && setIsDeactivateDialogOpen(false)}
+        title="Deactivate Recruiter Account?"
+        description="This action will pause your active job postings and end your current session."
+        maxWidth="sm"
+      >
+        <div className="space-y-4 pt-2">
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <span>
+              Your company profile and applicant histories will remain archived securely. You can reactivate by contacting platform support.
+            </span>
+          </div>
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-kth-slate-100">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={isDeactivating}
+              onClick={() => setIsDeactivateDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              isLoading={isDeactivating}
+              onClick={handleDeactivateAccount}
+            >
+              Confirm Deactivation
             </Button>
           </div>
         </div>
