@@ -90,38 +90,87 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
           setStatusMessage('Finalizing account permissions and workspace routing...');
         }
 
-        // 3. Refresh user profile & resolve effective status
-        const profile = await refreshProfile();
+        // 3. Resolve user and ensure profile row exists
         const {
           data: { user: freshUser },
         } = await supabase.auth.getUser();
 
         const activeUser = freshUser || session?.user || null;
-        const targetRole = resolveRole(activeUser, profile);
-        const effectiveStatus = resolveEffectiveStatus(activeUser, profile) || 'unverified';
+        if (!activeUser) {
+          if (isMounted) {
+            setErrorMessage('No active user session detected.');
+          }
+          return;
+        }
 
-        // 4. Route accurately based on resolved lifecycle state
+        let profile = await refreshProfile();
+
+        // If new Google user with no profile record in DB yet, create initial record
+        const storedRole =
+          typeof window !== 'undefined' && window.sessionStorage
+            ? (window.sessionStorage.getItem('kth_oauth_intended_role') as 'candidate' | 'employer' | null)
+            : null;
+
+        const targetRole =
+          resolveRole(activeUser, profile) ||
+          storedRole ||
+          'candidate';
+
+        if (!profile) {
+          try {
+            const rawMeta = activeUser.user_metadata || {};
+            const fullName = rawMeta.full_name || rawMeta.name || activeUser.email?.split('@')[0] || 'User';
+            const avatarUrl = rawMeta.avatar_url || rawMeta.picture || null;
+
+            await supabase.from('profiles').upsert(
+              {
+                id: activeUser.id,
+                email: activeUser.email,
+                full_name: fullName,
+                avatar_url: avatarUrl,
+                role: targetRole,
+                status: 'pending_onboarding',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: 'id' }
+            );
+
+            profile = await refreshProfile();
+          } catch (createErr) {
+            console.warn('[AuthCallbackPage] Profile creation warning:', createErr);
+          }
+        }
+
+        const effectiveStatus = resolveEffectiveStatus(activeUser, profile) || 'pending_onboarding';
+
+        // 4. Clean up session storage
         if (typeof window !== 'undefined' && window.sessionStorage) {
           window.sessionStorage.removeItem('kth_oauth_intended_role');
         }
 
+        // 5. Determine target destination
+        let targetPath = '/onboarding/candidate';
         if (effectiveStatus === 'pending_onboarding') {
-          const onboardingPath =
-            targetRole === 'employer' ? '/onboarding/employer' : '/onboarding/candidate';
-          navigate(onboardingPath);
+          targetPath = targetRole === 'employer' ? '/onboarding/employer' : '/onboarding/candidate';
         } else if (effectiveStatus === 'active') {
-          const portalPath =
+          targetPath =
             targetRole === 'employer'
               ? '/employer'
               : targetRole === 'admin'
               ? '/admin'
               : '/candidate';
-          navigate(portalPath);
         } else if (effectiveStatus === 'suspended') {
-          navigate('/login');
+          targetPath = '/login';
+        } else if (effectiveStatus === 'unverified') {
+          targetPath = '/verify-email';
+        }
+
+        // 6. Navigate cleanly without leaving OAuth hash in browser URL
+        if (typeof window !== 'undefined') {
+          window.location.replace(targetPath);
         } else {
-          // Unverified fallback (e.g. if provider did not verify email)
-          navigate('/verify-email');
+          navigate(targetPath);
         }
       } catch (err: any) {
         if (isMounted) {

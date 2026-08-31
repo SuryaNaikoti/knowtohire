@@ -291,6 +291,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         profile,
         role: resolvedRole,
         status: effectiveStatus,
+        isAuthenticated: !!activeUser,
+        isLoading: false,
+        isInitialized: true,
       }));
 
       return profile;
@@ -298,7 +301,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('[AuthContext] refreshProfile error:', err);
       return null;
     }
-  }, [state.user, state.profile, state.role, fetchProfile]);
+  }, [state.user, state.role, fetchProfile]);
 
   // Session resolution & Auth State Change Listener
   useEffect(() => {
