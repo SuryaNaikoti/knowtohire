@@ -5,18 +5,23 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { AdminCandidateInspectModal } from '@/components/admin/AdminCandidateInspectModal';
 import { adminService, AdminUserRecord } from '@/services/adminService';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, Eye, ShieldCheck } from 'lucide-react';
 
 export interface AdminUsersPageProps {
   onNavigate?: (path: string) => void;
 }
 
-export const AdminUsersPage: React.FC<AdminUsersPageProps> = () => {
+export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) => {
   const [users, setUsers] = useState<AdminUserRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+
+  // Candidate Inspection Modal State
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  const [isCandidateModalOpen, setIsCandidateModalOpen] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
@@ -51,6 +56,28 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = () => {
     const res = await adminService.updateUserStatus(user.id, nextStatus);
     if (res.data) {
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u)));
+    }
+  };
+
+  const handleVerifyCandidate = async (user: AdminUserRecord) => {
+    const res = await adminService.verifyCandidateAccount(user.id);
+    if (res.data) {
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: 'active' } : u)));
+    }
+  };
+
+  const handleInspectCandidate = (userId: string) => {
+    setSelectedCandidateId(userId);
+    setIsCandidateModalOpen(true);
+  };
+
+  const handleInspectEmployer = (employerId: string) => {
+    const targetPath = `/admin/employers?inspect=${employerId}`;
+    if (onNavigate) {
+      onNavigate(targetPath);
+    } else {
+      window.history.pushState({}, '', targetPath);
+      window.dispatchEvent(new Event('popstate'));
     }
   };
 
@@ -118,8 +145,13 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = () => {
                 {users.map((u) => (
                   <div key={u.id} className="p-4 space-y-3">
                     <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h4 className="font-bold text-sm text-kth-slate-900">{u.full_name}</h4>
+                      <div
+                        onClick={() => u.role === 'candidate' && handleInspectCandidate(u.id)}
+                        className={u.role === 'candidate' ? 'cursor-pointer group' : ''}
+                      >
+                        <h4 className="font-bold text-sm text-kth-slate-900 group-hover:text-kth-primary-600 transition-colors">
+                          {u.full_name}
+                        </h4>
                         <p className="text-xs text-kth-slate-500 font-mono break-all">{u.email}</p>
                       </div>
                       <Badge
@@ -145,18 +177,55 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = () => {
                       </span>
                     </div>
 
-                    {u.role !== 'admin' && (
-                      <div className="pt-1">
+                    {/* Mobile Actions */}
+                    <div className="pt-2 flex flex-wrap gap-2">
+                      {u.role === 'candidate' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 min-h-[36px] font-semibold text-xs"
+                          onClick={() => handleInspectCandidate(u.id)}
+                          leftIcon={<Eye className="w-3.5 h-3.5" />}
+                        >
+                          View Candidate
+                        </Button>
+                      )}
+
+                      {u.role === 'employer' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 min-h-[36px] font-semibold text-xs"
+                          onClick={() => handleInspectEmployer(u.id)}
+                          leftIcon={<Eye className="w-3.5 h-3.5" />}
+                        >
+                          View Employer
+                        </Button>
+                      )}
+
+                      {u.role === 'candidate' && u.status !== 'active' && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="flex-1 min-h-[36px] font-semibold text-xs"
+                          onClick={() => handleVerifyCandidate(u)}
+                          leftIcon={<ShieldCheck className="w-3.5 h-3.5" />}
+                        >
+                          Verify
+                        </Button>
+                      )}
+
+                      {u.role !== 'admin' && (
                         <Button
                           variant={u.status === 'active' ? 'destructive' : 'secondary'}
                           size="sm"
-                          className="w-full min-h-[38px]"
+                          className="flex-1 min-h-[36px] font-semibold text-xs"
                           onClick={() => handleToggleStatus(u)}
                         >
-                          {u.status === 'active' ? 'Suspend Account' : 'Activate Account'}
+                          {u.status === 'active' ? 'Suspend' : 'Activate'}
                         </Button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -175,10 +244,36 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = () => {
                   </thead>
                   <tbody className="divide-y divide-kth-slate-100">
                     {users.map((u) => (
-                      <tr key={u.id} className="hover:bg-kth-slate-50/60 transition-colors">
+                      <tr
+                        key={u.id}
+                        className="hover:bg-kth-slate-50/70 transition-colors group cursor-pointer"
+                        onClick={(e) => {
+                          // Ignore if clicking on button
+                          if ((e.target as HTMLElement).closest('button, a')) return;
+                          if (u.role === 'candidate') {
+                            handleInspectCandidate(u.id);
+                          } else if (u.role === 'employer') {
+                            handleInspectEmployer(u.id);
+                          }
+                        }}
+                      >
                         <td className="p-4">
-                          <div className="font-bold text-kth-slate-900">{u.full_name}</div>
-                          <div className="text-kth-slate-500 text-[11px] font-mono">{u.email}</div>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-kth-slate-100 border border-kth-slate-200 text-kth-slate-700 flex items-center justify-center font-bold text-xs shrink-0 group-hover:bg-kth-primary-50 group-hover:text-kth-primary-700 transition-colors">
+                              {u.full_name
+                                .split(' ')
+                                .map((n) => n[0])
+                                .join('')
+                                .slice(0, 2)
+                                .toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="font-bold text-kth-slate-900 group-hover:text-kth-primary-600 transition-colors">
+                                {u.full_name}
+                              </div>
+                              <div className="text-kth-slate-500 text-[11px] font-mono">{u.email}</div>
+                            </div>
+                          </div>
                         </td>
                         <td className="p-4">
                           <Badge
@@ -200,15 +295,66 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = () => {
                           {formatDate(u.created_at)}
                         </td>
                         <td className="p-4 text-right">
-                          {u.role !== 'admin' && (
-                            <Button
-                              variant={u.status === 'active' ? 'destructive' : 'secondary'}
-                              size="sm"
-                              onClick={() => handleToggleStatus(u)}
-                            >
-                              {u.status === 'active' ? 'Suspend' : 'Activate'}
-                            </Button>
-                          )}
+                          <div className="flex items-center justify-end gap-2">
+                            {u.role === 'candidate' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleInspectCandidate(u.id);
+                                }}
+                                className="font-semibold text-xs border-kth-slate-300 hover:border-kth-primary-300 hover:bg-kth-primary-50 hover:text-kth-primary-700"
+                                leftIcon={<Eye className="w-3.5 h-3.5" />}
+                              >
+                                View Candidate
+                              </Button>
+                            )}
+
+                            {u.role === 'employer' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleInspectEmployer(u.id);
+                                }}
+                                className="font-semibold text-xs"
+                                leftIcon={<Eye className="w-3.5 h-3.5" />}
+                              >
+                                View Employer
+                              </Button>
+                            )}
+
+                            {u.role === 'candidate' && u.status !== 'active' && (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleVerifyCandidate(u);
+                                }}
+                                className="font-semibold text-xs"
+                                leftIcon={<ShieldCheck className="w-3.5 h-3.5" />}
+                              >
+                                Verify
+                              </Button>
+                            )}
+
+                            {u.role !== 'admin' && (
+                              <Button
+                                variant={u.status === 'active' ? 'destructive' : 'secondary'}
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleStatus(u);
+                                }}
+                                className="font-semibold text-xs"
+                              >
+                                {u.status === 'active' ? 'Suspend' : 'Activate'}
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -219,6 +365,17 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = () => {
           )}
         </Card>
       </div>
+
+      {/* Candidate Profile Detailed Inspection & Verification Modal */}
+      <AdminCandidateInspectModal
+        candidateId={selectedCandidateId}
+        isOpen={isCandidateModalOpen}
+        onClose={() => setIsCandidateModalOpen(false)}
+        onStatusChanged={(userId, newStatus) => {
+          setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u)));
+        }}
+      />
     </AdminShell>
   );
 };
+

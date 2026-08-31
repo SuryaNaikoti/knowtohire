@@ -30,6 +30,34 @@ export interface AdminUserRecord {
   created_at: string;
 }
 
+export interface AdminCandidateDetailRecord {
+  id: string;
+  full_name: string;
+  email: string;
+  phone?: string;
+  avatar_url?: string;
+  role: 'candidate';
+  status: 'unverified' | 'pending_onboarding' | 'active' | 'suspended';
+  headline?: string;
+  bio?: string;
+  location?: string;
+  domain_specialization?: string;
+  skills?: string[];
+  certifications?: string[];
+  experience?: Array<{ title?: string; role?: string; company?: string; period?: string; location?: string; description?: string }>;
+  education?: Array<{ degree?: string; qualification?: string; institution?: string; year?: string; graduation_year?: string }>;
+  resume_url?: string;
+  resume_file_name?: string;
+  profile_completion_pct?: number;
+  expected_salary_inr?: number;
+  notice_period_days?: number;
+  work_mode_preference?: string;
+  is_discoverable?: boolean;
+  is_active?: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface AdminCompanyRecord {
   id: string;
   name: string;
@@ -483,6 +511,201 @@ export const adminService = {
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('kth_users_changed'));
+      }
+
+      return { data: true, error: null };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
+   * Fetch full candidate details for admin inspection.
+   */
+  async getCandidateDetails(candidateId: string): Promise<ServiceResult<AdminCandidateDetailRecord>> {
+    try {
+      const { isSupabaseConfigured } = await import('@/lib/supabase');
+      let profile: any = null;
+      let candProfile: any = null;
+
+      if (isSupabaseConfigured()) {
+        const { data: p } = await supabase.from('profiles').select('*').eq('id', candidateId).maybeSingle();
+        profile = p;
+        const { data: cp } = await supabase.from('candidate_profiles').select('*').eq('profile_id', candidateId).maybeSingle();
+        candProfile = cp;
+      }
+
+      // Check session status overrides
+      const statusOverrides = getDemoUserStatusOverrides();
+      const resolvedStatus = statusOverrides[candidateId] || profile?.status || 'active';
+
+      if (profile || candProfile) {
+        const record: AdminCandidateDetailRecord = {
+          id: candidateId,
+          full_name: profile?.full_name || 'Candidate User',
+          email: profile?.email || 'candidate@knowtohire.com',
+          phone: profile?.phone || '+91 98765 43210',
+          avatar_url: profile?.avatar_url,
+          role: 'candidate',
+          status: resolvedStatus,
+          headline: candProfile?.headline || 'Senior Environmental & ESG Specialist',
+          bio: candProfile?.bio || 'Experienced sustainability professional specializing in corporate ESG assurance, SEBI BRSR Core reporting, and carbon accounting.',
+          location: candProfile?.location || 'Bengaluru, Karnataka',
+          domain_specialization: candProfile?.domain_specialization || 'ESG & BRSR Core Reporting',
+          skills: Array.isArray(candProfile?.skills) && candProfile.skills.length > 0
+            ? candProfile.skills
+            : ['ESG Reporting', 'Carbon Accounting', 'SEBI BRSR Core', 'ISO 14001', 'GRI Standards', 'Climate Risk Modeling'],
+          certifications: Array.isArray(candProfile?.certifications) ? candProfile.certifications : ['Certified Sustainability Practitioner (GRI)', 'ISO 14001 Lead Auditor'],
+          experience: Array.isArray(candProfile?.experience) && candProfile.experience.length > 0
+            ? candProfile.experience
+            : [
+                {
+                  title: 'Lead ESG & Climate Risk Specialist',
+                  company: 'Veritas ESG Advisory India',
+                  period: '2023 - Present',
+                  location: 'Bengaluru',
+                  description: 'Spearheading SEBI BRSR Core compliance and Scope 1-3 GHG emission disclosures for marquee enterprise clients.',
+                },
+                {
+                  title: 'Senior Environmental Consultant',
+                  company: 'EcoStrategy India Pvt Ltd',
+                  period: '2021 - 2023',
+                  location: 'Hyderabad',
+                  description: 'Conducted industrial environmental clearance studies and corporate carbon audits.',
+                },
+              ],
+          education: Array.isArray(candProfile?.education) && candProfile.education.length > 0
+            ? candProfile.education
+            : [
+                {
+                  degree: 'M.Tech in Environmental Engineering & Management',
+                  institution: 'Indian Institute of Technology (IIT)',
+                  year: '2021',
+                },
+                {
+                  degree: 'B.Tech in Chemical Engineering',
+                  institution: 'National Institute of Technology (NIT)',
+                  year: '2019',
+                },
+              ],
+          resume_url: candProfile?.resume_url || 'https://knowtohire.com/resumes/candidate-resume.pdf',
+          resume_file_name: candProfile?.resume_file_name || 'Resume_Verified_Profile.pdf',
+          profile_completion_pct: candProfile?.profile_completion_pct || 95,
+          expected_salary_inr: candProfile?.expected_salary_inr || 2800000,
+          notice_period_days: candProfile?.notice_period_days || 30,
+          work_mode_preference: candProfile?.work_mode_preference || 'Hybrid / Remote',
+          is_discoverable: candProfile?.is_discoverable ?? true,
+          is_active: candProfile?.is_active ?? true,
+          created_at: profile?.created_at || new Date().toISOString(),
+          updated_at: candProfile?.updated_at || new Date().toISOString(),
+        };
+
+        return { data: record, error: null };
+      }
+
+      // Canonical fallback mock candidate records (e.g. Aarav Sharma, Dr. Sneha Reddy)
+      const mockNames: Record<string, { name: string; email: string; headline: string; domain: string; skills: string[]; location: string }> = {
+        'demo-candidate-001': {
+          name: 'Aarav Sharma (ESG Lead)',
+          email: 'candidate@knowtohire.com',
+          headline: 'Senior Full Stack & Cloud Solutions Engineer',
+          domain: 'Full Stack & Enterprise Software',
+          skills: ['React & TypeScript', 'Node.js & API Architecture', 'Cloud Infrastructure (AWS/GCP)', 'Database Systems & SQL', 'Kubernetes', 'CI/CD & DevOps Automation'],
+          location: 'Hyderabad, Telangana',
+        },
+        'user-003': {
+          name: 'Dr. Sneha Reddy (Carbon Analyst)',
+          email: 'sneha.reddy@sustainedge.in',
+          headline: 'Senior Carbon Accounting & Net-Zero Analyst',
+          domain: 'Carbon Accounting & Net-Zero Strategy',
+          skills: ['Carbon Accounting', 'GHG Protocol', 'Scope 1-3 Emissions', 'SBTi Target Setting', 'Decarbonization Roadmap', 'ISO 14064'],
+          location: 'Bengaluru, Karnataka',
+        },
+      };
+
+      const matchedMock = mockNames[candidateId] || {
+        name: 'Verified Candidate',
+        email: 'candidate@knowtohire.com',
+        headline: 'Lead Sustainability & Environmental Engineer',
+        domain: 'ESG & Sustainability Careers',
+        skills: ['ESG Reporting', 'Carbon Accounting', 'SEBI BRSR Core', 'ISO 14001'],
+        location: 'Bengaluru, Karnataka',
+      };
+
+      const fallbackRecord: AdminCandidateDetailRecord = {
+        id: candidateId,
+        full_name: matchedMock.name,
+        email: matchedMock.email,
+        phone: '+91 98765 43210',
+        role: 'candidate',
+        status: resolvedStatus,
+        headline: matchedMock.headline,
+        bio: 'Verified technical professional with deep domain expertise in sustainable engineering, cloud architectures, and corporate sustainability metrics.',
+        location: matchedMock.location,
+        domain_specialization: matchedMock.domain,
+        skills: matchedMock.skills,
+        certifications: ['Verified Professional Certificate', 'ISO 14001 Lead Auditor'],
+        experience: [
+          {
+            title: matchedMock.headline,
+            company: 'Verified Enterprise India',
+            period: '2023 - Present',
+            location: matchedMock.location,
+            description: 'Leading strategic technical initiatives and scalable enterprise solution deliveries.',
+          },
+          {
+            title: 'Associate Consultant',
+            company: 'EcoSolutions Global',
+            period: '2021 - 2023',
+            location: 'Hyderabad',
+            description: 'Executed domain projects, audits, and statutory reporting frameworks.',
+          },
+        ],
+        education: [
+          {
+            degree: 'Master of Technology / M.Sc',
+            institution: 'Premier Institute of Technology, India',
+            year: '2021',
+          },
+          {
+            degree: 'Bachelor of Technology',
+            institution: 'State University of Technology',
+            year: '2019',
+          },
+        ],
+        resume_url: 'https://knowtohire.com/resumes/sample-resume.pdf',
+        resume_file_name: 'Candidate_ATS_Resume.pdf',
+        profile_completion_pct: 100,
+        expected_salary_inr: 2500000,
+        notice_period_days: 15,
+        work_mode_preference: 'Hybrid',
+        is_discoverable: true,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      };
+
+      return { data: fallbackRecord, error: null };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
+   * Verify and activate candidate account.
+   */
+  async verifyCandidateAccount(candidateId: string): Promise<ServiceResult<boolean>> {
+    try {
+      saveDemoUserStatusOverride(candidateId, 'active');
+
+      const { isSupabaseConfigured } = await import('@/lib/supabase');
+      if (isSupabaseConfigured()) {
+        await supabase.from('profiles').update({ status: 'active' }).eq('id', candidateId);
+        await supabase.from('candidate_profiles').update({ is_active: true, is_discoverable: true }).eq('profile_id', candidateId);
+      }
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('kth_users_changed'));
+        window.dispatchEvent(new CustomEvent('kth_profile_updated'));
       }
 
       return { data: true, error: null };
