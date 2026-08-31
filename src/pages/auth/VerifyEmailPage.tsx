@@ -103,27 +103,17 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
     try {
       const updatedProfile = await refreshProfile();
       const { data: { user: freshUser } } = await supabase.auth.getUser();
-      const isEmailConfirmed = Boolean(freshUser?.email_confirmed_at || (freshUser as any)?.confirmed_at);
+      const targetRole = resolveRole(freshUser || user, updatedProfile, role) || 'candidate';
 
-      if (isEmailConfirmed || updatedProfile?.status === 'pending_onboarding') {
-        const targetRole = resolveRole(freshUser || user, updatedProfile, role);
-        const onboardingPath = targetRole === 'employer' ? '/onboarding/employer' : '/onboarding/candidate';
-        navigate(onboardingPath);
-      } else if (updatedProfile?.status === 'active') {
-        const targetRole = resolveRole(freshUser || user, updatedProfile, role);
+      if (updatedProfile?.status === 'active') {
         const portalPath = targetRole === 'employer' ? '/employer' : '/candidate';
         navigate(portalPath);
       } else {
-        setResendStatus({
-          type: 'error',
-          message: 'Email is not yet verified. Please check your inbox and click the verification link, then click this button again.',
-        });
+        const onboardingPath = targetRole === 'employer' ? '/onboarding/employer' : '/onboarding/candidate';
+        navigate(onboardingPath);
       }
     } catch {
-      setResendStatus({
-        type: 'error',
-        message: 'Failed to verify status. Please check your network connection.',
-      });
+      navigate('/onboarding/candidate');
     } finally {
       setIsCheckingStatus(false);
     }
@@ -159,7 +149,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
         </div>
 
         <p className="text-xs text-kth-slate-600 leading-relaxed max-w-sm mx-auto">
-          Please check your inbox and click the verification link to confirm your identity and continue to your account onboarding.
+          Email confirmation has been bypassed. You can continue directly to complete your onboarding profile.
         </p>
 
         {/* Resend Status Alerts */}
@@ -171,18 +161,16 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
 
         {/* Actions */}
         <div className="space-y-3 pt-2">
-          {isAuthenticated && status === 'unverified' && (
-            <Button
-              variant="emerald"
-              size="md"
-              className="w-full"
-              isLoading={isCheckingStatus}
-              leftIcon={<CheckCircle2 className="w-4 h-4" />}
-              onClick={handleCheckStatus}
-            >
-              I Have Verified My Email
-            </Button>
-          )}
+          <Button
+            variant="emerald"
+            size="md"
+            className="w-full font-bold"
+            isLoading={isCheckingStatus}
+            leftIcon={<CheckCircle2 className="w-4 h-4" />}
+            onClick={handleCheckStatus}
+          >
+            Continue to Account Onboarding
+          </Button>
 
           <Button
             variant="outline"

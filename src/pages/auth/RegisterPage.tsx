@@ -130,8 +130,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     if (error) {
       setFormError(error.message);
     } else {
-      // Navigate to email verification page on successful registration
-      navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`);
+      // Email confirmation is disabled; forward directly to role onboarding
+      const onboardingPath = selectedRole === 'employer' ? '/onboarding/employer' : '/onboarding/candidate';
+      navigate(onboardingPath);
     }
   };
 

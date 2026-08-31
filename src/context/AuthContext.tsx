@@ -606,7 +606,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (data?.user) {
-      const initialStatus = data.user.email_confirmed_at ? 'pending_onboarding' : 'unverified';
+      const initialStatus = 'pending_onboarding';
 
       let profile: Profile | null = null;
       try {
