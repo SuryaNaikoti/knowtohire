@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
 import { jobService, applicationService, Job, JobApplication } from '@/services';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, DEMO_CREDENTIALS } from '@/context/AuthContext';
 import { formatINR } from '@/design-system/tokens';
 import {
   ArrowLeft,
@@ -27,13 +26,10 @@ interface CandidateApplyPageProps {
 }
 
 export const CandidateApplyPage: React.FC<CandidateApplyPageProps> = ({ jobId: propJobId, onNavigate }) => {
-  const { id: routerId } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { user, profile, isAuthenticated, role, loginWithDemo } = useAuth();
+  const { user, profile, isAuthenticated, login } = useAuth();
 
   const resolvedJobId =
     propJobId ||
-    routerId ||
     (window.location.pathname.startsWith('/jobs/')
       ? window.location.pathname.replace('/jobs/', '').replace('/apply', '')
       : '') ||
@@ -283,7 +279,7 @@ export const CandidateApplyPage: React.FC<CandidateApplyPageProps> = ({ jobId: p
                         size="sm"
                         className="text-xs font-bold py-1 px-3 bg-amber-600 hover:bg-amber-700 text-white"
                         onClick={async () => {
-                          await loginWithDemo('candidate');
+                          await login(DEMO_CREDENTIALS.candidate.email, DEMO_CREDENTIALS.candidate.password);
                         }}
                       >
                         Quick Candidate Demo
