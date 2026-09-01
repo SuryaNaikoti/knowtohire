@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import { CandidateShell } from '@/components/candidate/CandidateShell';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -38,9 +37,7 @@ function isValidUrl(urlString?: string | null): boolean {
 }
 
 export const CandidateInterviewDetailsPage: React.FC<CandidateInterviewDetailsPageProps> = ({ interviewId: propId, onNavigate }) => {
-  const routerParams = useParams<{ id: string }>();
-  const id = propId || routerParams.id || (typeof window !== 'undefined' ? window.location.pathname.split('/candidate/interviews/')[1] : undefined);
-  const navigate = useNavigate();
+  const id = propId || (typeof window !== 'undefined' ? window.location.pathname.split('/candidate/interviews/')[1] : undefined);
 
   const [interview, setInterview] = useState<Interview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,7 +65,8 @@ export const CandidateInterviewDetailsPage: React.FC<CandidateInterviewDetailsPa
     if (onNavigate) {
       onNavigate('/candidate/interviews');
     } else {
-      navigate('/candidate/interviews');
+      window.history.pushState({}, '', '/candidate/interviews');
+      window.dispatchEvent(new PopStateEvent('popstate'));
     }
   };
 

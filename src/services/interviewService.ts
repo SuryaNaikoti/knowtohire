@@ -336,7 +336,7 @@ export const interviewService = {
     try {
       const demoMatch = getDemoInterviews().find((i) => i.id === interviewId);
       if (demoMatch) {
-        return { data: demoMatch, error: null };
+        return { data: hydrateInterviewEntities(demoMatch), error: null };
       }
 
       const { data, error } = await supabase
