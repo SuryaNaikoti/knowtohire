@@ -30,7 +30,11 @@ function isValidUrl(urlString?: string | null): boolean {
   }
 }
 
-export const CandidateInterviewsPage: React.FC = () => {
+export interface CandidateInterviewsPageProps {
+  onNavigate?: (path: string) => void;
+}
+
+export const CandidateInterviewsPage: React.FC<CandidateInterviewsPageProps> = ({ onNavigate }) => {
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -278,7 +282,15 @@ export const CandidateInterviewsPage: React.FC = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => { window.location.href = `/candidate/interviews/${interview.id}`; }}
+            onClick={() => {
+              const target = `/candidate/interviews/${interview.id}`;
+              if (onNavigate) {
+                onNavigate(target);
+              } else {
+                window.history.pushState({}, '', target);
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }
+            }}
             className="text-xs text-kth-slate-600 font-semibold"
           >
             View Full Briefing

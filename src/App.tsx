@@ -311,9 +311,10 @@ export function App() {
         pageComponent = <CandidateApplicationDetailsPage appId={appId} />;
       }
       else if (path.startsWith('/candidate/interviews/') && path !== '/candidate/interviews') {
-        pageComponent = <CandidateInterviewDetailsPage onNavigate={navigateTo} />;
+        const interviewId = path.replace('/candidate/interviews/', '');
+        pageComponent = <CandidateInterviewDetailsPage interviewId={interviewId} onNavigate={navigateTo} />;
       }
-      else if (path === '/candidate/interviews') pageComponent = <CandidateInterviewsPage />;
+      else if (path === '/candidate/interviews') pageComponent = <CandidateInterviewsPage onNavigate={navigateTo} />;
       else if (path === '/candidate/career-insights' || path === '/candidate/insights') pageComponent = <CandidateCareerInsightsPage />;
       else if (path === '/candidate/requests/new') pageComponent = <CandidateNewRequestPage onNavigate={navigateTo} />;
       else if (path.startsWith('/candidate/requests/') && path !== '/candidate/requests') {

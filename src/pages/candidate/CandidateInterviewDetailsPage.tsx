@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 
 interface CandidateInterviewDetailsPageProps {
+  interviewId?: string;
   onNavigate?: (path: string) => void;
 }
 
@@ -36,8 +37,9 @@ function isValidUrl(urlString?: string | null): boolean {
   }
 }
 
-export const CandidateInterviewDetailsPage: React.FC<CandidateInterviewDetailsPageProps> = ({ onNavigate }) => {
-  const { id } = useParams<{ id: string }>();
+export const CandidateInterviewDetailsPage: React.FC<CandidateInterviewDetailsPageProps> = ({ interviewId: propId, onNavigate }) => {
+  const routerParams = useParams<{ id: string }>();
+  const id = propId || routerParams.id || (typeof window !== 'undefined' ? window.location.pathname.split('/candidate/interviews/')[1] : undefined);
   const navigate = useNavigate();
 
   const [interview, setInterview] = useState<Interview | null>(null);
@@ -47,19 +49,18 @@ export const CandidateInterviewDetailsPage: React.FC<CandidateInterviewDetailsPa
   useEffect(() => {
     if (id) {
       setIsLoading(true);
-      interviewService.getMyInterviews().then((res) => {
+      setError(null);
+      interviewService.getInterviewById(id).then((res) => {
         if (res.data) {
-          const match = res.data.find((i) => i.id === id);
-          if (match) {
-            setInterview(match);
-          } else {
-            setError('Interview schedule record not found.');
-          }
+          setInterview(res.data);
         } else {
-          setError(res.error?.message || 'Failed to retrieve interview details.');
+          setError(res.error?.message || 'Interview schedule record not found.');
         }
         setIsLoading(false);
       });
+    } else {
+      setIsLoading(false);
+      setError('Invalid or missing Interview ID.');
     }
   }, [id]);
 
