@@ -189,6 +189,7 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
                 </Badge>
               </div>
               <h1 className="font-display text-2xl md:text-3xl font-extrabold text-kth-slate-900">{job.title}</h1>
+              <div className="flex items-center gap-3 text-xs sm:text-sm text-kth-slate-600 mt-1">
                 <button
                   type="button"
                   onClick={() => {
