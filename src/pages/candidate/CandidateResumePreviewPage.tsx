@@ -19,7 +19,6 @@ interface CandidateResumePreviewPageProps {
 }
 
 export const CandidateResumePreviewPage: React.FC<CandidateResumePreviewPageProps> = ({ onNavigate }) => {
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   const [profile, setProfile] = useState<CandidateFullProfile | null>(null);
@@ -55,7 +54,8 @@ export const CandidateResumePreviewPage: React.FC<CandidateResumePreviewPageProp
     if (onNavigate) {
       onNavigate('/candidate/resume');
     } else {
-      navigate('/candidate/resume');
+      window.history.pushState({}, '', '/candidate/resume');
+      window.dispatchEvent(new Event('popstate'));
     }
   };
 
@@ -78,8 +78,6 @@ export const CandidateResumePreviewPage: React.FC<CandidateResumePreviewPageProp
       bio: profile?.bio || 'Experienced engineering professional with proven expertise delivering scalable full-stack applications, distributed services, and business solutions.',
     });
   }, [profile, user]);
-
-  const isPDF = true;
 
   return (
     <CandidateShell title="Resume Document Studio" currentPath="/candidate/resume">
