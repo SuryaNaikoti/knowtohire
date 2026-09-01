@@ -8,7 +8,7 @@ import { Alert } from '@/components/ui/Alert';
 import { ProgressTimeline, TimelineStep } from '@/components/data-display/ProgressTimeline';
 import { applicationService, interviewService, JobApplication, ApplicationStatusHistory, Interview, ApplicationStage } from '@/services';
 import { formatINR } from '@/design-system/tokens';
-import { Calendar, Video, FileText, ArrowLeft, AlertTriangle, Building2, MapPin, Briefcase } from 'lucide-react';
+import { Calendar, Video, FileText, ArrowLeft, AlertTriangle, Building2, MapPin, Briefcase, Sparkles, PartyPopper, CheckCircle2, ArrowRight, ShieldCheck, Rocket, X } from 'lucide-react';
 
 export interface CandidateApplicationDetailsPageProps {
   appId?: string;
@@ -472,60 +472,98 @@ export const CandidateApplicationDetailsPage: React.FC<CandidateApplicationDetai
         </div>
       </Dialog>
 
-      {/* 🎉 Party Celebration Modal (Hired Stage) */}
-      <Dialog
-        isOpen={showCelebrationModal}
-        onClose={() => setShowCelebrationModal(false)}
-        title=""
-        maxWidth="md"
-      >
-        <div className="text-center space-y-5 p-2 font-sans">
-          {/* Animated Celebration Icon & Badge */}
-          <div className="relative inline-block">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/30 text-3xl animate-bounce">
-              🎉
-            </div>
-            <div className="absolute -top-1 -right-1 text-2xl animate-spin">
-              ✨
-            </div>
-            <div className="absolute -bottom-1 -left-1 text-2xl">
-              🎊
-            </div>
-          </div>
+      {/* 🎉 Ultra-Premium Celebration Modal (Hired Stage) */}
+      {showCelebrationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border border-emerald-500/30 shadow-2xl shadow-emerald-950/60 p-6 sm:p-8 text-white font-sans text-center">
+            
+            {/* Ambient Background Glows */}
+            <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="space-y-2">
-            <div className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold font-mono tracking-wider">
-              OFFICIAL OFFER CONFIRMED · HIRED
-            </div>
-            <h2 className="text-2xl font-extrabold text-kth-slate-900 tracking-tight">
-              Congratulations! You are Hired!
-            </h2>
-            <p className="text-xs text-kth-slate-600 leading-relaxed max-w-sm mx-auto">
-              Your application for <strong>{job?.title}</strong> at <strong>{job?.company?.name || 'the Enterprise'}</strong> has been marked as <strong>Hired</strong>!
-            </p>
-          </div>
-
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-left space-y-2 text-xs text-emerald-900">
-            <div className="font-bold flex items-center gap-1.5">
-              <span>🚀</span> What happens next?
-            </div>
-            <p className="text-[11px] text-emerald-800 leading-normal">
-              The talent team has triggered your onboarding workflow. Look out for welcome instructions and onboarding details sent to your registered contact email.
-            </p>
-          </div>
-
-          <div className="pt-2 flex justify-center">
-            <Button
-              variant="primary"
-              size="md"
+            {/* Close Button */}
+            <button
               onClick={() => setShowCelebrationModal(false)}
-              className="bg-emerald-600 hover:bg-emerald-700 font-bold px-8 shadow-md"
+              className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors z-10"
+              aria-label="Close modal"
             >
-              View My Onboarding Hub 🚀
-            </Button>
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="relative z-10 space-y-6">
+              {/* Badge & Icon Hero */}
+              <div className="space-y-4">
+                <div className="relative inline-flex items-center justify-center">
+                  {/* Glowing Rings */}
+                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-emerald-500 to-teal-400 blur-lg opacity-50 animate-pulse" />
+                  <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-400 p-0.5 shadow-xl">
+                    <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+                      <PartyPopper className="w-10 h-10 text-emerald-400 animate-bounce" />
+                    </div>
+                  </div>
+                  <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-slate-950 shadow-md">
+                    <Sparkles className="w-3.5 h-3.5 fill-slate-950" />
+                  </span>
+                </div>
+
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-mono font-bold tracking-wider uppercase">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  Official Selection Confirmed
+                </div>
+              </div>
+
+              {/* Congratulatory Text */}
+              <div className="space-y-2">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+                  Congratulations! <br />
+                  <span className="bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300 bg-clip-text text-transparent">
+                    You are officially Hired!
+                  </span>
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
+                  Your candidacy for <span className="font-semibold text-white">{job?.title}</span> at <span className="font-semibold text-emerald-300">{job?.company?.name || 'EcoStrategy India Pvt Ltd'}</span> has successfully concluded with an offer confirmation.
+                </p>
+              </div>
+
+              {/* Onboarding Roadmap Mini-Cards */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-left space-y-3 backdrop-blur-xs">
+                <div className="flex items-center gap-2 text-xs font-bold text-emerald-300">
+                  <Rocket className="w-4 h-4 text-emerald-400" />
+                  <span>Next Steps in Your Onboarding</span>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 space-y-1">
+                    <span className="text-[10px] text-emerald-400 font-mono font-bold block">01. VERIFY</span>
+                    <span className="text-slate-200 font-medium block">Document Check</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 space-y-1">
+                    <span className="text-[10px] text-cyan-400 font-mono font-bold block">02. ACCESS</span>
+                    <span className="text-slate-200 font-medium block">Corporate IT Setup</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 space-y-1">
+                    <span className="text-[10px] text-amber-400 font-mono font-bold block">03. DAY 1</span>
+                    <span className="text-slate-200 font-medium block">Welcome Induction</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* CTA Action */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCelebrationModal(false)}
+                  className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:via-teal-400 hover:to-cyan-400 text-slate-950 font-extrabold text-xs sm:text-sm tracking-wide shadow-lg shadow-emerald-500/25 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  <span>Explore My Onboarding Hub</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </Dialog>
+      )}
     </CandidateShell>
   );
 };
