@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { CandidateShell } from '@/components/candidate/CandidateShell';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -19,7 +18,6 @@ interface CandidateNewRequestPageProps {
 }
 
 export const CandidateNewRequestPage: React.FC<CandidateNewRequestPageProps> = ({ onNavigate }) => {
-  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
@@ -65,7 +63,8 @@ export const CandidateNewRequestPage: React.FC<CandidateNewRequestPageProps> = (
     if (onNavigate) {
       onNavigate('/candidate/requests');
     } else {
-      navigate('/candidate/requests');
+      window.history.pushState({}, '', '/candidate/requests');
+      window.dispatchEvent(new PopStateEvent('popstate'));
     }
   };
 
