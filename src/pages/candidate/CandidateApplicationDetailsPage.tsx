@@ -28,6 +28,8 @@ export const CandidateApplicationDetailsPage: React.FC<CandidateApplicationDetai
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
 
+  const [showCelebrationModal, setShowCelebrationModal] = useState(false);
+
   const loadApplicationDetails = useCallback(async () => {
     if (!resolvedAppId) {
       setIsLoading(false);
@@ -50,6 +52,9 @@ export const CandidateApplicationDetailsPage: React.FC<CandidateApplicationDetai
     } else {
       setApplication(appRes.data);
       setHistory(histRes.data || []);
+      if (appRes.data.stage === 'hired') {
+        setShowCelebrationModal(true);
+      }
       // Filter interviews linked to this application
       if (intRes.data) {
         setInterviews(intRes.data.filter((i) => i.application_id === resolvedAppId));
@@ -61,6 +66,18 @@ export const CandidateApplicationDetailsPage: React.FC<CandidateApplicationDetai
 
   useEffect(() => {
     loadApplicationDetails();
+
+    const handleSync = () => {
+      loadApplicationDetails();
+    };
+
+    window.addEventListener('kth_applications_changed', handleSync);
+    window.addEventListener('kth_notifications_changed', handleSync);
+
+    return () => {
+      window.removeEventListener('kth_applications_changed', handleSync);
+      window.removeEventListener('kth_notifications_changed', handleSync);
+    };
   }, [loadApplicationDetails]);
 
   // Handle Application Withdrawal
@@ -140,7 +157,7 @@ export const CandidateApplicationDetailsPage: React.FC<CandidateApplicationDetai
       },
       {
         title: 'Onboarding',
-        date: formatDateForStage('hired'),
+        date: formatDateForStage('hired') || (stageIndex === 4 ? 'Hired' : undefined),
         status: stageIndex === 4 ? 'completed' : 'upcoming',
       },
     ];
@@ -450,6 +467,61 @@ export const CandidateApplicationDetailsPage: React.FC<CandidateApplicationDetai
               className="bg-rose-600 text-white hover:bg-rose-700 border-transparent font-bold"
             >
               {isWithdrawing ? 'Withdrawing...' : 'Confirm Withdrawal'}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* 🎉 Party Celebration Modal (Hired Stage) */}
+      <Dialog
+        isOpen={showCelebrationModal}
+        onClose={() => setShowCelebrationModal(false)}
+        title=""
+        maxWidth="md"
+      >
+        <div className="text-center space-y-5 p-2 font-sans">
+          {/* Animated Celebration Icon & Badge */}
+          <div className="relative inline-block">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/30 text-3xl animate-bounce">
+              🎉
+            </div>
+            <div className="absolute -top-1 -right-1 text-2xl animate-spin">
+              ✨
+            </div>
+            <div className="absolute -bottom-1 -left-1 text-2xl">
+              🎊
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold font-mono tracking-wider">
+              OFFICIAL OFFER CONFIRMED · HIRED
+            </div>
+            <h2 className="text-2xl font-extrabold text-kth-slate-900 tracking-tight">
+              Congratulations! You are Hired!
+            </h2>
+            <p className="text-xs text-kth-slate-600 leading-relaxed max-w-sm mx-auto">
+              Your application for <strong>{job?.title}</strong> at <strong>{job?.company?.name || 'the Enterprise'}</strong> has been marked as <strong>Hired</strong>!
+            </p>
+          </div>
+
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-left space-y-2 text-xs text-emerald-900">
+            <div className="font-bold flex items-center gap-1.5">
+              <span>🚀</span> What happens next?
+            </div>
+            <p className="text-[11px] text-emerald-800 leading-normal">
+              The talent team has triggered your onboarding workflow. Look out for welcome instructions and onboarding details sent to your registered contact email.
+            </p>
+          </div>
+
+          <div className="pt-2 flex justify-center">
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => setShowCelebrationModal(false)}
+              className="bg-emerald-600 hover:bg-emerald-700 font-bold px-8 shadow-md"
+            >
+              View My Onboarding Hub 🚀
             </Button>
           </div>
         </div>
