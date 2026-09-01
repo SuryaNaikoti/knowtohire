@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { EmployerShell } from '@/components/employer/EmployerShell';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -28,14 +27,10 @@ export interface EmployerScheduleInterviewPageProps {
 }
 
 export const EmployerScheduleInterviewPage: React.FC<EmployerScheduleInterviewPageProps> = ({ candidateId: propCandidateId, onNavigate }) => {
-  const { id: routeId } = useParams<{ id: string }>();
-  const id = propCandidateId || routeId;
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-
-  // Extract applicationId from searchParams or URL window location
   const rawUrlSearch = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const applicationIdParam = searchParams.get('applicationId') || rawUrlSearch?.get('applicationId');
+  const pathId = typeof window !== 'undefined' ? window.location.pathname.split('/employer/schedule/')[1]?.split('?')[0] : undefined;
+  const id = propCandidateId || pathId;
+  const applicationIdParam = rawUrlSearch?.get('applicationId') || undefined;
 
   const [application, setApplication] = useState<JobApplication | null>(null);
   const [candidate, setCandidate] = useState<DiscoverableCandidate | null>(null);

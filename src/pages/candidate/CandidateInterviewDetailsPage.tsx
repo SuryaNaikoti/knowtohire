@@ -196,8 +196,8 @@ export const CandidateInterviewDetailsPage: React.FC<CandidateInterviewDetailsPa
               </div>
             </div>
 
-            {/* Video Meeting Call Direct Link */}
-            {interview.meeting_link && isValidUrl(interview.meeting_link) && (
+            {/* Video Meeting Call Direct Link (Only for Remote / Virtual Video Interviews) */}
+            {interview.interview_type !== 'walk_in' && interview.interview_type !== 'on_site' && interview.meeting_link && isValidUrl(interview.meeting_link) && (
               <Card className="p-6 bg-gradient-to-r from-cyan-50 to-indigo-50/50 border-cyan-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold text-cyan-900 uppercase tracking-wider block">
