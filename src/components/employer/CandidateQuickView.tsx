@@ -292,12 +292,12 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
         isOpen={isOpen}
         onClose={onClose}
         title={`Candidate Quick View — ${candidateName}`}
-        width="max-w-lg"
+        width="max-w-xl sm:max-w-2xl"
       >
-        <div className="space-y-5 font-sans text-left">
+        <div className="space-y-6 font-sans text-left">
           {/* Section 1: Candidate Identity Header */}
-          <div className="flex items-start gap-3.5 pb-4 border-b border-kth-slate-200">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-kth-primary-600 to-kth-slate-900 text-white font-extrabold text-base flex items-center justify-center shrink-0 shadow-xs">
+          <div className="flex items-start gap-4 pb-4 border-b border-kth-slate-200">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-kth-primary-600 to-indigo-900 text-white font-extrabold text-lg flex items-center justify-center shrink-0 shadow-xs">
               {candidateName
                 .split(' ')
                 .map((n: string) => n[0])
@@ -305,79 +305,85 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
                 .join('')}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                <h3 className="font-display font-bold text-base text-kth-slate-900 truncate">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h3 className="font-display font-bold text-lg text-kth-slate-900 truncate">
                   {candidateName}
                 </h3>
                 {currentApp && (
-                  <Badge variant={getStageVariant(currentStage)} className="capitalize text-[10px]">
+                  <Badge variant={getStageVariant(currentStage)} className="capitalize text-xs font-semibold">
                     {currentStage.replace('_', ' ')}
                   </Badge>
                 )}
               </div>
-              <p className="text-xs font-medium text-kth-slate-700 mb-1 line-clamp-1">{candidateHeadline}</p>
-              <div className="flex items-center gap-3 text-[11px] text-kth-slate-500 flex-wrap">
+              <p className="text-xs font-semibold text-kth-slate-700 mb-1.5">{candidateHeadline}</p>
+              <div className="flex items-center gap-4 text-xs text-kth-slate-500 flex-wrap">
                 <span className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-kth-slate-400" /> {candidateLocation}
+                  <MapPin className="w-3.5 h-3.5 text-kth-slate-400" /> {candidateLocation}
                 </span>
-                {candidateEmail && <span>{candidateEmail}</span>}
+                {candidateEmail && <span className="font-mono">{candidateEmail}</span>}
               </div>
             </div>
           </div>
 
           {/* Section 2: Recruiter Quick Actions Bar */}
-          <div className="flex gap-2 flex-wrap bg-kth-slate-50 p-2.5 rounded-xl border border-kth-slate-200 items-center">
-            {candidateResume ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsPreviewOpen(true)}
-                leftIcon={<FileText className="w-3.5 h-3.5" />}
-              >
-                View Resume
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsPreviewOpen(true)}
-                leftIcon={<FileText className="w-3.5 h-3.5" />}
-              >
-                Profile Snapshot
-              </Button>
-            )}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-kth-slate-50 p-3 rounded-2xl border border-kth-slate-200">
+            <div className="flex items-center gap-2 flex-wrap">
+              {candidateResume ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsPreviewOpen(true)}
+                  leftIcon={<FileText className="w-3.5 h-3.5" />}
+                  className="text-xs font-semibold"
+                >
+                  View Resume
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsPreviewOpen(true)}
+                  leftIcon={<FileText className="w-3.5 h-3.5" />}
+                  className="text-xs font-semibold"
+                >
+                  Profile Snapshot
+                </Button>
+              )}
 
-            <Button
-              variant={isSaved ? 'secondary' : 'outline'}
-              size="sm"
-              onClick={handleToggleSaveCandidate}
-              leftIcon={
-                <Bookmark
-                  className={`w-3.5 h-3.5 ${
-                    isSaved ? 'fill-kth-primary-600 text-kth-primary-600' : ''
-                  }`}
-                />
-              }
-            >
-              {isSaved ? 'Saved to Bench' : 'Save Candidate'}
-            </Button>
-
-            {currentApp && (
               <Button
-                variant="outline"
+                variant={isSaved ? 'secondary' : 'outline'}
                 size="sm"
-                onClick={() => setIsScheduleModalOpen(true)}
-                leftIcon={<Calendar className="w-3.5 h-3.5" />}
+                onClick={handleToggleSaveCandidate}
+                leftIcon={
+                  <Bookmark
+                    className={`w-3.5 h-3.5 ${
+                      isSaved ? 'fill-kth-primary-600 text-kth-primary-600' : ''
+                    }`}
+                  />
+                }
+                className="text-xs font-semibold"
               >
-                Interview
+                {isSaved ? 'Saved to Bench' : 'Save Candidate'}
               </Button>
-            )}
+
+              {currentApp && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsScheduleModalOpen(true)}
+                  leftIcon={<Calendar className="w-3.5 h-3.5" />}
+                  className="text-xs font-semibold"
+                >
+                  Interview
+                </Button>
+              )}
+            </div>
 
             <Button
               variant="primary"
               size="sm"
               onClick={handleNavigateToFullProfile}
-              className="ml-auto"
+              className="text-xs font-bold bg-kth-primary-600 hover:bg-kth-primary-700 text-white shadow-xs whitespace-nowrap"
             >
               View Full Profile <ArrowRight className="w-3.5 h-3.5 ml-1" />
             </Button>

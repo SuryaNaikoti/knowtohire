@@ -22,11 +22,11 @@ export const CandidatePipeline: React.FC<CandidatePipelineProps> = ({
     { stage: 'screening', label: 'Screening' },
     { stage: 'shortlisted', label: 'Shortlisted' },
     { stage: 'interview', label: 'Interview' },
+    { stage: 'offer', label: 'Offer Extended' },
+    { stage: 'hired', label: 'Hired' },
   ];
 
   const archiveStages: { stage: ApplicationStage; label: string }[] = [
-    { stage: 'offer', label: 'Offers' },
-    { stage: 'hired', label: 'Hired' },
     { stage: 'rejected', label: 'Not Selected' },
     { stage: 'withdrawn', label: 'Withdrawn' },
   ];
