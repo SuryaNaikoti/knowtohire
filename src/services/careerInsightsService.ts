@@ -21,12 +21,12 @@
  */
 
 import { candidateProfileService } from './candidateProfileService';
+import { resumeService } from './resumeService';
 import { CandidateFullProfile } from './types';
 import { jobService, Job } from './jobService';
 import { knowledgeService, KnowledgeResource } from './knowledgeService';
 import { ServiceResult, normalizeServiceError } from './types';
 import { cleanSkillArray, isValidSkill } from '@/utils/skillValidation';
-import { MOCK_JOBS } from '@/data/mockData';
 
 export interface CareerMatchExplanation {
   factor: string;
