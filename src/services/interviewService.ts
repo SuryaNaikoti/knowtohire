@@ -496,6 +496,12 @@ export const interviewService = {
         window.localStorage.setItem(DEMO_INTERVIEWS_KEY, JSON.stringify(demoInterviews));
         notifyInterviewsChanged();
 
+        if (input.status === 'completed' && demoInterviews[idx].application_id) {
+          await applicationService.updateApplicationStage(demoInterviews[idx].application_id, 'offer');
+        } else if (input.status === 'cancelled' && demoInterviews[idx].application_id) {
+          // If cancelled, keep in interview or archive depending on recruitment rules
+        }
+
         if (input.status === 'cancelled' || input.status === 'completed') {
           const candName = demoInterviews[idx].candidate?.full_name || 'Candidate';
           const statusText = input.status === 'cancelled' ? 'Cancelled' : 'Completed';
@@ -507,8 +513,10 @@ export const interviewService = {
             interview_id: demoInterviews[idx].id,
             type: 'interview',
             title: `Interview ${statusText}: ${candName}`,
-            message: `Interview with ${candName} was marked as ${statusText.toLowerCase()}.`,
-            link: '/employer/interviews',
+            message: input.status === 'completed' 
+              ? `Interview with ${candName} completed. Candidate has been moved forward to the Offer Extended stage.`
+              : `Interview with ${candName} was cancelled.`,
+            link: input.status === 'completed' ? '/employer/pipeline' : '/employer/interviews',
           }).catch(() => {});
         }
 
@@ -534,6 +542,10 @@ export const interviewService = {
       notifyInterviewsChanged();
 
       if (data && (input.status === 'cancelled' || input.status === 'completed')) {
+        const appId = (data as any)?.application_id;
+        if (input.status === 'completed' && appId) {
+          await applicationService.updateApplicationStage(appId, 'offer');
+        }
         const candName = (data as any)?.candidate?.full_name || 'Candidate';
         const statusText = input.status === 'cancelled' ? 'Cancelled' : 'Completed';
         notificationService.createNotification({
@@ -544,8 +556,10 @@ export const interviewService = {
           interview_id: (data as any).id,
           type: 'interview',
           title: `Interview ${statusText}: ${candName}`,
-          message: `Interview with ${candName} was marked as ${statusText.toLowerCase()}.`,
-          link: '/employer/interviews',
+          message: input.status === 'completed'
+            ? `Interview with ${candName} completed. Candidate has been moved forward to the Offer Extended stage.`
+            : `Interview with ${candName} was cancelled.`,
+          link: input.status === 'completed' ? '/employer/pipeline' : '/employer/interviews',
         }).catch(() => {});
       }
 
