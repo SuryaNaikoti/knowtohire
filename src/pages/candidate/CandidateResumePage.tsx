@@ -25,7 +25,11 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
-export const CandidateResumePage: React.FC = () => {
+export interface CandidateResumePageProps {
+  onNavigate?: (path: string) => void;
+}
+
+export const CandidateResumePage: React.FC<CandidateResumePageProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -340,7 +344,15 @@ export const CandidateResumePage: React.FC = () => {
               isPDF={isPDF}
               fileFormat={fileFormat}
               isUploading={isUploading}
-              onPreview={() => { window.location.href = '/candidate/resume/preview'; }}
+              onPreview={() => {
+                const target = '/candidate/resume/preview';
+                if (onNavigate) {
+                  onNavigate(target);
+                } else {
+                  window.history.pushState({}, '', target);
+                  window.dispatchEvent(new Event('popstate'));
+                }
+              }}
               onReplace={handleTriggerUpload}
             />
 

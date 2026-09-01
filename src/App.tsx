@@ -289,7 +289,7 @@ export function App() {
       else if (path === '/candidate/profile/edit') pageComponent = <CandidateEditProfilePage onNavigate={navigateTo} />;
       else if (path === '/candidate/profile') pageComponent = <CandidateProfilePage onNavigate={navigateTo} />;
       else if (path === '/candidate/resume/preview') pageComponent = <CandidateResumePreviewPage onNavigate={navigateTo} />;
-      else if (path === '/candidate/resume') pageComponent = <CandidateResumePage />;
+      else if (path === '/candidate/resume') pageComponent = <CandidateResumePage onNavigate={navigateTo} />;
       else if (path === '/candidate/jobs') pageComponent = <CandidateJobsPage />;
       else if (path.startsWith('/candidate/jobs/') && path.endsWith('/apply')) {
         const jobId = path.replace('/candidate/jobs/', '').replace('/apply', '');
