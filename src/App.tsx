@@ -274,7 +274,7 @@ export function App() {
       else if (path === '/employer/saved-candidates') pageComponent = <EmployerSavedCandidatesPage />;
       else if (path === '/employer/analytics') pageComponent = <EmployerAnalyticsPage />;
       else if (path === '/employer/company-profile') pageComponent = <EmployerCompanyProfilePage />;
-      else if (path === '/employer/notifications') pageComponent = <EmployerNotificationsPage />;
+      else if (path === '/employer/notifications') pageComponent = <EmployerNotificationsPage onNavigate={navigateTo} />;
       else if (path === '/employer/settings') pageComponent = <EmployerSettingsPage />;
 
       return (
@@ -320,7 +320,7 @@ export function App() {
         pageComponent = <CandidateRequestDetailsPage onNavigate={navigateTo} />;
       }
       else if (path === '/candidate/requests') pageComponent = <CandidateRequestsPage />;
-      else if (path === '/candidate/notifications') pageComponent = <CandidateNotificationsPage />;
+      else if (path === '/candidate/notifications') pageComponent = <CandidateNotificationsPage onNavigate={navigateTo} />;
       else if (path === '/candidate/settings') pageComponent = <CandidateSettingsPage />;
 
       return (

@@ -5,7 +5,11 @@ import { Button } from '@/components/ui/Button';
 import { notificationService, AppNotification } from '@/services/notificationService';
 import { CheckCheck, Bell, Briefcase, Calendar, UserCheck, Loader2 } from 'lucide-react';
 
-export const EmployerNotificationsPage: React.FC = () => {
+export interface EmployerNotificationsPageProps {
+  onNavigate?: (path: string) => void;
+}
+
+export const EmployerNotificationsPage: React.FC<EmployerNotificationsPageProps> = ({ onNavigate }) => {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
@@ -47,6 +51,30 @@ export const EmployerNotificationsPage: React.FC = () => {
   const handleMarkSingleRead = async (id: string) => {
     await notificationService.markAsRead(id);
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+  };
+
+  const handleNotificationClick = async (notif: AppNotification) => {
+    if (!notif.is_read) {
+      await handleMarkSingleRead(notif.id);
+    }
+
+    let targetRoute = notif.link;
+    if (!targetRoute) {
+      if (notif.type === 'interview' || notif.interview_id) {
+        targetRoute = '/employer/interviews';
+      } else if (notif.type === 'application' || notif.application_id) {
+        targetRoute = notif.application_id ? `/employer/applications/${notif.application_id}` : '/employer/pipeline';
+      } else {
+        targetRoute = '/employer';
+      }
+    }
+
+    if (onNavigate) {
+      onNavigate(targetRoute);
+    } else {
+      window.history.pushState({}, '', targetRoute);
+      window.dispatchEvent(new Event('popstate'));
+    }
   };
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
@@ -102,17 +130,10 @@ export const EmployerNotificationsPage: React.FC = () => {
             {notifications.map((notif) => (
               <Card
                 key={notif.id}
-                onClick={async () => {
-                  if (!notif.is_read) {
-                    await handleMarkSingleRead(notif.id);
-                  }
-                  if (notif.link) {
-                    window.location.href = notif.link;
-                  }
-                }}
+                onClick={() => handleNotificationClick(notif)}
                 className={`p-4 transition-all cursor-pointer ${
                   !notif.is_read
-                    ? 'bg-kth-primary-50/40 border-kth-primary-200 shadow-xs'
+                    ? 'bg-kth-primary-50/40 border-kth-primary-200 shadow-xs hover:border-kth-primary-300'
                     : 'bg-white hover:border-kth-slate-300'
                 }`}
               >

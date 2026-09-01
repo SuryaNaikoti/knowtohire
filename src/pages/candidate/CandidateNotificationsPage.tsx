@@ -5,7 +5,11 @@ import { Button } from '@/components/ui/Button';
 import { notificationService, AppNotification } from '@/services/notificationService';
 import { CheckCheck, Bell, Calendar, Briefcase, Award, Loader2 } from 'lucide-react';
 
-export const CandidateNotificationsPage: React.FC = () => {
+export interface CandidateNotificationsPageProps {
+  onNavigate?: (path: string) => void;
+}
+
+export const CandidateNotificationsPage: React.FC<CandidateNotificationsPageProps> = ({ onNavigate }) => {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
@@ -21,6 +25,20 @@ export const CandidateNotificationsPage: React.FC = () => {
 
   useEffect(() => {
     fetchNotifications();
+
+    const handleSync = () => {
+      fetchNotifications();
+    };
+
+    window.addEventListener('kth_notifications_changed', handleSync);
+    window.addEventListener('kth_applications_changed', handleSync);
+    window.addEventListener('kth_interviews_changed', handleSync);
+
+    return () => {
+      window.removeEventListener('kth_notifications_changed', handleSync);
+      window.removeEventListener('kth_applications_changed', handleSync);
+      window.removeEventListener('kth_interviews_changed', handleSync);
+    };
   }, []);
 
   const handleMarkAllRead = async () => {
@@ -33,6 +51,31 @@ export const CandidateNotificationsPage: React.FC = () => {
   const handleMarkSingleRead = async (id: string) => {
     await notificationService.markAsRead(id);
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+  };
+
+  const handleNotificationClick = async (notif: AppNotification) => {
+    if (!notif.is_read) {
+      await handleMarkSingleRead(notif.id);
+    }
+
+    // Determine target workflow route based on notification metadata & type
+    let targetRoute = notif.link;
+    if (!targetRoute) {
+      if (notif.type === 'interview' || notif.interview_id) {
+        targetRoute = '/candidate/interviews';
+      } else if (notif.type === 'application' || notif.type === 'offer' || notif.application_id) {
+        targetRoute = notif.application_id ? `/candidate/applications/${notif.application_id}` : '/candidate/applications';
+      } else {
+        targetRoute = '/candidate/overview';
+      }
+    }
+
+    if (onNavigate) {
+      onNavigate(targetRoute);
+    } else {
+      window.history.pushState({}, '', targetRoute);
+      window.dispatchEvent(new Event('popstate'));
+    }
   };
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
@@ -52,7 +95,7 @@ export const CandidateNotificationsPage: React.FC = () => {
 
   return (
     <CandidateShell title="Notifications" currentPath="/candidate/notifications">
-      <div className="space-y-6 max-w-4xl mx-auto">
+      <div className="space-y-6 max-w-4xl mx-auto font-sans">
         <div className="flex justify-between items-center text-xs">
           <span className="text-kth-slate-500">
             You have <strong className="text-kth-slate-900 font-mono">{unreadCount} unread</strong> notifications
@@ -88,10 +131,10 @@ export const CandidateNotificationsPage: React.FC = () => {
             {notifications.map((notif) => (
               <Card
                 key={notif.id}
-                onClick={() => !notif.is_read && handleMarkSingleRead(notif.id)}
+                onClick={() => handleNotificationClick(notif)}
                 className={`p-4 transition-all cursor-pointer ${
                   !notif.is_read
-                    ? 'bg-kth-primary-50/40 border-kth-primary-200 shadow-xs'
+                    ? 'bg-kth-primary-50/40 border-kth-primary-200 shadow-xs hover:border-kth-primary-300'
                     : 'bg-white hover:border-kth-slate-300'
                 }`}
               >
