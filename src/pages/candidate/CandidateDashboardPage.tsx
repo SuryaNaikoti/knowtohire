@@ -164,7 +164,10 @@ export const CandidateDashboardPage: React.FC = () => {
     .sort((a, b) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime());
 
   const nextInterview = upcomingInterviews[0] ?? null;
-  const latestApplication = applications.length > 0 ? applications[0] : null;
+  const sortedApplications = [...applications].sort(
+    (a, b) => new Date(b.updated_at || b.applied_at).getTime() - new Date(a.updated_at || a.applied_at).getTime()
+  );
+  const latestApplication = sortedApplications.length > 0 ? sortedApplications[0] : null;
   const profileStrength = candidateProfile?.profileCompletionPct ?? 0;
   const profileTip = deriveProfileTip(candidateProfile, profileStrength);
   const candidateFirstName = profile?.full_name?.split(' ')[0] || 'Candidate';

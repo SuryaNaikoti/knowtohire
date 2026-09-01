@@ -60,13 +60,14 @@ export const CandidateNotificationsPage: React.FC<CandidateNotificationsPageProp
 
     // Determine target workflow route based on notification metadata & type
     let targetRoute = notif.link;
-    if (!targetRoute) {
+    // If notif.link is missing or points to an employer route (e.g. /employer/pipeline), remap it to the candidate destination
+    if (!targetRoute || targetRoute.startsWith('/employer')) {
       if (notif.type === 'interview' || notif.interview_id) {
         targetRoute = '/candidate/interviews';
       } else if (notif.type === 'application' || notif.type === 'offer' || notif.application_id) {
         targetRoute = notif.application_id ? `/candidate/applications/${notif.application_id}` : '/candidate/applications';
       } else {
-        targetRoute = '/candidate/overview';
+        targetRoute = '/candidate/applications';
       }
     }
 
