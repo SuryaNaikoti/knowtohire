@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { AdminCandidateInspectModal } from '@/components/admin/AdminCandidateInspectModal';
+import { AdminEmployerInspectModal } from '@/components/admin/AdminEmployerInspectModal';
 import { adminService, AdminUserRecord } from '@/services/adminService';
-import { Search, Loader2, Eye, ShieldCheck } from 'lucide-react';
+import { Search, Loader2, Eye, ShieldCheck, UserPlus } from 'lucide-react';
 
 export interface AdminUsersPageProps {
   onNavigate?: (path: string) => void;
@@ -22,6 +23,10 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) =>
   // Candidate Inspection Modal State
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [isCandidateModalOpen, setIsCandidateModalOpen] = useState(false);
+
+  // Employer Inspection Modal State
+  const [selectedEmployerId, setSelectedEmployerId] = useState<string | null>(null);
+  const [isEmployerModalOpen, setIsEmployerModalOpen] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
@@ -51,11 +56,43 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) =>
     };
   }, [fetchUsers]);
 
+  useEffect(() => {
+    // Purge legacy mock data IDs so only official demo accounts exist cleanly
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const legacyMockIds = ['demo-candidate-001', 'demo-employer-002', 'user-003', 'user-004'];
+        const overridesRaw = window.localStorage.getItem('kth_admin_user_status_overrides');
+        if (overridesRaw) {
+          const overrides = JSON.parse(overridesRaw);
+          let changed = false;
+          for (const key of legacyMockIds) {
+            if (key in overrides) {
+              delete overrides[key];
+              changed = true;
+            }
+          }
+          if (changed) {
+            window.localStorage.setItem('kth_admin_user_status_overrides', JSON.stringify(overrides));
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
   const handleToggleStatus = async (user: AdminUserRecord) => {
     const nextStatus = user.status === 'active' ? 'suspended' : 'active';
     const res = await adminService.updateUserStatus(user.id, nextStatus);
     if (res.data) {
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u)));
+    }
+  };
+
+  const handleDeleteUserPermanently = async (user: AdminUserRecord) => {
+    const res = await adminService.deleteUserPermanently(user.id);
+    if (res.data) {
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
     }
   };
 
@@ -72,13 +109,8 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) =>
   };
 
   const handleInspectEmployer = (employerId: string) => {
-    const targetPath = `/admin/employers?inspect=${employerId}`;
-    if (onNavigate) {
-      onNavigate(targetPath);
-    } else {
-      window.history.pushState({}, '', targetPath);
-      window.dispatchEvent(new Event('popstate'));
-    }
+    setSelectedEmployerId(employerId);
+    setIsEmployerModalOpen(true);
   };
 
   const formatDate = (dateStr: string) => {
@@ -122,9 +154,28 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) =>
               />
             </div>
           </div>
-          <span className="text-xs font-mono text-kth-slate-500 whitespace-nowrap">
-            {users.length} Users Found
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-mono text-kth-slate-500 whitespace-nowrap">
+              {users.length} Users Found
+            </span>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                const target = '/admin/users/new';
+                if (onNavigate) {
+                  onNavigate(target);
+                } else {
+                  window.history.pushState({}, '', target);
+                  window.dispatchEvent(new Event('popstate'));
+                }
+              }}
+              className="text-xs font-bold bg-kth-primary-600 hover:bg-kth-primary-700 text-white shadow-xs whitespace-nowrap"
+              leftIcon={<UserPlus className="w-3.5 h-3.5" />}
+            >
+              Create User
+            </Button>
+          </div>
         </div>
 
         {/* Users Table */}
@@ -217,12 +268,16 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) =>
 
                       {u.role !== 'admin' && (
                         <Button
-                          variant={u.status === 'active' ? 'destructive' : 'secondary'}
+                          variant="destructive"
                           size="sm"
                           className="flex-1 min-h-[36px] font-semibold text-xs"
-                          onClick={() => handleToggleStatus(u)}
+                          onClick={() => {
+                            if (window.confirm(`Permanently erase user account "${u.full_name}"? All associated data will be removed.`)) {
+                              handleDeleteUserPermanently(u);
+                            }
+                          }}
                         >
-                          {u.status === 'active' ? 'Suspend' : 'Activate'}
+                          Suspend Account
                         </Button>
                       )}
                     </div>
@@ -343,15 +398,17 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) =>
 
                             {u.role !== 'admin' && (
                               <Button
-                                variant={u.status === 'active' ? 'destructive' : 'secondary'}
+                                variant="destructive"
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleToggleStatus(u);
+                                  if (window.confirm(`Permanently erase user account "${u.full_name}"? All associated data will be removed.`)) {
+                                    handleDeleteUserPermanently(u);
+                                  }
                                 }}
                                 className="font-semibold text-xs"
                               >
-                                {u.status === 'active' ? 'Suspend' : 'Activate'}
+                                Suspend Account
                               </Button>
                             )}
                           </div>
@@ -374,6 +431,25 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) =>
         onStatusChanged={(userId, newStatus) => {
           setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u)));
         }}
+        onUserDeleted={(userId) => {
+          setUsers((prev) => prev.filter((u) => u.id !== userId));
+          setIsCandidateModalOpen(false);
+        }}
+      />
+
+      {/* Employer Enterprise Profile Detailed Inspection & Verification Modal */}
+      <AdminEmployerInspectModal
+        employerId={selectedEmployerId}
+        isOpen={isEmployerModalOpen}
+        onClose={() => setIsEmployerModalOpen(false)}
+        onStatusChanged={(userId, newStatus) => {
+          setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u)));
+        }}
+        onUserDeleted={(userId) => {
+          setUsers((prev) => prev.filter((u) => u.id !== userId));
+          setIsEmployerModalOpen(false);
+        }}
+        onNavigate={onNavigate}
       />
     </AdminShell>
   );

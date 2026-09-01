@@ -498,6 +498,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ? DEMO_CREDENTIALS.employer
         : DEMO_CREDENTIALS.admin;
 
+      // Check if this demo user has been permanently deleted/suspended by Admin
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const deletedRaw = window.localStorage.getItem('kth_admin_deleted_users');
+          if (deletedRaw) {
+            const deletedList = JSON.parse(deletedRaw);
+            const isBlocked =
+              deletedList.includes(demoData.id) ||
+              (isCandidateDemo && deletedList.includes('demo-candidate-001')) ||
+              (isEmployerDemo && (deletedList.includes('demo-employer-002') || deletedList.includes('fa97faee-1cdf-41e6-a151-f51c7fa4c396')));
+            if (isBlocked) {
+              setState((prev) => ({
+                ...prev,
+                isLoading: false,
+                error: 'This account has been suspended and permanently erased from the platform. Please sign up to create a new account.',
+              }));
+              return { error: new Error('Account does not exist. Please sign up to create an account.') };
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       // Allow any standard password entered by user for demo accounts
       const demoUser = createDemoAuthUser(demoData);
       const demoProfile = createDemoProfile(demoData);
@@ -606,6 +630,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (data?.user) {
+      // If this account was previously deleted, unblock it so the user can start completely afresh
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const deletedRaw = window.localStorage.getItem('kth_admin_deleted_users');
+          if (deletedRaw) {
+            let deletedList: string[] = JSON.parse(deletedRaw);
+            deletedList = deletedList.filter((id) => id !== data.user.id);
+            window.localStorage.setItem('kth_admin_deleted_users', JSON.stringify(deletedList));
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const initialStatus = 'pending_onboarding';
 
       let profile: Profile | null = null;

@@ -84,6 +84,7 @@ const EmployerSettingsPage = lazy(() => import('@/pages/employer/EmployerSetting
 // Lazy-loaded Admin Pages
 const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
 const AdminUsersPage = lazy(() => import('@/pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
+const AdminCreateUserPage = lazy(() => import('@/pages/admin/AdminCreateUserPage').then(m => ({ default: m.AdminCreateUserPage })));
 const AdminEmployersPage = lazy(() => import('@/pages/admin/AdminEmployersPage').then(m => ({ default: m.AdminEmployersPage })));
 const AdminEmployerDossierPage = lazy(() => import('@/pages/admin/AdminEmployerDossierPage').then(m => ({ default: m.AdminEmployerDossierPage })));
 const AdminJobsPage = lazy(() => import('@/pages/admin/AdminJobsPage').then(m => ({ default: m.AdminJobsPage })));
@@ -115,10 +116,15 @@ export function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Guarantee that every page transition and URL change scrolls instantly to the top/header
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [currentPath]);
+
   const navigateTo = (path: string) => {
     window.history.pushState({}, '', path);
     setCurrentPath(path);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
 
   const isAdminRoute = currentPath.startsWith('/admin');
@@ -142,6 +148,7 @@ export function App() {
       let adminComponent: React.ReactNode = <AdminDashboardPage onNavigate={navigateTo} />;
 
       if (path === '/admin' || path === '/admin/') adminComponent = <AdminDashboardPage onNavigate={navigateTo} />;
+      else if (path === '/admin/users/new' || path === '/admin/users/create') adminComponent = <AdminCreateUserPage onNavigate={navigateTo} />;
       else if (path === '/admin/users') adminComponent = <AdminUsersPage onNavigate={navigateTo} />;
       else if (path.startsWith('/admin/employers/') && path !== '/admin/employers') {
         const empId = path.replace('/admin/employers/', '');
@@ -229,7 +236,7 @@ export function App() {
 
       if (path === '/employer' || path === '/employer/') pageComponent = <EmployerDashboardPage />;
       else if (path === '/employer/jobs') pageComponent = <EmployerJobsPage />;
-      else if (path === '/employer/jobs/new') pageComponent = <EmployerCreateJobPage />;
+      else if (path === '/employer/jobs/new' || path === '/employer/jobs/create') pageComponent = <EmployerCreateJobPage onNavigate={navigateTo} />;
       else if (path === '/employer/jobs/preview') pageComponent = <EmployerJobPreviewPage onNavigate={navigateTo} />;
       else if (path.endsWith('/edit') && path.startsWith('/employer/jobs/')) {
         const jobId = path.replace('/employer/jobs/', '').replace('/edit', '');

@@ -9,23 +9,42 @@ import { Alert } from '@/components/ui/Alert';
 import { jobService, taxonomyService, JobCreateInput, WorkMode, EmploymentType, ExperienceLevel, CareerCategory, CityItem } from '@/services';
 import { Eye, Save, Send, AlertCircle, ArrowLeft, Sparkles } from 'lucide-react';
 
-export const EmployerCreateJobPage: React.FC = () => {
+export interface EmployerCreateJobPageProps {
+  onNavigate?: (path: string) => void;
+}
+
+const JOB_FORM_DRAFT_KEY = 'kth_employer_job_draft';
+
+export const EmployerCreateJobPage: React.FC<EmployerCreateJobPageProps> = ({ onNavigate }) => {
+  // Load initial form state from sessionStorage if returning from preview
+  const getInitialDraft = () => {
+    try {
+      const raw = sessionStorage.getItem(JOB_FORM_DRAFT_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {
+      // ignore
+    }
+    return null;
+  };
+
+  const initialDraft = getInitialDraft();
+
   // Form State
-  const [title, setTitle] = useState('');
-  const [department, setDepartment] = useState('');
-  const [category, setCategory] = useState('General Careers');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('cat-general');
-  const [workMode, setWorkMode] = useState<WorkMode>('hybrid');
-  const [employmentType, setEmploymentType] = useState<EmploymentType>('full_time');
-  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>('mid_level');
-  const [location, setLocation] = useState('Bengaluru, Karnataka');
-  const [minSalary, setMinSalary] = useState('1800000');
-  const [maxSalary, setMaxSalary] = useState('2600000');
-  const [description, setDescription] = useState('');
-  const [responsibilitiesText, setResponsibilitiesText] = useState('');
-  const [requirementsText, setRequirementsText] = useState('');
-  const [skillsText, setSkillsText] = useState('');
-  const [benefitsText, setBenefitsText] = useState('Health Insurance, Performance Bonus, Learning Stipend');
+  const [title, setTitle] = useState(initialDraft?.title || '');
+  const [department, setDepartment] = useState(initialDraft?.department || '');
+  const [category, setCategory] = useState(initialDraft?.category || 'General Careers');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(initialDraft?.selectedCategoryId || 'cat-general');
+  const [workMode, setWorkMode] = useState<WorkMode>(initialDraft?.workMode || 'hybrid');
+  const [employmentType, setEmploymentType] = useState<EmploymentType>(initialDraft?.employmentType || 'full_time');
+  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>(initialDraft?.experienceLevel || 'mid_level');
+  const [location, setLocation] = useState(initialDraft?.location || 'Bengaluru, Karnataka');
+  const [minSalary, setMinSalary] = useState(initialDraft?.minSalary || '1800000');
+  const [maxSalary, setMaxSalary] = useState(initialDraft?.maxSalary || '2600000');
+  const [description, setDescription] = useState(initialDraft?.description || '');
+  const [responsibilitiesText, setResponsibilitiesText] = useState(initialDraft?.responsibilitiesText || '');
+  const [requirementsText, setRequirementsText] = useState(initialDraft?.requirementsText || '');
+  const [skillsText, setSkillsText] = useState(initialDraft?.skillsText || '');
+  const [benefitsText, setBenefitsText] = useState(initialDraft?.benefitsText || 'Health Insurance, Performance Bonus, Learning Stipend');
 
   // Master Taxonomy State
   const [categoriesList, setCategoriesList] = useState<CareerCategory[]>([]);
@@ -38,6 +57,48 @@ export const EmployerCreateJobPage: React.FC = () => {
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Auto-save form draft to sessionStorage so user never loses their entered data
+  React.useEffect(() => {
+    const draftPayload = {
+      title,
+      department,
+      category,
+      selectedCategoryId,
+      workMode,
+      employmentType,
+      experienceLevel,
+      location,
+      minSalary,
+      maxSalary,
+      description,
+      responsibilitiesText,
+      requirementsText,
+      skillsText,
+      benefitsText,
+    };
+    try {
+      sessionStorage.setItem(JOB_FORM_DRAFT_KEY, JSON.stringify(draftPayload));
+    } catch {
+      // ignore
+    }
+  }, [
+    title,
+    department,
+    category,
+    selectedCategoryId,
+    workMode,
+    employmentType,
+    experienceLevel,
+    location,
+    minSalary,
+    maxSalary,
+    description,
+    responsibilitiesText,
+    requirementsText,
+    skillsText,
+    benefitsText,
+  ]);
 
   React.useEffect(() => {
     async function fetchTaxonomy() {
@@ -142,13 +203,24 @@ export const EmployerCreateJobPage: React.FC = () => {
     if (error) {
       setErrorMessage(error.message);
     } else if (data) {
-      window.location.href = '/employer/jobs';
+      // Clear saved draft on successful job creation
+      sessionStorage.removeItem(JOB_FORM_DRAFT_KEY);
+      sessionStorage.removeItem('kth_job_preview_data');
+      if (onNavigate) {
+        onNavigate('/employer/jobs');
+      } else {
+        window.location.href = '/employer/jobs';
+      }
     }
   };
 
   const handleNavigate = (path: string) => {
-    window.history.pushState({}, '', path);
-    window.dispatchEvent(new Event('popstate'));
+    if (onNavigate) {
+      onNavigate(path);
+    } else {
+      window.history.pushState({}, '', path);
+      window.dispatchEvent(new Event('popstate'));
+    }
   };
 
   return (
@@ -393,7 +465,7 @@ export const EmployerCreateJobPage: React.FC = () => {
                     skills: skillsText.split(',').map((s) => s.trim()).filter(Boolean),
                   };
                   sessionStorage.setItem('kth_job_preview_data', JSON.stringify(previewPayload));
-                  window.location.href = '/employer/jobs/preview';
+                  handleNavigate('/employer/jobs/preview');
                 }}
               >
                 Preview Listing

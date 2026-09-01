@@ -30,6 +30,32 @@ export interface AdminUserRecord {
   created_at: string;
 }
 
+export interface AdminEmployerDetailRecord {
+  id: string;
+  full_name: string;
+  email: string;
+  phone?: string;
+  avatar_url?: string;
+  role: 'employer';
+  status: 'unverified' | 'pending_onboarding' | 'active' | 'suspended';
+  company_id?: string;
+  company_name: string;
+  legal_name?: string;
+  industry?: string;
+  headquarters_location?: string;
+  registration_number?: string;
+  company_size?: string;
+  website_url?: string;
+  description?: string;
+  contact_email?: string;
+  logo_url?: string;
+  verification_status: 'unverified' | 'pending_review' | 'verified' | 'rejected';
+  active_jobs_count?: number;
+  total_applicants_count?: number;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface AdminCandidateDetailRecord {
   id: string;
   full_name: string;
@@ -156,11 +182,83 @@ export interface AdminApplicationRecord {
   created_at: string;
 }
 
+export interface AdminUserCreateInput {
+  full_name: string;
+  email: string;
+  phone?: string;
+  role: 'candidate' | 'employer';
+  status: 'active' | 'pending_onboarding';
+  // Candidate specific
+  headline?: string;
+  domain_specialization?: string;
+  location?: string;
+  skills?: string[];
+  expected_salary_inr?: number;
+  // Employer specific
+  company_name?: string;
+  legal_name?: string;
+  industry?: string;
+  registration_number?: string;
+  company_size?: string;
+  website_url?: string;
+  company_description?: string;
+}
+
 const DEMO_APPLICATION_OVERRIDES_KEY = 'kth_admin_app_overrides';
 const DEMO_COMPANY_OVERRIDES_KEY = 'kth_admin_comp_overrides';
 const DEMO_USER_STATUS_OVERRIDES_KEY = 'kth_admin_user_status_overrides';
+const DEMO_DELETED_USERS_KEY = 'kth_admin_deleted_users';
+const DEMO_CREATED_USERS_KEY = 'kth_admin_created_users';
 
 const memoryAppOverrides: Record<string, AdminApplicationRecord['stage']> = {};
+let memoryDeletedUsers: string[] = [];
+let memoryCreatedUsers: AdminUserRecord[] = [];
+
+function getDemoCreatedUsers(): AdminUserRecord[] {
+  if (typeof window === 'undefined' || !window.localStorage) return memoryCreatedUsers;
+  try {
+    const raw = window.localStorage.getItem(DEMO_CREATED_USERS_KEY);
+    return raw ? JSON.parse(raw) : memoryCreatedUsers;
+  } catch {
+    return memoryCreatedUsers;
+  }
+}
+
+function saveDemoCreatedUser(user: AdminUserRecord) {
+  memoryCreatedUsers = [user, ...memoryCreatedUsers.filter((u) => u.id !== user.id)];
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    const current = getDemoCreatedUsers().filter((u) => u.id !== user.id);
+    current.unshift(user);
+    window.localStorage.setItem(DEMO_CREATED_USERS_KEY, JSON.stringify(current));
+  } catch {
+    // ignore
+  }
+}
+
+function getDemoDeletedUsers(): string[] {
+  if (typeof window === 'undefined' || !window.localStorage) return memoryDeletedUsers;
+  try {
+    const raw = window.localStorage.getItem(DEMO_DELETED_USERS_KEY);
+    return raw ? JSON.parse(raw) : memoryDeletedUsers;
+  } catch {
+    return memoryDeletedUsers;
+  }
+}
+
+function saveDemoDeletedUser(id: string) {
+  memoryDeletedUsers = Array.from(new Set([...memoryDeletedUsers, id]));
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    const current = getDemoDeletedUsers();
+    if (!current.includes(id)) {
+      current.push(id);
+      window.localStorage.setItem(DEMO_DELETED_USERS_KEY, JSON.stringify(current));
+    }
+  } catch {
+    // ignore
+  }
+}
 
 function getDemoAppOverrides(): Record<string, AdminApplicationRecord['stage']> {
   if (typeof window === 'undefined' || !window.localStorage) return memoryAppOverrides;
@@ -408,20 +506,20 @@ export const adminService = {
         created_at: u.created_at,
       }));
 
-      // If database returned 0 users (e.g. unauthenticated demo admin session), provide seed directory
+      // If database returned 0 users (e.g. unauthenticated demo admin session), provide the official 3 demo accounts
       if (users.length === 0) {
         users = [
           {
-            id: 'demo-candidate-001',
+            id: '00000000-0000-0000-0000-000000000001',
             email: 'candidate@knowtohire.com',
-            full_name: 'Aarav Sharma (ESG Lead)',
+            full_name: 'Surya Naikoti',
             role: 'candidate',
             status: 'active',
             phone: '+91 98765 43210',
             created_at: new Date().toISOString(),
           },
           {
-            id: 'demo-employer-002',
+            id: '00000000-0000-0000-0000-000000000002',
             email: 'employer@knowtohire.com',
             full_name: 'Vikram Malhotra (Talent Lead)',
             role: 'employer',
@@ -430,25 +528,7 @@ export const adminService = {
             created_at: new Date().toISOString(),
           },
           {
-            id: 'user-003',
-            email: 'sneha.reddy@sustainedge.in',
-            full_name: 'Dr. Sneha Reddy (Carbon Analyst)',
-            role: 'candidate',
-            status: 'active',
-            phone: '+91 94401 23456',
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 'user-004',
-            email: 'hr@ecostrategy.co.in',
-            full_name: 'Ananya Deshmukh (EcoStrategy HR)',
-            role: 'employer',
-            status: 'active',
-            phone: '+91 80 4123 9876',
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 'demo-admin-003',
+            id: '00000000-0000-0000-0000-000000000003',
             email: 'admin@knowtohire.com',
             full_name: 'KnowToHire Platform Administrator',
             role: 'admin',
@@ -457,15 +537,27 @@ export const adminService = {
             created_at: new Date().toISOString(),
           },
         ];
-
-        if (roleFilter && roleFilter !== 'all') {
-          users = users.filter((u) => u.role === roleFilter);
-        }
-        if (search && search.trim()) {
-          const s = search.trim().toLowerCase();
-          users = users.filter((u) => u.full_name.toLowerCase().includes(s) || u.email.toLowerCase().includes(s));
-        }
       }
+
+      // Merge locally created admin users
+      const createdUsers = getDemoCreatedUsers();
+      if (createdUsers.length > 0) {
+        const existingIds = new Set(users.map((u) => u.id));
+        const additional = createdUsers.filter((u) => !existingIds.has(u.id));
+        users = [...additional, ...users];
+      }
+
+      if (roleFilter && roleFilter !== 'all') {
+        users = users.filter((u) => u.role === roleFilter);
+      }
+      if (search && search.trim()) {
+        const s = search.trim().toLowerCase();
+        users = users.filter((u) => u.full_name.toLowerCase().includes(s) || u.email.toLowerCase().includes(s));
+      }
+
+      // Filter out permanently deleted/erased users
+      const deletedUsers = getDemoDeletedUsers();
+      users = users.filter((u) => !deletedUsers.includes(u.id));
 
       // Apply any session user status overrides
       const statusOverrides = getDemoUserStatusOverrides();
@@ -477,6 +569,207 @@ export const adminService = {
       });
 
       return { data: users, error: null };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
+   * Create a new Candidate or Employer user directly from the Admin Portal.
+   */
+  async createUser(input: AdminUserCreateInput): Promise<ServiceResult<AdminUserRecord>> {
+    try {
+      const { isSupabaseConfigured } = await import('@/lib/supabase');
+      const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const now = new Date().toISOString();
+
+      const userRecord: AdminUserRecord = {
+        id: userId,
+        email: input.email.trim().toLowerCase(),
+        full_name: input.full_name.trim(),
+        role: input.role,
+        status: input.status || 'active',
+        phone: input.phone?.trim() || undefined,
+        created_at: now,
+      };
+
+      // 1. Try real Supabase database insertion if configured
+      if (isSupabaseConfigured()) {
+        try {
+          const { error: profileError } = await supabase.from('profiles').upsert({
+            id: userId,
+            email: userRecord.email,
+            full_name: userRecord.full_name,
+            role: userRecord.role,
+            status: userRecord.status,
+            phone: userRecord.phone,
+            created_at: now,
+          });
+
+          if (!profileError) {
+            if (input.role === 'candidate') {
+              await supabase.from('candidate_profiles').upsert({
+                profile_id: userId,
+                headline: input.headline || 'Professional',
+                domain_specialization: input.domain_specialization || 'General',
+                location: input.location || 'India',
+                skills: input.skills || [],
+                expected_salary_inr: input.expected_salary_inr,
+                is_active: userRecord.status === 'active',
+                is_discoverable: true,
+                created_at: now,
+              });
+            } else if (input.role === 'employer') {
+              const compId = `comp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+              await supabase.from('company_profiles').upsert({
+                id: compId,
+                user_id: userId,
+                name: input.company_name || `${input.full_name}'s Enterprise`,
+                legal_name: input.legal_name || input.company_name || `${input.full_name}'s Enterprise`,
+                industry: input.industry || 'Technology & Advisory',
+                registration_number: input.registration_number || 'U74999KA2026PTC199000',
+                company_size: input.company_size || '11-50 employees',
+                website_url: input.website_url || 'https://knowtohire.com',
+                description: input.company_description || 'Enterprise employer on KnowToHire.',
+                contact_email: userRecord.email,
+                verification_status: 'verified',
+                created_at: now,
+              });
+            }
+          }
+        } catch (dbErr) {
+          console.warn('[AdminService] Supabase createUser error, falling back to local store:', dbErr);
+        }
+      }
+
+      // 2. Persist locally for instant demo & unauthenticated admin availability
+      saveDemoCreatedUser(userRecord);
+
+      if (input.role === 'candidate') {
+        const candDetail: AdminCandidateDetailRecord = {
+          id: userId,
+          full_name: userRecord.full_name,
+          email: userRecord.email,
+          phone: userRecord.phone || '+91 98765 43210',
+          role: 'candidate',
+          status: userRecord.status,
+          headline: input.headline || 'Technical & Domain Specialist',
+          bio: 'Verified candidate registered directly by platform administration.',
+          location: input.location || 'India',
+          domain_specialization: input.domain_specialization || 'Enterprise & Technology',
+          skills: input.skills && input.skills.length > 0 ? input.skills : ['Professional Expertise', 'Problem Solving'],
+          certifications: ['Verified Professional Certificate'],
+          profile_completion_pct: 100,
+          expected_salary_inr: input.expected_salary_inr || 1500000,
+          notice_period_days: 15,
+          work_mode_preference: 'Hybrid',
+          is_discoverable: true,
+          is_active: userRecord.status === 'active',
+          created_at: now,
+        };
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem(`kth_demo_cand_profile_${userId}`, JSON.stringify(candDetail));
+        }
+      } else if (input.role === 'employer') {
+        const compId = `comp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const employerDetail: AdminEmployerDetailRecord = {
+          id: userId,
+          full_name: userRecord.full_name,
+          email: userRecord.email,
+          phone: userRecord.phone || '+91 99887 75643',
+          role: 'employer',
+          status: userRecord.status,
+          company_id: compId,
+          company_name: input.company_name || `${input.full_name} Enterprise`,
+          legal_name: input.legal_name || input.company_name || `${input.full_name} Enterprise Private Limited`,
+          industry: input.industry || 'Technology & Advisory',
+          headquarters_location: 'India',
+          registration_number: input.registration_number || 'U74999KA2026PTC199000',
+          company_size: input.company_size || '11-50 employees',
+          website_url: input.website_url || 'https://knowtohire.com',
+          description: input.company_description || 'Enterprise employer on KnowToHire platform.',
+          contact_email: userRecord.email,
+          verification_status: 'verified',
+          active_jobs_count: 0,
+          total_applicants_count: 0,
+          created_at: now,
+        };
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem(`kth_demo_emp_profile_${userId}`, JSON.stringify(employerDetail));
+        }
+      }
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('kth_users_changed'));
+      }
+
+      return { data: userRecord, error: null };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
+   * Permanently erase/delete a user from the entire platform database.
+   * If the user wants to join again, they must sign up afresh from scratch.
+   */
+  async deleteUserPermanently(userId: string): Promise<ServiceResult<boolean>> {
+    try {
+      // Superuser safety protection
+      if (userId === '00000000-0000-0000-0000-000000000003' || userId === 'demo-admin-003') {
+        return {
+          data: null,
+          error: { message: 'Master Platform Administrator cannot be deleted or suspended.', code: 'FORBIDDEN' },
+        };
+      }
+
+      // 1. Mark as permanently deleted in local demo overrides
+      saveDemoDeletedUser(userId);
+
+      // Clean any associated local storage keys
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem(`kth_demo_cand_profile_${userId}`);
+        window.localStorage.removeItem(`kth_demo_profile_custom_${userId}`);
+        window.localStorage.removeItem(`kth_candidate_resume_${userId}`);
+        window.localStorage.removeItem(`kth_candidate_saved_jobs_${userId}`);
+        window.localStorage.removeItem(`kth_notifications_${userId}`);
+
+        // If the current logged-in demo user is this deleted user, clear their session so they are logged out
+        const currentSessionRaw = window.localStorage.getItem('kth_demo_auth_session');
+        if (currentSessionRaw) {
+          try {
+            const currentSession = JSON.parse(currentSessionRaw);
+            if (currentSession?.id === userId) {
+              window.localStorage.removeItem('kth_demo_auth_session');
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      // 2. Cascade delete from Supabase database tables if configured
+      const { isSupabaseConfigured } = await import('@/lib/supabase');
+      if (isSupabaseConfigured()) {
+        try {
+          await supabase.from('job_applications').delete().eq('candidate_id', userId);
+          await supabase.from('candidate_profiles').delete().eq('profile_id', userId);
+          await supabase.from('company_profiles').delete().eq('user_id', userId);
+          await supabase.from('saved_jobs').delete().eq('user_id', userId);
+          await supabase.from('saved_candidates').delete().eq('candidate_id', userId);
+          await supabase.from('notifications').delete().eq('user_id', userId);
+          await supabase.from('profiles').delete().eq('id', userId);
+        } catch (dbErr) {
+          console.warn('[AdminService] Supabase cascading delete error:', dbErr);
+        }
+      }
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('kth_users_changed'));
+        window.dispatchEvent(new CustomEvent('kth_profile_updated'));
+      }
+
+      return { data: true, error: null };
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }
@@ -538,6 +831,19 @@ export const adminService = {
       // Check session status overrides
       const statusOverrides = getDemoUserStatusOverrides();
       const resolvedStatus = statusOverrides[candidateId] || profile?.status || 'active';
+
+      // Check if candidate details were saved by admin creation
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const customCand = window.localStorage.getItem(`kth_demo_cand_profile_${candidateId}`);
+        if (customCand) {
+          try {
+            const parsed = JSON.parse(customCand);
+            return { data: { ...parsed, status: resolvedStatus }, error: null };
+          } catch {
+            // ignore
+          }
+        }
+      }
 
       if (profile || candProfile) {
         const record: AdminCandidateDetailRecord = {
@@ -603,37 +909,18 @@ export const adminService = {
         return { data: record, error: null };
       }
 
-      // Canonical fallback mock candidate records (e.g. Aarav Sharma, Dr. Sneha Reddy)
-      const mockNames: Record<string, { name: string; email: string; headline: string; domain: string; skills: string[]; location: string }> = {
-        'demo-candidate-001': {
-          name: 'Aarav Sharma (ESG Lead)',
-          email: 'candidate@knowtohire.com',
-          headline: 'Senior Full Stack & Cloud Solutions Engineer',
-          domain: 'Full Stack & Enterprise Software',
-          skills: ['React & TypeScript', 'Node.js & API Architecture', 'Cloud Infrastructure (AWS/GCP)', 'Database Systems & SQL', 'Kubernetes', 'CI/CD & DevOps Automation'],
-          location: 'Hyderabad, Telangana',
-        },
-        'user-003': {
-          name: 'Dr. Sneha Reddy (Carbon Analyst)',
-          email: 'sneha.reddy@sustainedge.in',
-          headline: 'Senior Carbon Accounting & Net-Zero Analyst',
-          domain: 'Carbon Accounting & Net-Zero Strategy',
-          skills: ['Carbon Accounting', 'GHG Protocol', 'Scope 1-3 Emissions', 'SBTi Target Setting', 'Decarbonization Roadmap', 'ISO 14064'],
-          location: 'Bengaluru, Karnataka',
-        },
-      };
-
-      const matchedMock = mockNames[candidateId] || {
-        name: 'Verified Candidate',
+      // Canonical fallback mock candidate records
+      const matchedMock = {
+        name: 'Surya Naikoti',
         email: 'candidate@knowtohire.com',
-        headline: 'Lead Sustainability & Environmental Engineer',
-        domain: 'ESG & Sustainability Careers',
-        skills: ['ESG Reporting', 'Carbon Accounting', 'SEBI BRSR Core', 'ISO 14001'],
-        location: 'Bengaluru, Karnataka',
+        headline: 'Senior Full Stack & Cloud Solutions Engineer',
+        domain: 'Full Stack & Enterprise Software',
+        skills: ['React & TypeScript', 'Node.js & API Architecture', 'Cloud Infrastructure (AWS/GCP)', 'Database Systems & SQL', 'Kubernetes', 'CI/CD & DevOps Automation'],
+        location: 'Hyderabad, Telangana',
       };
 
       const fallbackRecord: AdminCandidateDetailRecord = {
-        id: candidateId,
+        id: candidateId || '00000000-0000-0000-0000-000000000001',
         full_name: matchedMock.name,
         email: matchedMock.email,
         phone: '+91 98765 43210',
@@ -715,6 +1002,121 @@ export const adminService = {
   },
 
   /**
+   * Fetch full employer and company details for admin side-drawer inspection.
+   */
+  async getEmployerDetails(employerId: string): Promise<ServiceResult<AdminEmployerDetailRecord>> {
+    try {
+      const { isSupabaseConfigured } = await import('@/lib/supabase');
+      let profile: any = null;
+      let companyProfile: any = null;
+
+      if (isSupabaseConfigured()) {
+        const { data: p } = await supabase.from('profiles').select('*').eq('id', employerId).maybeSingle();
+        profile = p;
+        const { data: cp } = await supabase.from('company_profiles').select('*').eq('user_id', employerId).maybeSingle();
+        companyProfile = cp;
+      }
+
+      // Check session status overrides
+      const statusOverrides = getDemoUserStatusOverrides();
+      const resolvedStatus = statusOverrides[employerId] || profile?.status || 'active';
+      const companyOverrides = getDemoCompanyOverrides();
+
+      // Check if employer details were saved by admin creation
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const customEmp = window.localStorage.getItem(`kth_demo_emp_profile_${employerId}`);
+        if (customEmp) {
+          try {
+            const parsed = JSON.parse(customEmp);
+            return { data: { ...parsed, status: resolvedStatus }, error: null };
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      if (profile || companyProfile) {
+        const compId = companyProfile?.id || 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+        const resolvedVerification = companyOverrides[compId] || companyProfile?.verification_status || 'verified';
+
+        const record: AdminEmployerDetailRecord = {
+          id: employerId,
+          full_name: profile?.full_name || 'Vikram Malhotra (Talent Lead)',
+          email: profile?.email || 'employer@knowtohire.com',
+          phone: profile?.phone || '+91 99887 75643',
+          avatar_url: profile?.avatar_url,
+          role: 'employer',
+          status: resolvedStatus,
+          company_id: compId,
+          company_name: companyProfile?.name || 'EcoStrategy India Pvt Ltd',
+          legal_name: companyProfile?.legal_name || 'EcoStrategy India Private Limited',
+          industry: companyProfile?.industry || 'Environmental & ESG Advisory',
+          headquarters_location: companyProfile?.headquarters_location || 'Bengaluru, Karnataka',
+          registration_number: companyProfile?.registration_number || 'U74999KA2021PTC148900',
+          company_size: companyProfile?.company_size || '51-200 employees',
+          website_url: companyProfile?.website_url || 'https://ecostrategy.co.in',
+          description: companyProfile?.description || 'Leading South Asian sustainability advisory firm specializing in SEBI BRSR Core assurance and decarbonization roadmaps.',
+          contact_email: companyProfile?.contact_email || profile?.email || 'corporate-compliance@ecostrategy.co.in',
+          logo_url: companyProfile?.logo_url,
+          verification_status: resolvedVerification,
+          active_jobs_count: 4,
+          total_applicants_count: 18,
+          created_at: profile?.created_at || new Date().toISOString(),
+          updated_at: companyProfile?.updated_at || new Date().toISOString(),
+        };
+
+        return { data: record, error: null };
+      }
+
+      // Fallback mock employer records
+      const matchedMock = {
+        name: 'Vikram Malhotra (Talent Lead)',
+        email: 'employer@knowtohire.com',
+        phone: '+91 99887 75643',
+        company: 'EcoStrategy India Pvt Ltd',
+        legal: 'EcoStrategy India Private Limited',
+        industry: 'Environmental & ESG Advisory',
+        location: 'Bengaluru, Karnataka',
+        cin: 'U74999KA2021PTC148900',
+        size: '51-200 employees',
+        web: 'https://ecostrategy.co.in',
+        desc: 'Leading South Asian sustainability advisory firm specializing in SEBI BRSR Core assurance, industrial decarbonization roadmaps, and lifecycle assessments.',
+        status: 'verified' as const,
+      };
+
+      const compId = 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+      const resolvedVerification = companyOverrides[compId] || matchedMock.status;
+
+      const fallbackRecord: AdminEmployerDetailRecord = {
+        id: employerId || '00000000-0000-0000-0000-000000000002',
+        full_name: matchedMock.name,
+        email: matchedMock.email,
+        phone: matchedMock.phone,
+        role: 'employer',
+        status: resolvedStatus,
+        company_id: compId,
+        company_name: matchedMock.company,
+        legal_name: matchedMock.legal,
+        industry: matchedMock.industry,
+        headquarters_location: matchedMock.location,
+        registration_number: matchedMock.cin,
+        company_size: matchedMock.size,
+        website_url: matchedMock.web,
+        description: matchedMock.desc,
+        contact_email: matchedMock.email,
+        verification_status: resolvedVerification,
+        active_jobs_count: 4,
+        total_applicants_count: 18,
+        created_at: new Date().toISOString(),
+      };
+
+      return { data: fallbackRecord, error: null };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
    * Fetch companies for employer verification management.
    */
   async getCompanies(): Promise<ServiceResult<AdminCompanyRecord[]>> {
@@ -762,48 +1164,6 @@ export const adminService = {
             verification_status: 'verified',
             created_at: '2026-08-01T00:00:00Z',
           },
-          {
-            id: 'c76c28d3-df6a-4581-a03d-05be23dd1c50',
-            name: 'SustainEdge Consulting',
-            legal_name: 'SustainEdge Solutions & Advisory LLP',
-            industry: 'Sustainability & Carbon Strategy',
-            headquarters_location: 'Mumbai, Maharashtra',
-            registration_number: 'AAO-4921-MH',
-            company_size: '11-50 employees',
-            website_url: 'https://sustainedge.io',
-            description: 'Strategic carbon consulting practice aiding mid-market industrial firms with EU CBAM compliance, GHG Protocol Scope 1-3 audits, and CDP reporting.',
-            contact_email: 'compliance@sustainedge.io',
-            verification_status: 'pending_review',
-            created_at: '2026-08-05T00:00:00Z',
-          },
-          {
-            id: 'bfcfe635-a4d4-40bf-a2e9-cffeb4b4553a',
-            name: 'Patent Nexus',
-            legal_name: 'Patent Nexus Intellectual Property Services Pvt Ltd',
-            industry: 'Patent & CleanTech IPR Law',
-            headquarters_location: 'New Delhi',
-            registration_number: 'U74140DL2019PTC356789',
-            company_size: '201-500 employees',
-            website_url: 'https://patentnexus.in',
-            description: 'Premier patent landscaping, prior art search, and technology transfer law firm focused exclusively on clean technologies and green chemistry innovations.',
-            contact_email: 'admin@patentnexus.in',
-            verification_status: 'verified',
-            created_at: '2026-08-10T00:00:00Z',
-          },
-          {
-            id: 'e977582f-4c34-4d4b-9b7c-90b4b999c7e6',
-            name: 'Niche Synthesis Technologies',
-            legal_name: 'Niche Synthesis Technologies India Private Limited',
-            industry: 'Technology & Enterprise Solutions',
-            headquarters_location: 'Hyderabad, Telangana',
-            registration_number: 'U72200TG2023PTC178912',
-            company_size: '1-10 employees',
-            website_url: 'https://nichesynthesis.tech',
-            description: 'Early-stage synthetic chemistry and computational bio-simulation software startup seeking corporate employer verification.',
-            contact_email: 'founders@nichesynthesis.tech',
-            verification_status: 'rejected',
-            created_at: '2026-08-12T00:00:00Z',
-          },
         ];
       }
 
@@ -815,6 +1175,10 @@ export const adminService = {
         }
         return c;
       });
+
+      // Filter out companies whose employer accounts have been deleted
+      const deletedUsers = getDemoDeletedUsers();
+      companies = companies.filter((c) => !deletedUsers.includes(c.id) && !deletedUsers.includes('demo-employer-002'));
 
       return { data: companies, error: null };
     } catch (err) {

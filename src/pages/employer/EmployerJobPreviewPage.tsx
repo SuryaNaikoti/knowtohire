@@ -34,9 +34,10 @@ export const EmployerJobPreviewPage: React.FC<EmployerJobPreviewPageProps> = ({ 
 
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('/employer/jobs/create');
+      onNavigate('/employer/jobs/new');
     } else {
-      navigate(-1);
+      window.history.pushState({}, '', '/employer/jobs/new');
+      window.dispatchEvent(new Event('popstate'));
     }
   };
 

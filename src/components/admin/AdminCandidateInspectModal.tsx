@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Drawer } from '@/components/ui/Drawer';
+import { Dialog } from '@/components/ui/Dialog';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { adminService, AdminCandidateDetailRecord } from '@/services/adminService';
+import { resumeService } from '@/services/resumeService';
+import { generateCandidatePdfDataUrl } from '@/utils/candidatePdfGenerator';
 import {
   User,
   Mail,
@@ -14,6 +17,7 @@ import {
   FileText,
   CheckCircle2,
   ExternalLink,
+  Download,
   ShieldCheck,
   ShieldAlert,
   Loader2,
@@ -25,6 +29,7 @@ export interface AdminCandidateInspectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onStatusChanged?: (userId: string, newStatus: 'active' | 'suspended') => void;
+  onUserDeleted?: (userId: string) => void;
 }
 
 export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProps> = ({
@@ -32,16 +37,19 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
   isOpen,
   onClose,
   onStatusChanged,
+  onUserDeleted,
 }) => {
   const [candidate, setCandidate] = useState<AdminCandidateDetailRecord | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen && candidateId) {
       setIsLoading(true);
       setActionSuccess(null);
+      setIsResumeModalOpen(false);
       adminService.getCandidateDetails(candidateId).then((res) => {
         if (res.data) {
           setCandidate(res.data);
@@ -51,8 +59,46 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
     } else {
       setCandidate(null);
       setIsLoading(false);
+      setIsResumeModalOpen(false);
     }
   }, [isOpen, candidateId]);
+
+  // Compute live previewable resume URL
+  let resolvedResumeUrl = candidate?.resume_url;
+  if (candidate) {
+    if (!resolvedResumeUrl || resolvedResumeUrl.includes('knowtohire.com/resumes')) {
+      const stored = resumeService.getStoredDemoResume(candidate.id);
+      if (stored?.url && !stored.url.includes('knowtohire.com/resumes')) {
+        resolvedResumeUrl = stored.url;
+      } else {
+        resolvedResumeUrl = generateCandidatePdfDataUrl({
+          fullName: candidate.full_name,
+          headline: candidate.headline,
+          email: candidate.email,
+          phone: candidate.phone,
+          location: candidate.location,
+          skills: candidate.skills,
+          bio: candidate.bio,
+        });
+      }
+    }
+  }
+
+  const resumeFileName = candidate ? `${candidate.full_name.replace(/\s+/g, '_')}_Resume.pdf` : 'Candidate_Resume.pdf';
+
+  const handleDownloadResume = () => {
+    if (!resolvedResumeUrl) return;
+    if (resolvedResumeUrl.startsWith('data:')) {
+      const link = document.createElement('a');
+      link.href = resolvedResumeUrl;
+      link.download = resumeFileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      window.open(resolvedResumeUrl, '_blank');
+    }
+  };
 
   const handleVerifyAccount = async () => {
     if (!candidate || isUpdatingStatus) return;
@@ -69,19 +115,25 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
 
   const handleToggleSuspend = async () => {
     if (!candidate || isUpdatingStatus) return;
-    const nextStatus = candidate.status === 'active' ? 'suspended' : 'active';
+    
+    // Prompt confirmation for permanent erasure
+    const confirmed = window.confirm(
+      `Are you sure you want to suspend and permanently erase "${candidate.full_name}" from the entire database? All profiles, records, and credentials will be removed, and they will need to sign up again from scratch.`
+    );
+    if (!confirmed) return;
+
     setIsUpdatingStatus(true);
-    const res = await adminService.updateUserStatus(candidate.id, nextStatus);
+    const res = await adminService.deleteUserPermanently(candidate.id);
     setIsUpdatingStatus(false);
+    
     if (res.data) {
-      setCandidate((prev) => (prev ? { ...prev, status: nextStatus, is_active: nextStatus === 'active' } : null));
-      setActionSuccess(
-        nextStatus === 'suspended'
-          ? 'Candidate account has been suspended.'
-          : 'Candidate account has been reactivated.'
-      );
-      if (onStatusChanged) onStatusChanged(candidate.id, nextStatus);
-      setTimeout(() => setActionSuccess(null), 3000);
+      setActionSuccess('Candidate account and data have been permanently erased from the platform.');
+      if (onUserDeleted) {
+        onUserDeleted(candidate.id);
+      }
+      setTimeout(() => {
+        onClose();
+      }, 1200);
     }
   };
 
@@ -94,7 +146,8 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
   };
 
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} width="max-w-2xl sm:max-w-3xl">
+    <>
+      <Drawer isOpen={isOpen} onClose={onClose} width="max-w-2xl sm:max-w-3xl">
       {isLoading ? (
         <div className="py-32 flex flex-col items-center justify-center space-y-3">
           <Loader2 className="w-10 h-10 text-kth-primary-600 animate-spin" />
@@ -217,17 +270,16 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
                 </Button>
               </div>
 
-              {candidate.resume_url && (
-                <a
-                  href={candidate.resume_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition-colors"
+              {resolvedResumeUrl && (
+                <button
+                  type="button"
+                  onClick={() => setIsResumeModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition-colors cursor-pointer"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   View Resume
                   <ExternalLink className="w-3 h-3 ml-0.5" />
-                </a>
+                </button>
               )}
             </div>
           </div>
@@ -383,5 +435,58 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
         </div>
       )}
     </Drawer>
+
+    {/* Dedicated Resume Preview Modal */}
+    <Dialog
+      isOpen={isResumeModalOpen}
+      onClose={() => setIsResumeModalOpen(false)}
+      title={`Resume Preview — ${candidate?.full_name || 'Candidate'}`}
+      maxWidth="xl"
+    >
+      <div className="space-y-4">
+        {resolvedResumeUrl ? (
+          <div className="w-full rounded-xl overflow-hidden border border-kth-slate-200 bg-kth-slate-100 flex flex-col items-center">
+            <iframe
+              src={`${resolvedResumeUrl}#toolbar=1&navpanes=0`}
+              title="Candidate Resume Document"
+              className="w-full h-[650px] border-0 rounded-xl bg-white"
+            />
+          </div>
+        ) : (
+          <div className="py-20 text-center text-kth-slate-500 text-xs">
+            <FileText className="w-10 h-10 text-kth-slate-300 mx-auto mb-2" />
+            No resume file currently available for this candidate.
+          </div>
+        )}
+
+        <div className="flex justify-between items-center pt-2 border-t border-kth-slate-100">
+          {resolvedResumeUrl && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
+                onClick={() => window.open(resolvedResumeUrl!, '_blank')}
+              >
+                Open in Full Tab
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                className="bg-kth-primary-600 hover:bg-kth-primary-700 text-white"
+                leftIcon={<Download className="w-3.5 h-3.5" />}
+                onClick={handleDownloadResume}
+              >
+                Download PDF
+              </Button>
+            </div>
+          )}
+          <Button variant="secondary" size="sm" onClick={() => setIsResumeModalOpen(false)} className="ml-auto">
+            Close Preview
+          </Button>
+        </div>
+      </div>
+    </Dialog>
+    </>
   );
 };

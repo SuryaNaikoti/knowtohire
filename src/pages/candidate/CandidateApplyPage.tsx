@@ -100,6 +100,7 @@ export const CandidateApplyPage: React.FC<CandidateApplyPageProps> = ({ jobId: p
       setErrorMessage(res.error.message);
     } else if (res.data) {
       setCreatedApplication(res.data);
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }
   };
 
