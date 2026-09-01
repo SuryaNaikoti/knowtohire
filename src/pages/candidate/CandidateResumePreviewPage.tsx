@@ -154,11 +154,6 @@ export const CandidateResumePreviewPage: React.FC<CandidateResumePreviewPageProp
               />
             </div>
           ) : (
-              <Button variant="primary" size="md" onClick={handleBack} className="text-xs font-bold">
-                Return to Upload PDF
-              </Button>
-            </div>
-          ) : (
             <div className="py-20 text-center text-kth-slate-500 text-xs space-y-3">
               <FileText className="w-10 h-10 text-kth-slate-300 mx-auto" />
               <p>No active resume document has been uploaded yet.</p>
