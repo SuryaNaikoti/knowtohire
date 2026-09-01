@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { JobCard } from '@/components/cards/JobCard';
 import {
@@ -9,19 +8,15 @@ import {
   jobService,
   Job,
 } from '@/services';
-import { formatINR } from '@/design-system/tokens';
 import {
-  Building2,
   MapPin,
   Users,
-  Globe,
   CheckCircle2,
   ExternalLink,
   Briefcase,
   ArrowLeft,
   Share2,
   ShieldCheck,
-  Calendar,
   AlertTriangle,
 } from 'lucide-react';
 
@@ -46,7 +41,7 @@ export const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({
 
     const [compRes, jobsRes] = await Promise.all([
       companyProfileService.getCompanyById(companyId),
-      jobService.getJobs({ status: 'published' }),
+      jobService.getPublishedJobs(),
     ]);
 
     if (compRes.data) {
@@ -55,10 +50,10 @@ export const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({
       setErrorMessage(compRes.error?.message || 'Company profile not found.');
     }
 
-    if (jobsRes.data) {
+    if (jobsRes.data?.data) {
       // Filter jobs belonging to this company or with matching company name
       const compName = compRes.data?.name?.toLowerCase() || '';
-      const matchingJobs = jobsRes.data.filter((j) => {
+      const matchingJobs = jobsRes.data.data.filter((j: Job) => {
         if (j.company_id && compRes.data?.id && j.company_id === compRes.data.id) return true;
         const jName = j.company?.name || (j as any).company_name || '';
         return compName && jName.toLowerCase().includes(compName);
@@ -258,9 +253,18 @@ export const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({
                   {companyJobs.map((job) => (
                     <JobCard
                       key={job.id}
-                      job={job}
-                      onClick={() => {
-                        const target = `/jobs/${job.slug || job.id}`;
+                      id={job.id}
+                      title={job.title}
+                      company={company.name}
+                      location={job.location}
+                      isRemote={job.work_mode === 'remote'}
+                      isVerified={job.is_verified || company.verification_status === 'verified'}
+                      employmentType={(job.employment_type || 'full_time').replace('_', ' ')}
+                      minSalaryINR={job.min_salary_inr || 0}
+                      maxSalaryINR={job.max_salary_inr || 0}
+                      skills={Array.isArray(job.skills) ? job.skills : []}
+                      onApply={() => {
+                        const target = `/jobs/${job.id}`;
                         if (onNavigate) {
                           onNavigate(target);
                         } else {
