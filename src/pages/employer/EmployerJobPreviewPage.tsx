@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { EmployerShell } from '@/components/employer/EmployerShell';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -18,7 +17,6 @@ interface EmployerJobPreviewPageProps {
 }
 
 export const EmployerJobPreviewPage: React.FC<EmployerJobPreviewPageProps> = ({ onNavigate }) => {
-  const navigate = useNavigate();
   const [jobData, setJobData] = useState<any>(null);
 
   useEffect(() => {

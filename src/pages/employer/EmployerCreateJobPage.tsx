@@ -159,23 +159,23 @@ export const EmployerCreateJobPage: React.FC<EmployerCreateJobPageProps> = ({ on
 
     const responsibilities = responsibilitiesText
       .split('\n')
-      .map((r) => r.trim())
-      .filter((r) => r.length > 0);
+      .map((r: string) => r.trim())
+      .filter((r: string) => r.length > 0);
 
     const requirements = requirementsText
       .split('\n')
-      .map((r) => r.trim())
-      .filter((r) => r.length > 0);
+      .map((r: string) => r.trim())
+      .filter((r: string) => r.length > 0);
 
     const skills = skillsText
       .split(',')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+      .map((s: string) => s.trim())
+      .filter((s: string) => s.length > 0);
 
     const benefits = benefitsText
       .split(',')
-      .map((b) => b.trim())
-      .filter((b) => b.length > 0);
+      .map((b: string) => b.trim())
+      .filter((b: string) => b.length > 0);
 
     const payload: JobCreateInput = {
       title: title.trim(),
@@ -460,9 +460,9 @@ export const EmployerCreateJobPage: React.FC<EmployerCreateJobPageProps> = ({ on
                     min_salary_inr: Number(minSalary) || 0,
                     max_salary_inr: Number(maxSalary) || 0,
                     description,
-                    responsibilities: responsibilitiesText.split('\n').map((s) => s.trim()).filter(Boolean),
-                    requirements: requirementsText.split('\n').map((s) => s.trim()).filter(Boolean),
-                    skills: skillsText.split(',').map((s) => s.trim()).filter(Boolean),
+                    responsibilities: responsibilitiesText.split('\n').map((s: string) => s.trim()).filter(Boolean),
+                    requirements: requirementsText.split('\n').map((s: string) => s.trim()).filter(Boolean),
+                    skills: skillsText.split(',').map((s: string) => s.trim()).filter(Boolean),
                   };
                   sessionStorage.setItem('kth_job_preview_data', JSON.stringify(previewPayload));
                   handleNavigate('/employer/jobs/preview');

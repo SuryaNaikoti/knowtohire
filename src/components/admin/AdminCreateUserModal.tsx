@@ -10,13 +10,7 @@ import {
   User,
   Building2,
   Mail,
-  Phone,
   Briefcase,
-  MapPin,
-  Globe,
-  IndianRupee,
-  Layers,
-  Sparkles,
   Loader2,
   CheckCircle2,
 } from 'lucide-react';
@@ -149,7 +143,6 @@ export const AdminCreateUserModal: React.FC<AdminCreateUserModalProps> = ({
       onClose={handleClose}
       title="Create New Platform User"
       description="Provision verified candidate profiles or corporate employer enterprises directly from the Superuser administration console."
-      size="xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6 pt-2 text-kth-slate-800">
         {errorMessage && (

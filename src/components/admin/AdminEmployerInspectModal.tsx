@@ -13,12 +13,8 @@ import {
   CheckCircle2,
   XCircle,
   ExternalLink,
-  ShieldCheck,
   ShieldAlert,
   Loader2,
-  Briefcase,
-  Users,
-  Calendar,
 } from 'lucide-react';
 
 export interface AdminEmployerInspectModalProps {
@@ -34,7 +30,6 @@ export const AdminEmployerInspectModal: React.FC<AdminEmployerInspectModalProps>
   employerId,
   isOpen,
   onClose,
-  onStatusChanged,
   onUserDeleted,
   onNavigate,
 }) => {

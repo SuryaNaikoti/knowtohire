@@ -11,13 +11,10 @@ import {
   User,
   Building2,
   Mail,
-  Phone,
   Briefcase,
-  Globe,
   Loader2,
   CheckCircle2,
   ArrowLeft,
-  ShieldCheck,
 } from 'lucide-react';
 
 export interface AdminCreateUserPageProps {

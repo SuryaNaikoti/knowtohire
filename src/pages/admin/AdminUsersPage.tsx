@@ -81,14 +81,6 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) =>
     }
   }, []);
 
-  const handleToggleStatus = async (user: AdminUserRecord) => {
-    const nextStatus = user.status === 'active' ? 'suspended' : 'active';
-    const res = await adminService.updateUserStatus(user.id, nextStatus);
-    if (res.data) {
-      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u)));
-    }
-  };
-
   const handleDeleteUserPermanently = async (user: AdminUserRecord) => {
     const res = await adminService.deleteUserPermanently(user.id);
     if (res.data) {

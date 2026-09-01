@@ -630,13 +630,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (data?.user) {
+      const createdUserId = data.user.id;
       // If this account was previously deleted, unblock it so the user can start completely afresh
       if (typeof window !== 'undefined' && window.localStorage) {
         try {
           const deletedRaw = window.localStorage.getItem('kth_admin_deleted_users');
           if (deletedRaw) {
             let deletedList: string[] = JSON.parse(deletedRaw);
-            deletedList = deletedList.filter((id) => id !== data.user.id);
+            deletedList = deletedList.filter((id) => id !== createdUserId);
             window.localStorage.setItem('kth_admin_deleted_users', JSON.stringify(deletedList));
           }
         } catch {
