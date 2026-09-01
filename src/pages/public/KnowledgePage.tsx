@@ -13,10 +13,8 @@ import {
   Sparkles,
   FilterX,
   PlusCircle,
-  FileText,
   Send,
   CheckCircle2,
-  HelpCircle,
 } from 'lucide-react';
 
 const RESOURCE_CATEGORIES = [
