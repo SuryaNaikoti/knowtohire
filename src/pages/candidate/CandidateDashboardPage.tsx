@@ -74,6 +74,8 @@ function getApplicationSteps(
 ): Array<{ title: string; date?: string; status: 'completed' | 'current' | 'upcoming' }> {
   const stageOrder = ['new', 'screening', 'interview', 'offer', 'hired'];
   const idx = stageOrder.indexOf(app.stage);
+  const isHired = app.stage === 'hired' || idx === 4;
+
   return [
     {
       title: 'Applied',
@@ -83,7 +85,7 @@ function getApplicationSteps(
     { title: 'Screening', status: idx > 1 ? 'completed' : idx === 1 ? 'current' : 'upcoming' },
     { title: 'Interview', status: idx > 2 ? 'completed' : idx === 2 ? 'current' : 'upcoming' },
     { title: 'Offer',     status: idx > 3 ? 'completed' : idx === 3 ? 'current' : 'upcoming' },
-    { title: 'Hired',     status: idx === 4 ? 'completed' : 'upcoming' },
+    { title: 'Hired',     date: isHired ? 'Hired' : undefined, status: isHired ? 'completed' : 'upcoming' },
   ];
 }
 
