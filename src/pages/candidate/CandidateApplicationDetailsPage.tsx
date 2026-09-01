@@ -8,7 +8,7 @@ import { Alert } from '@/components/ui/Alert';
 import { ProgressTimeline, TimelineStep } from '@/components/data-display/ProgressTimeline';
 import { applicationService, interviewService, JobApplication, ApplicationStatusHistory, Interview, ApplicationStage } from '@/services';
 import { formatINR } from '@/design-system/tokens';
-import { Calendar, Video, FileText, ArrowLeft, AlertTriangle, Building2, MapPin, Briefcase, Sparkles, PartyPopper, CheckCircle2, ArrowRight, ShieldCheck, Rocket, X } from 'lucide-react';
+import { Calendar, Video, FileText, ArrowLeft, AlertTriangle, Building2, MapPin, Briefcase, Sparkles, PartyPopper, ArrowRight, ShieldCheck, Rocket, X } from 'lucide-react';
 
 export interface CandidateApplicationDetailsPageProps {
   appId?: string;
