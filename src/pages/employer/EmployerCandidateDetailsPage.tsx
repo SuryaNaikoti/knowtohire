@@ -41,6 +41,7 @@ import {
 export interface EmployerCandidateDetailsPageProps {
   candidateId?: string;
   applicationId?: string;
+  onNavigate?: (path: string) => void;
 }
 
 const ATS_STAGES: { stage: ApplicationStage; label: string }[] = [
@@ -55,6 +56,7 @@ const ATS_STAGES: { stage: ApplicationStage; label: string }[] = [
 export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPageProps> = ({
   candidateId: propCandidateId,
   applicationId: propApplicationId,
+  onNavigate,
 }) => {
   // Check URL path format
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
@@ -297,7 +299,13 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
                 variant="primary"
                 size="sm"
                 onClick={() => {
-                  window.location.href = `/employer/candidates/${resolvedCandidateId || application.id}/schedule?applicationId=${application.id}`;
+                  const target = `/employer/candidates/${resolvedCandidateId || application.id}/schedule?applicationId=${application.id}`;
+                  if (onNavigate) {
+                    onNavigate(target);
+                  } else {
+                    window.history.pushState({}, '', target);
+                    window.dispatchEvent(new Event('popstate'));
+                  }
                 }}
                 leftIcon={<Calendar className="w-3.5 h-3.5" />}
               >

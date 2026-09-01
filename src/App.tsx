@@ -263,11 +263,11 @@ export function App() {
       }
       else if (path.startsWith('/employer/candidates/')) {
         const candidateId = path.replace('/employer/candidates/', '');
-        pageComponent = <EmployerCandidateDetailsPage candidateId={candidateId} />;
+        pageComponent = <EmployerCandidateDetailsPage candidateId={candidateId} onNavigate={navigateTo} />;
       }
       else if (path.startsWith('/employer/applications/')) {
         const applicationId = path.replace('/employer/applications/', '');
-        pageComponent = <EmployerCandidateDetailsPage applicationId={applicationId} />;
+        pageComponent = <EmployerCandidateDetailsPage applicationId={applicationId} onNavigate={navigateTo} />;
       }
       else if (path === '/employer/pipeline') pageComponent = <EmployerPipelinePage />;
       else if (path === '/employer/interviews') pageComponent = <EmployerInterviewsPage />;
