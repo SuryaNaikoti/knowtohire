@@ -11,6 +11,8 @@ import {
   FileCheck,
   Calendar,
   Sparkles,
+  BookOpen,
+  FileCheck2,
   HelpCircle,
   Bell,
   Settings,
@@ -124,6 +126,8 @@ export const CandidateSidebar: React.FC<CandidateSidebarProps> = ({
       count: liveCounts.interviews > 0 ? liveCounts.interviews : undefined,
     },
     { path: '/candidate/career-insights', label: 'Career Insights', icon: Sparkles },
+    { path: '/candidate/knowledge', label: 'Knowledge Hub', icon: BookOpen },
+    { path: '/candidate/templates', label: 'Templates & Kits', icon: FileCheck2 },
     { path: '/candidate/requests', label: 'Content Requests', icon: HelpCircle },
     {
       path: '/candidate/notifications',

@@ -56,6 +56,8 @@ const CandidateApplicationDetailsPage = lazy(() => import('@/pages/candidate/Can
 const CandidateInterviewsPage = lazy(() => import('@/pages/candidate/CandidateInterviewsPage').then(m => ({ default: m.CandidateInterviewsPage })));
 const CandidateInterviewDetailsPage = lazy(() => import('@/pages/candidate/CandidateInterviewDetailsPage').then(m => ({ default: m.CandidateInterviewDetailsPage })));
 const CandidateCareerInsightsPage = lazy(() => import('@/pages/candidate/CandidateCareerInsightsPage').then(m => ({ default: m.CandidateCareerInsightsPage })));
+const CandidateKnowledgePage = lazy(() => import('@/pages/candidate/CandidateKnowledgePage').then(m => ({ default: m.CandidateKnowledgePage })));
+const CandidateTemplatesPage = lazy(() => import('@/pages/candidate/CandidateTemplatesPage').then(m => ({ default: m.CandidateTemplatesPage })));
 const CandidateRequestsPage = lazy(() => import('@/pages/candidate/CandidateRequestsPage').then(m => ({ default: m.CandidateRequestsPage })));
 const CandidateNewRequestPage = lazy(() => import('@/pages/candidate/CandidateNewRequestPage').then(m => ({ default: m.CandidateNewRequestPage })));
 const CandidateRequestDetailsPage = lazy(() => import('@/pages/candidate/CandidateRequestDetailsPage').then(m => ({ default: m.CandidateRequestDetailsPage })));
@@ -78,6 +80,8 @@ const EmployerPipelinePage = lazy(() => import('@/pages/employer/EmployerPipelin
 const EmployerInterviewsPage = lazy(() => import('@/pages/employer/EmployerInterviewsPage').then(m => ({ default: m.EmployerInterviewsPage })));
 const EmployerSavedCandidatesPage = lazy(() => import('@/pages/employer/EmployerSavedCandidatesPage').then(m => ({ default: m.EmployerSavedCandidatesPage })));
 const EmployerAnalyticsPage = lazy(() => import('@/pages/employer/EmployerAnalyticsPage').then(m => ({ default: m.EmployerAnalyticsPage })));
+const EmployerKnowledgePage = lazy(() => import('@/pages/employer/EmployerKnowledgePage').then(m => ({ default: m.EmployerKnowledgePage })));
+const EmployerTemplatesPage = lazy(() => import('@/pages/employer/EmployerTemplatesPage').then(m => ({ default: m.EmployerTemplatesPage })));
 const EmployerCompanyProfilePage = lazy(() => import('@/pages/employer/EmployerCompanyProfilePage').then(m => ({ default: m.EmployerCompanyProfilePage })));
 const EmployerNotificationsPage = lazy(() => import('@/pages/employer/EmployerNotificationsPage').then(m => ({ default: m.EmployerNotificationsPage })));
 const EmployerSettingsPage = lazy(() => import('@/pages/employer/EmployerSettingsPage').then(m => ({ default: m.EmployerSettingsPage })));
@@ -273,6 +277,8 @@ export function App() {
       else if (path === '/employer/interviews') pageComponent = <EmployerInterviewsPage />;
       else if (path === '/employer/saved-candidates') pageComponent = <EmployerSavedCandidatesPage />;
       else if (path === '/employer/analytics') pageComponent = <EmployerAnalyticsPage />;
+      else if (path === '/employer/knowledge') pageComponent = <EmployerKnowledgePage />;
+      else if (path === '/employer/templates') pageComponent = <EmployerTemplatesPage />;
       else if (path === '/employer/company-profile') pageComponent = <EmployerCompanyProfilePage />;
       else if (path === '/employer/notifications') pageComponent = <EmployerNotificationsPage onNavigate={navigateTo} />;
       else if (path === '/employer/settings') pageComponent = <EmployerSettingsPage />;
@@ -316,6 +322,8 @@ export function App() {
       }
       else if (path === '/candidate/interviews') pageComponent = <CandidateInterviewsPage onNavigate={navigateTo} />;
       else if (path === '/candidate/career-insights' || path === '/candidate/insights') pageComponent = <CandidateCareerInsightsPage />;
+      else if (path === '/candidate/knowledge') pageComponent = <CandidateKnowledgePage />;
+      else if (path === '/candidate/templates') pageComponent = <CandidateTemplatesPage />;
       else if (path === '/candidate/requests/new') pageComponent = <CandidateNewRequestPage onNavigate={navigateTo} />;
       else if (path.startsWith('/candidate/requests/') && path !== '/candidate/requests') {
         pageComponent = <CandidateRequestDetailsPage onNavigate={navigateTo} />;
