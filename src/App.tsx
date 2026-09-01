@@ -26,6 +26,7 @@ const EmployerOnboardingPage = lazy(() => import('@/pages/onboarding/EmployerOnb
 // Lazy-loaded Public Pages
 const JobsPage = lazy(() => import('@/pages/public/JobsPage').then(m => ({ default: m.JobsPage })));
 const JobDetailsPage = lazy(() => import('@/pages/public/JobDetailsPage').then(m => ({ default: m.JobDetailsPage })));
+const CompanyProfilePage = lazy(() => import('@/pages/public/CompanyProfilePage').then(m => ({ default: m.CompanyProfilePage })));
 const CareersPage = lazy(() => import('@/pages/public/CareersPage').then(m => ({ default: m.CareersPage })));
 const KnowledgePage = lazy(() => import('@/pages/public/KnowledgePage').then(m => ({ default: m.KnowledgePage })));
 const ResourceDetailsPage = lazy(() => import('@/pages/public/ResourceDetailsPage').then(m => ({ default: m.ResourceDetailsPage })));
@@ -374,6 +375,13 @@ export function App() {
     if (path.startsWith('/jobs/')) {
       const jobId = path.replace('/jobs/', '');
       return <JobDetailsPage jobId={jobId} onNavigate={navigateTo} />;
+    }
+    if (path.startsWith('/companies/') && path !== '/companies') {
+      const compId = path.replace('/companies/', '');
+      return <CompanyProfilePage companyId={compId} onNavigate={navigateTo} />;
+    }
+    if (path === '/companies') {
+      return <CompanyProfilePage companyId="default" onNavigate={navigateTo} />;
     }
     if (path === '/careers') return <CareersPage />;
     if (path === '/knowledge') return <KnowledgePage />;

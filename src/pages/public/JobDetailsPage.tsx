@@ -194,15 +194,28 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
                   </h1>
 
                   <div className="flex items-center gap-3 text-xs sm:text-sm text-kth-slate-600 flex-wrap">
-                    <div className="flex items-center gap-1.5">
-                      <Building2 className="w-4 h-4 text-kth-primary-600 shrink-0" />
-                      <span className="font-bold text-kth-slate-900">{companyName}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetId = job.company_id || job.company?.id || encodeURIComponent(companyName);
+                        const target = `/companies/${targetId}`;
+                        if (onNavigate) {
+                          onNavigate(target);
+                        } else {
+                          window.history.pushState({}, '', target);
+                          window.dispatchEvent(new Event('popstate'));
+                        }
+                      }}
+                      className="flex items-center gap-1.5 hover:text-kth-primary-600 transition-colors group cursor-pointer text-left"
+                    >
+                      <Building2 className="w-4 h-4 text-kth-primary-600 shrink-0 group-hover:scale-110 transition-transform" />
+                      <span className="font-bold text-kth-slate-900 group-hover:text-kth-primary-600 group-hover:underline">{companyName}</span>
                       {(job.is_verified || job.company?.verification_status === 'verified') && (
                         <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-full shrink-0 ml-1">
                           <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> Verified
                         </span>
                       )}
-                    </div>
+                    </button>
                     
                     <span className="text-kth-slate-300">•</span>
                     
@@ -345,7 +358,22 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
                 <div className="space-y-3 text-xs">
                   <div className="flex justify-between items-center py-0.5">
                     <span className="text-kth-slate-500 font-medium">Enterprise:</span>
-                    <span className="font-bold text-kth-slate-900 text-right truncate max-w-[160px]">{companyName}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetId = job.company_id || job.company?.id || encodeURIComponent(companyName);
+                        const target = `/companies/${targetId}`;
+                        if (onNavigate) {
+                          onNavigate(target);
+                        } else {
+                          window.history.pushState({}, '', target);
+                          window.dispatchEvent(new Event('popstate'));
+                        }
+                      }}
+                      className="font-bold text-kth-primary-600 hover:underline text-right truncate max-w-[160px] cursor-pointer"
+                    >
+                      {companyName}
+                    </button>
                   </div>
 
                   {job.department && (

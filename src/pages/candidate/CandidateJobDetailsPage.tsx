@@ -189,11 +189,23 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
                 </Badge>
               </div>
               <h1 className="font-display text-2xl md:text-3xl font-extrabold text-kth-slate-900">{job.title}</h1>
-              <div className="flex items-center gap-3 text-xs sm:text-sm text-kth-slate-600 mt-1">
-                <span className="font-semibold text-kth-slate-800 flex items-center gap-1">
-                  <Building2 className="w-3.5 h-3.5 text-kth-slate-400" />
-                  {companyName}
-                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const targetId = job.company_id || job.company?.id || encodeURIComponent(companyName);
+                    const target = `/companies/${targetId}`;
+                    if (onNavigate) {
+                      onNavigate(target);
+                    } else {
+                      window.history.pushState({}, '', target);
+                      window.dispatchEvent(new Event('popstate'));
+                    }
+                  }}
+                  className="font-semibold text-kth-slate-800 hover:text-kth-primary-600 flex items-center gap-1 cursor-pointer transition-colors group"
+                >
+                  <Building2 className="w-3.5 h-3.5 text-kth-slate-400 group-hover:text-kth-primary-600" />
+                  <span className="group-hover:underline">{companyName}</span>
+                </button>
                 <span>•</span>
                 <span className="flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-kth-slate-400" />

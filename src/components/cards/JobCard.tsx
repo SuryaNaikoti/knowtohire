@@ -62,7 +62,18 @@ export const JobCard: React.FC<JobCardProps> = ({
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs font-bold text-kth-slate-900 truncate max-w-[140px] sm:max-w-[180px]">{company}</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const target = `/companies/${encodeURIComponent(company)}`;
+                    window.history.pushState({}, '', target);
+                    window.dispatchEvent(new Event('popstate'));
+                  }}
+                  className="text-xs font-bold text-kth-slate-900 hover:text-kth-primary-600 hover:underline truncate max-w-[140px] sm:max-w-[180px] text-left cursor-pointer"
+                >
+                  {company}
+                </button>
                 {isVerified && (
                   <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-full shrink-0">
                     <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> Verified
