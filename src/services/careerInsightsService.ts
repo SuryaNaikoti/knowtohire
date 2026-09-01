@@ -489,70 +489,27 @@ export const careerInsightsService = {
       let rawJobs: Job[] = jobsRes.data?.data || [];
       const allResources: KnowledgeResource[] = resourcesRes.data || [];
 
-      // Ensure full catalog (both DB jobs and foundational domain requisitions) is available for deterministic matching
-      const mockNormalized: Job[] = MOCK_JOBS.map((j) => {
-          return {
-            id: j.id,
-            company_id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-            created_by: '00000000-0000-0000-0000-000000000001',
-            title: j.title,
-            department: j.department || 'Engineering',
-            category: j.department?.includes('Sustainability') || j.department?.includes('ESG') || j.department?.includes('Environmental')
-              ? 'Environmental'
-              : j.department?.includes('Intellectual Property')
-              ? 'Intellectual Property'
-              : j.department?.includes('Policy')
-              ? 'Public Policy & Research'
-              : 'Engineering & Technology',
-            employment_type: (j.employmentType === 'Full-Time' ? 'full_time' : j.employmentType === 'Part-Time' ? 'part_time' : j.employmentType === 'Contract' ? 'contract' : 'internship') as any,
-            work_mode: (j.isRemote ? 'remote' : j.employmentType === 'Hybrid' ? 'hybrid' : 'on_site') as any,
-            experience_level: (j.title.toLowerCase().includes('senior') || j.title.toLowerCase().includes('lead')) ? 'senior' : 'mid_level',
-            location: j.location,
-            city: j.location.split(',')[0]?.trim() || j.location,
-            state_code: 'TS',
-            is_remote: j.isRemote,
-            is_verified: j.isVerified,
-            min_salary_inr: j.minSalaryINR,
-            max_salary_inr: j.maxSalaryINR,
-            salary_currency: 'INR',
-            skills: cleanSkillArray(j.skills),
-            responsibilities: j.responsibilities || [],
-            requirements: j.requirements || [],
-            benefits: j.benefits || [],
-            description: j.description || '',
-            status: 'published',
-            views_count: 140,
-            applications_count: 12,
-            published_at: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            company: {
-              id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-              name: j.company,
-              logo_url: null,
-              verification_status: 'verified' as any,
-              location: j.location,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            } as any,
-          };
-        });
-      const existingIds = new Set(rawJobs.map(j => j.id));
-      const missingFromCatalog = mockNormalized.filter(j => !existingIds.has(j.id));
-      rawJobs = [...rawJobs, ...missingFromCatalog];
+      // 1.1 Fetch & Extract Individual Candidate Resume Data
+      const candidateId = profile?.id || '00000000-0000-0000-0000-000000000001';
+      const storedResume = resumeService.getStoredDemoResume(candidateId);
+      const resumeAnalysis = storedResume?.atsAnalysis;
 
-      // Extract candidate data dynamically from single source of truth
-      const currentTitle = profile?.headline?.trim() || 'Software Engineer & Professional';
-      const currentDomain = profile?.domainSpecialization?.trim() || 'Software Engineering';
-      const candidateSkills = cleanSkillArray(profile?.skills || []);
+      // Extract candidate data dynamically from single source of truth (merging Profile + Parsed Resume)
+      const resumeExtractedSkills = cleanSkillArray(resumeAnalysis?.extractedSkills || []);
+      const profileSkills = cleanSkillArray(profile?.skills || []);
+      const mergedSkills = Array.from(new Set([...profileSkills, ...resumeExtractedSkills]));
+
+      const currentTitle = profile?.headline?.trim() || resumeAnalysis?.identifiedDomain || 'Software Engineer & Professional';
+      const currentDomain = profile?.domainSpecialization?.trim() || resumeAnalysis?.identifiedDomain || 'Software Engineering';
+      const candidateSkills = mergedSkills;
       const experienceList = Array.isArray(profile?.experience) ? profile.experience : [];
       const candidateLocation = profile?.location?.trim() || 'Location Not Specified';
       const employmentPreference = profile?.employmentPreference || 'Full-Time / Hybrid';
 
-      // Estimate total years of candidate experience from history
+      // Estimate total years of candidate experience from history or resume score
       const yearsOfExperience = experienceList.length > 0
         ? Math.max(experienceList.length * 2, 3)
-        : (candidateSkills.length >= 5 ? 3 : 1);
+        : (resumeAnalysis?.experienceYears || (candidateSkills.length >= 5 ? 3 : 1));
 
       // Check for profile data sufficiency
       if (candidateSkills.length === 0 && experienceList.length === 0) {

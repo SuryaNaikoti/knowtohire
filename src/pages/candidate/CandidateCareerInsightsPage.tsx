@@ -81,16 +81,20 @@ export const CandidateCareerInsightsPage: React.FC = () => {
       <div className="space-y-6 max-w-5xl mx-auto text-left font-sans">
         {/* Header Hero Section */}
         <div className="bg-white p-6 md:p-8 rounded-2xl border border-kth-slate-200 shadow-xs">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <Badge variant="indigo" className="text-xs font-semibold py-0.5 px-2.5">
               Career Intelligence
+            </Badge>
+            <Badge variant="emerald" className="text-[11px] font-semibold py-0.5 px-2.5 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+              <span>Resume-Parsed Intelligence</span>
             </Badge>
           </div>
           <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-kth-slate-900 leading-tight">
             Career Insights
           </h1>
           <p className="text-xs sm:text-sm text-kth-slate-600 mt-1 max-w-2xl leading-relaxed">
-            Understand your current career position, market alignment, and next opportunities.
+            Understand your current career position, market alignment, and next opportunities generated from your individual verified profile and parsed resume.
           </p>
         </div>
 
