@@ -269,8 +269,56 @@ export const CandidateApplicationDetailsPage: React.FC<CandidateApplicationDetai
             <ProgressTimeline steps={buildTimelineSteps(application.stage)} />
           </div>
 
+          {/* Post-Hire / Onboarding Welcome Hub (When stage is 'hired') */}
+          {application.stage === 'hired' && (
+            <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 rounded-2xl p-6 text-white shadow-md border border-emerald-800 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/30">
+                    <span>🎉</span> Official Offer Accepted · Hired
+                  </div>
+                  <h3 className="text-xl font-bold text-white tracking-tight">
+                    Welcome to {job?.company?.name || 'the Enterprise Team'}!
+                  </h3>
+                  <p className="text-xs text-slate-300 max-w-xl">
+                    Congratulations! Your application has concluded with a successful hiring confirmation. The HR and Talent Acquisition team has initiated your pre-boarding formalities.
+                  </p>
+                </div>
+                <div className="text-right sm:text-left shrink-0">
+                  <Badge variant="emerald" className="text-xs py-1 px-3">
+                    Status: Active Employee Onboarding
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+                <div className="bg-white/10 p-3.5 rounded-xl border border-white/10 space-y-1">
+                  <span className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider block font-mono">
+                    Step 1: Document Verification
+                  </span>
+                  <p className="text-white font-semibold">Pre-Joining Verification</p>
+                  <span className="text-[11px] text-slate-300 block">Identity & degree records verified.</span>
+                </div>
+                <div className="bg-white/10 p-3.5 rounded-xl border border-white/10 space-y-1">
+                  <span className="text-[10px] text-cyan-300 font-bold uppercase tracking-wider block font-mono">
+                    Step 2: Workspace & Systems
+                  </span>
+                  <p className="text-white font-semibold">Corporate IT Provisioning</p>
+                  <span className="text-[11px] text-slate-300 block">Single Sign-On & work email setup in progress.</span>
+                </div>
+                <div className="bg-white/10 p-3.5 rounded-xl border border-white/10 space-y-1">
+                  <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block font-mono">
+                    Step 3: Day 1 Induction
+                  </span>
+                  <p className="text-white font-semibold">Welcome & Team Orientation</p>
+                  <span className="text-[11px] text-slate-300 block">Reporting details dispatched to your email.</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Scheduled Interview Section */}
-          {interviews.length > 0 && (
+          {interviews.length > 0 && application.stage !== 'hired' && (
             <div className="bg-cyan-50 p-5 rounded-xl border border-cyan-200">
               <div className="flex items-center gap-2.5 mb-2">
                 <Calendar className="w-5 h-5 text-cyan-600" />

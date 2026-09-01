@@ -436,6 +436,54 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
           </Card>
         )}
 
+        {/* Section 4B: Employee Onboarding & Pre-Joining Workflow Hub (When Hired) */}
+        {application && application.stage === 'hired' && (
+          <Card className="p-6 bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white rounded-2xl border border-emerald-800 shadow-md space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/30">
+                  <span>🎉</span> Candidate Hired · Employee Transition Hub
+                </div>
+                <h3 className="text-xl font-bold text-white tracking-tight">
+                  {name} has accepted the offer and is officially Hired!
+                </h3>
+                <p className="text-xs text-slate-300 max-w-2xl">
+                  The recruitment lifecycle for this requisition is complete. You can now execute employee onboarding, background check compliance, IT hardware provisioning, and Day 1 welcome coordination.
+                </p>
+              </div>
+              <Badge variant="emerald" className="text-xs py-1 px-3 self-start sm:self-auto">
+                Status: Hired & Active Employee
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+              <div className="bg-white/10 p-3.5 rounded-xl border border-white/10 space-y-1.5">
+                <span className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider block font-mono">
+                  1. Documentation & Background
+                </span>
+                <p className="text-white font-semibold">Background & ID Verification</p>
+                <p className="text-[11px] text-slate-300">Identity, education credentials, and salary records verified for compliance.</p>
+              </div>
+
+              <div className="bg-white/10 p-3.5 rounded-xl border border-white/10 space-y-1.5">
+                <span className="text-[10px] text-cyan-300 font-bold uppercase tracking-wider block font-mono">
+                  2. Systems & Hardware
+                </span>
+                <p className="text-white font-semibold">IT Asset & SSO Provisioning</p>
+                <p className="text-[11px] text-slate-300">Corporate work email, developer permissions, and laptop dispatch queued.</p>
+              </div>
+
+              <div className="bg-white/10 p-3.5 rounded-xl border border-white/10 space-y-1.5">
+                <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block font-mono">
+                  3. Team Induction
+                </span>
+                <p className="text-white font-semibold">First-Week Orientation</p>
+                <p className="text-[11px] text-slate-300">Manager 1-on-1 scheduled and team welcome invitation sent.</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Main Content Grid: Candidate Profile vs Recruiter Coordination */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column (7 cols): Full Candidate Profile Data */}
