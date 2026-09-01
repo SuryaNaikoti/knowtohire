@@ -180,15 +180,12 @@ export const EmployerTemplatesPage: React.FC = () => {
                 key={tmpl.id}
                 title={tmpl.title}
                 category={tmpl.category}
-                format={tmpl.format}
+                format={tmpl.formats[0] || 'DOCX'}
+                formats={tmpl.formats}
                 priceINR={tmpl.price_inr}
-                isFree={tmpl.is_free ?? true}
-                downloadCount={tmpl.downloads_count}
-                rating={tmpl.rating}
+                isFree={tmpl.is_free}
+                downloads={tmpl.downloads_count}
                 description={tmpl.description}
-                fileSize={tmpl.file_size || '1.2 MB'}
-                whatsIncluded={tmpl.whats_included}
-                coverUrl={tmpl.cover_url || undefined}
                 onDownload={() => handleTemplateClick(tmpl)}
               />
             ))}
