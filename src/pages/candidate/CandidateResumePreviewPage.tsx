@@ -112,7 +112,40 @@ export const CandidateResumePreviewPage: React.FC<CandidateResumePreviewPageProp
                 size="sm"
                 className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs font-semibold"
                 leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
-                onClick={() => window.open(effectiveResumeUrl, '_blank')}
+                onClick={() => {
+                  if (effectiveResumeUrl.startsWith('data:application/pdf')) {
+                    try {
+                      // Convert base64 data URL to Blob for clean standalone browser tab display
+                      const base64Parts = effectiveResumeUrl.split(',');
+                      const base64Data = base64Parts[1];
+                      const byteCharacters = atob(base64Data);
+                      const byteNumbers = new Array(byteCharacters.length);
+                      for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                      }
+                      const byteArray = new Uint8Array(byteNumbers);
+                      const blob = new Blob([byteArray], { type: 'application/pdf' });
+                      const blobUrl = URL.createObjectURL(blob);
+                      window.open(blobUrl, '_blank');
+                    } catch {
+                      // Fallback HTML window
+                      const win = window.open('', '_blank');
+                      if (win) {
+                        win.document.write(`
+                          <html>
+                            <head><title>${fileName}</title></head>
+                            <body style="margin:0;padding:0;background:#333;">
+                              <iframe src="${effectiveResumeUrl}" style="width:100vw;height:100vh;border:none;"></iframe>
+                            </body>
+                          </html>
+                        `);
+                        win.document.close();
+                      }
+                    }
+                  } else {
+                    window.open(effectiveResumeUrl, '_blank');
+                  }
+                }}
               >
                 Open in Full Window
               </Button>
