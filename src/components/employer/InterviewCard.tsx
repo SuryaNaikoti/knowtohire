@@ -81,7 +81,15 @@ export const InterviewCard: React.FC<InterviewCardProps> = ({
       </div>
 
       <div className="pt-3 border-t border-kth-slate-100 flex items-center justify-between gap-2 flex-wrap">
-        {interview.meeting_link ? (
+        {interview.interview_type === 'walk_in' ? (
+          <span className="text-xs font-semibold text-amber-700 flex items-center gap-1">
+            <MapPin className="w-3.5 h-3.5" /> Walk-In Venue
+          </span>
+        ) : interview.interview_type === 'on_site' || interview.interview_type === 'executive_review' ? (
+          <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
+            <MapPin className="w-3.5 h-3.5" /> Onsite Office
+          </span>
+        ) : interview.meeting_link && (interview.interview_type === 'video' || interview.interview_type === 'technical_deep_dive' || interview.interview_type === 'external' || interview.interview_type === 'case_study') ? (
           <a
             href={interview.meeting_link}
             target="_blank"
@@ -91,7 +99,7 @@ export const InterviewCard: React.FC<InterviewCardProps> = ({
             <Video className="w-3.5 h-3.5" /> Join Call <ExternalLink className="w-2.5 h-2.5" />
           </a>
         ) : (
-          <span className="text-xs text-kth-slate-400">Onsite / Phone</span>
+          <span className="text-xs text-kth-slate-500 font-medium">Onsite / Direct Coordination</span>
         )}
 
         {interview.status === 'scheduled' && (

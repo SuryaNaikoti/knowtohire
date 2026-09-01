@@ -295,23 +295,40 @@ export const CandidateApplicationDetailsPage: React.FC<CandidateApplicationDetai
                 <div>
                   <span className="text-kth-slate-400 block text-[10px]">INTERVIEW TYPE</span>
                   <strong className="text-kth-slate-900 font-semibold flex items-center gap-1 capitalize">
-                    <Video className="w-3.5 h-3.5 text-kth-primary-600" />
+                    {interviews[0].interview_type === 'walk_in' ? (
+                      <Building2 className="w-3.5 h-3.5 text-amber-600" />
+                    ) : interviews[0].interview_type === 'on_site' ? (
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <Video className="w-3.5 h-3.5 text-kth-primary-600" />
+                    )}
                     {interviews[0].interview_type.replace('_', ' ')}
                   </strong>
                 </div>
                 <div>
-                  <span className="text-kth-slate-400 block text-[10px]">MEETING LINK</span>
-                  {interviews[0].meeting_link ? (
-                    <a
-                      href={interviews[0].meeting_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-kth-primary-600 font-bold hover:underline truncate block"
-                    >
-                      Join Meeting Link →
-                    </a>
+                  {interviews[0].interview_type === 'walk_in' || interviews[0].interview_type === 'on_site' ? (
+                    <>
+                      <span className="text-kth-slate-400 block text-[10px]">VENUE / OFFICE LOCATION</span>
+                      <strong className="text-kth-slate-900 font-semibold truncate block">
+                        {interviews[0].venue_address || interviews[0].location || 'Enterprise Office Headquarters'}
+                      </strong>
+                    </>
                   ) : (
-                    <span className="text-kth-slate-500 font-medium">Link will be shared prior to start</span>
+                    <>
+                      <span className="text-kth-slate-400 block text-[10px]">MEETING LINK</span>
+                      {interviews[0].meeting_link ? (
+                        <a
+                          href={interviews[0].meeting_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-kth-primary-600 font-bold hover:underline truncate block"
+                        >
+                          Join Meeting Link →
+                        </a>
+                      ) : (
+                        <span className="text-kth-slate-500 font-medium">Link will be shared prior to start</span>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

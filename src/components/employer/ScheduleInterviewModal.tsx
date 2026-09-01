@@ -73,6 +73,8 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
       return;
     }
 
+    const isOnline = interviewType === 'video' || interviewType === 'technical_deep_dive' || interviewType === 'external' || interviewType === 'case_study';
+
     setIsSubmitting(true);
     setErrorMessage(null);
 
@@ -85,8 +87,9 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
       interview_type: interviewType,
       scheduled_start: scheduledStart,
       scheduled_end: scheduledEnd,
-      meeting_link: meetingLink.trim() || undefined,
-      location: location.trim() || undefined,
+      meeting_link: isOnline ? (meetingLink.trim() || undefined) : undefined,
+      location: (!isOnline || location) ? (location.trim() || undefined) : undefined,
+      venue_address: (!isOnline || location) ? (location.trim() || undefined) : undefined,
       notes: notes.trim() || undefined,
     });
 
