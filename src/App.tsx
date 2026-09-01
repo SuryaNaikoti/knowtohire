@@ -253,8 +253,13 @@ export function App() {
       }
       else if (path === '/employer/candidates') pageComponent = <EmployerCandidatesPage />;
       else if (path === '/employer/candidates/compare') pageComponent = <EmployerCandidateComparePage />;
-      else if (path.startsWith('/employer/candidates/') && path.endsWith('/schedule')) {
-        pageComponent = <EmployerScheduleInterviewPage onNavigate={navigateTo} />;
+      else if (path.includes('/schedule') && (path.startsWith('/employer/candidates/') || path.startsWith('/employer/applications/'))) {
+        const candidateId = path
+          .replace('/employer/candidates/', '')
+          .replace('/employer/applications/', '')
+          .replace('/schedule', '')
+          .split('?')[0];
+        pageComponent = <EmployerScheduleInterviewPage candidateId={candidateId} onNavigate={navigateTo} />;
       }
       else if (path.startsWith('/employer/candidates/')) {
         const candidateId = path.replace('/employer/candidates/', '');

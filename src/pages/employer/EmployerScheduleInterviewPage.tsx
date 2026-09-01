@@ -22,16 +22,20 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-interface EmployerScheduleInterviewPageProps {
+export interface EmployerScheduleInterviewPageProps {
+  candidateId?: string;
   onNavigate?: (path: string) => void;
 }
 
-export const EmployerScheduleInterviewPage: React.FC<EmployerScheduleInterviewPageProps> = ({ onNavigate }) => {
-  const { id } = useParams<{ id: string }>();
+export const EmployerScheduleInterviewPage: React.FC<EmployerScheduleInterviewPageProps> = ({ candidateId: propCandidateId, onNavigate }) => {
+  const { id: routeId } = useParams<{ id: string }>();
+  const id = propCandidateId || routeId;
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const applicationIdParam = searchParams.get('applicationId');
+  // Extract applicationId from searchParams or URL window location
+  const rawUrlSearch = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const applicationIdParam = searchParams.get('applicationId') || rawUrlSearch?.get('applicationId');
 
   const [application, setApplication] = useState<JobApplication | null>(null);
   const [candidate, setCandidate] = useState<DiscoverableCandidate | null>(null);
@@ -53,7 +57,7 @@ export const EmployerScheduleInterviewPage: React.FC<EmployerScheduleInterviewPa
   const [venueAddress, setVenueAddress] = useState('');
   const [interviewerName, setInterviewerName] = useState('Lead Enterprise Hiring Manager');
   const [contactPhone, setContactPhone] = useState('+91 80 4912 8000');
-  const [instructions, setInstructions] = useState('Please review the SEBI BRSR and ESG assurance requirements before joining.');
+  const [instructions, setInstructions] = useState('Please review the technical and domain requirements before joining.');
 
   useEffect(() => {
     async function loadTarget() {
@@ -61,8 +65,11 @@ export const EmployerScheduleInterviewPage: React.FC<EmployerScheduleInterviewPa
         const appRes = await applicationService.getApplicationById(applicationIdParam);
         if (appRes.data) {
           setApplication(appRes.data);
+          return;
         }
-      } else if (id) {
+      }
+      
+      if (id) {
         // Try finding candidate applications or candidate profile
         const appsRes = await applicationService.getMyApplications();
         if (appsRes.data) {
@@ -141,9 +148,21 @@ export const EmployerScheduleInterviewPage: React.FC<EmployerScheduleInterviewPa
 
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate(id ? `/employer/candidates/${id}` : '/employer/candidates');
+      if (applicationIdParam) {
+        onNavigate(`/employer/applications/${applicationIdParam}`);
+      } else if (id) {
+        onNavigate(`/employer/candidates/${id}`);
+      } else {
+        onNavigate('/employer/pipeline');
+      }
     } else {
-      navigate(id ? `/employer/candidates/${id}` : '/employer/candidates');
+      if (applicationIdParam) {
+        navigate(`/employer/applications/${applicationIdParam}`);
+      } else if (id) {
+        navigate(`/employer/candidates/${id}`);
+      } else {
+        navigate('/employer/pipeline');
+      }
     }
   };
 
