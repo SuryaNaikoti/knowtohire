@@ -142,22 +142,18 @@ export const EmployerScheduleInterviewPage: React.FC<EmployerScheduleInterviewPa
   };
 
   const handleBack = () => {
+    let target = '/employer/pipeline';
+    if (applicationIdParam) {
+      target = `/employer/applications/${applicationIdParam}`;
+    } else if (id) {
+      target = `/employer/candidates/${id}`;
+    }
+
     if (onNavigate) {
-      if (applicationIdParam) {
-        onNavigate(`/employer/applications/${applicationIdParam}`);
-      } else if (id) {
-        onNavigate(`/employer/candidates/${id}`);
-      } else {
-        onNavigate('/employer/pipeline');
-      }
+      onNavigate(target);
     } else {
-      if (applicationIdParam) {
-        navigate(`/employer/applications/${applicationIdParam}`);
-      } else if (id) {
-        navigate(`/employer/candidates/${id}`);
-      } else {
-        navigate('/employer/pipeline');
-      }
+      window.history.pushState({}, '', target);
+      window.dispatchEvent(new PopStateEvent('popstate'));
     }
   };
 
