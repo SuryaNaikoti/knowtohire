@@ -495,12 +495,12 @@ export const careerInsightsService = {
       const resumeAnalysis = storedResume?.atsAnalysis;
 
       // Extract candidate data dynamically from single source of truth (merging Profile + Parsed Resume)
-      const resumeExtractedSkills = cleanSkillArray(resumeAnalysis?.extractedSkills || []);
+      const resumeExtractedSkills = cleanSkillArray(resumeAnalysis?.matchedKeywords || []);
       const profileSkills = cleanSkillArray(profile?.skills || []);
       const mergedSkills = Array.from(new Set([...profileSkills, ...resumeExtractedSkills]));
 
-      const currentTitle = profile?.headline?.trim() || resumeAnalysis?.identifiedDomain || 'Software Engineer & Professional';
-      const currentDomain = profile?.domainSpecialization?.trim() || resumeAnalysis?.identifiedDomain || 'Software Engineering';
+      const currentTitle = profile?.headline?.trim() || resumeAnalysis?.matchedDomain || 'Software Engineer & Professional';
+      const currentDomain = profile?.domainSpecialization?.trim() || resumeAnalysis?.matchedDomain || 'Software Engineering';
       const candidateSkills = mergedSkills;
       const experienceList = Array.isArray(profile?.experience) ? profile.experience : [];
       const candidateLocation = profile?.location?.trim() || 'Location Not Specified';
@@ -509,7 +509,7 @@ export const careerInsightsService = {
       // Estimate total years of candidate experience from history or resume score
       const yearsOfExperience = experienceList.length > 0
         ? Math.max(experienceList.length * 2, 3)
-        : (resumeAnalysis?.experienceYears || (candidateSkills.length >= 5 ? 3 : 1));
+        : (resumeAnalysis?.experienceYearsCalculated || (candidateSkills.length >= 5 ? 3 : 1));
 
       // Check for profile data sufficiency
       if (candidateSkills.length === 0 && experienceList.length === 0) {
