@@ -22,7 +22,17 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
 }) => {
   const [title, setTitle] = useState('Technical Assessment & Deep Dive');
   const [interviewType, setInterviewType] = useState<InterviewType>('technical_deep_dive');
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 5);
+    return nextWeek.toISOString().split('T')[0];
+  });
+  const [timeWindow, setTimeWindow] = useState('10:00 AM – 4:00 PM');
   const [startTime, setStartTime] = useState('11:00');
   const [endTime, setEndTime] = useState('12:00');
   const [meetingLink, setMeetingLink] = useState('https://meet.google.com/kth-interview');
@@ -43,19 +53,23 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
     if (isSubmitting) return;
 
     if (!date) {
-      setErrorMessage('Please select an interview date.');
+      setErrorMessage('Please select an interview start date.');
       return;
     }
-    if (!startTime || !endTime) {
+    if (interviewType !== 'walk_in' && (!startTime || !endTime)) {
       setErrorMessage('Please specify both start and end times.');
       return;
     }
 
-    const scheduledStart = new Date(`${date}T${startTime}:00`).toISOString();
-    const scheduledEnd = new Date(`${date}T${endTime}:00`).toISOString();
+    const scheduledStart = interviewType === 'walk_in'
+      ? new Date(`${date}T09:00:00`).toISOString()
+      : new Date(`${date}T${startTime}:00`).toISOString();
+    const scheduledEnd = interviewType === 'walk_in'
+      ? new Date(`${endDate || date}T18:00:00`).toISOString()
+      : new Date(`${date}T${endTime}:00`).toISOString();
 
-    if (new Date(scheduledEnd) <= new Date(scheduledStart)) {
-      setErrorMessage('Interview end time must be after start time.');
+    if (new Date(scheduledEnd) < new Date(scheduledStart)) {
+      setErrorMessage('End date and time must be after start date and time.');
       return;
     }
 
@@ -172,15 +186,16 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
           <div className="grid grid-cols-2 gap-3.5">
             <Input
               label="Time Window (e.g. 10:00 AM – 4:00 PM)"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              value={timeWindow}
+              onChange={(e) => setTimeWindow(e.target.value)}
               placeholder="10:00 AM – 4:00 PM"
             />
             <Input
               label="End Date (To)"
               type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              required
             />
           </div>
         )}
