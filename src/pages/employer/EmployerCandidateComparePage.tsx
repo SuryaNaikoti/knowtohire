@@ -4,7 +4,8 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { candidateDiscoveryService, DiscoverableCandidate } from '@/services/candidateDiscoveryService';
-import { Loader2, Users } from 'lucide-react';
+import { navigateTo } from '@/utils/navigation';
+import { Loader2, Users, ArrowRight } from 'lucide-react';
 
 export const EmployerCandidateComparePage: React.FC = () => {
   const [candidates, setCandidates] = useState<DiscoverableCandidate[]>([]);
@@ -76,18 +77,15 @@ export const EmployerCandidateComparePage: React.FC = () => {
 
   return (
     <EmployerShell title="Side-by-Side Candidate Comparison Workspace" currentPath="/employer/candidates">
-      <div className="space-y-6">
+      <div className="space-y-6 font-sans text-left">
         <div className="bg-white p-4 rounded-xl border border-kth-slate-200 shadow-xs flex justify-between items-center text-xs">
           <span className="text-kth-slate-500">
-            Comparing <strong className="text-kth-slate-900">{candidates.length} Candidates</strong> from Live Talent Pool
+            Comparing <strong className="text-kth-slate-900 font-semibold">{candidates.length} Candidates</strong> from Live Talent Pool
           </span>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              window.history.pushState({}, '', '/employer/candidates');
-              window.dispatchEvent(new PopStateEvent('popstate'));
-            }}
+            onClick={() => navigateTo('/employer/candidates')}
           >
             + Select Other Candidates
           </Button>
@@ -106,10 +104,7 @@ export const EmployerCandidateComparePage: React.FC = () => {
             <Button
               variant="primary"
               size="sm"
-              onClick={() => {
-                window.history.pushState({}, '', '/employer/candidates');
-                window.dispatchEvent(new PopStateEvent('popstate'));
-              }}
+              onClick={() => navigateTo('/employer/candidates')}
             >
               Browse Candidates
             </Button>
@@ -133,6 +128,7 @@ export const EmployerCandidateComparePage: React.FC = () => {
                   <div className="py-2">SALARY EXPECTATION</div>
                   <div className="py-2">NOTICE PERIOD</div>
                   <div className="py-2">TOP SKILLS</div>
+                  <div className="py-2">ACTION</div>
                 </div>
 
                 {/* Candidate Columns */}
@@ -141,13 +137,19 @@ export const EmployerCandidateComparePage: React.FC = () => {
                     <div className="h-16 flex flex-col justify-center relative">
                       <div className="flex justify-between items-start">
                         <div className="pr-4">
-                          <strong className="font-bold text-sm text-kth-slate-900 block">{cand.name}</strong>
+                          <strong
+                            onClick={() => navigateTo(`/employer/candidates/${cand.id}`)}
+                            className="font-bold text-sm text-kth-slate-900 block hover:text-kth-primary-600 transition-colors cursor-pointer hover:underline"
+                            title="View Full Profile"
+                          >
+                            {cand.name}
+                          </strong>
                           <span className="text-kth-slate-500 text-[11px] font-medium line-clamp-1">{cand.headline}</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => removeCandidateFromCompare(cand.id)}
-                          className="text-kth-slate-400 hover:text-kth-rose-600 transition-colors p-1 rounded hover:bg-kth-slate-100"
+                          className="text-kth-slate-400 hover:text-rose-600 transition-colors p-1 rounded hover:bg-kth-slate-100 cursor-pointer"
                           title="Remove from comparison"
                         >
                           ✕
@@ -176,6 +178,16 @@ export const EmployerCandidateComparePage: React.FC = () => {
                         </Badge>
                       ))}
                     </div>
+                    <div className="py-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => navigateTo(`/employer/candidates/${cand.id}`)}
+                        className="w-full justify-center text-xs"
+                      >
+                        Profile <ArrowRight className="w-3 h-3 ml-1" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -187,7 +199,12 @@ export const EmployerCandidateComparePage: React.FC = () => {
                 <Card key={cand.id} className="p-4 space-y-3">
                   <div className="flex justify-between items-start border-b pb-2">
                     <div>
-                      <h4 className="font-bold text-sm text-kth-slate-900">{cand.name}</h4>
+                      <h4
+                        onClick={() => navigateTo(`/employer/candidates/${cand.id}`)}
+                        className="font-bold text-sm text-kth-slate-900 hover:text-kth-primary-600 cursor-pointer hover:underline"
+                      >
+                        {cand.name}
+                      </h4>
                       <span className="text-xs text-kth-slate-500">{cand.headline}</span>
                     </div>
                     <Badge variant="emerald" className="font-mono">
@@ -211,6 +228,14 @@ export const EmployerCandidateComparePage: React.FC = () => {
                       Days
                     </div>
                   </div>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => navigateTo(`/employer/candidates/${cand.id}`)}
+                    className="w-full justify-center text-xs mt-2"
+                  >
+                    View Full Profile <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                  </Button>
                 </Card>
               ))}
             </div>

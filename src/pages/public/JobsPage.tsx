@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { jobService, taxonomyService, Job, EmploymentType, WorkMode } from '@/services';
 import { useAuth } from '@/context/AuthContext';
-import { Search, Briefcase, RefreshCw, XCircle, ShieldCheck, Banknote } from 'lucide-react';
+import { Search, Briefcase, RefreshCw, XCircle, ShieldCheck, Banknote, SlidersHorizontal, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 
 const DEFAULT_CAREER_CATEGORIES = [
   { value: 'all', label: 'All Categories' },
@@ -73,6 +73,21 @@ export const JobsPage: React.FC = () => {
   const [selectedWorkMode, setSelectedWorkMode] = useState(initial.workMode);
   const [sortBy, setSortBy] = useState(initial.sortBy);
   const [currentPage, setCurrentPage] = useState(initial.page);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+
+  const activeFiltersCount =
+    (selectedCategory !== 'all' ? 1 : 0) +
+    (selectedLocation !== 'all' ? 1 : 0) +
+    (selectedType !== 'all' ? 1 : 0) +
+    (sortBy !== 'latest' ? 1 : 0);
+
+  const handleResetFilters = () => {
+    setSelectedCategory('all');
+    setSelectedLocation('all');
+    setSelectedType('all');
+    setSortBy('latest');
+    setCurrentPage(1);
+  };
 
   // Data States
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -286,42 +301,99 @@ export const JobsPage: React.FC = () => {
               leftIcon={<Search className="w-4 h-4 text-kth-slate-400" />}
             />
 
-            <div className="grid grid-cols-2 gap-2">
-              <Select
-                value={selectedCategory}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value);
-                  setCurrentPage(1);
-                }}
-                options={categoriesOptions}
-              />
-              <Select
-                value={selectedLocation}
-                onChange={(e) => {
-                  setSelectedLocation(e.target.value);
-                  setCurrentPage(1);
-                }}
-                options={locationOptions}
-              />
+            <div className="flex items-center justify-between gap-2 pt-0.5">
+              <button
+                type="button"
+                onClick={() => setIsMobileFiltersOpen((prev) => !prev)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                  isMobileFiltersOpen || activeFiltersCount > 0
+                    ? 'bg-kth-primary-50 text-kth-primary-700 border-kth-primary-200'
+                    : 'bg-white text-kth-slate-700 border-kth-slate-200 hover:bg-kth-slate-50'
+                }`}
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Filters</span>
+                {activeFiltersCount > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-kth-primary-600 text-white text-[10px] flex items-center justify-center font-mono font-bold">
+                    {activeFiltersCount}
+                  </span>
+                )}
+                {isMobileFiltersOpen ? (
+                  <ChevronUp className="w-3.5 h-3.5 text-kth-slate-400" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5 text-kth-slate-400" />
+                )}
+              </button>
+
+              {activeFiltersCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-700 px-2 py-1 rounded hover:bg-rose-50 transition-colors"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reset ({activeFiltersCount})</span>
+                </button>
+              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <Select
-                value={selectedType}
-                onChange={(e) => {
-                  setSelectedType(e.target.value);
-                  setCurrentPage(1);
-                }}
-                options={EMPLOYMENT_TYPE_OPTIONS}
-              />
-              <Select
-                value={sortBy}
-                onChange={(e) => {
-                  setSortBy(e.target.value);
-                  setCurrentPage(1);
-                }}
-                options={SORT_OPTIONS}
-              />
+            {/* Expandable Mobile Filters */}
+            <div className={`space-y-2 pt-1 transition-all duration-200 ${isMobileFiltersOpen ? 'block' : 'hidden sm:grid sm:grid-cols-2 sm:gap-2 sm:space-y-0'}`}>
+              <div>
+                <label className="text-[10px] font-bold text-kth-slate-500 uppercase tracking-wider block mb-1">
+                  Career Category
+                </label>
+                <Select
+                  value={selectedCategory}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  options={categoriesOptions}
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-kth-slate-500 uppercase tracking-wider block mb-1">
+                  Location (India)
+                </label>
+                <Select
+                  value={selectedLocation}
+                  onChange={(e) => {
+                    setSelectedLocation(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  options={locationOptions}
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-kth-slate-500 uppercase tracking-wider block mb-1">
+                  Employment Type
+                </label>
+                <Select
+                  value={selectedType}
+                  onChange={(e) => {
+                    setSelectedType(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  options={EMPLOYMENT_TYPE_OPTIONS}
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-kth-slate-500 uppercase tracking-wider block mb-1">
+                  Sort Order
+                </label>
+                <Select
+                  value={sortBy}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  options={SORT_OPTIONS}
+                />
+              </div>
             </div>
           </div>
         </div>

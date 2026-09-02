@@ -6,16 +6,30 @@ import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { applicationService, jobService, JobApplication, Job } from '@/services';
-import { Search, RefreshCw, Archive } from 'lucide-react';
+import { getQueryParam, navigateTo } from '@/utils/navigation';
+import { Search, RefreshCw, Archive, Filter, X } from 'lucide-react';
 
 export const EmployerPipelinePage: React.FC = () => {
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [selectedJobId, setSelectedJobId] = useState<string>('all');
+  const [selectedJobId, setSelectedJobId] = useState<string>(() => getQueryParam('jobId') || 'all');
+  const [selectedStageFilter, setSelectedStageFilter] = useState<string>(() => getQueryParam('stage') || 'all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showArchives, setShowArchives] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Sync state if URL query params change via popstate
+  useEffect(() => {
+    const handleUrlSync = () => {
+      const jParam = getQueryParam('jobId');
+      const sParam = getQueryParam('stage');
+      if (jParam) setSelectedJobId(jParam);
+      if (sParam) setSelectedStageFilter(sParam);
+    };
+    window.addEventListener('popstate', handleUrlSync);
+    return () => window.removeEventListener('popstate', handleUrlSync);
+  }, []);
 
   const loadPipeline = useCallback(async () => {
     setIsLoading(true);
@@ -42,10 +56,35 @@ export const EmployerPipelinePage: React.FC = () => {
 
   useEffect(() => {
     loadPipeline();
+
+    const handleSync = () => {
+      loadPipeline();
+    };
+
+    window.addEventListener('kth_applications_changed', handleSync);
+    window.addEventListener('kth_jobs_changed', handleSync);
+    window.addEventListener('kth_interviews_changed', handleSync);
+
+    // Periodic time-to-time sync (every 30 seconds)
+    const interval = setInterval(loadPipeline, 30000);
+
+    const handleFocus = () => {
+      loadPipeline();
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('kth_applications_changed', handleSync);
+      window.removeEventListener('kth_jobs_changed', handleSync);
+      window.removeEventListener('kth_interviews_changed', handleSync);
+    };
   }, [loadPipeline]);
 
   const filteredApplications = applications.filter((app) => {
     const matchesJob = selectedJobId === 'all' || app.job_id === selectedJobId;
+    const matchesStage = selectedStageFilter === 'all' || app.stage === selectedStageFilter;
     const snapshot = (app.candidate_snapshot || {}) as Record<string, any>;
     const name = (app.candidate?.full_name || snapshot.full_name || '').toLowerCase();
     const headline = (snapshot.headline || '').toLowerCase();
@@ -53,16 +92,25 @@ export const EmployerPipelinePage: React.FC = () => {
     const term = searchTerm.toLowerCase();
 
     const matchesSearch = name.includes(term) || headline.includes(term) || jobTitle.includes(term);
-    return matchesJob && matchesSearch;
+    return matchesJob && matchesStage && matchesSearch;
   });
 
   const handleApplicationUpdated = (updatedApp: JobApplication) => {
     setApplications((prev) => prev.map((a) => (a.id === updatedApp.id ? updatedApp : a)));
   };
 
+  const hasActiveFilters = selectedJobId !== 'all' || selectedStageFilter !== 'all' || searchTerm.trim() !== '';
+
+  const clearAllFilters = () => {
+    setSelectedJobId('all');
+    setSelectedStageFilter('all');
+    setSearchTerm('');
+    navigateTo('/employer/pipeline', { replace: true, scrollToTop: false });
+  };
+
   return (
     <EmployerShell title="ATS Candidate Pipeline" currentPath="/employer/pipeline">
-      <div className="space-y-4 font-sans">
+      <div className="space-y-4 font-sans text-left">
         {/* Error Alert */}
         {errorMessage && (
           <Alert variant="error" title="Failed to Load Pipeline">
@@ -76,43 +124,76 @@ export const EmployerPipelinePage: React.FC = () => {
         )}
 
         {/* Toolbar & Requisition Filter */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-xl border border-kth-slate-200 shadow-xs">
-          <div className="flex-1 flex flex-col sm:flex-row gap-3 w-full">
-            <Input
-              placeholder="Search candidates or positions..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              leftIcon={<Search className="w-4 h-4" />}
-            />
-            <div className="w-full sm:w-64">
-              <Select
-                value={selectedJobId}
-                onChange={(e) => setSelectedJobId(e.target.value)}
-                options={[
-                  { value: 'all', label: 'All Active Requisitions' },
-                  ...jobs.map((j) => ({ value: j.id, label: j.title })),
-                ]}
+        <div className="bg-white p-4 rounded-xl border border-kth-slate-200 shadow-xs space-y-3">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+            <div className="flex-1 flex flex-col sm:flex-row gap-3 w-full">
+              <Input
+                placeholder="Search candidate name, skills, title..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                leftIcon={<Search className="w-4 h-4" />}
               />
+              <div className="w-full sm:w-60">
+                <Select
+                  value={selectedJobId}
+                  onChange={(e) => setSelectedJobId(e.target.value)}
+                  options={[
+                    { value: 'all', label: 'All Active Requisitions' },
+                    ...jobs.map((j) => ({ value: j.id, label: j.title })),
+                  ]}
+                />
+              </div>
+              <div className="w-full sm:w-52">
+                <Select
+                  value={selectedStageFilter}
+                  onChange={(e) => setSelectedStageFilter(e.target.value)}
+                  options={[
+                    { value: 'all', label: 'All ATS Stages' },
+                    { value: 'new', label: 'New Applicants' },
+                    { value: 'screening', label: 'Screening' },
+                    { value: 'shortlisted', label: 'Shortlisted' },
+                    { value: 'interview', label: 'Interview' },
+                    { value: 'offer', label: 'Offer Extended' },
+                    { value: 'hired', label: 'Hired' },
+                  ]}
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button
-              variant={showArchives ? "secondary" : "outline"}
-              size="sm"
-              onClick={() => setShowArchives(!showArchives)}
-              leftIcon={<Archive className="w-3.5 h-3.5" />}
-            >
-              {showArchives ? 'Hide Archived' : 'Show Archived'}
-            </Button>
+            <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllFilters}
+                  leftIcon={<X className="w-3.5 h-3.5" />}
+                  className="text-kth-slate-600 hover:text-kth-slate-900"
+                >
+                  Reset Filters
+                </Button>
+              )}
+              <Button
+                variant={showArchives ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setShowArchives(!showArchives)}
+                leftIcon={<Archive className="w-3.5 h-3.5" />}
+              >
+                {showArchives ? 'Hide Archived' : 'Show Archived'}
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* Pipeline Summary Bar */}
-        <div className="flex justify-between items-center text-xs">
+        <div className="flex justify-between items-center text-xs px-1">
           <span className="text-kth-slate-500">
-            Managing <strong className="text-kth-slate-900">{isLoading ? '...' : filteredApplications.length} active candidates</strong> in recruitment workflow
+            Managing <strong className="text-kth-slate-900 font-semibold">{isLoading ? '...' : filteredApplications.length} candidate applications</strong> in active recruitment workflow
           </span>
+          {selectedStageFilter !== 'all' && (
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-kth-primary-50 text-kth-primary-700 font-medium">
+              <Filter className="w-3 h-3" /> Filtered by: <span className="font-bold uppercase tracking-wider">{selectedStageFilter}</span>
+            </span>
+          )}
         </div>
 
         {/* Loading Skeletons */}

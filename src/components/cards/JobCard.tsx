@@ -70,7 +70,7 @@ export const JobCard: React.FC<JobCardProps> = ({
                     window.history.pushState({}, '', target);
                     window.dispatchEvent(new Event('popstate'));
                   }}
-                  className="text-xs font-bold text-kth-slate-900 hover:text-kth-primary-600 hover:underline truncate max-w-[140px] sm:max-w-[180px] text-left cursor-pointer"
+                  className="text-xs font-bold text-kth-slate-900 hover:text-kth-primary-600 hover:underline truncate max-w-[120px] sm:max-w-[180px] text-left cursor-pointer"
                 >
                   {company}
                 </button>
@@ -91,14 +91,14 @@ export const JobCard: React.FC<JobCardProps> = ({
             type="button"
             aria-label={isSaved ? "Remove from bookmarks" : "Save job"}
             onClick={(e) => { e.stopPropagation(); onSaveToggle?.(); }}
-            className={`p-1.5 rounded-lg transition-all shrink-0 min-h-[32px] min-w-[32px] flex items-center justify-center ${isSaved ? 'text-kth-primary-600 bg-kth-primary-50 scale-105' : 'text-kth-slate-400 hover:text-kth-slate-700 hover:bg-kth-slate-100'}`}
+            className={`p-2 rounded-lg transition-all shrink-0 min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer ${isSaved ? 'text-kth-primary-600 bg-kth-primary-50 scale-105' : 'text-kth-slate-400 hover:text-kth-slate-700 hover:bg-kth-slate-100'}`}
           >
             <Bookmark className="w-4 h-4 fill-current" />
           </button>
         </CardHeader>
 
         <CardContent className="p-0">
-          <h3 className="font-display text-sm sm:text-[15px] font-bold text-kth-slate-900 mb-2 leading-snug line-clamp-2 min-h-[2.4rem] flex items-center">
+          <h3 className="font-display text-sm sm:text-[15px] font-bold text-kth-slate-900 mb-2 leading-snug line-clamp-2 min-h-[2.2rem] flex items-center">
             {title}
           </h3>
 
@@ -117,7 +117,7 @@ export const JobCard: React.FC<JobCardProps> = ({
           {displayedSkills.length > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
               {displayedSkills.map((skill, idx) => (
-                <span key={idx} className="px-2 py-0.5 rounded-md bg-kth-slate-100/80 text-kth-slate-700 text-[10px] sm:text-[11px] font-medium border border-kth-slate-200/70 truncate max-w-[140px]">
+                <span key={idx} className="px-2 py-0.5 rounded-md bg-kth-slate-100/80 text-kth-slate-700 text-[10px] sm:text-[11px] font-medium border border-kth-slate-200/70 truncate max-w-[120px] sm:max-w-[140px]">
                   {skill}
                 </span>
               ))}
@@ -130,7 +130,7 @@ export const JobCard: React.FC<JobCardProps> = ({
         <span className="text-[11px] sm:text-xs text-kth-slate-400 font-medium truncate">
           {postedDate || 'Active Opening'}
         </span>
-        <Button variant="primary" size="sm" onClick={onApply} className="shrink-0 font-bold text-xs h-8 px-3">
+        <Button variant="primary" size="sm" onClick={onApply} className="shrink-0 font-bold text-xs h-8 px-3.5 shadow-2xs">
           View Job <ArrowRight className="w-3.5 h-3.5 ml-1" />
         </Button>
       </CardFooter>

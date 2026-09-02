@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { savedCandidateService, SavedCandidate } from '@/services';
+import { navigateTo } from '@/utils/navigation';
 import { Bookmark, ArrowRight, MapPin, RefreshCw, Trash2 } from 'lucide-react';
 
 export const EmployerSavedCandidatesPage: React.FC = () => {
@@ -31,6 +32,22 @@ export const EmployerSavedCandidatesPage: React.FC = () => {
 
   useEffect(() => {
     loadSavedCandidates();
+
+    const handleSync = () => {
+      loadSavedCandidates();
+    };
+
+    window.addEventListener('kth_saved_candidates_changed', handleSync);
+    window.addEventListener('kth_applications_changed', handleSync);
+    window.addEventListener('focus', handleSync);
+    const interval = setInterval(loadSavedCandidates, 30000);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleSync);
+      window.removeEventListener('kth_saved_candidates_changed', handleSync);
+      window.removeEventListener('kth_applications_changed', handleSync);
+    };
   }, [loadSavedCandidates]);
 
   const handleUnsave = async (candidateId: string) => {
@@ -42,8 +59,7 @@ export const EmployerSavedCandidatesPage: React.FC = () => {
   };
 
   const handleNavigate = (path: string) => {
-    window.history.pushState({}, '', path);
-    window.dispatchEvent(new Event('popstate'));
+    navigateTo(path);
   };
 
   return (

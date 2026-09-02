@@ -62,29 +62,29 @@ export const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, o
   };
 
   return (
-    <Card variant="interactive" className="p-5 flex flex-col justify-between h-full font-sans">
+    <Card variant="interactive" className="p-4 sm:p-5 flex flex-col justify-between h-full font-sans">
       <div>
-        <div className="flex justify-between items-start mb-3">
+        <div className="flex justify-between items-start mb-2.5 sm:mb-3">
           <Badge variant={stageMeta.variant} hasPulse={application.stage !== 'withdrawn' && application.stage !== 'rejected'}>
             {stageMeta.label}
           </Badge>
-          <span className="text-[11px] font-medium text-kth-slate-400">
+          <span className="text-[10px] sm:text-[11px] font-medium text-kth-slate-400">
             {formattedDate}
           </span>
         </div>
 
-        <h3 className="font-display font-bold text-base text-kth-slate-900 mb-1 leading-snug">
+        <h3 className="font-display font-bold text-sm sm:text-base text-kth-slate-900 mb-1 leading-snug">
           {job?.title || 'Job Opening'}
         </h3>
 
-        <div className="flex items-center gap-3 text-xs text-kth-slate-500 mb-3">
-          <span className="font-semibold text-kth-slate-700 flex items-center gap-1">
-            <Building2 className="w-3.5 h-3.5 text-kth-slate-400" />
-            {job?.company?.name || 'Verified Enterprise'}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-kth-slate-500 mb-2.5 sm:mb-3">
+          <span className="font-semibold text-kth-slate-700 flex items-center gap-1 truncate max-w-[160px]">
+            <Building2 className="w-3.5 h-3.5 text-kth-slate-400 shrink-0" />
+            <span className="truncate">{job?.company?.name || 'Verified Enterprise'}</span>
           </span>
-          <span className="flex items-center gap-1">
-            <MapPin className="w-3 h-3 text-kth-slate-400" />
-            {job?.location || 'India'}
+          <span className="flex items-center gap-1 truncate max-w-[120px]">
+            <MapPin className="w-3 h-3 text-kth-slate-400 shrink-0" />
+            <span className="truncate">{job?.location || 'India'}</span>
           </span>
         </div>
 

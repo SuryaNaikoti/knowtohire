@@ -59,7 +59,7 @@ export const Tabs: React.FC<TabsProps> = ({
 
   if (variant === 'discovery') {
     return (
-      <div className={cn("inline-flex bg-white/10 p-1.5 rounded-full border border-white/20 backdrop-blur-md", className)}>
+      <div className={cn("inline-flex max-w-full bg-white/10 p-1 sm:p-1.5 rounded-full border border-white/20 backdrop-blur-md overflow-x-auto scrollbar-none touch-scroll", className)}>
         {items.map((tab) => {
           const isActive = tab.id === activeId;
           return (
@@ -68,14 +68,14 @@ export const Tabs: React.FC<TabsProps> = ({
               key={tab.id}
               onClick={() => onChange(tab.id)}
               className={cn(
-                "px-6 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all duration-200 select-none",
+                "px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 select-none shrink-0",
                 isActive
-                  ? "bg-white text-kth-slate-900 shadow-md scale-[1.02]"
+                  ? "bg-white text-kth-slate-900 shadow-md scale-[1.01]"
                   : "text-white/80 hover:text-white hover:bg-white/10"
               )}
             >
               {tab.icon}
-              {tab.label}
+              <span className="whitespace-nowrap">{tab.label}</span>
             </button>
           );
         })}

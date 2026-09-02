@@ -1,5 +1,6 @@
 import React from 'react';
 import { MapPin, Sparkles } from 'lucide-react';
+import { navigateTo } from '@/utils/navigation';
 
 export interface QuickAlertsNavBarProps {
   className?: string;
@@ -50,16 +51,15 @@ export const QuickAlertsNavBar: React.FC<QuickAlertsNavBarProps> = ({
     if (onNavigate) {
       onNavigate(path);
     } else {
-      window.history.pushState({}, '', path);
-      window.dispatchEvent(new Event('popstate'));
+      navigateTo(path);
     }
   };
 
   return (
-    <div className={`w-full bg-white/80 backdrop-blur-md border-b border-kth-slate-200/60 py-2 px-4 sm:px-6 md:px-8 select-none ${className}`}>
+    <div className={`w-full bg-white/80 backdrop-blur-md border-b border-kth-slate-200/60 py-2 px-3 sm:px-6 md:px-8 select-none ${className}`}>
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         {/* Horizontal Category Navigation Links */}
-        <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto pb-0.5 scrollbar-none flex-1 min-w-0">
+        <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto pb-0.5 scrollbar-none touch-scroll flex-1 min-w-0">
           {CATEGORY_ITEMS.map((item) => {
             return (
               <button

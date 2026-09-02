@@ -6,6 +6,7 @@ import { Select } from '@/components/ui/Select';
 import { Alert } from '@/components/ui/Alert';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { interviewService, Interview } from '@/services';
+import { navigateTo } from '@/utils/navigation';
 import { Calendar, RefreshCw } from 'lucide-react';
 
 export const EmployerInterviewsPage: React.FC = () => {
@@ -39,7 +40,12 @@ export const EmployerInterviewsPage: React.FC = () => {
     };
 
     window.addEventListener('kth_interviews_changed', handleSync);
+    window.addEventListener('focus', handleSync);
+    const interval = setInterval(loadInterviews, 30000);
+
     return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleSync);
       window.removeEventListener('kth_interviews_changed', handleSync);
     };
   }, [loadInterviews]);
@@ -135,8 +141,7 @@ export const EmployerInterviewsPage: React.FC = () => {
             description="You have no interview sessions matching this filter. Schedule candidate interviews directly from the ATS candidate pipeline or applicant table."
             actionText="Go to Candidate Pipeline"
             onAction={() => {
-              window.history.pushState({}, '', '/employer/pipeline');
-              window.dispatchEvent(new Event('popstate'));
+              navigateTo('/employer/pipeline');
             }}
             icon={<Calendar className="w-8 h-8 text-kth-slate-400" />}
           />

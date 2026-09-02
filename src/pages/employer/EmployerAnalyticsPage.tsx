@@ -78,10 +78,15 @@ export const EmployerAnalyticsPage: React.FC = () => {
       window.addEventListener('kth_applications_changed', handleDataChanged);
       window.addEventListener('kth_interviews_changed', handleDataChanged);
       window.addEventListener('kth_jobs_changed', handleDataChanged);
+      window.addEventListener('focus', handleDataChanged);
     }
 
+    const interval = setInterval(loadAnalytics, 30000);
+
     return () => {
+      clearInterval(interval);
       if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', handleDataChanged);
         window.removeEventListener('kth_applications_changed', handleDataChanged);
         window.removeEventListener('kth_interviews_changed', handleDataChanged);
         window.removeEventListener('kth_jobs_changed', handleDataChanged);

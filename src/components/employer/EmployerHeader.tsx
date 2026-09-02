@@ -3,6 +3,7 @@ import { Search, Bell, Menu } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { companyProfileService, notificationService } from '@/services';
 import { UserMenuDropdown } from '@/components/navigation/UserMenuDropdown';
+import { navigateTo } from '@/utils/navigation';
 
 export interface EmployerHeaderProps {
   title?: string;
@@ -94,22 +95,22 @@ export const EmployerHeader: React.FC<EmployerHeaderProps> = ({
       .toUpperCase() || 'EA';
 
   return (
-    <header className="h-16 bg-white border-b border-kth-slate-200 px-4 md:px-8 flex items-center justify-between sticky top-0 z-40">
-      <div className="flex items-center gap-3">
-        <button onClick={onMobileMenuToggle} className="xl:hidden p-2 rounded-md text-kth-slate-600 hover:bg-kth-slate-100">
+    <header className="h-16 bg-white border-b border-kth-slate-200 px-3 sm:px-6 md:px-8 flex items-center justify-between sticky top-0 z-40">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        <button onClick={onMobileMenuToggle} className="xl:hidden p-2 rounded-md text-kth-slate-600 hover:bg-kth-slate-100 shrink-0">
           <Menu className="w-5 h-5" />
         </button>
-        <div>
-          <h1 className="font-display text-lg md:text-xl font-bold text-kth-slate-900 leading-tight">
+        <div className="min-w-0">
+          <h1 className="font-display text-sm sm:text-lg md:text-xl font-bold text-kth-slate-900 leading-tight truncate max-w-[150px] sm:max-w-xs md:max-w-none">
             {title}
           </h1>
-          <span className="text-[11px] text-kth-slate-500 font-medium hidden sm:inline-block">
+          <span className="text-[11px] text-kth-slate-500 font-medium hidden sm:inline-block truncate max-w-[200px]">
             {companyName}
           </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4 shrink-0">
         {/* Global Cmd + K Search Trigger */}
         <button
           onClick={onSearchClick}
@@ -121,12 +122,18 @@ export const EmployerHeader: React.FC<EmployerHeaderProps> = ({
         </button>
 
         {/* Notifications */}
-        <a href="/employer/notifications" className="relative p-2 rounded-md text-kth-slate-600 hover:bg-kth-slate-100 no-underline" title={`${unreadNotifCount} unread notifications`}>
+        <button
+          type="button"
+          onClick={() => navigateTo('/employer/notifications')}
+          className="relative p-2 rounded-md text-kth-slate-600 hover:bg-kth-slate-100 transition-colors cursor-pointer"
+          title={`${unreadNotifCount} unread notifications`}
+          aria-label="Recruiter notifications"
+        >
           <Bell className="w-5 h-5" />
           {unreadNotifCount > 0 && (
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-kth-primary-600 ring-2 ring-white" />
           )}
-        </a>
+        </button>
 
         {/* Interactive Employer Account Dropdown */}
         <UserMenuDropdown

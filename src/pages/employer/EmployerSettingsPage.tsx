@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { useAuth } from '@/context/AuthContext';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { navigateTo } from '@/utils/navigation';
 import { User, Bell, Lock, LogOut, Check, AlertCircle, AlertTriangle } from 'lucide-react';
 
 export interface EmployerSettingsPageProps {
@@ -36,8 +37,7 @@ export const EmployerSettingsPage: React.FC<EmployerSettingsPageProps> = ({ onNa
     if (onNavigate) {
       onNavigate(path);
     } else {
-      window.history.pushState({}, '', path);
-      window.dispatchEvent(new Event('popstate'));
+      navigateTo(path);
     }
   };
 

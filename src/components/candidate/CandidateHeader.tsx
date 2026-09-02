@@ -53,17 +53,17 @@ export const CandidateHeader: React.FC<CandidateHeaderProps> = ({
   const avatarText = getInitials(fullName);
 
   return (
-    <header className="h-16 bg-white border-b border-kth-slate-200 px-4 md:px-8 flex items-center justify-between sticky top-0 z-40">
-      <div className="flex items-center gap-3">
-        <button onClick={onMobileMenuToggle} className="xl:hidden p-2 rounded-md text-kth-slate-600 hover:bg-kth-slate-100">
+    <header className="h-16 bg-white border-b border-kth-slate-200 px-3 sm:px-6 md:px-8 flex items-center justify-between sticky top-0 z-40">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        <button onClick={onMobileMenuToggle} className="xl:hidden p-2 rounded-md text-kth-slate-600 hover:bg-kth-slate-100 shrink-0">
           <Menu className="w-5 h-5" />
         </button>
-        <h1 className="font-display text-lg md:text-xl font-bold text-kth-slate-900 leading-tight">
+        <h1 className="font-display text-sm sm:text-lg md:text-xl font-bold text-kth-slate-900 leading-tight truncate max-w-[150px] sm:max-w-xs md:max-w-none">
           {title}
         </h1>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4 shrink-0">
         {/* Search Palette Trigger */}
         <button
           onClick={onSearchClick}
@@ -75,16 +75,21 @@ export const CandidateHeader: React.FC<CandidateHeaderProps> = ({
         </button>
 
         {/* Notifications Icon with Dynamic Unread Indicator */}
-        <a
-          href="/candidate/notifications"
-          className="relative p-2 rounded-md text-kth-slate-600 hover:bg-kth-slate-100 no-underline"
+        <button
+          type="button"
+          onClick={() => {
+            window.history.pushState({}, '', '/candidate/notifications');
+            window.dispatchEvent(new Event('popstate'));
+          }}
+          className="relative p-2 rounded-md text-kth-slate-600 hover:bg-kth-slate-100 transition-colors cursor-pointer"
           title={`${unreadNotifCount} unread notifications`}
+          aria-label="Candidate notifications"
         >
           <Bell className="w-5 h-5" />
           {unreadNotifCount > 0 && (
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-kth-primary-600 ring-2 ring-white" />
           )}
-        </a>
+        </button>
 
         {/* Interactive Candidate Account Dropdown */}
         <UserMenuDropdown

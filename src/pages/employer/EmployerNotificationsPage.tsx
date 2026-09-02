@@ -3,6 +3,7 @@ import { EmployerShell } from '@/components/employer/EmployerShell';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { notificationService, AppNotification } from '@/services/notificationService';
+import { navigateTo } from '@/utils/navigation';
 import { CheckCheck, Bell, Briefcase, Calendar, UserCheck, Loader2 } from 'lucide-react';
 
 export interface EmployerNotificationsPageProps {
@@ -33,8 +34,12 @@ export const EmployerNotificationsPage: React.FC<EmployerNotificationsPageProps>
     window.addEventListener('kth_notifications_changed', handleRefresh);
     window.addEventListener('kth_applications_changed', handleRefresh);
     window.addEventListener('kth_interviews_changed', handleRefresh);
+    window.addEventListener('focus', handleRefresh);
+    const interval = setInterval(fetchNotifications, 30000);
 
     return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleRefresh);
       window.removeEventListener('kth_notifications_changed', handleRefresh);
       window.removeEventListener('kth_applications_changed', handleRefresh);
       window.removeEventListener('kth_interviews_changed', handleRefresh);
@@ -72,8 +77,7 @@ export const EmployerNotificationsPage: React.FC<EmployerNotificationsPageProps>
     if (onNavigate) {
       onNavigate(targetRoute);
     } else {
-      window.history.pushState({}, '', targetRoute);
-      window.dispatchEvent(new Event('popstate'));
+      navigateTo(targetRoute);
     }
   };
 

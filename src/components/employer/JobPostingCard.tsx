@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Job, JobStatus } from '@/services';
 import { formatINR } from '@/design-system/tokens';
+import { navigateTo } from '@/utils/navigation';
 import { MapPin, ArrowRight, Play, Trash2 } from 'lucide-react';
 
 export interface JobPostingCardProps {
@@ -54,7 +55,7 @@ export const JobPostingCard: React.FC<JobPostingCardProps> = ({
   });
 
   return (
-    <Card variant="interactive" className="p-5 flex flex-col justify-between h-full font-sans">
+    <Card variant="interactive" className="p-5 flex flex-col justify-between h-full font-sans shadow-xs">
       <div>
         <div className="flex justify-between items-start mb-3">
           <Badge variant={statusMeta.variant} hasPulse={job.status === 'published'}>
@@ -65,7 +66,11 @@ export const JobPostingCard: React.FC<JobPostingCardProps> = ({
           </span>
         </div>
 
-        <h3 className="font-display font-bold text-base text-kth-slate-900 mb-1 leading-snug">
+        <h3
+          onClick={() => navigateTo(`/employer/jobs/${job.id}`)}
+          className="font-display font-bold text-base text-kth-slate-900 mb-1 leading-snug hover:text-kth-primary-600 transition-colors cursor-pointer"
+          title="View Requisition Details"
+        >
           {job.title}
         </h3>
         <div className="flex items-center gap-3 text-xs text-kth-slate-500 mb-3">
@@ -117,7 +122,7 @@ export const JobPostingCard: React.FC<JobPostingCardProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={onEdit || (() => window.location.href = `/employer/jobs/${job.id}/edit`)}
+                  onClick={onEdit || (() => navigateTo(`/employer/jobs/${job.id}/edit`))}
                 >
                   Edit
                 </Button>
@@ -151,7 +156,7 @@ export const JobPostingCard: React.FC<JobPostingCardProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={onEdit || (() => window.location.href = `/employer/jobs/${job.id}/edit`)}
+                  onClick={onEdit || (() => navigateTo(`/employer/jobs/${job.id}/edit`))}
                 >
                   Edit
                 </Button>
@@ -177,7 +182,7 @@ export const JobPostingCard: React.FC<JobPostingCardProps> = ({
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={onViewApplicants || (() => window.location.href = `/employer/jobs/${job.id}/applicants`)}
+                onClick={onViewApplicants || (() => navigateTo(`/employer/jobs/${job.id}/applicants`))}
               >
                 Applicants <ArrowRight className="w-3.5 h-3.5" />
               </Button>
@@ -190,7 +195,7 @@ export const JobPostingCard: React.FC<JobPostingCardProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={onEdit || (() => window.location.href = `/employer/jobs/${job.id}/edit`)}
+                  onClick={onEdit || (() => navigateTo(`/employer/jobs/${job.id}/edit`))}
                 >
                   Edit
                 </Button>
@@ -221,7 +226,7 @@ export const JobPostingCard: React.FC<JobPostingCardProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onViewApplicants || (() => window.location.href = `/employer/jobs/${job.id}/applicants`)}
+                onClick={onViewApplicants || (() => navigateTo(`/employer/jobs/${job.id}/applicants`))}
               >
                 View Applicants
               </Button>

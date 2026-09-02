@@ -13,6 +13,7 @@ import {
   DiscoverableCandidate,
   InterviewType,
 } from '@/services';
+import { navigateTo } from '@/utils/navigation';
 import {
   ArrowLeft,
   Calendar,
@@ -152,8 +153,7 @@ export const EmployerScheduleInterviewPage: React.FC<EmployerScheduleInterviewPa
     if (onNavigate) {
       onNavigate(target);
     } else {
-      window.history.pushState({}, '', target);
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      navigateTo(target);
     }
   };
 

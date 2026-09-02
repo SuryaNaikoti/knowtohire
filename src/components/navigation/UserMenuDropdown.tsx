@@ -118,7 +118,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
       {isOpen && (
         <div
           role="menu"
-          className="absolute right-0 top-full mt-2 w-60 bg-white rounded-xl border border-kth-slate-200 shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 focus:outline-none"
+          className="absolute right-0 top-full mt-2 w-60 max-w-[calc(100vw-1.5rem)] bg-white rounded-xl border border-kth-slate-200 shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 focus:outline-none"
         >
           {/* User Header Summary */}
           <div className="px-3.5 py-2.5 border-b border-kth-slate-100">

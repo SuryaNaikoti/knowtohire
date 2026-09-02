@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { jobService, Job, JobStatus } from '@/services';
 import { formatINR } from '@/design-system/tokens';
+import { navigateTo } from '@/utils/navigation';
 import { MapPin, Edit3, PauseCircle, Play, ArrowLeft, Briefcase, CheckCircle2 } from 'lucide-react';
 
 export interface EmployerJobDetailsPageProps {
@@ -45,6 +46,15 @@ export const EmployerJobDetailsPage: React.FC<EmployerJobDetailsPageProps> = ({ 
 
   useEffect(() => {
     loadJob();
+
+    const handleJobsChanged = () => {
+      loadJob();
+    };
+
+    window.addEventListener('kth_jobs_changed', handleJobsChanged);
+    return () => {
+      window.removeEventListener('kth_jobs_changed', handleJobsChanged);
+    };
   }, [loadJob]);
 
   // Lifecycle Action Handlers
@@ -109,8 +119,7 @@ export const EmployerJobDetailsPage: React.FC<EmployerJobDetailsPageProps> = ({ 
   };
 
   const handleNavigate = (path: string) => {
-    window.history.pushState({}, '', path);
-    window.dispatchEvent(new Event('popstate'));
+    navigateTo(path);
   };
 
   const getStatusBadge = (status: JobStatus) => {

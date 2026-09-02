@@ -46,7 +46,7 @@ export const CandidatePipeline: React.FC<CandidatePipelineProps> = ({
     <>
       {/* Mobile Stage Selector Tabs (< sm) */}
       <div className="sm:hidden space-y-3">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none touch-scroll">
           {stagesToRender.map(({ stage, label }) => {
             const count = applications.filter((a) => a.stage === stage).length;
             const isActive = mobileActiveStage === stage;
@@ -100,7 +100,7 @@ export const CandidatePipeline: React.FC<CandidatePipelineProps> = ({
       </div>
 
       {/* Desktop & Tablet Multi-Column Kanban (>= sm) */}
-      <div className="hidden sm:flex gap-4 overflow-x-auto pb-4 pt-1 font-sans">
+      <div className="hidden sm:flex gap-4 overflow-x-auto pb-4 pt-1 font-sans scrollbar-none touch-scroll">
         {stagesToRender.map(({ stage, label }) => {
           const stageApps = applications.filter((a) => a.stage === stage);
 

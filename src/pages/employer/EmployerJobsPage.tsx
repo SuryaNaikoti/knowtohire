@@ -7,6 +7,7 @@ import { Select } from '@/components/ui/Select';
 import { Alert } from '@/components/ui/Alert';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { jobService, Job, JobStatus } from '@/services';
+import { navigateTo } from '@/utils/navigation';
 import { Plus, Search, RefreshCw, Briefcase } from 'lucide-react';
 
 export const EmployerJobsPage: React.FC = () => {
@@ -44,7 +45,12 @@ export const EmployerJobsPage: React.FC = () => {
     };
 
     window.addEventListener('kth_jobs_changed', handleJobsChanged);
+    window.addEventListener('focus', handleJobsChanged);
+    const interval = setInterval(loadJobs, 30000);
+
     return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleJobsChanged);
       window.removeEventListener('kth_jobs_changed', handleJobsChanged);
     };
   }, [loadJobs]);
@@ -114,8 +120,7 @@ export const EmployerJobsPage: React.FC = () => {
   };
 
   const handleNavigate = (path: string) => {
-    window.history.pushState({}, '', path);
-    window.dispatchEvent(new Event('popstate'));
+    navigateTo(path);
   };
 
   return (

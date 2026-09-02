@@ -218,12 +218,12 @@ export const CandidateJobsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-kth-slate-100 text-xs text-kth-slate-500">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2.5 border-t border-kth-slate-100 text-xs text-kth-slate-500">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => setIsMatchOnly(!isMatchOnly)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer w-full sm:w-auto ${
                   isMatchOnly
                     ? 'bg-kth-primary-600 text-white shadow-xs'
                     : 'bg-kth-primary-50 text-kth-primary-700 hover:bg-kth-primary-100 border border-kth-primary-200'
@@ -233,31 +233,30 @@ export const CandidateJobsPage: React.FC = () => {
                 {isMatchOnly ? 'Matched for My Profile (Active)' : 'Match My Profile'}
               </button>
 
-              <span className="text-kth-slate-300">|</span>
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+                <select
+                  value={workMode}
+                  onChange={(e) => setWorkMode(e.target.value)}
+                  className="bg-kth-slate-50 border border-kth-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-kth-slate-700 focus:outline-none focus:ring-1 focus:ring-kth-primary-500 font-medium w-full sm:w-auto"
+                >
+                  <option value="all">All Modes</option>
+                  <option value="on_site">On-site</option>
+                  <option value="hybrid">Hybrid</option>
+                  <option value="remote">Remote</option>
+                </select>
 
-              <span className="font-medium text-kth-slate-700">Filter By:</span>
-              <select
-                value={workMode}
-                onChange={(e) => setWorkMode(e.target.value)}
-                className="bg-kth-slate-50 border border-kth-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-kth-slate-700 focus:outline-none focus:ring-1 focus:ring-kth-primary-500 font-medium"
-              >
-                <option value="all">All Work Modes</option>
-                <option value="on_site">On-site</option>
-                <option value="hybrid">Hybrid</option>
-                <option value="remote">Remote</option>
-              </select>
-
-              <select
-                value={employmentType}
-                onChange={(e) => setEmploymentType(e.target.value)}
-                className="bg-kth-slate-50 border border-kth-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-kth-slate-700 focus:outline-none focus:ring-1 focus:ring-kth-primary-500 font-medium"
-              >
-                <option value="all">All Employment Types</option>
-                <option value="full_time">Full-Time</option>
-                <option value="part_time">Part-Time</option>
-                <option value="contract">Contract</option>
-                <option value="internship">Internship</option>
-              </select>
+                <select
+                  value={employmentType}
+                  onChange={(e) => setEmploymentType(e.target.value)}
+                  className="bg-kth-slate-50 border border-kth-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-kth-slate-700 focus:outline-none focus:ring-1 focus:ring-kth-primary-500 font-medium w-full sm:w-auto"
+                >
+                  <option value="all">All Types</option>
+                  <option value="full_time">Full-Time</option>
+                  <option value="part_time">Part-Time</option>
+                  <option value="contract">Contract</option>
+                  <option value="internship">Internship</option>
+                </select>
+              </div>
 
               {(searchTerm || selectedLoc !== 'all' || workMode !== 'all' || employmentType !== 'all' || sortBy !== 'latest' || isMatchOnly) && (
                 <button
@@ -270,7 +269,7 @@ export const CandidateJobsPage: React.FC = () => {
                     setSortBy('latest');
                     setIsMatchOnly(false);
                   }}
-                  className="text-xs text-kth-primary-600 hover:text-kth-primary-800 font-semibold underline ml-1 cursor-pointer"
+                  className="text-xs text-kth-primary-600 hover:text-kth-primary-800 font-semibold underline self-start sm:self-auto cursor-pointer"
                 >
                   Reset Filters
                 </button>

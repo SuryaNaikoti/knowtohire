@@ -52,7 +52,7 @@ export const HeroSection: React.FC = () => {
         </p>
 
         {/* Dual Discovery Tabs Header */}
-        <div className="mb-4 inline-block max-w-full overflow-x-auto">
+        <div className="mb-4 inline-block max-w-full overflow-x-auto scrollbar-none touch-scroll">
           <Tabs
             items={discoveryTabs}
             activeId={activeTab}

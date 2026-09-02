@@ -139,11 +139,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
             </p>
           </div>
 
-          <div className="flex gap-2">
-            <Button variant="secondary" size="sm" onClick={() => handleNavigate('/admin/employers')}>
+          <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
+            <Button variant="secondary" size="sm" className="w-full sm:w-auto justify-center text-xs" onClick={() => handleNavigate('/admin/employers')}>
               Verify Employers
             </Button>
-            <Button variant="primary" size="sm" onClick={() => handleNavigate('/admin/resources')}>
+            <Button variant="primary" size="sm" className="w-full sm:w-auto justify-center text-xs" onClick={() => handleNavigate('/admin/resources')}>
               Manage Hub CMS
             </Button>
           </div>
@@ -156,7 +156,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
             <p className="text-xs text-kth-slate-500">Querying platform database metrics...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             {metricCards.map((m, idx) => {
               const Icon = m.icon;
               return (
@@ -164,19 +164,19 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
                   key={idx}
                   variant="interactive"
                   onClick={() => handleNavigate(m.link)}
-                  className="p-5 flex flex-col justify-between hover:shadow-xs transition-all cursor-pointer"
+                  className="p-3.5 sm:p-5 flex flex-col justify-between hover:shadow-xs transition-all cursor-pointer"
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <div className={`w-9 h-9 rounded-lg ${m.bg} flex items-center justify-center ${m.color}`}>
-                      <Icon className="w-5 h-5" />
+                  <div className="flex justify-between items-start mb-2 sm:mb-3">
+                    <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg ${m.bg} flex items-center justify-center ${m.color}`}>
+                      <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                     <ArrowUpRight className="w-4 h-4 text-kth-slate-300" />
                   </div>
                   <div>
-                    <div className="font-mono text-2xl font-extrabold text-kth-slate-900 mb-0.5">
+                    <div className="font-mono text-xl sm:text-2xl font-extrabold text-kth-slate-900 mb-0.5">
                       {m.value.toLocaleString()}
                     </div>
-                    <span className="text-[11px] font-semibold text-kth-slate-500 leading-tight block">
+                    <span className="text-[10px] sm:text-[11px] font-semibold text-kth-slate-500 leading-tight block truncate">
                       {m.label}
                     </span>
                   </div>

@@ -40,7 +40,10 @@ export const CandidatePipelineCard: React.FC<CandidatePipelineCardProps> = ({
       onClick={() => onQuickView(application)}
     >
       <div className="flex justify-between items-start mb-1.5">
-        <h4 className="font-display font-bold text-xs text-kth-slate-900 group-hover:text-kth-primary-600 transition-colors line-clamp-1">
+        <h4
+          className="font-display font-bold text-xs text-kth-slate-900 group-hover:text-kth-primary-600 transition-colors line-clamp-1 hover:underline cursor-pointer"
+          title="Open Candidate Quick View"
+        >
           {candidateName}
         </h4>
         {application.employer_rating && application.employer_rating > 0 && (

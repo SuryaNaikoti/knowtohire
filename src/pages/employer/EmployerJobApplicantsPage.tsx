@@ -9,6 +9,7 @@ import { Alert } from '@/components/ui/Alert';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { CandidateQuickView } from '@/components/employer/CandidateQuickView';
 import { applicationService, jobService, JobApplication, ApplicationStage, Job } from '@/services';
+import { navigateTo } from '@/utils/navigation';
 import { Search, ArrowLeft, RefreshCw, Users, Star } from 'lucide-react';
 
 export interface EmployerJobApplicantsPageProps {
@@ -57,6 +58,20 @@ export const EmployerJobApplicantsPage: React.FC<EmployerJobApplicantsPageProps>
 
   useEffect(() => {
     loadApplicants();
+
+    const handleSync = () => {
+      loadApplicants();
+    };
+
+    window.addEventListener('kth_applications_changed', handleSync);
+    window.addEventListener('focus', handleSync);
+    const interval = setInterval(loadApplicants, 30000);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleSync);
+      window.removeEventListener('kth_applications_changed', handleSync);
+    };
   }, [loadApplicants]);
 
   const filteredApplications = applications.filter((app) => {
@@ -68,8 +83,7 @@ export const EmployerJobApplicantsPage: React.FC<EmployerJobApplicantsPageProps>
   });
 
   const handleNavigate = (path: string) => {
-    window.history.pushState({}, '', path);
-    window.dispatchEvent(new Event('popstate'));
+    navigateTo(path);
   };
 
   const getStageBadge = (stage: ApplicationStage) => {

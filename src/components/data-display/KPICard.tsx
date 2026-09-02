@@ -28,6 +28,7 @@ export const KPICard: React.FC<KPICardProps> = ({
     <Card
       variant="metric"
       className={cn(
+        "p-3.5 sm:p-5",
         className,
         onClick && "cursor-pointer hover:border-kth-primary-300 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
       )}
@@ -36,31 +37,31 @@ export const KPICard: React.FC<KPICardProps> = ({
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
     >
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold text-kth-slate-500 uppercase tracking-wider">
+      <div className="flex items-center justify-between gap-1 mb-1">
+        <span className="text-[10px] sm:text-[11px] font-bold text-kth-slate-500 uppercase tracking-wider truncate">
           {label}
         </span>
-        {icon && <div className="text-kth-slate-400">{icon}</div>}
+        {icon && <div className="text-kth-slate-400 shrink-0">{icon}</div>}
       </div>
 
       <div className={cn(
-        "font-display text-2xl font-extrabold text-kth-slate-900 leading-tight",
+        "font-display text-xl sm:text-2xl font-extrabold text-kth-slate-900 leading-tight my-0.5",
         isINR && "font-mono text-kth-primary-600"
       )}>
         {value}
       </div>
 
       {trendText && (
-        <div className="flex items-center gap-1.5 text-xs font-semibold mt-1">
+        <div className="flex items-center gap-1 text-[10px] sm:text-xs font-semibold mt-0.5 truncate">
           {isTrendPositive ? (
-            <span className="flex items-center gap-1 text-kth-accent-emerald">
-              <TrendingUp className="w-3.5 h-3.5" />
-              {trendText}
+            <span className="flex items-center gap-1 text-kth-accent-emerald truncate">
+              <TrendingUp className="w-3 h-3 shrink-0" />
+              <span className="truncate">{trendText}</span>
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-kth-semantic-error">
-              <TrendingDown className="w-3.5 h-3.5" />
-              {trendText}
+            <span className="flex items-center gap-1 text-rose-500 truncate">
+              <TrendingDown className="w-3 h-3 shrink-0" />
+              <span className="truncate">{trendText}</span>
             </span>
           )}
         </div>

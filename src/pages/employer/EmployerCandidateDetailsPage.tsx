@@ -18,6 +18,7 @@ import {
   Job,
   DiscoverableCandidate,
 } from '@/services';
+import { navigateTo } from '@/utils/navigation';
 import {
   MapPin,
   FileText,
@@ -82,6 +83,14 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
 
   // ATS Stage transition
   const [stageLoading, setStageLoading] = useState(false);
+
+  const handleNavigate = (path: string) => {
+    if (onNavigate) {
+      onNavigate(path);
+    } else {
+      navigateTo(path);
+    }
+  };
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -197,11 +206,6 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
       await savedCandidateService.unsaveCandidate(activeId);
     }
     setSavingState(false);
-  };
-
-  const handleNavigate = (path: string) => {
-    window.history.pushState({}, '', path);
-    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   if (isLoading) {
@@ -705,7 +709,7 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      window.location.href = `/employer/candidates/${resolvedCandidateId || application.id}/schedule?applicationId=${application.id}`;
+                      handleNavigate(`/employer/candidates/${resolvedCandidateId || application.id}/schedule?applicationId=${application.id}`);
                     }}
                   >
                     + Schedule Interview Round
@@ -725,7 +729,7 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
                       variant="primary"
                       size="sm"
                       onClick={() => {
-                        window.location.href = `/employer/candidates/${resolvedCandidateId || application.id}/schedule?applicationId=${application.id}`;
+                        handleNavigate(`/employer/candidates/${resolvedCandidateId || application.id}/schedule?applicationId=${application.id}`);
                       }}
                       className="mt-2"
                     >

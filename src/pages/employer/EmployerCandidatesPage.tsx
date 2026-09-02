@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { candidateDiscoveryService, DiscoverableCandidate } from '@/services/candidateDiscoveryService';
 import { taxonomyService, CareerCategory } from '@/services';
+import { navigateTo } from '@/utils/navigation';
 import { Search, MapPin, ArrowRight, GitCompare, Loader2, Users } from 'lucide-react';
 
 export const EmployerCandidatesPage: React.FC = () => {
@@ -60,8 +61,7 @@ export const EmployerCandidatesPage: React.FC = () => {
       if (selectedCompareIds.length > 0 && window.sessionStorage) {
         window.sessionStorage.setItem('kth_compare_candidate_ids', JSON.stringify(selectedCompareIds));
       }
-      window.history.pushState({}, '', '/employer/candidates/compare');
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      navigateTo('/employer/candidates/compare');
     }
   };
 
@@ -239,7 +239,13 @@ export const EmployerCandidatesPage: React.FC = () => {
                           .join('')}
                       </div>
                       <div>
-                        <h3 className="font-display font-bold text-sm text-kth-slate-900">{cand.name}</h3>
+                        <h3
+                          onClick={() => navigateTo(`/employer/candidates/${cand.id}`)}
+                          className="font-display font-bold text-sm text-kth-slate-900 hover:text-kth-primary-600 transition-colors cursor-pointer hover:underline"
+                          title="View Candidate Dossier"
+                        >
+                          {cand.name}
+                        </h3>
                         <span className="text-xs text-kth-slate-500 font-medium block line-clamp-1">{cand.headline}</span>
                       </div>
                     </div>
@@ -289,7 +295,7 @@ export const EmployerCandidatesPage: React.FC = () => {
                     size="sm"
                     className="font-bold text-xs"
                     onClick={() => {
-                      window.location.href = `/employer/candidates/${cand.id}`;
+                      navigateTo(`/employer/candidates/${cand.id}`);
                     }}
                   >
                     <span>View Full Profile</span>
