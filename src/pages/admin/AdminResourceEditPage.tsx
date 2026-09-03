@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { knowledgeService, ResourceStatus } from '@/services/knowledgeService';
+import { navigateTo } from '@/utils/navigation';
 import {
   ArrowLeft,
   Loader2,
@@ -23,9 +23,9 @@ export interface AdminResourceEditPageProps {
 }
 
 export const AdminResourceEditPage: React.FC<AdminResourceEditPageProps> = ({ resourceId: propResourceId, onNavigate }) => {
-  const { id: paramId } = useParams<{ id: string }>();
-  const id = propResourceId || paramId;
-  const navigate = useNavigate();
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  const pathId = currentPath.startsWith('/admin/resources/') ? currentPath.replace('/admin/resources/', '').replace('/edit', '') : '';
+  const id = propResourceId || pathId;
   const isEditing = Boolean(id && id !== 'new');
 
   const [isLoading, setIsLoading] = useState(isEditing);
@@ -121,7 +121,7 @@ export const AdminResourceEditPage: React.FC<AdminResourceEditPageProps> = ({ re
     if (onNavigate) {
       onNavigate('/admin/resources');
     } else {
-      navigate('/admin/resources');
+      navigateTo('/admin/resources');
     }
   };
 

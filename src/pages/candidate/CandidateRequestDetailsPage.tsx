@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import { CandidateShell } from '@/components/candidate/CandidateShell';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { requestService, ContentRequest, RequestStatus } from '@/services/requestService';
 import { paymentService } from '@/services/paymentService';
+import { navigateTo } from '@/utils/navigation';
 import {
   ArrowLeft,
   Loader2,
@@ -21,12 +21,14 @@ import {
 } from 'lucide-react';
 
 interface CandidateRequestDetailsPageProps {
+  requestId?: string;
   onNavigate?: (path: string) => void;
 }
 
-export const CandidateRequestDetailsPage: React.FC<CandidateRequestDetailsPageProps> = ({ onNavigate }) => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+export const CandidateRequestDetailsPage: React.FC<CandidateRequestDetailsPageProps> = ({ requestId: propRequestId, onNavigate }) => {
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  const pathId = currentPath.startsWith('/candidate/requests/') ? currentPath.replace('/candidate/requests/', '') : '';
+  const id = propRequestId || pathId;
 
   const [request, setRequest] = useState<ContentRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,7 +86,7 @@ export const CandidateRequestDetailsPage: React.FC<CandidateRequestDetailsPagePr
     if (onNavigate) {
       onNavigate('/candidate/requests');
     } else {
-      navigate('/candidate/requests');
+      navigateTo('/candidate/requests');
     }
   };
 

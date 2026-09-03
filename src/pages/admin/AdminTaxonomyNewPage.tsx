@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { taxonomyService } from '@/services/taxonomyService';
+import { navigateTo } from '@/utils/navigation';
 import {
   ArrowLeft,
   Tag,
@@ -21,7 +21,6 @@ interface AdminTaxonomyNewPageProps {
 }
 
 export const AdminTaxonomyNewPage: React.FC<AdminTaxonomyNewPageProps> = ({ onNavigate }) => {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'category' | 'role' | 'skill'>('category');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +96,7 @@ export const AdminTaxonomyNewPage: React.FC<AdminTaxonomyNewPageProps> = ({ onNa
     if (onNavigate) {
       onNavigate('/admin/taxonomy');
     } else {
-      navigate('/admin/taxonomy');
+      navigateTo('/admin/taxonomy');
     }
   };
 

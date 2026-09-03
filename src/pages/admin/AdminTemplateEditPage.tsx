@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { templateService, TemplateStatus } from '@/services/templateService';
+import { navigateTo } from '@/utils/navigation';
 import {
   ArrowLeft,
   Loader2,
@@ -24,9 +24,9 @@ export interface AdminTemplateEditPageProps {
 }
 
 export const AdminTemplateEditPage: React.FC<AdminTemplateEditPageProps> = ({ templateId: propTemplateId, onNavigate }) => {
-  const { id: paramId } = useParams<{ id: string }>();
-  const id = propTemplateId || paramId;
-  const navigate = useNavigate();
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  const pathId = currentPath.startsWith('/admin/templates/') ? currentPath.replace('/admin/templates/', '').replace('/edit', '') : '';
+  const id = propTemplateId || pathId;
   const isEditing = Boolean(id && id !== 'new');
 
   const [isLoading, setIsLoading] = useState(isEditing);
@@ -123,7 +123,7 @@ export const AdminTemplateEditPage: React.FC<AdminTemplateEditPageProps> = ({ te
     if (onNavigate) {
       onNavigate('/admin/templates');
     } else {
-      navigate('/admin/templates');
+      navigateTo('/admin/templates');
     }
   };
 

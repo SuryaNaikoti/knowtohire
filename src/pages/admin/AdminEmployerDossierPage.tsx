@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { adminService, AdminCompanyRecord } from '@/services/adminService';
+import { navigateTo } from '@/utils/navigation';
 import {
   Building2,
   CheckCircle2,
@@ -29,9 +29,9 @@ export interface AdminEmployerDossierPageProps {
 }
 
 export const AdminEmployerDossierPage: React.FC<AdminEmployerDossierPageProps> = ({ employerId: propEmployerId, onNavigate }) => {
-  const { id: paramId } = useParams<{ id: string }>();
-  const id = propEmployerId || paramId;
-  const navigate = useNavigate();
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  const pathId = currentPath.startsWith('/admin/employers/') ? currentPath.replace('/admin/employers/', '') : '';
+  const id = propEmployerId || pathId;
 
   const [company, setCompany] = useState<AdminCompanyRecord | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,7 +87,7 @@ export const AdminEmployerDossierPage: React.FC<AdminEmployerDossierPageProps> =
     if (onNavigate) {
       onNavigate('/admin/employers');
     } else {
-      navigate('/admin/employers');
+      navigateTo('/admin/employers');
     }
   };
 

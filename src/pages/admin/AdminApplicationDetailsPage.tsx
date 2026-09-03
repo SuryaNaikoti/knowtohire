@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { adminService, AdminApplicationRecord } from '@/services/adminService';
+import { navigateTo } from '@/utils/navigation';
 import {
   ArrowLeft,
   Loader2,
@@ -24,9 +24,9 @@ export interface AdminApplicationDetailsPageProps {
 }
 
 export const AdminApplicationDetailsPage: React.FC<AdminApplicationDetailsPageProps> = ({ applicationId: propAppId, onNavigate }) => {
-  const { id: paramId } = useParams<{ id: string }>();
-  const id = propAppId || paramId;
-  const navigate = useNavigate();
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  const pathId = currentPath.startsWith('/admin/applications/') ? currentPath.replace('/admin/applications/', '') : '';
+  const id = propAppId || pathId;
 
   const [application, setApplication] = useState<AdminApplicationRecord | null>(null);
   const [targetStage, setTargetStage] = useState<string>('screening');
@@ -76,7 +76,7 @@ export const AdminApplicationDetailsPage: React.FC<AdminApplicationDetailsPagePr
     if (onNavigate) {
       onNavigate('/admin/applications');
     } else {
-      navigate('/admin/applications');
+      navigateTo('/admin/applications');
     }
   };
 
