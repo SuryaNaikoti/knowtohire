@@ -96,6 +96,31 @@ export const JobsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Listen for browser navigation / quick alerts bar tab clicks
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const newCat = params.get('category') || 'all';
+      const newLoc = params.get('location') || 'all';
+      const newQ = params.get('q') || '';
+      const newType = params.get('type') || 'all';
+      const newWorkMode = params.get('work_mode') || 'all';
+      const newSort = params.get('sort') || 'latest';
+      const newPage = parseInt(params.get('page') || '1', 10) || 1;
+
+      setSelectedCategory(newCat);
+      setSelectedLocation(newLoc);
+      setSearchTerm(newQ);
+      setSelectedType(newType);
+      setSelectedWorkMode(newWorkMode);
+      setSortBy(newSort);
+      setCurrentPage(newPage);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   // Sync URL query parameters
   const updateUrlParams = useCallback((paramsObj: Record<string, string | number>) => {
     const url = new URL(window.location.href);
@@ -141,10 +166,14 @@ export const JobsPage: React.FC = () => {
     setIsLoading(true);
     setErrorMessage(null);
 
+    const locFilter = selectedLocation !== 'all' ? selectedLocation : undefined;
+    const isTwoLetterState = locFilter && locFilter.length === 2 && /^[A-Za-z]{2}$/.test(locFilter);
+
     const { data, error } = await jobService.getPublishedJobs({
       keyword: searchTerm.trim() || undefined,
       category: selectedCategory !== 'all' ? selectedCategory : undefined,
-      location: selectedLocation !== 'all' ? selectedLocation : undefined,
+      location: locFilter && !isTwoLetterState ? locFilter : undefined,
+      state_code: isTwoLetterState ? locFilter.toUpperCase() : undefined,
       employment_type: selectedType !== 'all' ? (selectedType as EmploymentType) : undefined,
       work_mode: selectedWorkMode !== 'all' ? (selectedWorkMode as WorkMode) : undefined,
       sort_by: sortBy as 'latest' | 'salary_high' | 'salary_low' | 'deadline',

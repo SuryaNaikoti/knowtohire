@@ -146,7 +146,8 @@ export function App() {
 
   // Route Resolver
   const renderRouteContent = () => {
-    const path = currentPath;
+    // Strip query string and hash from path so routes match query-based URLs (e.g. /jobs?category=General)
+    const path = currentPath.split('?')[0].split('#')[0];
 
     // Admin Routes (Guarded: ProtectedRoute + RoleGuard allowedRoles=['admin'])
     if (isAdminRoute) {
