@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { FileUploader } from '@/components/ui/FileUploader';
 import { templateService, TemplateStatus } from '@/services/templateService';
 import { navigateTo } from '@/utils/navigation';
 import {
@@ -16,6 +17,7 @@ import {
   IndianRupee,
   CheckCircle2,
   AlertCircle,
+  Download,
 } from 'lucide-react';
 
 export interface AdminTemplateEditPageProps {
@@ -31,6 +33,7 @@ export const AdminTemplateEditPage: React.FC<AdminTemplateEditPageProps> = ({ te
 
   const [isLoading, setIsLoading] = useState(isEditing);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -43,6 +46,11 @@ export const AdminTemplateEditPage: React.FC<AdminTemplateEditPageProps> = ({ te
   const [formatsInput, setFormatsInput] = useState('DOCX, PDF');
   const [previewUrl, setPreviewUrl] = useState('');
   const [fileUrl, setFileUrl] = useState('');
+  const [fileName, setFileName] = useState('');
+  const [fileSize, setFileSize] = useState('');
+
+  // Physical File State
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (isEditing && id) {
@@ -57,6 +65,8 @@ export const AdminTemplateEditPage: React.FC<AdminTemplateEditPageProps> = ({ te
           setFormatsInput(res.data.formats?.join(', ') || 'DOCX, PDF');
           setPreviewUrl(res.data.cover_url || '');
           setFileUrl(res.data.file_url || '');
+          setFileName(res.data.file_name || '');
+          setFileSize(res.data.file_size || '');
         } else {
           setError('Template product not found.');
         }
@@ -83,7 +93,7 @@ export const AdminTemplateEditPage: React.FC<AdminTemplateEditPageProps> = ({ te
     const priceNum = Math.max(0, parseInt(priceINR, 10) || 0);
     const targetStatus = forcedStatus || status;
 
-    const payload = {
+    const payload: any = {
       title: title.trim(),
       description: description.trim(),
       category,
@@ -91,7 +101,11 @@ export const AdminTemplateEditPage: React.FC<AdminTemplateEditPageProps> = ({ te
       status: targetStatus,
       file_formats: formatsArray.length > 0 ? formatsArray : ['DOCX', 'PDF'],
       preview_image_url: previewUrl.trim() || undefined,
-      file_url: fileUrl.trim() || 'https://assets.knowtohire.com/templates/sample.docx',
+      file_url: fileUrl.trim() || undefined,
+      file_name: fileName.trim() || undefined,
+      file_size: fileSize.trim() || undefined,
+      file: selectedFile || undefined,
+      onProgress: (pct: number) => setUploadProgress(pct),
     };
 
     try {
@@ -100,7 +114,7 @@ export const AdminTemplateEditPage: React.FC<AdminTemplateEditPageProps> = ({ te
         if (res.error) {
           setError(res.error.message);
         } else {
-          setSuccessMessage('Template product updated successfully.');
+          setSuccessMessage('Template product and asset file updated successfully.');
           setTimeout(() => handleBack(), 600);
         }
       } else {
@@ -108,7 +122,7 @@ export const AdminTemplateEditPage: React.FC<AdminTemplateEditPageProps> = ({ te
         if (res.error) {
           setError(res.error.message);
         } else {
-          setSuccessMessage('Template published to marketplace catalog.');
+          setSuccessMessage('Template and asset file published to marketplace catalog.');
           setTimeout(() => handleBack(), 600);
         }
       }
@@ -116,6 +130,7 @@ export const AdminTemplateEditPage: React.FC<AdminTemplateEditPageProps> = ({ te
       setError(err?.message || 'Failed to save template.');
     } finally {
       setIsSaving(false);
+      setUploadProgress(0);
     }
   };
 
@@ -190,12 +205,62 @@ export const AdminTemplateEditPage: React.FC<AdminTemplateEditPageProps> = ({ te
                     />
                   </div>
 
+                  {/* Downloadable Deliverable Asset File Upload */}
+                  <div className="pt-2 border-t border-kth-slate-100 space-y-3">
+                    <FileUploader
+                      label="Template Source Deliverable (Upload)"
+                      description="Upload master template file (DOCX, PDF, XLSX, PPTX, ZIP, CSV)"
+                      accept=".docx,.doc,.pdf,.xlsx,.xls,.pptx,.ppt,.zip,.txt,.csv"
+                      selectedFile={selectedFile}
+                      uploadedFileName={fileName || (fileUrl ? fileUrl.split('/').pop() : undefined)}
+                      uploadedFileSize={fileSize}
+                      onFileSelect={(file) => {
+                        setSelectedFile(file);
+                        setFileName(file.name);
+                        setFileSize((file.size / (1024 * 1024)).toFixed(1) + ' MB');
+                      }}
+                      onFileRemove={() => {
+                        setSelectedFile(null);
+                        setFileName('');
+                        setFileSize('');
+                        setFileUrl('');
+                      }}
+                      isUploading={isSaving && uploadProgress > 0 && uploadProgress < 100}
+                      uploadProgress={uploadProgress}
+                      uploadSuccess={Boolean(fileUrl || selectedFile)}
+                    />
+
+                    {fileUrl && !selectedFile && (
+                      <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/90 rounded-xl flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2.5 text-emerald-800">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <div>
+                            <span className="font-bold block">Current Cloud Asset Available</span>
+                            <span className="text-emerald-700 font-mono text-[11px]">
+                              {fileName || fileUrl.split('/').pop()} {fileSize ? `(${fileSize})` : ''}
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          leftIcon={<Download className="w-3.5 h-3.5" />}
+                          onClick={() => window.open(fileUrl, '_blank')}
+                          className="text-xs font-semibold bg-white shadow-2xs"
+                        >
+                          Download Asset
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input
-                      label="Downloadable Asset File URL"
+                      label="External File URL (Optional Fallback)"
                       placeholder="https://assets.knowtohire.com/templates/sample.docx"
                       value={fileUrl}
                       onChange={(e) => setFileUrl(e.target.value)}
+                      helperText="Auto-populated on upload or provide CDN link"
                     />
 
                     <Input
@@ -203,6 +268,7 @@ export const AdminTemplateEditPage: React.FC<AdminTemplateEditPageProps> = ({ te
                       placeholder="https://images.unsplash.com/..."
                       value={previewUrl}
                       onChange={(e) => setPreviewUrl(e.target.value)}
+                      helperText="Banner mockup displayed across catalogs"
                     />
                   </div>
                 </div>

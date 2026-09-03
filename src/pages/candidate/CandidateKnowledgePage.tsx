@@ -69,6 +69,18 @@ export const CandidateKnowledgePage: React.FC = () => {
     return () => clearTimeout(debounce);
   }, [fetchResources]);
 
+  useEffect(() => {
+    const handleChanged = () => fetchResources();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('kth_resources_changed', handleChanged);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('kth_resources_changed', handleChanged);
+      }
+    };
+  }, [fetchResources]);
+
   const handleOpenRequestModal = () => {
     setReqTitle('');
     setReqDescription('');

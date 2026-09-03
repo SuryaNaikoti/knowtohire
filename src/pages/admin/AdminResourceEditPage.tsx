@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { FileUploader } from '@/components/ui/FileUploader';
 import { knowledgeService, ResourceStatus } from '@/services/knowledgeService';
 import { navigateTo } from '@/utils/navigation';
 import {
@@ -15,6 +16,7 @@ import {
   Tag,
   CheckCircle2,
   AlertCircle,
+  Download,
 } from 'lucide-react';
 
 export interface AdminResourceEditPageProps {
@@ -30,6 +32,7 @@ export const AdminResourceEditPage: React.FC<AdminResourceEditPageProps> = ({ re
 
   const [isLoading, setIsLoading] = useState(isEditing);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -40,8 +43,12 @@ export const AdminResourceEditPage: React.FC<AdminResourceEditPageProps> = ({ re
   const [format, setFormat] = useState('PDF');
   const [status, setStatus] = useState<ResourceStatus>('published');
   const [fileUrl, setFileUrl] = useState('');
+  const [fileName, setFileName] = useState('');
   const [fileSize, setFileSize] = useState('4.2 MB');
   const [tagsInput, setTagsInput] = useState('Compliance, Guidelines, ESG');
+
+  // Physical File State
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (isEditing && id) {
@@ -54,6 +61,7 @@ export const AdminResourceEditPage: React.FC<AdminResourceEditPageProps> = ({ re
           setFormat(res.data.format || 'PDF');
           setStatus(res.data.status);
           setFileUrl(res.data.file_url || '');
+          setFileName(res.data.file_name || '');
           setFileSize(res.data.file_size || '4.2 MB');
           setTagsInput(res.data.tags?.join(', ') || 'Compliance, Guidelines');
         } else {
@@ -81,15 +89,18 @@ export const AdminResourceEditPage: React.FC<AdminResourceEditPageProps> = ({ re
 
     const targetStatus = forcedStatus || status;
 
-    const payload = {
+    const payload: any = {
       title: title.trim(),
       description: description.trim(),
       category,
       file_format: format,
       status: targetStatus,
       tags: tagsArray.length > 0 ? tagsArray : ['Compliance', 'ESG'],
-      file_url: fileUrl.trim() || 'https://assets.knowtohire.com/resources/sample.pdf',
-      file_size: fileSize.trim() || '4.2 MB',
+      file_url: fileUrl.trim() || undefined,
+      file_name: fileName.trim() || undefined,
+      file_size: fileSize.trim() || undefined,
+      file: selectedFile || undefined,
+      onProgress: (pct: number) => setUploadProgress(pct),
     };
 
     try {
@@ -98,7 +109,7 @@ export const AdminResourceEditPage: React.FC<AdminResourceEditPageProps> = ({ re
         if (res.error) {
           setError(res.error.message);
         } else {
-          setSuccessMessage('Resource updated successfully.');
+          setSuccessMessage('Resource and asset file updated successfully.');
           setTimeout(() => handleBack(), 600);
         }
       } else {
@@ -106,7 +117,7 @@ export const AdminResourceEditPage: React.FC<AdminResourceEditPageProps> = ({ re
         if (res.error) {
           setError(res.error.message);
         } else {
-          setSuccessMessage('Resource published to Knowledge Hub.');
+          setSuccessMessage('Resource and asset file published to Knowledge Hub.');
           setTimeout(() => handleBack(), 600);
         }
       }
@@ -114,6 +125,7 @@ export const AdminResourceEditPage: React.FC<AdminResourceEditPageProps> = ({ re
       setError(err?.message || 'Failed to save resource.');
     } finally {
       setIsSaving(false);
+      setUploadProgress(0);
     }
   };
 
@@ -188,12 +200,62 @@ export const AdminResourceEditPage: React.FC<AdminResourceEditPageProps> = ({ re
                     />
                   </div>
 
+                  {/* Downloadable Knowledge Document File Upload */}
+                  <div className="pt-2 border-t border-kth-slate-100 space-y-3">
+                    <FileUploader
+                      label="Resource Document File (Upload)"
+                      description="Upload source file (PDF, DOCX, XLSX, PPTX, ZIP, CSV, TXT)"
+                      accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.zip,.txt,.csv"
+                      selectedFile={selectedFile}
+                      uploadedFileName={fileName || (fileUrl ? fileUrl.split('/').pop() : undefined)}
+                      uploadedFileSize={fileSize}
+                      onFileSelect={(file) => {
+                        setSelectedFile(file);
+                        setFileName(file.name);
+                        setFileSize((file.size / (1024 * 1024)).toFixed(1) + ' MB');
+                      }}
+                      onFileRemove={() => {
+                        setSelectedFile(null);
+                        setFileName('');
+                        setFileSize('4.2 MB');
+                        setFileUrl('');
+                      }}
+                      isUploading={isSaving && uploadProgress > 0 && uploadProgress < 100}
+                      uploadProgress={uploadProgress}
+                      uploadSuccess={Boolean(fileUrl || selectedFile)}
+                    />
+
+                    {fileUrl && !selectedFile && (
+                      <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/90 rounded-xl flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2.5 text-emerald-800">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <div>
+                            <span className="font-bold block">Current Knowledge Deliverable Attached</span>
+                            <span className="text-emerald-700 font-mono text-[11px]">
+                              {fileName || fileUrl.split('/').pop()} {fileSize ? `(${fileSize})` : ''}
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          leftIcon={<Download className="w-3.5 h-3.5" />}
+                          onClick={() => window.open(fileUrl, '_blank')}
+                          className="text-xs font-semibold bg-white shadow-2xs"
+                        >
+                          Download Resource
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input
-                      label="Document Download URL"
+                      label="Document Download URL (Optional Fallback)"
                       placeholder="https://assets.knowtohire.com/resources/sample.pdf"
                       value={fileUrl}
                       onChange={(e) => setFileUrl(e.target.value)}
+                      helperText="Auto-filled on file upload or enter asset link"
                     />
 
                     <Input
@@ -201,6 +263,7 @@ export const AdminResourceEditPage: React.FC<AdminResourceEditPageProps> = ({ re
                       placeholder="e.g. 4.2 MB"
                       value={fileSize}
                       onChange={(e) => setFileSize(e.target.value)}
+                      helperText="Calculated automatically on file upload"
                     />
                   </div>
                 </div>

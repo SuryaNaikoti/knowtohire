@@ -55,6 +55,18 @@ export const KnowledgePage: React.FC = () => {
     return () => clearTimeout(debounce);
   }, [fetchResources]);
 
+  useEffect(() => {
+    const handleChanged = () => fetchResources();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('kth_resources_changed', handleChanged);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('kth_resources_changed', handleChanged);
+      }
+    };
+  }, [fetchResources]);
+
   // Content Request Modal States
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [reqTitle, setReqTitle] = useState('');

@@ -49,6 +49,18 @@ export const TemplatesPage: React.FC = () => {
     return () => clearTimeout(debounce);
   }, [fetchTemplates]);
 
+  useEffect(() => {
+    const handleChanged = () => fetchTemplates();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('kth_templates_changed', handleChanged);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('kth_templates_changed', handleChanged);
+      }
+    };
+  }, [fetchTemplates]);
+
   const handleClearFilters = () => {
     setSearchTerm('');
     setSelectedCat('all');
