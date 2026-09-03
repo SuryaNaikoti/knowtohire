@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, Sparkles } from 'lucide-react';
 import { navigateTo } from '@/utils/navigation';
 
@@ -8,15 +8,15 @@ export interface QuickAlertsNavBarProps {
 }
 
 const CATEGORY_ITEMS = [
-  { label: 'All Jobs', path: '/jobs', isHighlight: true },
-  { label: 'General', path: '/jobs?category=General' },
-  { label: 'Environmental', path: '/jobs?category=Environmental' },
-  { label: 'ESG', path: '/jobs?category=ESG' },
-  { label: 'Sustainability', path: '/jobs?category=Sustainability' },
-  { label: 'Patent', path: '/jobs?category=Patent' },
-  { label: 'IPR', path: '/jobs?category=IPR' },
-  { label: 'Research', path: '/jobs?category=Research' },
-  { label: 'Consulting', path: '/jobs?category=Consulting' },
+  { label: 'All Jobs', category: '', path: '/jobs', isHighlight: true },
+  { label: 'General', category: 'General', path: '/jobs?category=General' },
+  { label: 'Environmental', category: 'Environmental', path: '/jobs?category=Environmental' },
+  { label: 'ESG', category: 'ESG', path: '/jobs?category=ESG' },
+  { label: 'Sustainability', category: 'Sustainability', path: '/jobs?category=Sustainability' },
+  { label: 'Patent', category: 'Patent', path: '/jobs?category=Patent' },
+  { label: 'IPR', category: 'IPR', path: '/jobs?category=IPR' },
+  { label: 'Research', category: 'Research', path: '/jobs?category=Research' },
+  { label: 'Consulting', category: 'Consulting', path: '/jobs?category=Consulting' },
 ];
 
 const STATE_ITEMS = [
@@ -43,17 +43,54 @@ const STATE_ITEMS = [
   { code: 'WB', name: 'West Bengal' },
 ];
 
+/**
+ * Read the active category from the current URL search params.
+ */
+function getActiveCategory(): string {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('category') || '';
+}
+
+/**
+ * Read the active location/state from the current URL search params.
+ */
+function getActiveLocation(): string {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('location') || '';
+}
+
 export const QuickAlertsNavBar: React.FC<QuickAlertsNavBarProps> = ({
   className = '',
   onNavigate,
 }) => {
+  const [activeCategory, setActiveCategory] = useState(getActiveCategory);
+  const [activeLocation, setActiveLocation] = useState(getActiveLocation);
+
+  // Subscribe to URL changes to update active state
+  useEffect(() => {
+    const handleUrlChange = () => {
+      setActiveCategory(getActiveCategory());
+      setActiveLocation(getActiveLocation());
+    };
+
+    window.addEventListener('popstate', handleUrlChange);
+    return () => window.removeEventListener('popstate', handleUrlChange);
+  }, []);
+
   const handleNav = (path: string) => {
     if (onNavigate) {
       onNavigate(path);
     } else {
       navigateTo(path);
     }
+    // Immediately update active state for instant visual feedback
+    setTimeout(() => {
+      setActiveCategory(getActiveCategory());
+      setActiveLocation(getActiveLocation());
+    }, 0);
   };
+
+  const isOnJobsPage = window.location.pathname === '/jobs' || window.location.pathname.startsWith('/jobs');
 
   return (
     <div className={`w-full bg-white/80 backdrop-blur-md border-b border-kth-slate-200/60 py-1.5 sm:py-2 px-3 sm:px-6 md:px-8 select-none ${className}`}>
@@ -62,13 +99,20 @@ export const QuickAlertsNavBar: React.FC<QuickAlertsNavBarProps> = ({
           {/* Horizontal Category Navigation Links */}
           <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto pb-0.5 scrollbar-none touch-scroll flex-1 min-w-0">
             {CATEGORY_ITEMS.map((item) => {
+              // Determine if this pill is the currently active one
+              const isActive = isOnJobsPage && (
+                item.category === ''
+                  ? activeCategory === '' // "All Jobs" is active when no category param
+                  : activeCategory.toLowerCase() === item.category.toLowerCase()
+              );
+
               return (
                 <button
                   key={item.label}
                   onClick={() => handleNav(item.path)}
-                  className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md whitespace-nowrap transition-all duration-150 shrink-0 ${
-                    item.isHighlight
-                      ? 'text-kth-primary-700 bg-kth-primary-50 font-bold hover:bg-kth-primary-100/80'
+                  className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md whitespace-nowrap transition-all duration-150 shrink-0 cursor-pointer ${
+                    isActive
+                      ? 'text-kth-primary-700 bg-kth-primary-50 font-bold ring-1 ring-kth-primary-200 hover:bg-kth-primary-100/80'
                       : 'text-kth-slate-600 hover:text-kth-slate-900 hover:bg-kth-slate-100 font-medium'
                   }`}
                 >
@@ -83,16 +127,23 @@ export const QuickAlertsNavBar: React.FC<QuickAlertsNavBarProps> = ({
           <div className="hidden xl:flex items-center gap-1.5 shrink-0 pl-3 border-l border-kth-slate-200">
             <MapPin className="w-3 h-3 text-kth-slate-400 shrink-0" />
             <span className="text-[11px] font-semibold text-kth-slate-500 mr-1">Locations:</span>
-            {STATE_ITEMS.slice(0, 8).map((st) => (
-              <button
-                key={st.code}
-                title={`Explore verified jobs in ${st.name}`}
-                onClick={() => handleNav(`/jobs?location=${st.code}`)}
-                className="text-kth-slate-500 hover:text-kth-primary-700 hover:bg-kth-primary-50 font-mono font-medium text-[11px] px-1.5 py-0.5 rounded transition-colors"
-              >
-                {st.code}
-              </button>
-            ))}
+            {STATE_ITEMS.slice(0, 8).map((st) => {
+              const isStateActive = activeLocation.toUpperCase() === st.code;
+              return (
+                <button
+                  key={st.code}
+                  title={`Explore verified jobs in ${st.name}`}
+                  onClick={() => handleNav(`/jobs?location=${st.code}`)}
+                  className={`font-mono font-medium text-[11px] px-1.5 py-0.5 rounded transition-colors ${
+                    isStateActive
+                      ? 'text-kth-primary-700 bg-kth-primary-50 font-bold'
+                      : 'text-kth-slate-500 hover:text-kth-primary-700 hover:bg-kth-primary-50'
+                  }`}
+                >
+                  {st.code}
+                </button>
+              );
+            })}
             <button
               onClick={() => handleNav('/jobs')}
               className="text-[11px] font-semibold text-kth-primary-600 hover:text-kth-primary-700 ml-0.5"
@@ -108,16 +159,23 @@ export const QuickAlertsNavBar: React.FC<QuickAlertsNavBarProps> = ({
             <MapPin className="w-3 h-3 text-kth-primary-600 shrink-0" />
             <span className="font-semibold text-kth-slate-600 text-[10px] uppercase tracking-wider">States:</span>
           </div>
-          {STATE_ITEMS.map((st) => (
-            <button
-              key={st.code}
-              title={`Explore verified jobs in ${st.name}`}
-              onClick={() => handleNav(`/jobs?location=${st.code}`)}
-              className="text-kth-slate-600 hover:text-kth-primary-700 active:bg-kth-primary-100 bg-kth-slate-50/80 hover:bg-kth-primary-50 border border-kth-slate-200/60 font-mono font-medium text-[10px] px-1.5 py-0.5 rounded shrink-0 transition-colors"
-            >
-              {st.code}
-            </button>
-          ))}
+          {STATE_ITEMS.map((st) => {
+            const isStateActive = activeLocation.toUpperCase() === st.code;
+            return (
+              <button
+                key={st.code}
+                title={`Explore verified jobs in ${st.name}`}
+                onClick={() => handleNav(`/jobs?location=${st.code}`)}
+                className={`font-mono font-medium text-[10px] px-1.5 py-0.5 rounded shrink-0 transition-colors border ${
+                  isStateActive
+                    ? 'text-kth-primary-700 bg-kth-primary-100 border-kth-primary-300 font-bold'
+                    : 'text-kth-slate-600 hover:text-kth-primary-700 active:bg-kth-primary-100 bg-kth-slate-50/80 hover:bg-kth-primary-50 border-kth-slate-200/60'
+                }`}
+              >
+                {st.code}
+              </button>
+            );
+          })}
           <button
             onClick={() => handleNav('/jobs')}
             className="text-[10px] font-semibold text-kth-primary-600 hover:text-kth-primary-700 px-1 shrink-0 whitespace-nowrap"

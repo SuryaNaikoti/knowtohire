@@ -4,18 +4,23 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { knowledgeService, KnowledgeResource } from '@/services/knowledgeService';
-import { Star, Download, FileText, CheckCircle2, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import { paymentService } from '@/services/paymentService';
+import { Star, Download, FileText, CheckCircle2, ArrowLeft, Loader2, AlertCircle, ShoppingCart, CreditCard, Shield, IndianRupee } from 'lucide-react';
 
 export interface ResourceDetailsPageProps {
   resourceId?: string;
 }
 
+type CheckoutStep = 'idle' | 'cart' | 'processing' | 'success';
+
 export const ResourceDetailsPage: React.FC<ResourceDetailsPageProps> = ({ resourceId }) => {
   const [resource, setResource] = useState<KnowledgeResource | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('idle');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [transactionId, setTransactionId] = useState<string | null>(null);
+  const [isPurchased, setIsPurchased] = useState(false);
 
   // Extract ID from pathname if not provided directly
   const activeId = resourceId || window.location.pathname.replace('/knowledge/', '');
@@ -31,6 +36,9 @@ export const ResourceDetailsPage: React.FC<ResourceDetailsPageProps> = ({ resour
         setError(res.error.message);
       } else {
         setResource(res.data);
+        if (res.data && paymentService.isPurchased(res.data.id)) {
+          setIsPurchased(true);
+        }
       }
       setIsLoading(false);
     };
@@ -41,16 +49,75 @@ export const ResourceDetailsPage: React.FC<ResourceDetailsPageProps> = ({ resour
     };
   }, [activeId]);
 
-  const handleDownload = async () => {
+  // Free resource: direct download
+  const handleFreeDownload = async () => {
     if (!resource) return;
-    setIsDownloading(true);
+    setIsProcessing(true);
     const res = await knowledgeService.trackDownload(resource.id);
-    setIsDownloading(false);
-    setIsDownloadModalOpen(true);
+    setIsProcessing(false);
+    setCheckoutStep('success');
     const targetUrl = res.data?.downloadUrl || resource.file_url;
     if (targetUrl) {
       window.open(targetUrl, '_blank');
     }
+  };
+
+  // Paid resource: open cart modal
+  const handlePurchaseClick = () => {
+    if (!resource) return;
+    if (isPurchased) {
+      handleDirectDownload();
+      return;
+    }
+    setCheckoutStep('cart');
+  };
+
+  // Process simulated payment
+  const handleConfirmPayment = async () => {
+    if (!resource) return;
+    setCheckoutStep('processing');
+    setIsProcessing(true);
+
+    const res = await paymentService.initiateCheckout({
+      itemType: 'resource',
+      itemId: resource.id,
+      itemName: resource.title,
+      amountINR: resource.price_inr ?? 0,
+      onSuccess: async (payId) => {
+        setTransactionId(payId);
+        paymentService.recordPurchase(resource.id, payId);
+        setIsPurchased(true);
+        await knowledgeService.trackDownload(resource.id);
+        setIsProcessing(false);
+        setCheckoutStep('success');
+      },
+      onCancel: () => {
+        setIsProcessing(false);
+        setCheckoutStep('idle');
+      },
+    });
+
+    if (res.error) {
+      setIsProcessing(false);
+      setCheckoutStep('idle');
+    }
+  };
+
+  // Direct download for already-purchased resources
+  const handleDirectDownload = async () => {
+    if (!resource) return;
+    setIsProcessing(true);
+    const res = await knowledgeService.trackDownload(resource.id);
+    setIsProcessing(false);
+    setCheckoutStep('success');
+    const targetUrl = res.data?.downloadUrl || resource.file_url;
+    if (targetUrl) {
+      window.open(targetUrl, '_blank');
+    }
+  };
+
+  const handleCloseModal = () => {
+    setCheckoutStep('idle');
   };
 
   if (isLoading) {
@@ -76,6 +143,8 @@ export const ResourceDetailsPage: React.FC<ResourceDetailsPageProps> = ({ resour
       </div>
     );
   }
+
+  const isFree = resource.is_free;
 
   return (
     <div className="py-12 bg-kth-slate-50 min-h-screen">
@@ -121,22 +190,44 @@ export const ResourceDetailsPage: React.FC<ResourceDetailsPageProps> = ({ resour
                 {resource.description}
               </p>
 
-              <div className="flex items-center gap-4 border-t border-b border-kth-slate-200 py-4 mb-6">
+              <div className="flex flex-wrap items-center gap-4 border-t border-b border-kth-slate-200 py-4 mb-6">
                 <div>
                   <span className="text-xs font-bold text-kth-slate-500 uppercase tracking-wider">ACCESS PRICE</span>
                   <div className="font-mono text-xl font-bold text-kth-primary-600">
-                    {resource.is_free ? 'FREE ACCESS' : `₹${resource.price_inr}`}
+                    {isFree ? 'FREE ACCESS' : `₹${resource.price_inr}`}
                   </div>
                 </div>
-                <Button
-                  variant="primary"
-                  size="lg"
-                  leftIcon={<Download className="w-4 h-4" />}
-                  isLoading={isDownloading}
-                  onClick={handleDownload}
-                >
-                  Download Resource
-                </Button>
+                {isFree ? (
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    leftIcon={<Download className="w-4 h-4" />}
+                    isLoading={isProcessing}
+                    onClick={handleFreeDownload}
+                  >
+                    Download Resource
+                  </Button>
+                ) : isPurchased ? (
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    leftIcon={<Download className="w-4 h-4" />}
+                    isLoading={isProcessing}
+                    onClick={handleDirectDownload}
+                  >
+                    Download (Purchased)
+                  </Button>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    leftIcon={<ShoppingCart className="w-4 h-4" />}
+                    isLoading={isProcessing}
+                    onClick={handlePurchaseClick}
+                  >
+                    Purchase & Download
+                  </Button>
+                )}
               </div>
 
               <h4 className="font-bold text-xs text-kth-slate-500 uppercase tracking-wider mb-2">Key Topics Covered</h4>
@@ -152,23 +243,131 @@ export const ResourceDetailsPage: React.FC<ResourceDetailsPageProps> = ({ resour
         </Card>
       </div>
 
+      {/* ========== CHECKOUT MODAL: Cart Step ========== */}
       <Dialog
-        isOpen={isDownloadModalOpen}
-        onClose={() => setIsDownloadModalOpen(false)}
-        title="Download Confirmed"
-        description={resource.title}
+        isOpen={checkoutStep === 'cart'}
+        onClose={handleCloseModal}
+        title="Checkout"
+        maxWidth="md"
+      >
+        <div className="py-2">
+          <div className="bg-kth-slate-50 rounded-lg border border-kth-slate-200 p-4 mb-5">
+            <h4 className="text-xs font-bold text-kth-slate-500 uppercase tracking-wider mb-3">Order Summary</h4>
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-md bg-kth-primary-100 flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5 text-kth-primary-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-kth-slate-900 truncate">{resource.title}</p>
+                <p className="text-xs text-kth-slate-500">{resource.category} • {resource.format} • {resource.pageCount} Pages</p>
+              </div>
+              <div className="font-mono text-base font-bold text-kth-slate-900 shrink-0">₹{resource.price_inr}</div>
+            </div>
+            <div className="border-t border-kth-slate-200 pt-3 flex items-center justify-between">
+              <span className="text-xs font-bold text-kth-slate-700 uppercase">Total Amount</span>
+              <span className="font-mono text-lg font-extrabold text-kth-primary-600">₹{resource.price_inr}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 text-[10px] text-kth-slate-500 mb-5">
+            <div className="flex items-center gap-1">
+              <Shield className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Secure Checkout</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <IndianRupee className="w-3.5 h-3.5 text-kth-primary-600" />
+              <span>INR Payment</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Download className="w-3.5 h-3.5 text-kth-primary-600" />
+              <span>Instant Download</span>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={handleCloseModal}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-1"
+              leftIcon={<CreditCard className="w-4 h-4" />}
+              onClick={handleConfirmPayment}
+            >
+              Pay ₹{resource.price_inr}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* ========== CHECKOUT MODAL: Processing Step ========== */}
+      <Dialog
+        isOpen={checkoutStep === 'processing'}
+        onClose={() => {}}
+        title="Processing Payment"
+        maxWidth="sm"
+      >
+        <div className="text-center py-8">
+          <div className="w-16 h-16 rounded-full bg-kth-primary-50 flex items-center justify-center mx-auto mb-4">
+            <Loader2 className="w-8 h-8 text-kth-primary-600 animate-spin" />
+          </div>
+          <h4 className="font-bold text-base text-kth-slate-900 mb-2">Processing your payment...</h4>
+          <p className="text-xs text-kth-slate-500">
+            Please wait while we securely process your transaction.
+          </p>
+          <div className="mt-4 flex items-center justify-center gap-2 text-[10px] text-kth-slate-400">
+            <Shield className="w-3 h-3" />
+            <span>256-bit SSL Encrypted • Powered by KnowToHire</span>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* ========== CHECKOUT MODAL: Success Step ========== */}
+      <Dialog
+        isOpen={checkoutStep === 'success'}
+        onClose={handleCloseModal}
+        title="Payment Successful"
+        maxWidth="sm"
       >
         <div className="text-center py-4">
-          <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3">
-            <CheckCircle2 className="w-6 h-6" />
+          <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-7 h-7" />
           </div>
-          <h4 className="font-bold text-base text-kth-slate-900 mb-1">Download Started Successfully</h4>
-          <p className="text-xs text-kth-slate-500 mb-4">
-            Your download for <strong>{resource.title}</strong> has been logged to your account.
+          <h4 className="font-bold text-lg text-kth-slate-900 mb-1">
+            {isFree ? 'Download Ready!' : 'Payment Successful!'}
+          </h4>
+          <p className="text-xs text-kth-slate-500 mb-2">
+            Your resource <strong>{resource.title}</strong> is ready for download.
           </p>
-          <Button variant="primary" onClick={() => setIsDownloadModalOpen(false)}>
-            Close Window
-          </Button>
+          {transactionId && (
+            <p className="text-[10px] font-mono text-kth-slate-400 mb-4">
+              Transaction ID: {transactionId}
+            </p>
+          )}
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-5">
+            <p className="text-xs text-emerald-700">
+              <strong>✓</strong> Your download has started automatically. If it didn't, click the button below.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={handleCloseModal}>
+              Close
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-1"
+              leftIcon={<Download className="w-4 h-4" />}
+              onClick={() => {
+                const targetUrl = resource.file_url;
+                if (targetUrl) {
+                  window.open(targetUrl, '_blank');
+                }
+                handleCloseModal();
+              }}
+            >
+              Download Again
+            </Button>
+          </div>
         </div>
       </Dialog>
     </div>
