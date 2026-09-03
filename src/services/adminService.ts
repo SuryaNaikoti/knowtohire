@@ -161,6 +161,12 @@ export interface AdminJobRecord {
   moderation_flags?: string[];
   moderated_at?: string | null;
   moderated_by?: string | null;
+
+  // Featured Status & Duration
+  is_featured?: boolean;
+  featured_start_date?: string | null;
+  featured_end_date?: string | null;
+  featured_duration_days?: number | null;
 }
 
 export interface AdminApplicationRecord {

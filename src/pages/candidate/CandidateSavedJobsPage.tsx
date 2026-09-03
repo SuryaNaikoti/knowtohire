@@ -150,6 +150,7 @@ export const CandidateSavedJobsPage: React.FC = () => {
                   maxSalaryINR={job.max_salary_inr}
                   skills={job.skills || []}
                   isSaved={true}
+                  isClosed={job.status === 'closed'}
                   postedDate={formatRelativeDate(job.published_at || job.created_at)}
                   onSaveToggle={() => handleUnsave(job.id)}
                   onApply={() => handleJobClick(job.id)}

@@ -46,7 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       return;
     }
 
-    const portalPath = role === 'employer' ? '/employer' : role === 'admin' ? '/admin' : '/candidate';
+    const portalPath = role === 'employer' ? '/employer' : role === 'admin' ? '/admin' : role === 'creator' ? '/creator' : '/candidate';
     handleNav(portalPath);
   };
 
@@ -126,7 +126,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={(e) => { e.preventDefault(); handleNav('/pricing'); }}
               className="text-sm font-medium text-kth-slate-600 hover:text-kth-slate-900 transition-colors no-underline"
             >
-              Pricing
+              Subscribe
             </a>
           </nav>
         </div>
@@ -243,7 +243,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/pricing'); }}
               className="text-xs font-bold text-kth-slate-800 hover:text-kth-primary-600 p-2 rounded-lg hover:bg-kth-slate-50 transition-colors"
             >
-              Pricing & ATS
+              Subscribe
             </a>
             <a
               href="/about"

@@ -18,11 +18,11 @@ export interface AuthState {
 
 export interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ error: Error | null }>;
-  loginWithGoogle: (role?: 'candidate' | 'employer') => Promise<{ error: Error | null }>;
+  loginWithGoogle: (role?: 'candidate' | 'employer' | 'creator') => Promise<{ error: Error | null }>;
   register: (
     email: string,
     password: string,
-    metadata: { full_name: string; role: 'candidate' | 'employer' }
+    metadata: { full_name: string; role: 'candidate' | 'employer' | 'creator' }
   ) => Promise<{ error: Error | null }>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<Profile | null>;

@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Select } from '@/components/ui/Select';
-import { ScheduleInterviewModal } from './ScheduleInterviewModal';
+import { navigateTo } from '@/utils/navigation';
 import {
   applicationService,
   savedCandidateService,
@@ -51,7 +51,6 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
 }) => {
   const [currentApp, setCurrentApp] = useState<JobApplication | null>(application || null);
   const [stageLoading, setStageLoading] = useState(false);
-  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isBioExpanded, setIsBioExpanded] = useState(false);
@@ -388,7 +387,11 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setIsScheduleModalOpen(true)}
+                  onClick={() => {
+                    onClose();
+                    const candId = currentApp.candidate_id || (currentApp.candidate as any)?.id || 'candidate';
+                    navigateTo(`/employer/candidates/${candId}/schedule?applicationId=${currentApp.id}`);
+                  }}
                   leftIcon={<Calendar className="w-3.5 h-3.5" />}
                   className="text-xs font-semibold flex-1 sm:flex-none justify-center"
                 >
@@ -772,18 +775,6 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
         </div>
       </Dialog>
 
-      {/* Interview Scheduling Modal */}
-      {currentApp && (
-        <ScheduleInterviewModal
-          application={currentApp}
-          isOpen={isScheduleModalOpen}
-          onClose={() => setIsScheduleModalOpen(false)}
-          onSuccess={() => {
-            setCurrentApp((prev) => (prev ? { ...prev, stage: 'interview' } : null));
-            onApplicationUpdated?.({ ...currentApp, stage: 'interview' });
-          }}
-        />
-      )}
       {/* Candidate Rejection Modal */}
       {currentApp && (
         <Dialog

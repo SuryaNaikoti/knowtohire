@@ -172,21 +172,42 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
           </button>
         </div>
 
+        {/* Closed Job Alert Banner */}
+        {job.status === 'closed' && (
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-rose-900">
+            <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <div>
+              <strong className="block text-sm font-bold">Closed — No longer accepting applications</strong>
+              <p className="text-xs text-rose-800 mt-0.5">
+                This position has concluded and is closed. Existing applications remain active in review.
+              </p>
+            </div>
+          </div>
+        )}
+
         <Card className="p-6 md:p-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div>
               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                {(job.is_verified || job.company?.verification_status === 'verified') && (
-                  <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-full shrink-0">
-                    <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> Verified
-                  </span>
+                {job.status === 'closed' ? (
+                  <Badge variant="rose" className="font-bold text-xs">
+                    Closed — No longer accepting applications
+                  </Badge>
+                ) : (
+                  <>
+                    {(job.is_verified || job.company?.verification_status === 'verified') && (
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-full shrink-0">
+                        <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> Verified
+                      </span>
+                    )}
+                    <Badge variant="indigo" className="capitalize">
+                      {(job.employment_type || 'full_time').replace('_', '-')}
+                    </Badge>
+                    <Badge variant="slate" className="capitalize">
+                      {(job.work_mode || 'hybrid').replace('_', '-')}
+                    </Badge>
+                  </>
                 )}
-                <Badge variant="indigo" className="capitalize">
-                  {(job.employment_type || 'full_time').replace('_', '-')}
-                </Badge>
-                <Badge variant="slate" className="capitalize">
-                  {(job.work_mode || 'hybrid').replace('_', '-')}
-                </Badge>
               </div>
               <h1 className="font-display text-2xl md:text-3xl font-extrabold text-kth-slate-900">{job.title}</h1>
               <div className="flex items-center gap-3 text-xs sm:text-sm text-kth-slate-600 mt-1">
@@ -226,7 +247,16 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
                 {isSaved ? 'Saved' : 'Save Job'}
               </Button>
 
-              {hasApplied ? (
+              {job.status === 'closed' ? (
+                <Button
+                  variant="secondary"
+                  size="md"
+                  disabled
+                  className="opacity-70 cursor-not-allowed bg-kth-slate-200 text-kth-slate-600"
+                >
+                  Position Closed
+                </Button>
+              ) : hasApplied ? (
                 <Button
                   variant="secondary"
                   size="md"
@@ -249,7 +279,7 @@ export const CandidateJobDetailsPage: React.FC<CandidateJobDetailsPageProps> = (
                     }
                   }}
                 >
-                  Apply Now
+                  Apply for Position
                 </Button>
               )}
             </div>

@@ -992,6 +992,48 @@ export const applicationService = {
   },
 
   /**
+   * Update disclosure status for an application (e.g. 'disclosed' | 'undisclosed').
+   */
+  async updateDisclosureStatus(
+    applicationId: string,
+    disclosureStatus: 'pending' | 'disclosed' | 'undisclosed'
+  ): Promise<ServiceResult<JobApplication>> {
+    try {
+      // Handle demo applications
+      if (applicationId.startsWith('demo-app-')) {
+        const allDemo = getDemoApplications();
+        const idx = allDemo.findIndex((a) => a.id === applicationId);
+        if (idx !== -1) {
+          allDemo[idx].disclosure_status = disclosureStatus;
+          allDemo[idx].updated_at = new Date().toISOString();
+          window.localStorage.setItem(DEMO_APPLICATIONS_KEY, JSON.stringify(allDemo));
+          notifyApplicationsChanged();
+          return { data: allDemo[idx], error: null };
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('job_applications')
+        .update({
+          disclosure_status: disclosureStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', applicationId)
+        .select('*, candidate:profiles(*), job:jobs(*)')
+        .single();
+
+      if (error) {
+        return { data: null, error: normalizeServiceError(error) };
+      }
+
+      notifyApplicationsChanged();
+      return { data: data as JobApplication, error: null };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
    * Fetch the complete timeline history of stage changes for an application.
    */
   async getApplicationStatusHistory(applicationId: string): Promise<ServiceResult<ApplicationStatusHistory[]>> {

@@ -190,6 +190,10 @@ export interface JobCreateInput {
   country_id?: string | null;
   state_id?: string | null;
   city_id?: string | null;
+  is_featured?: boolean;
+  featured_start_date?: string | null;
+  featured_end_date?: string | null;
+  featured_duration_days?: number | null;
 }
 
 export interface JobUpdateInput {
@@ -220,6 +224,10 @@ export interface JobUpdateInput {
   country_id?: string | null;
   state_id?: string | null;
   city_id?: string | null;
+  is_featured?: boolean;
+  featured_start_date?: string | null;
+  featured_end_date?: string | null;
+  featured_duration_days?: number | null;
   moderation_status?: 'approved' | 'rejected' | 'changes_requested' | 'pending_review';
   moderation_notes?: string | null;
   moderation_flags?: string[];
@@ -268,7 +276,6 @@ export interface InterviewCreateInput {
   location?: string | null;
   venue_address?: string | null;
   map_url?: string | null;
-  interviewer_name?: string | null;
   interviewer_role?: string | null;
   required_documents?: string[];
   instructions?: string | null;
@@ -290,7 +297,6 @@ export interface InterviewUpdateInput {
   location?: string | null;
   venue_address?: string | null;
   map_url?: string | null;
-  interviewer_name?: string | null;
   interviewer_role?: string | null;
   required_documents?: string[];
   instructions?: string | null;

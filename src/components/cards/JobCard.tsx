@@ -20,6 +20,7 @@ export interface JobCardProps {
   matchScore?: number; // e.g. 96
   postedDate?: string;
   isSaved?: boolean;
+  isClosed?: boolean;
   onSaveToggle?: () => void;
   onApply?: () => void;
 }
@@ -38,6 +39,7 @@ export const JobCard: React.FC<JobCardProps> = ({
   matchScore,
   postedDate,
   isSaved = false,
+  isClosed = false,
   onSaveToggle,
   onApply,
 }) => {
@@ -103,14 +105,22 @@ export const JobCard: React.FC<JobCardProps> = ({
           </h3>
 
           <div className="flex items-center gap-1.5 mb-2 flex-wrap">
-            <span className={`font-mono text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-md ${isSalaryValid ? 'text-emerald-700 bg-emerald-50/90 border border-emerald-200/90' : 'text-kth-slate-600 bg-kth-slate-100 border border-kth-slate-200/80'}`}>
-              {salaryText}
-            </span>
-            <Badge variant="indigo" className="capitalize text-[10px] sm:text-[11px] font-semibold py-0.5 px-2">{employmentType.replace('_', '-')}</Badge>
-            {matchScore && (
-              <Badge variant="emerald" hasPulse className="text-[10px] sm:text-[11px] py-0.5 px-2">
-                {matchScore}% Match
+            {isClosed ? (
+              <Badge variant="rose" className="text-[10px] sm:text-[11px] font-bold py-0.5 px-2 bg-rose-100 text-rose-800 border-rose-200">
+                Closed — No longer accepting applications
               </Badge>
+            ) : (
+              <>
+                <span className={`font-mono text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-md ${isSalaryValid ? 'text-emerald-700 bg-emerald-50/90 border border-emerald-200/90' : 'text-kth-slate-600 bg-kth-slate-100 border border-kth-slate-200/80'}`}>
+                  {salaryText}
+                </span>
+                <Badge variant="indigo" className="capitalize text-[10px] sm:text-[11px] font-semibold py-0.5 px-2">{employmentType.replace('_', '-')}</Badge>
+                {matchScore && (
+                  <Badge variant="emerald" hasPulse className="text-[10px] sm:text-[11px] py-0.5 px-2">
+                    {matchScore}% Match
+                  </Badge>
+                )}
+              </>
             )}
           </div>
 
@@ -128,10 +138,15 @@ export const JobCard: React.FC<JobCardProps> = ({
 
       <CardFooter className="pt-2.5 mt-2.5 sm:pt-3 sm:mt-3 border-t border-kth-slate-100 flex items-center justify-between gap-2">
         <span className="text-[11px] sm:text-xs text-kth-slate-400 font-medium truncate">
-          {postedDate || 'Active Opening'}
+          {isClosed ? 'Requisition Closed' : (postedDate || 'Active Opening')}
         </span>
-        <Button variant="primary" size="sm" onClick={onApply} className="shrink-0 font-bold text-xs h-8 px-3.5 shadow-2xs">
-          View Job <ArrowRight className="w-3.5 h-3.5 ml-1" />
+        <Button
+          variant={isClosed ? "secondary" : "primary"}
+          size="sm"
+          onClick={onApply}
+          className="shrink-0 font-bold text-xs h-8 px-3.5 shadow-2xs"
+        >
+          {isClosed ? 'View Details' : 'View Job'} <ArrowRight className="w-3.5 h-3.5 ml-1" />
         </Button>
       </CardFooter>
     </Card>

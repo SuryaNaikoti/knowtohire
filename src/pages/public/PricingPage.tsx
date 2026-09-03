@@ -68,10 +68,10 @@ export const PricingPage: React.FC = () => {
     <div className="py-16 bg-kth-slate-50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeader
-          badgeText="Transparent Platform Plans"
+          badgeText="Platform Subscriptions"
           badgeVariant="indigo"
-          title="Simple, Transparent Pricing in INR (₹)"
-          subtitle="Choose the right plan for candidate career growth or enterprise talent acquisition in India."
+          title="Simple, Transparent Subscriptions in INR (₹)"
+          subtitle="Choose the right subscription plan for candidate career growth or enterprise talent acquisition in India."
           align="center"
         />
 

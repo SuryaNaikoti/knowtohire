@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 
 export interface GoogleAuthButtonProps {
-  role?: 'candidate' | 'employer';
+  role?: 'candidate' | 'employer' | 'creator';
   text?: string;
   className?: string;
   onError?: (error: string) => void;

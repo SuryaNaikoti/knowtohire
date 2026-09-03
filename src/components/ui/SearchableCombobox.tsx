@@ -35,7 +35,7 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
   helperText,
   error,
   disabled = false,
-  allowClear = false,
+  allowClear = true,
   allowCustom = true,
   customPlaceholder = 'Enter custom value...',
   onChange,

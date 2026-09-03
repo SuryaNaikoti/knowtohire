@@ -417,6 +417,7 @@ export const CandidateDashboardPage: React.FC = () => {
                     minSalaryINR={job.min_salary_inr}
                     maxSalaryINR={job.max_salary_inr}
                     skills={job.skills || []}
+                    isClosed={job.status === 'closed'}
                     postedDate={formatRelativeDate(job.published_at || job.created_at)}
                     onApply={() => handleNavigate(`/candidate/jobs/${job.id}`)}
                   />

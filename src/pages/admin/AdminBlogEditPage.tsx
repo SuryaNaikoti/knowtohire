@@ -44,6 +44,7 @@ export const AdminBlogEditPage: React.FC<AdminBlogEditPageProps> = ({ blogId: pr
   const [readTime, setReadTime] = useState('6 min read');
   const [isFeatured, setIsFeatured] = useState(false);
   const [tagsInput, setTagsInput] = useState('');
+  const [coverUrl, setCoverUrl] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [content, setContent] = useState('');
   const [previewMode, setPreviewMode] = useState(false);
@@ -60,6 +61,7 @@ export const AdminBlogEditPage: React.FC<AdminBlogEditPageProps> = ({ blogId: pr
           setReadTime(res.data.read_time);
           setIsFeatured(res.data.is_featured);
           setTagsInput(res.data.tags?.join(', ') || '');
+          setCoverUrl(res.data.cover_url || '');
           setExcerpt(res.data.excerpt || '');
           setContent(res.data.content);
         } else {
@@ -99,6 +101,7 @@ export const AdminBlogEditPage: React.FC<AdminBlogEditPageProps> = ({ blogId: pr
           read_time: readTime,
           is_featured: isFeatured,
           tags: tagsArray,
+          cover_url: coverUrl || undefined,
           excerpt,
           content,
         };
@@ -124,6 +127,7 @@ export const AdminBlogEditPage: React.FC<AdminBlogEditPageProps> = ({ blogId: pr
           read_time: readTime,
           is_featured: isFeatured,
           tags: tagsArray,
+          cover_url: coverUrl || undefined,
           excerpt,
           content,
           status: publishStatus || 'published',
@@ -269,13 +273,80 @@ export const AdminBlogEditPage: React.FC<AdminBlogEditPageProps> = ({ blogId: pr
                           {content.split(/\s+/).filter(Boolean).length} words
                         </span>
                       </div>
+
+                      {/* Rich Formatting Toolbar */}
+                      <div className="flex flex-wrap items-center gap-1.5 p-2 bg-kth-slate-100 rounded-t-xl border border-b-0 border-kth-slate-200 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setContent((prev) => prev + '\n## Heading 2\n')}
+                          className="px-2 py-1 bg-white hover:bg-kth-slate-200 rounded font-bold text-kth-slate-700 shadow-2xs"
+                        >
+                          H2
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setContent((prev) => prev + '\n### Heading 3\n')}
+                          className="px-2 py-1 bg-white hover:bg-kth-slate-200 rounded font-bold text-kth-slate-700 shadow-2xs"
+                        >
+                          H3
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setContent((prev) => prev + ' **bold text** ')}
+                          className="px-2 py-1 bg-white hover:bg-kth-slate-200 rounded font-bold text-kth-slate-700 shadow-2xs"
+                        >
+                          B
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setContent((prev) => prev + ' *italic text* ')}
+                          className="px-2 py-1 bg-white hover:bg-kth-slate-200 rounded italic text-kth-slate-700 shadow-2xs"
+                        >
+                          I
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setContent((prev) => prev + '\n- Bullet item\n- Bullet item\n')}
+                          className="px-2 py-1 bg-white hover:bg-kth-slate-200 rounded text-kth-slate-700 shadow-2xs"
+                        >
+                          • List
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setContent((prev) => prev + '\n> Quote / highlight callout\n')}
+                          className="px-2 py-1 bg-white hover:bg-kth-slate-200 rounded text-kth-slate-700 shadow-2xs"
+                        >
+                          &ldquo; Quote
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setContent((prev) => prev + '\n```\n// code block\n```\n')}
+                          className="px-2 py-1 bg-white hover:bg-kth-slate-200 rounded font-mono text-kth-slate-700 shadow-2xs"
+                        >
+                          &lt;/&gt;
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = prompt('Enter Image URL:');
+                            if (url) {
+                              const alt = prompt('Enter image caption/alt text:') || 'Image';
+                              setContent((prev) => prev + `\n![${alt}](${url})\n`);
+                            }
+                          }}
+                          className="px-2 py-1 bg-white hover:bg-kth-slate-200 rounded font-semibold text-kth-primary-700 shadow-2xs flex items-center gap-1"
+                        >
+                          🖼️ Insert Image
+                        </button>
+                      </div>
+
                       <textarea
                         rows={16}
                         placeholder="Write the comprehensive analysis, statutory breakdown, or research briefing here..."
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
                         required
-                        className="w-full px-4 py-3 text-xs sm:text-sm font-mono rounded-xl border border-kth-slate-200 focus:outline-none focus:ring-2 focus:ring-kth-primary-500 focus:border-transparent leading-relaxed"
+                        className="w-full px-4 py-3 text-xs sm:text-sm font-mono rounded-b-xl rounded-t-none border border-kth-slate-200 focus:outline-none focus:ring-2 focus:ring-kth-primary-500 focus:border-transparent leading-relaxed"
                       />
                     </div>
                   </div>
@@ -330,6 +401,13 @@ export const AdminBlogEditPage: React.FC<AdminBlogEditPageProps> = ({ blogId: pr
                     placeholder="sebi-brsr-core-mandates-guide-2026"
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
+                  />
+
+                  <Input
+                    label="Featured Cover Image URL"
+                    placeholder="https://images.unsplash.com/photo-..."
+                    value={coverUrl}
+                    onChange={(e) => setCoverUrl(e.target.value)}
                   />
 
                   <Input

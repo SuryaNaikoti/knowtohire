@@ -51,7 +51,6 @@ export const EmployerScheduleInterviewPage: React.FC<EmployerScheduleInterviewPa
   const [endTime, setEndTime] = useState('12:00');
   const [meetingLink, setMeetingLink] = useState('https://meet.google.com/kth-interview');
   const [venueAddress, setVenueAddress] = useState('');
-  const [interviewerName, setInterviewerName] = useState('Lead Enterprise Hiring Manager');
   const [contactPhone, setContactPhone] = useState('+91 80 4912 8000');
   const [instructions, setInstructions] = useState('Please review the technical and domain requirements before joining.');
 
@@ -122,7 +121,6 @@ export const EmployerScheduleInterviewPage: React.FC<EmployerScheduleInterviewPa
       meeting_link: (interviewType === 'video' || interviewType === 'technical_deep_dive' || interviewType === 'external') ? meetingLink.trim() : undefined,
       location: (interviewType === 'on_site' || interviewType === 'walk_in') ? venueAddress.trim() : undefined,
       venue_address: (interviewType === 'on_site' || interviewType === 'walk_in') ? venueAddress.trim() : undefined,
-      interviewer_name: interviewerName.trim() || undefined,
       contact_phone: contactPhone.trim() || undefined,
       instructions: instructions.trim() || undefined,
     });
@@ -285,14 +283,7 @@ export const EmployerScheduleInterviewPage: React.FC<EmployerScheduleInterviewPa
               />
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="Interviewer Name"
-                placeholder="e.g. S. Sharma, Lead Architect"
-                value={interviewerName}
-                onChange={(e) => setInterviewerName(e.target.value)}
-              />
-
+            <div>
               <Input
                 label="Recruiter Contact Number"
                 placeholder="+91 80 4912 8000"

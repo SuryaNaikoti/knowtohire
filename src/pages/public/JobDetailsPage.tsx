@@ -149,6 +149,7 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
   const requirements = Array.isArray(job.requirements) ? job.requirements : [];
   const skills = Array.isArray(job.skills) ? job.skills : [];
   const benefits = Array.isArray(job.benefits) ? job.benefits : [];
+  const isClosed = job.status === 'closed';
 
   return (
     <div className="py-8 sm:py-12 bg-kth-slate-50 min-h-screen font-sans">
@@ -166,6 +167,19 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
           </button>
         </div>
 
+        {/* Closed Job Alert Banner */}
+        {isClosed && (
+          <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-rose-900">
+            <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <div>
+              <strong className="block text-sm font-bold">Closed — No longer accepting applications</strong>
+              <p className="text-xs text-rose-800 mt-0.5">
+                This job posting has concluded or has been closed by the hiring team. Existing submitted applications remain on file.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
           
           {/* Main Content Column */}
@@ -176,16 +190,24 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
               <div className="flex justify-between items-start gap-4">
                 <div className="space-y-2.5 min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="indigo" className="capitalize text-[11px] sm:text-xs font-semibold">
-                      {(job.employment_type || 'full_time').replace('_', '-')}
-                    </Badge>
-                    <Badge variant="slate" className="capitalize text-[11px] sm:text-xs">
-                      {(job.work_mode || 'hybrid').replace('_', '-')}
-                    </Badge>
-                    {job.category && (
-                      <Badge variant="cyan" className="text-[11px] sm:text-xs">
-                        {job.category}
+                    {isClosed ? (
+                      <Badge variant="rose" className="font-bold text-xs">
+                        Closed — No longer accepting applications
                       </Badge>
+                    ) : (
+                      <>
+                        <Badge variant="indigo" className="capitalize text-[11px] sm:text-xs font-semibold">
+                          {(job.employment_type || 'full_time').replace('_', '-')}
+                        </Badge>
+                        <Badge variant="slate" className="capitalize text-[11px] sm:text-xs">
+                          {(job.work_mode || 'hybrid').replace('_', '-')}
+                        </Badge>
+                        {job.category && (
+                          <Badge variant="cyan" className="text-[11px] sm:text-xs">
+                            {job.category}
+                          </Badge>
+                        )}
+                      </>
                     )}
                   </div>
 
@@ -253,14 +275,25 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
                   </div>
                 </div>
 
-                <Button
-                  variant="primary"
-                  size="md"
-                  className="w-full sm:w-auto font-bold px-7 h-11 text-xs sm:text-sm shadow-xs shrink-0"
-                  onClick={handleApplyClick}
-                >
-                  Apply for Position
-                </Button>
+                {isClosed ? (
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    disabled
+                    className="w-full sm:w-auto font-bold px-7 h-11 text-xs sm:text-sm shadow-xs shrink-0 opacity-70 cursor-not-allowed bg-kth-slate-200 text-kth-slate-600"
+                  >
+                    Position Closed
+                  </Button>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="md"
+                    className="w-full sm:w-auto font-bold px-7 h-11 text-xs sm:text-sm shadow-xs shrink-0"
+                    onClick={handleApplyClick}
+                  >
+                    Apply for Position
+                  </Button>
+                )}
               </div>
 
               {/* Job Details Sections */}

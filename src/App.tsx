@@ -108,6 +108,10 @@ const AdminTaxonomyPage = lazy(() => import('@/pages/admin/AdminTaxonomyPage').t
 const AdminTaxonomyNewPage = lazy(() => import('@/pages/admin/AdminTaxonomyNewPage').then(m => ({ default: m.AdminTaxonomyNewPage })));
 const AdminSettingsPage = lazy(() => import('@/pages/admin/AdminSettingsPage').then(m => ({ default: m.AdminSettingsPage })));
 
+// Lazy-loaded Creator Pages
+const CreatorDashboardPage = lazy(() => import('@/pages/creator/CreatorDashboardPage').then(m => ({ default: m.CreatorDashboardPage })));
+const ResourceMetricsPage = lazy(() => import('@/pages/creator/ResourceMetricsPage').then(m => ({ default: m.ResourceMetricsPage })));
+
 export function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [isCommandOpen, setIsCommandOpen] = useState(false);
@@ -135,6 +139,7 @@ export function App() {
   const isAdminRoute = currentPath.startsWith('/admin');
   const isCandidateRoute = currentPath.startsWith('/candidate');
   const isEmployerRoute = currentPath.startsWith('/employer');
+  const isCreatorRoute = currentPath.startsWith('/creator');
   const isOnboardingRoute = currentPath.startsWith('/onboarding');
   const isAuthRoute =
     currentPath === '/login' ||
@@ -194,6 +199,14 @@ export function App() {
         adminComponent = <AdminBlogEditPage blogId={blogId} onNavigate={navigateTo} />;
       }
       else if (path === '/admin/blog') adminComponent = <AdminBlogPage onNavigate={navigateTo} />;
+      else if (path.startsWith('/admin/resources/') && path.endsWith('/metrics')) {
+        const resId = path.replace('/admin/resources/', '').replace('/metrics', '');
+        adminComponent = <ResourceMetricsPage itemId={resId} itemType="resource" onNavigate={navigateTo} />;
+      }
+      else if (path.startsWith('/admin/templates/') && path.endsWith('/metrics')) {
+        const tmplId = path.replace('/admin/templates/', '').replace('/metrics', '');
+        adminComponent = <ResourceMetricsPage itemId={tmplId} itemType="template" onNavigate={navigateTo} />;
+      }
       else if (path === '/admin/taxonomy/new') adminComponent = <AdminTaxonomyNewPage onNavigate={navigateTo} />;
       else if (path === '/admin/taxonomy') adminComponent = <AdminTaxonomyPage />;
       else if (path === '/admin/settings') adminComponent = <AdminSettingsPage onNavigate={navigateTo} />;
@@ -202,6 +215,29 @@ export function App() {
         <ProtectedRoute currentPath={currentPath} onNavigate={navigateTo}>
           <RoleGuard allowedRoles={['admin']} onNavigate={navigateTo}>
             {adminComponent}
+          </RoleGuard>
+        </ProtectedRoute>
+      );
+    }
+
+    // Creator Routes (Guarded: ProtectedRoute + RoleGuard allowedRoles=['creator', 'admin'])
+    if (isCreatorRoute) {
+      let creatorComponent: React.ReactNode = <CreatorDashboardPage onNavigate={navigateTo} />;
+
+      if (path === '/creator' || path === '/creator/') {
+        creatorComponent = <CreatorDashboardPage onNavigate={navigateTo} />;
+      } else if (path.startsWith('/creator/resources/') && path.endsWith('/metrics')) {
+        const resId = path.replace('/creator/resources/', '').replace('/metrics', '');
+        creatorComponent = <ResourceMetricsPage itemId={resId} itemType="resource" onNavigate={navigateTo} />;
+      } else if (path.startsWith('/creator/templates/') && path.endsWith('/metrics')) {
+        const tmplId = path.replace('/creator/templates/', '').replace('/metrics', '');
+        creatorComponent = <ResourceMetricsPage itemId={tmplId} itemType="template" onNavigate={navigateTo} />;
+      }
+
+      return (
+        <ProtectedRoute currentPath={currentPath} onNavigate={navigateTo}>
+          <RoleGuard allowedRoles={['creator', 'admin']} onNavigate={navigateTo}>
+            {creatorComponent}
           </RoleGuard>
         </ProtectedRoute>
       );
@@ -414,7 +450,7 @@ export function App() {
       const slug = path.replace('/blog/', '');
       return <BlogDetailsPage slug={slug} />;
     }
-    if (path === '/pricing') return <PricingPage />;
+    if (path === '/pricing' || path === '/subscribe') return <PricingPage />;
     if (path === '/about') return <AboutPage />;
     if (path === '/contact') return <ContactPage />;
     if (path === '/privacy') return <PrivacyPage />;
@@ -426,7 +462,7 @@ export function App() {
   return (
     <div className="min-h-screen bg-kth-slate-50 flex flex-col font-sans">
       {/* Conditionally Render Shell based on route type */}
-      {isAdminRoute || isEmployerRoute || isCandidateRoute || isOnboardingRoute || isAuthRoute ? (
+      {isAdminRoute || isEmployerRoute || isCandidateRoute || isCreatorRoute || isOnboardingRoute || isAuthRoute ? (
         <div className="flex-1 flex flex-col">
           <Suspense fallback={<PageLoading />}>
             {renderRouteContent()}

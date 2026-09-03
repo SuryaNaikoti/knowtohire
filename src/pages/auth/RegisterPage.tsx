@@ -6,7 +6,7 @@ import { Alert } from '@/components/ui/Alert';
 import { Tabs, TabItem } from '@/components/ui/Tabs';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { useAuth } from '@/context/AuthContext';
-import { Mail, Lock, User, Building2, Eye, EyeOff, Check, AlertCircle, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, Building2, Eye, EyeOff, Check, AlertCircle, ArrowRight, Sparkles } from 'lucide-react';
 
 export interface RegisterPageProps {
   onNavigate?: (path: string) => void;
@@ -15,10 +15,12 @@ export interface RegisterPageProps {
 export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const { register, isLoading, error: authError, clearError } = useAuth();
 
-  // Role Selection (Candidate vs Employer only)
+  // Role Selection (Candidate vs Employer vs Creator)
   const searchParams = new URLSearchParams(window.location.search);
-  const initialRole = searchParams.get('role') === 'employer' ? 'employer' : 'candidate';
-  const [selectedRole, setSelectedRole] = useState<'candidate' | 'employer'>(initialRole);
+  const paramRole = searchParams.get('role');
+  const initialRole: 'candidate' | 'employer' | 'creator' =
+    paramRole === 'employer' ? 'employer' : paramRole === 'creator' ? 'creator' : 'candidate';
+  const [selectedRole, setSelectedRole] = useState<'candidate' | 'employer' | 'creator'>(initialRole);
 
   // Form Fields
   const [fullName, setFullName] = useState('');
@@ -42,6 +44,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const roleTabItems: TabItem[] = [
     { id: 'candidate', label: 'Candidate', icon: <User className="w-3.5 h-3.5" /> },
     { id: 'employer', label: 'Employer / Recruiter', icon: <Building2 className="w-3.5 h-3.5" /> },
+    { id: 'creator', label: 'Content Creator', icon: <Sparkles className="w-3.5 h-3.5" /> },
   ];
 
   // Generic Email Detection for Employers (Non-blocking warning)
@@ -130,9 +133,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     if (error) {
       setFormError(error.message);
     } else {
-      // Email confirmation is disabled; forward directly to role onboarding
-      const onboardingPath = selectedRole === 'employer' ? '/onboarding/employer' : '/onboarding/candidate';
-      navigate(onboardingPath);
+      // Forward directly to role dashboard / onboarding
+      const targetPath = selectedRole === 'employer' ? '/onboarding/employer' : selectedRole === 'creator' ? '/creator' : '/onboarding/candidate';
+      navigate(targetPath);
     }
   };
 
@@ -142,6 +145,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
       subtitle={
         selectedRole === 'candidate'
           ? "Discover verified jobs, career insights, and ATS tools."
+          : selectedRole === 'creator'
+          ? "Monetize study resources, research papers, and document templates."
           : "Post jobs, screen candidates, and streamline your hiring pipeline."
       }
     >
@@ -154,7 +159,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
           <Tabs
             items={roleTabItems}
             activeId={selectedRole}
-            onChange={(id) => setSelectedRole(id as 'candidate' | 'employer')}
+            onChange={(id) => setSelectedRole(id as 'candidate' | 'employer' | 'creator')}
             variant="segmented"
             className="w-full flex"
           />

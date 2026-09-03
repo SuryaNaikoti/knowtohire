@@ -44,6 +44,15 @@ export function notifyJobsChanged() {
   }
 }
 
+/**
+ * Evaluates whether a job is currently featured based on its active date range.
+ */
+export function isJobCurrentlyFeatured(job: Job): boolean {
+  if (!job.is_featured) return false;
+  if (!job.featured_end_date) return true;
+  return new Date(job.featured_end_date) >= new Date();
+}
+
 export type {
   Job,
   JobStatus,
@@ -441,13 +450,7 @@ export const jobService = {
       const localJobs = getLocalCreatedJobs();
       const localJob = localJobs.find((j) => j.id === jobId);
       if (localJob) {
-        if (localJob.status === 'published') {
-          return { data: normalizeJobEntity(localJob), error: null };
-        }
-        return {
-          data: null,
-          error: { message: 'Job posting is paused or closed.', code: 'INACTIVE_JOB', status: 403 },
-        };
+        return { data: normalizeJobEntity(localJob), error: null };
       }
 
       // Check canonical MOCK_JOBS if not overridden locally

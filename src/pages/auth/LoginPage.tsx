@@ -28,7 +28,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     }
   };
 
-  const handleQuickDemoLogin = async (type: 'candidate' | 'employer' | 'admin') => {
+  const handleQuickDemoLogin = async (type: 'candidate' | 'employer' | 'admin' | 'creator') => {
     const creds = DEMO_CREDENTIALS[type];
     setEmail(creds.email);
     setPassword(creds.password);
@@ -38,6 +38,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     const { error } = await login(creds.email, creds.password);
     if (error) {
       setFormError(error.message);
+    } else {
+      const targetPath = type === 'admin' ? '/admin' : type === 'employer' ? '/employer' : type === 'creator' ? '/creator' : '/candidate';
+      navigate(targetPath);
     }
   };
 
@@ -81,6 +84,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
           ? 'Invalid email address or password. Please try again.'
           : error.message
       );
+    } else {
+      const cleanEmail = email.trim().toLowerCase();
+      if (cleanEmail === 'creator@knowtohire.com' || cleanEmail === 'demo.creator@knowtohire.com') {
+        navigate('/creator');
+      } else if (cleanEmail === 'admin@knowtohire.com' || cleanEmail === 'demo.admin@knowtohire.com') {
+        navigate('/admin');
+      } else if (cleanEmail === 'employer@knowtohire.com' || cleanEmail === 'demo.employer@knowtohire.com') {
+        navigate('/employer');
+      } else {
+        navigate('/candidate');
+      }
     }
   };
 
@@ -113,7 +127,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
             Click any button below to immediately sign in to that portal:
           </p>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <button
               type="button"
               disabled={isLoading}
@@ -138,6 +152,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
               </div>
               <span className="text-[11px] font-bold">Employer</span>
               <span className="text-[9px] text-kth-slate-400 font-mono">employer@...</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isLoading}
+              onClick={() => handleQuickDemoLogin('creator')}
+              className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white hover:bg-amber-50/80 border border-kth-slate-200 hover:border-amber-300 text-kth-slate-800 transition-all text-center group shadow-xs active:scale-95"
+            >
+              <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-1 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <span className="text-[11px] font-bold">Creator</span>
+              <span className="text-[9px] text-kth-slate-400 font-mono">creator@...</span>
             </button>
 
             <button

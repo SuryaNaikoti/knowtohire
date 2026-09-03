@@ -40,12 +40,22 @@ export const DEMO_CREDENTIALS = {
     avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&h=150&q=80',
     id: '00000000-0000-0000-0000-000000000003',
   },
+  creator: {
+    email: 'creator@knowtohire.com',
+    password: 'Password123!',
+    role: 'creator' as UserRole,
+    status: 'active' as AccountStatus,
+    full_name: 'Aarav Sharma (Content & Template Creator)',
+    phone: '+91 97112 84920',
+    avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
+    id: '00000000-0000-0000-0000-000000000004',
+  },
 };
 
 /**
  * Creates a mock AuthUser compatible with Supabase Auth schema.
  */
-function createDemoAuthUser(demo: typeof DEMO_CREDENTIALS.candidate | typeof DEMO_CREDENTIALS.employer | typeof DEMO_CREDENTIALS.admin): AuthUser {
+function createDemoAuthUser(demo: typeof DEMO_CREDENTIALS.candidate | typeof DEMO_CREDENTIALS.employer | typeof DEMO_CREDENTIALS.admin | typeof DEMO_CREDENTIALS.creator): AuthUser {
   return {
     id: demo.id,
     app_metadata: { provider: 'email', providers: ['email'], role: demo.role },
@@ -71,7 +81,7 @@ function createDemoAuthUser(demo: typeof DEMO_CREDENTIALS.candidate | typeof DEM
   } as unknown as AuthUser;
 }
 
-function createDemoProfile(demo: typeof DEMO_CREDENTIALS.candidate | typeof DEMO_CREDENTIALS.employer | typeof DEMO_CREDENTIALS.admin): Profile {
+function createDemoProfile(demo: typeof DEMO_CREDENTIALS.candidate | typeof DEMO_CREDENTIALS.employer | typeof DEMO_CREDENTIALS.admin | typeof DEMO_CREDENTIALS.creator): Profile {
   let customOverrides: Partial<Profile> = {};
   let effectiveStatus = demo.status;
 
@@ -155,7 +165,7 @@ export const resolveRole = (
 ): UserRole | null => {
   if (user?.id?.startsWith('demo-')) {
     const metaRole = user.user_metadata?.role as UserRole;
-    if (metaRole === 'candidate' || metaRole === 'employer' || metaRole === 'admin') {
+    if (metaRole === 'candidate' || metaRole === 'employer' || metaRole === 'admin' || metaRole === 'creator') {
       return metaRole;
     }
   }
@@ -164,22 +174,22 @@ export const resolveRole = (
   const appRole = user?.app_metadata?.role || (user as any)?.raw_app_meta_data?.role;
 
   // 1. If profile is active (onboarding completed), profile.role is authoritative
-  if (profile?.status === 'active' && (profile.role === 'employer' || profile.role === 'candidate' || profile.role === 'admin')) {
+  if (profile?.status === 'active' && (profile.role === 'employer' || profile.role === 'candidate' || profile.role === 'admin' || profile.role === 'creator')) {
     return profile.role;
   }
 
   // 2. User metadata role
-  if (metaRole === 'employer' || metaRole === 'candidate' || metaRole === 'admin') {
+  if (metaRole === 'employer' || metaRole === 'candidate' || metaRole === 'admin' || metaRole === 'creator') {
     return metaRole;
   }
 
   // 3. Profile role
-  if (profile?.role === 'employer' || profile?.role === 'candidate' || profile?.role === 'admin') {
+  if (profile?.role === 'employer' || profile?.role === 'candidate' || profile?.role === 'admin' || profile?.role === 'creator') {
     return profile.role;
   }
 
   // 4. App metadata
-  if (appRole === 'employer' || appRole === 'candidate' || appRole === 'admin') {
+  if (appRole === 'employer' || appRole === 'candidate' || appRole === 'admin' || appRole === 'creator') {
     return appRole;
   }
 
@@ -193,7 +203,7 @@ export const resolveRole = (
     try {
       const stored = window.localStorage.getItem(DEMO_STORAGE_KEY);
       const sessionRole = stored ? JSON.parse(stored)?.role : null;
-      if (sessionRole === 'employer' || sessionRole === 'candidate' || sessionRole === 'admin') {
+      if (sessionRole === 'employer' || sessionRole === 'candidate' || sessionRole === 'admin' || sessionRole === 'creator') {
         return sessionRole;
       }
     } catch {
@@ -222,11 +232,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       userId === DEMO_CREDENTIALS.candidate.id ||
       userId === DEMO_CREDENTIALS.employer.id ||
       userId === DEMO_CREDENTIALS.admin.id ||
+      userId === DEMO_CREDENTIALS.creator.id ||
       userId.startsWith('demo-')
     ) {
       if (userId === DEMO_CREDENTIALS.candidate.id || userId === 'demo-candidate-001') return createDemoProfile(DEMO_CREDENTIALS.candidate);
       if (userId === DEMO_CREDENTIALS.employer.id || userId === 'demo-employer-002') return createDemoProfile(DEMO_CREDENTIALS.employer);
       if (userId === DEMO_CREDENTIALS.admin.id || userId === 'demo-admin-003') return createDemoProfile(DEMO_CREDENTIALS.admin);
+      if (userId === DEMO_CREDENTIALS.creator.id || userId === 'demo-creator-004') return createDemoProfile(DEMO_CREDENTIALS.creator);
     }
 
     if (!isSupabaseConfigured()) {
@@ -432,6 +444,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         state.user.id === DEMO_CREDENTIALS.candidate.id ||
         state.user.id === DEMO_CREDENTIALS.employer.id ||
         state.user.id === DEMO_CREDENTIALS.admin.id ||
+        state.user.id === DEMO_CREDENTIALS.creator.id ||
         state.user.id.startsWith('demo-')
       );
       if (isCurrentDemo) {
@@ -490,13 +503,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isCandidateDemo = cleanEmail === 'candidate@knowtohire.com' || cleanEmail === 'demo.candidate@knowtohire.com';
     const isEmployerDemo = cleanEmail === 'employer@knowtohire.com' || cleanEmail === 'demo.employer@knowtohire.com' || cleanEmail === 'cilove3743@hutdot.com';
     const isAdminDemo = cleanEmail === 'admin@knowtohire.com' || cleanEmail === 'demo.admin@knowtohire.com' || cleanEmail === 'cand_1786972983967@hutdot.com';
+    const isCreatorDemo = cleanEmail === 'creator@knowtohire.com' || cleanEmail === 'demo.creator@knowtohire.com';
 
-    if (isCandidateDemo || isEmployerDemo || isAdminDemo) {
+    if (isCandidateDemo || isEmployerDemo || isAdminDemo || isCreatorDemo) {
       const demoData = isCandidateDemo
         ? DEMO_CREDENTIALS.candidate
         : isEmployerDemo
         ? DEMO_CREDENTIALS.employer
-        : DEMO_CREDENTIALS.admin;
+        : isAdminDemo
+        ? DEMO_CREDENTIALS.admin
+        : DEMO_CREDENTIALS.creator;
 
       // Check if this demo user has been permanently deleted/suspended by Admin
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -577,13 +593,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error: null };
   };
 
-  const loginWithGoogle = async (role?: 'candidate' | 'employer'): Promise<{ error: Error | null }> => {
+  const loginWithGoogle = async (role?: 'candidate' | 'employer' | 'creator'): Promise<{ error: Error | null }> => {
     if (!isSupabaseConfigured()) {
       return { error: new Error('Supabase credentials are not configured in environment.') };
     }
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-    const sanitizedRole = role === 'employer' ? 'employer' : role === 'candidate' ? 'candidate' : undefined;
+    const sanitizedRole = role === 'employer' ? 'employer' : role === 'creator' ? 'creator' : role === 'candidate' ? 'candidate' : undefined;
 
     if (sanitizedRole && typeof window !== 'undefined' && window.sessionStorage) {
       window.sessionStorage.setItem('kth_oauth_intended_role', sanitizedRole);
@@ -609,7 +625,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (
     email: string,
     password: string,
-    metadata: { full_name: string; role: 'candidate' | 'employer'; [key: string]: any }
+    metadata: { full_name: string; role: 'candidate' | 'employer' | 'creator'; [key: string]: any }
   ): Promise<{ error: Error | null }> => {
     if (!isSupabaseConfigured()) {
       return { error: new Error('Supabase credentials are not configured in environment.') };

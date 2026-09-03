@@ -12,6 +12,7 @@ export type ResourceStatus = 'draft' | 'published' | 'archived';
 
 export interface KnowledgeResource {
   id: string;
+  creator_id?: string;
   title: string;
   slug: string;
   description: string;

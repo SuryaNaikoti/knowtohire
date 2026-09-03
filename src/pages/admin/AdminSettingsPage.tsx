@@ -25,7 +25,7 @@ import {
   Globe,
 } from 'lucide-react';
 
-type TabKey = 'profile' | 'platform' | 'governance' | 'security' | 'notifications';
+type TabKey = 'profile' | 'platform' | 'governance' | 'security' | 'notifications' | 'creator';
 
 export interface AdminSettingsPageProps {
   onNavigate?: (path: string) => void;
@@ -265,6 +265,19 @@ export const AdminSettingsPage: React.FC<AdminSettingsPageProps> = ({ onNavigate
             >
               <Bell className="w-4 h-4" />
               <span>Notifications</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('creator')}
+              className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                activeTab === 'creator'
+                  ? 'bg-kth-slate-900 text-white shadow-xs'
+                  : 'bg-white text-kth-slate-600 hover:bg-kth-slate-50 border border-kth-slate-200'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>Creator Monetization</span>
             </button>
           </div>
 
@@ -702,6 +715,84 @@ export const AdminSettingsPage: React.FC<AdminSettingsPageProps> = ({ onNavigate
                         className="w-4 h-4 text-kth-primary-600 rounded border-kth-slate-300 focus:ring-kth-primary-500 cursor-pointer"
                       />
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 6. CREATOR & MONETIZATION TAB */}
+              {activeTab === 'creator' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-base font-extrabold text-kth-slate-900">Creator Commission & Payout Thresholds</h3>
+                    <p className="text-xs text-kth-slate-500">
+                      Configure platform commission splits, minimum payout thresholds, and featured job duration limits.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      label="Minimum Creator Payout Threshold (₹ INR)"
+                      type="number"
+                      value={settings.creatorPayout?.minPayoutThresholdINR ?? 1500}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          creatorPayout: {
+                            ...settings.creatorPayout,
+                            minPayoutThresholdINR: parseInt(e.target.value, 10) || 0,
+                          },
+                        })
+                      }
+                      helperText="Default: ₹1,500. Creators cannot request a payout until available earnings reach this amount."
+                      required
+                    />
+
+                    <Input
+                      label="Creator Commission Share (%)"
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={settings.creatorPayout?.creatorCommissionPct ?? 70}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          creatorPayout: {
+                            ...settings.creatorPayout,
+                            creatorCommissionPct: parseInt(e.target.value, 10) || 0,
+                          },
+                        })
+                      }
+                      helperText="Percentage of template/resource revenue paid to creators (e.g., 70% Creator / 30% Platform)."
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <Input
+                      label="Default Featured Job Duration (Days)"
+                      type="number"
+                      min={1}
+                      max={90}
+                      value={settings.creatorPayout?.defaultFeaturedJobDurationDays ?? 7}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          creatorPayout: {
+                            ...settings.creatorPayout,
+                            defaultFeaturedJobDurationDays: parseInt(e.target.value, 10) || 7,
+                          },
+                        })
+                      }
+                      helperText="Default number of days a job post remains highlighted in the Featured section."
+                      required
+                    />
+                  </div>
+
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1 text-xs">
+                    <span className="font-bold text-emerald-900 block">Configurable Business Rules</span>
+                    <p className="text-emerald-800">
+                      Adjusting the payout threshold or commission share dynamically updates all Creator earnings calculations and payout eligibility checks platform-wide without code modifications.
+                    </p>
                   </div>
                 </div>
               )}

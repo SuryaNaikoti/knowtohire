@@ -390,7 +390,6 @@ export const interviewService = {
         location: input.location ? input.location.trim() : null,
         venue_address: input.venue_address ? input.venue_address.trim() : null,
         map_url: input.map_url ? input.map_url.trim() : null,
-        interviewer_name: input.interviewer_name ? input.interviewer_name.trim() : null,
         interviewer_role: input.interviewer_role ? input.interviewer_role.trim() : null,
         required_documents: input.required_documents || [],
         instructions: input.instructions ? input.instructions.trim() : null,

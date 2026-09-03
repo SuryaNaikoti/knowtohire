@@ -40,24 +40,31 @@ export const CandidateApplicationDetailsPage: React.FC<CandidateApplicationDetai
     setIsLoading(true);
     setErrorMessage(null);
 
-    const [appRes, histRes, intRes] = await Promise.all([
-      applicationService.getMyApplicationById(resolvedAppId),
-      applicationService.getApplicationStatusHistory(resolvedAppId),
-      interviewService.getMyInterviews(),
-    ]);
+    const appRes = await applicationService.getMyApplicationById(resolvedAppId);
+    let histData: any[] = [];
+    let intData: any[] = [];
+
+    if (appRes.data) {
+      const [histRes, intRes] = await Promise.all([
+        applicationService.getApplicationStatusHistory(resolvedAppId).catch(() => ({ data: [], error: null })),
+        interviewService.getMyInterviews().catch(() => ({ data: [], error: null })),
+      ]);
+      histData = histRes.data || [];
+      intData = intRes.data || [];
+    }
 
     if (appRes.error || !appRes.data) {
       setErrorMessage(appRes.error?.message || 'Application record not found or inaccessible.');
       setApplication(null);
     } else {
       setApplication(appRes.data);
-      setHistory(histRes.data || []);
+      setHistory(histData);
       if (appRes.data.stage === 'hired') {
         setShowCelebrationModal(true);
       }
       // Filter interviews linked to this application
-      if (intRes.data) {
-        setInterviews(intRes.data.filter((i) => i.application_id === resolvedAppId));
+      if (intData) {
+        setInterviews(intData.filter((i: any) => i.application_id === resolvedAppId));
       }
     }
 
@@ -257,6 +264,18 @@ export const CandidateApplicationDetailsPage: React.FC<CandidateApplicationDetai
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 {getStageBadge(application.stage)}
+                {application.disclosure_status && (
+                  <Badge
+                    variant={application.disclosure_status === 'disclosed' ? 'emerald' : application.disclosure_status === 'undisclosed' ? 'rose' : 'amber'}
+                    className="text-[11px] font-semibold py-0.5"
+                  >
+                    {application.disclosure_status === 'disclosed'
+                      ? 'Candidate Disclosed'
+                      : application.disclosure_status === 'undisclosed'
+                      ? 'Candidate Undisclosed'
+                      : 'Disclosure Pending'}
+                  </Badge>
+                )}
                 <span className="text-xs text-kth-slate-400 font-mono">
                   App #{applicationRef}
                 </span>

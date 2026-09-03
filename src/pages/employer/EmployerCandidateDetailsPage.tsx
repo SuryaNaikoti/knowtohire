@@ -425,6 +425,27 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
                     options={ATS_STAGES.map((s) => ({ value: s.stage, label: s.label }))}
                   />
                 </div>
+
+                <div className="pt-2 border-t border-kth-slate-200">
+                  <label className="text-[11px] font-bold text-kth-slate-600 block mb-1">
+                    Candidate Disclosure:
+                  </label>
+                  <Select
+                    value={application.disclosure_status || 'pending'}
+                    onChange={async (e) => {
+                      const val = e.target.value as 'pending' | 'disclosed' | 'undisclosed';
+                      const { data } = await applicationService.updateDisclosureStatus(application.id, val);
+                      if (data) {
+                        setApplication(data);
+                      }
+                    }}
+                    options={[
+                      { value: 'pending', label: 'Pending Review' },
+                      { value: 'disclosed', label: 'Disclosed (Verified)' },
+                      { value: 'undisclosed', label: 'Undisclosed (Withheld)' },
+                    ]}
+                  />
+                </div>
               </div>
             )}
           </div>

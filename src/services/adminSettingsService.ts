@@ -50,12 +50,19 @@ export interface AdminNotificationSettings {
   securityAlertsImmediate: boolean;
 }
 
+export interface CreatorPayoutSettings {
+  minPayoutThresholdINR: number;
+  creatorCommissionPct: number;
+  defaultFeaturedJobDurationDays: number;
+}
+
 export interface MasterAdminSettings {
   profile: AdminProfileSettings;
   platform: PlatformConfigSettings;
   governance: RoleGovernanceSettings;
   security: SecuritySessionSettings;
   notifications: AdminNotificationSettings;
+  creatorPayout: CreatorPayoutSettings;
 }
 
 const STORAGE_KEY = 'kth_master_admin_settings';
@@ -93,6 +100,11 @@ export const DEFAULT_ADMIN_SETTINGS: MasterAdminSettings = {
     dailyPlatformMetricsDigest: true,
     securityAlertsImmediate: true,
   },
+  creatorPayout: {
+    minPayoutThresholdINR: 1500,
+    creatorCommissionPct: 70,
+    defaultFeaturedJobDurationDays: 7,
+  },
 };
 
 let inMemorySettings: MasterAdminSettings | null = null;
@@ -118,6 +130,7 @@ export const adminSettingsService = {
                 governance: { ...DEFAULT_ADMIN_SETTINGS.governance, ...parsed.governance },
                 security: { ...DEFAULT_ADMIN_SETTINGS.security, ...parsed.security },
                 notifications: { ...DEFAULT_ADMIN_SETTINGS.notifications, ...parsed.notifications },
+                creatorPayout: { ...DEFAULT_ADMIN_SETTINGS.creatorPayout, ...(parsed.creatorPayout || {}) },
               },
               error: null,
             };

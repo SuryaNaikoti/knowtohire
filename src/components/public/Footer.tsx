@@ -40,7 +40,7 @@ export const Footer: React.FC = () => {
               <li><a href="/pricing" className="hover:text-white transition-colors py-0.5 inline-block">Post a Job</a></li>
               <li><a href="/pricing" className="hover:text-white transition-colors py-0.5 inline-block">Find Talent</a></li>
               <li><a href="/pricing" className="hover:text-white transition-colors py-0.5 inline-block">ATS Plans</a></li>
-              <li><a href="/pricing" className="hover:text-white transition-colors py-0.5 inline-block">Pricing</a></li>
+              <li><a href="/pricing" className="hover:text-white transition-colors py-0.5 inline-block">Subscribe</a></li>
             </ul>
           </div>
 

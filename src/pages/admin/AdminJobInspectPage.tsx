@@ -50,6 +50,8 @@ export const AdminJobInspectPage: React.FC<AdminJobInspectPageProps> = ({
   // Moderation form state
   const [targetStatus, setTargetStatus] = useState<'published' | 'paused' | 'closed' | 'draft'>('published');
   const [moderationNotes, setModerationNotes] = useState('');
+  const [isFeatured, setIsFeatured] = useState(false);
+  const [featuredDurationDays, setFeaturedDurationDays] = useState(7);
   const [isSubmittingModeration, setIsSubmittingModeration] = useState(false);
 
   const loadJob = useCallback(async () => {
@@ -69,6 +71,8 @@ export const AdminJobInspectPage: React.FC<AdminJobInspectPageProps> = ({
         setJob(match);
         setTargetStatus(match.status);
         setModerationNotes(match.moderation_notes || '');
+        setIsFeatured(Boolean(match.is_featured));
+        setFeaturedDurationDays(match.featured_duration_days || 7);
       } else {
         setErrorMessage('Job requisition not found.');
       }
@@ -116,11 +120,23 @@ export const AdminJobInspectPage: React.FC<AdminJobInspectPageProps> = ({
       modStatus = moderationNotes.trim() ? 'changes_requested' : 'pending_review';
     }
 
+    const featuredStartDate = isFeatured ? (job.featured_start_date || new Date().toISOString()) : null;
+    let featuredEndDate = null;
+    if (isFeatured && featuredStartDate) {
+      const endD = new Date(featuredStartDate);
+      endD.setDate(endD.getDate() + (featuredDurationDays || 7));
+      featuredEndDate = endD.toISOString();
+    }
+
     const res = await adminService.moderateJob(job.id, {
       status: targetStatus,
       moderation_status: modStatus,
       moderation_notes: moderationNotes.trim() || null,
-    });
+      is_featured: isFeatured,
+      featured_start_date: featuredStartDate,
+      featured_end_date: featuredEndDate,
+      featured_duration_days: isFeatured ? featuredDurationDays : null,
+    } as any);
 
     setIsSubmittingModeration(false);
 
@@ -132,6 +148,10 @@ export const AdminJobInspectPage: React.FC<AdminJobInspectPageProps> = ({
               status: targetStatus,
               moderation_status: modStatus,
               moderation_notes: moderationNotes.trim() || null,
+              is_featured: isFeatured,
+              featured_start_date: featuredStartDate,
+              featured_end_date: featuredEndDate,
+              featured_duration_days: isFeatured ? featuredDurationDays : null,
               moderated_at: new Date().toISOString(),
             }
           : prev
@@ -731,6 +751,45 @@ export const AdminJobInspectPage: React.FC<AdminJobInspectPageProps> = ({
                       <span>Reject & Close</span>
                     </button>
                   </div>
+                </div>
+
+                {/* Featured Duration Control */}
+                <div className="p-4 bg-kth-slate-50 rounded-xl border border-kth-slate-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-kth-slate-900 block">Featured Job Spotlight</span>
+                      <span className="text-[11px] text-kth-slate-500">Highlight this opening at the top of candidate and public discovery feeds</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={isFeatured}
+                      onChange={(e) => setIsFeatured(e.target.checked)}
+                      className="w-4 h-4 text-kth-primary-600 rounded border-kth-slate-300 focus:ring-kth-primary-500 cursor-pointer"
+                    />
+                  </div>
+
+                  {isFeatured && (
+                    <div className="pt-2 border-t border-kth-slate-200 flex items-center justify-between gap-4">
+                      <span className="text-xs font-medium text-kth-slate-700">Duration Active:</span>
+                      <select
+                        value={featuredDurationDays}
+                        onChange={(e) => setFeaturedDurationDays(parseInt(e.target.value, 10))}
+                        className="bg-white border border-kth-slate-200 rounded-lg px-2.5 py-1 text-xs text-kth-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-kth-primary-500"
+                      >
+                        <option value={7}>7 Days (1 Week)</option>
+                        <option value={14}>14 Days (2 Weeks)</option>
+                        <option value={30}>30 Days (1 Month)</option>
+                        <option value={60}>60 Days (2 Months)</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {job.featured_end_date && (
+                    <div className="text-[10px] text-kth-slate-500 font-mono">
+                      Current Expiry: {new Date(job.featured_end_date).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
+                      {new Date(job.featured_end_date) < new Date() && ' (Expired)'}
+                    </div>
+                  )}
                 </div>
 
                 {/* Change Request / Feedback Notes */}

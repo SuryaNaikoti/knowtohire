@@ -7,7 +7,7 @@
 // MODULE 01: AUTH & PROFILES TYPES
 // ====================================================================
 
-export type UserRole = 'candidate' | 'employer' | 'admin';
+export type UserRole = 'candidate' | 'employer' | 'admin' | 'creator';
 
 export type AccountStatus = 'unverified' | 'pending_onboarding' | 'active' | 'suspended';
 
@@ -152,6 +152,11 @@ export interface Job {
   country_id?: string | null;
   state_id?: string | null;
   city_id?: string | null;
+  // Featured Duration Control
+  is_featured?: boolean;
+  featured_start_date?: string | null;
+  featured_end_date?: string | null;
+  featured_duration_days?: number | null;
   // Joined entity representations
   company?: CompanyProfile;
   poster?: {
@@ -169,12 +174,15 @@ export interface Job {
   moderated_by?: string | null;
 }
 
+export type DisclosureStatus = 'pending' | 'disclosed' | 'undisclosed';
+
 export interface JobApplication {
   id: string; // Primary Key UUID
   job_id: string; // Foreign Key to public.jobs.id
   candidate_id: string; // Foreign Key to public.profiles.id
   company_id: string; // Foreign Key to public.company_profiles.id
   stage: ApplicationStage;
+  disclosure_status?: DisclosureStatus;
   resume_url: string;
   cover_letter?: string | null;
   candidate_snapshot: Record<string, unknown>;

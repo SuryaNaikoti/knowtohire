@@ -7,21 +7,23 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { templateService, MarketplaceTemplate, TemplateStatus } from '@/services/templateService';
 import {
-  FileText,
   Plus,
-  Search,
-  ExternalLink,
   Trash2,
-  Edit,
   Loader2,
-  Layers,
+  FileText,
+  Search,
   CheckCircle2,
-  Clock,
+  Layers,
+  ShoppingBag,
+  IndianRupee,
+  AlertCircle,
+  Edit,
   Play,
   Pause,
-  AlertCircle,
-  Download,
+  ExternalLink,
 } from 'lucide-react';
+import { formatINR } from '@/design-system/tokens';
+import { creatorService } from '@/services/creatorService';
 
 export interface AdminTemplatesPageProps {
   onNavigate?: (path: string) => void;
@@ -29,6 +31,7 @@ export interface AdminTemplatesPageProps {
 
 export const AdminTemplatesPage: React.FC<AdminTemplatesPageProps> = ({ onNavigate }) => {
   const [templates, setTemplates] = useState<MarketplaceTemplate[]>([]);
+  const [salesData, setSalesData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -61,9 +64,15 @@ export const AdminTemplatesPage: React.FC<AdminTemplatesPageProps> = ({ onNaviga
 
   const fetchTemplates = useCallback(async () => {
     setIsLoading(true);
-    const res = await templateService.getTemplates({ status: 'all' });
+    const [res, salesRes] = await Promise.all([
+      templateService.getTemplates({ status: 'all' }),
+      creatorService.getSales(),
+    ]);
     if (res.data) {
       setTemplates(res.data);
+    }
+    if (salesRes.data) {
+      setSalesData(salesRes.data.filter((s) => s.itemType === 'template'));
     }
     setIsLoading(false);
   }, []);
@@ -103,8 +112,8 @@ export const AdminTemplatesPage: React.FC<AdminTemplatesPageProps> = ({ onNaviga
   // KPI Calculations
   const totalCount = templates.length;
   const publishedCount = templates.filter((t) => t.status === 'published').length;
-  const draftCount = templates.filter((t) => t.status === 'draft').length;
-  const totalDownloads = templates.reduce((sum, t) => sum + (t.downloads_count || 0), 0);
+  const totalItemsSold = salesData.length;
+  const totalRevenue = salesData.reduce((acc, s) => acc + s.amountINR, 0);
 
   const getStatusBadge = (tStatus: TemplateStatus) => {
     switch (tStatus) {
@@ -163,11 +172,11 @@ export const AdminTemplatesPage: React.FC<AdminTemplatesPageProps> = ({ onNaviga
           <Card className="p-4 sm:p-5 bg-white border-kth-slate-200 shadow-xs">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[11px] font-bold text-kth-slate-500 uppercase tracking-wider">Drafts in Progress</p>
-                <h3 className="text-2xl font-extrabold text-amber-600 mt-0.5">{draftCount}</h3>
+                <p className="text-[11px] font-bold text-kth-slate-500 uppercase tracking-wider">Total Items Sold</p>
+                <h3 className="text-2xl font-extrabold text-indigo-600 mt-0.5">{totalItemsSold} Units</h3>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <Clock className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <ShoppingBag className="w-5 h-5" />
               </div>
             </div>
           </Card>
@@ -175,13 +184,11 @@ export const AdminTemplatesPage: React.FC<AdminTemplatesPageProps> = ({ onNaviga
           <Card className="p-4 sm:p-5 bg-white border-kth-slate-200 shadow-xs">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[11px] font-bold text-kth-slate-500 uppercase tracking-wider">Total Downloads</p>
-                <h3 className="text-2xl font-extrabold text-kth-primary-600 mt-0.5">
-                  {totalDownloads > 1000 ? `${(totalDownloads / 1000).toFixed(1)}k` : totalDownloads}
-                </h3>
+                <p className="text-[11px] font-bold text-kth-slate-500 uppercase tracking-wider">Total Revenue Generated</p>
+                <h3 className="text-2xl font-extrabold text-emerald-600 mt-0.5">{formatINR(totalRevenue)}</h3>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-kth-primary-50 text-kth-primary-600 flex items-center justify-center">
-                <Download className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <IndianRupee className="w-5 h-5" />
               </div>
             </div>
           </Card>
@@ -302,6 +309,14 @@ export const AdminTemplatesPage: React.FC<AdminTemplatesPageProps> = ({ onNaviga
 
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs font-semibold text-amber-700 border-amber-300 hover:bg-amber-50"
+                            onClick={() => onNavigate ? onNavigate(`/admin/templates/${t.id}/metrics`) : (window.location.href = `/admin/templates/${t.id}/metrics`)}
+                          >
+                            Metrics
+                          </Button>
                           <Button
                             variant="secondary"
                             size="sm"

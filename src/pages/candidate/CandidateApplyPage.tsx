@@ -14,6 +14,7 @@ import {
   MapPin,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   FileText,
   ArrowRight,
   ShieldCheck,
@@ -80,6 +81,11 @@ export const CandidateApplyPage: React.FC<CandidateApplyPageProps> = ({ jobId: p
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!job || isSubmitting) return;
+
+    if (job.status === 'closed') {
+      setErrorMessage('This position is closed and is no longer accepting applications.');
+      return;
+    }
 
     if (!isAuthenticated) {
       setErrorMessage('Please sign in as a candidate to submit your application.');
@@ -228,6 +234,18 @@ export const CandidateApplyPage: React.FC<CandidateApplyPageProps> = ({ jobId: p
               </div>
             </div>
 
+            {job.status === 'closed' && (
+              <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-rose-900">
+                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="block text-sm font-bold">Closed — No longer accepting applications</strong>
+                  <p className="text-xs text-rose-800 mt-0.5">
+                    This requisition is closed and is no longer accepting new submissions.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {errorMessage && (
               <Alert variant="error" title="Submission Failed">
                 <div className="flex items-start gap-1.5 text-xs">
@@ -354,11 +372,16 @@ export const CandidateApplyPage: React.FC<CandidateApplyPageProps> = ({ jobId: p
                   type="submit"
                   variant="primary"
                   size="md"
-                  className="text-xs font-bold bg-kth-primary-600 hover:bg-kth-primary-700 text-white shadow-xs"
+                  disabled={job.status === 'closed'}
+                  className={`text-xs font-bold shadow-xs ${
+                    job.status === 'closed'
+                      ? 'bg-kth-slate-300 text-kth-slate-500 cursor-not-allowed opacity-75'
+                      : 'bg-kth-primary-600 hover:bg-kth-primary-700 text-white'
+                  }`}
                   leftIcon={<Send className="w-4 h-4" />}
                   isLoading={isSubmitting}
                 >
-                  Submit Official Application
+                  {job.status === 'closed' ? 'Position Closed' : 'Submit Official Application'}
                 </Button>
               </div>
             </form>
