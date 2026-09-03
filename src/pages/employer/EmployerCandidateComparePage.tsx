@@ -5,13 +5,13 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { candidateDiscoveryService, DiscoverableCandidate } from '@/services/candidateDiscoveryService';
 import { navigateTo } from '@/utils/navigation';
-import { Loader2, Users, ArrowRight } from 'lucide-react';
+import { Loader2, Users, ArrowRight, X } from 'lucide-react';
 
 export const EmployerCandidateComparePage: React.FC = () => {
   const [candidates, setCandidates] = useState<DiscoverableCandidate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const removeCandidateFromCompare = (idToRemove: string) => {
+  const handleRemove = (idToRemove: string) => {
     setCandidates((prev) => {
       const next = prev.filter((c) => c.id !== idToRemove);
       if (typeof window !== 'undefined' && window.sessionStorage) {
@@ -77,8 +77,8 @@ export const EmployerCandidateComparePage: React.FC = () => {
 
   return (
     <EmployerShell title="Side-by-Side Candidate Comparison Workspace" currentPath="/employer/candidates">
-      <div className="space-y-6 font-sans text-left">
-        <div className="bg-white p-4 rounded-xl border border-kth-slate-200 shadow-xs flex justify-between items-center text-xs">
+      <div className="space-y-6 font-sans text-left w-full min-w-0">
+        <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-kth-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs w-full min-w-0">
           <span className="text-kth-slate-500">
             Comparing <strong className="text-kth-slate-900 font-semibold">{candidates.length} Candidates</strong> from Live Talent Pool
           </span>
@@ -86,6 +86,7 @@ export const EmployerCandidateComparePage: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={() => navigateTo('/employer/candidates')}
+            className="w-full sm:w-auto justify-center"
           >
             + Select Other Candidates
           </Button>
@@ -139,53 +140,64 @@ export const EmployerCandidateComparePage: React.FC = () => {
                         <div className="pr-4">
                           <strong
                             onClick={() => navigateTo(`/employer/candidates/${cand.id}`)}
-                            className="font-bold text-sm text-kth-slate-900 block hover:text-kth-primary-600 transition-colors cursor-pointer hover:underline"
-                            title="View Full Profile"
+                            className="font-bold text-sm text-kth-slate-900 hover:text-kth-primary-600 cursor-pointer block truncate"
                           >
                             {cand.name}
                           </strong>
-                          <span className="text-kth-slate-500 text-[11px] font-medium line-clamp-1">{cand.headline}</span>
+                          <span className="text-[11px] text-kth-slate-400 block truncate">{cand.headline}</span>
                         </div>
                         <button
-                          type="button"
-                          onClick={() => removeCandidateFromCompare(cand.id)}
-                          className="text-kth-slate-400 hover:text-rose-600 transition-colors p-1 rounded hover:bg-kth-slate-100 cursor-pointer"
+                          onClick={() => handleRemove(cand.id)}
+                          className="text-kth-slate-400 hover:text-rose-600 p-1 transition"
                           title="Remove from comparison"
                         >
-                          ✕
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
+
                     <div className="py-2">
-                      <Badge variant="emerald" className="font-mono text-xs">
-                        {cand.profileCompletion}%
+                      <Badge variant="emerald" className="font-mono">
+                        {cand.profileCompletion}% Match
                       </Badge>
                     </div>
-                    <div className="py-2 font-semibold">{cand.experienceYears}+ Years</div>
-                    <div className="py-2 text-kth-primary-700 font-semibold">{cand.domain}</div>
-                    <div className="py-2 text-kth-slate-600">{cand.location}</div>
-                    <div className="py-2 text-kth-slate-600 text-[11px] leading-tight">
-                      {cand.educationSummary || 'Graduate Degree'}
+
+                    <div className="py-2 font-medium">{cand.experienceYears}+ Years</div>
+
+                    <div className="py-2 font-semibold text-kth-primary-700 truncate" title={cand.domain}>
+                      {cand.domain}
                     </div>
-                    <div className="py-2 font-mono font-bold text-kth-primary-600">
-                      ₹{(cand.expectedSalaryINR / 100000).toFixed(1)}L/yr
+
+                    <div className="py-2 truncate" title={cand.location}>
+                      {cand.location}
                     </div>
-                    <div className="py-2">{cand.noticePeriodDays} Days</div>
+
+                    <div className="py-2 truncate" title={cand.educationSummary}>
+                      {cand.educationSummary}
+                    </div>
+
+                    <div className="py-2 font-mono font-bold text-kth-slate-900">
+                      ₹{(cand.expectedSalaryINR / 100000).toFixed(1)} Lakhs
+                    </div>
+
+                    <div className="py-2">{cand.noticePeriodDays} Days Notice</div>
+
                     <div className="py-2 flex gap-1 flex-wrap">
                       {cand.skills.slice(0, 3).map((s, idx) => (
-                        <Badge key={idx} variant="slate" className="text-[10px]">
+                        <Badge key={idx} variant="indigo" className="text-[10px] py-0">
                           {s}
                         </Badge>
                       ))}
                     </div>
+
                     <div className="py-2">
                       <Button
-                        variant="secondary"
+                        variant="primary"
                         size="sm"
                         onClick={() => navigateTo(`/employer/candidates/${cand.id}`)}
-                        className="w-full justify-center text-xs"
+                        className="w-full text-xs font-semibold"
                       >
-                        Profile <ArrowRight className="w-3 h-3 ml-1" />
+                        Profile
                       </Button>
                     </div>
                   </div>
@@ -194,38 +206,48 @@ export const EmployerCandidateComparePage: React.FC = () => {
             </div>
 
             {/* Mobile Stacked Comparison Cards */}
-            <div className="space-y-4 md:hidden">
+            <div className="space-y-4 md:hidden w-full min-w-0">
               {candidates.map((cand) => (
-                <Card key={cand.id} className="p-4 space-y-3">
-                  <div className="flex justify-between items-start border-b pb-2">
-                    <div>
+                <Card key={cand.id} className="p-4 space-y-3 w-full min-w-0">
+                  <div className="flex justify-between items-start border-b pb-2 gap-2">
+                    <div className="min-w-0 flex-1">
                       <h4
                         onClick={() => navigateTo(`/employer/candidates/${cand.id}`)}
-                        className="font-bold text-sm text-kth-slate-900 hover:text-kth-primary-600 cursor-pointer hover:underline"
+                        className="font-bold text-sm text-kth-slate-900 hover:text-kth-primary-600 cursor-pointer hover:underline truncate"
                       >
                         {cand.name}
                       </h4>
-                      <span className="text-xs text-kth-slate-500">{cand.headline}</span>
+                      <span className="text-xs text-kth-slate-500 block truncate">{cand.headline}</span>
                     </div>
-                    <Badge variant="emerald" className="font-mono">
-                      {cand.profileCompletion}%
-                    </Badge>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Badge variant="emerald" className="font-mono text-[10px]">
+                        {cand.profileCompletion}%
+                      </Badge>
+                      <button
+                        onClick={() => handleRemove(cand.id)}
+                        className="text-kth-slate-400 hover:text-rose-600 p-1 transition"
+                        title="Remove"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-kth-slate-400 block text-[10px]">EXPERIENCE:</span>{' '}
-                      {cand.experienceYears}+ yrs
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-2 text-xs">
+                    <div className="bg-kth-slate-50 p-2 rounded-lg">
+                      <span className="text-kth-slate-400 block text-[10px] font-bold">EXPERIENCE:</span>{' '}
+                      <span className="font-semibold text-kth-slate-800">{cand.experienceYears}+ yrs</span>
                     </div>
-                    <div>
-                      <span className="text-kth-slate-400 block text-[10px]">SALARY:</span> ₹
-                      {(cand.expectedSalaryINR / 100000).toFixed(1)}L
+                    <div className="bg-kth-slate-50 p-2 rounded-lg">
+                      <span className="text-kth-slate-400 block text-[10px] font-bold">SALARY:</span>{' '}
+                      <span className="font-semibold text-kth-slate-800">₹{(cand.expectedSalaryINR / 100000).toFixed(1)}L</span>
                     </div>
-                    <div>
-                      <span className="text-kth-slate-400 block text-[10px]">LOCATION:</span> {cand.location}
+                    <div className="bg-kth-slate-50 p-2 rounded-lg">
+                      <span className="text-kth-slate-400 block text-[10px] font-bold">LOCATION:</span>{' '}
+                      <span className="font-semibold text-kth-slate-800 truncate block">{cand.location}</span>
                     </div>
-                    <div>
-                      <span className="text-kth-slate-400 block text-[10px]">NOTICE:</span> {cand.noticePeriodDays}{' '}
-                      Days
+                    <div className="bg-kth-slate-50 p-2 rounded-lg">
+                      <span className="text-kth-slate-400 block text-[10px] font-bold">NOTICE:</span>{' '}
+                      <span className="font-semibold text-kth-slate-800">{cand.noticePeriodDays} Days</span>
                     </div>
                   </div>
                   <Button

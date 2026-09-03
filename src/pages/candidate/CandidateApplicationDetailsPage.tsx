@@ -251,31 +251,31 @@ export const CandidateApplicationDetailsPage: React.FC<CandidateApplicationDetai
           )}
         </div>
 
-        <Card className="p-6 md:p-8 space-y-6">
+        <Card className="p-4 sm:p-6 md:p-8 space-y-6 w-full min-w-0">
           {/* Header */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full min-w-0">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
                 {getStageBadge(application.stage)}
                 <span className="text-xs text-kth-slate-400 font-mono">
                   App #{applicationRef}
                 </span>
               </div>
-              <h1 className="font-display text-2xl font-extrabold text-kth-slate-900">{job?.title}</h1>
-              <div className="flex items-center gap-3 text-xs sm:text-sm text-kth-slate-600 mt-1">
+              <h1 className="font-display text-xl sm:text-2xl font-extrabold text-kth-slate-900 break-words">{job?.title}</h1>
+              <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-kth-slate-600 mt-1 flex-wrap">
                 <span className="font-semibold text-kth-slate-800 flex items-center gap-1">
-                  <Building2 className="w-3.5 h-3.5 text-kth-slate-400" />
-                  {job?.company?.name}
+                  <Building2 className="w-3.5 h-3.5 text-kth-slate-400 shrink-0" />
+                  <span className="break-words">{job?.company?.name}</span>
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-kth-slate-400" />
-                  {job?.location}
+                  <MapPin className="w-3.5 h-3.5 text-kth-slate-400 shrink-0" />
+                  <span className="break-words">{job?.location}</span>
                 </span>
               </div>
             </div>
 
-            <div className="font-mono text-lg font-bold text-kth-primary-600">
+            <div className="font-mono text-base sm:text-lg font-bold text-kth-primary-600 shrink-0">
               {salaryText}
             </div>
           </div>

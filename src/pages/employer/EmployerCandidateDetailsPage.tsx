@@ -263,8 +263,8 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
       currentPath={isAppRoute ? '/employer/pipeline' : '/employer/candidates'}
     >
       <div className="space-y-6 font-sans max-w-7xl mx-auto text-left">
-        {/* Navigation Breadcrumb */}
-        <div className="flex items-center justify-between">
+        {/* Navigation Breadcrumb & Action Bar */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 w-full min-w-0">
           <button
             type="button"
             onClick={() => {
@@ -279,7 +279,7 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-kth-slate-600 hover:text-kth-slate-900 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>
+            <span className="truncate max-w-[240px] sm:max-w-none">
               {job
                 ? `Back to Applicants for ${job.title}`
                 : isAppRoute
@@ -288,13 +288,14 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
             </span>
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
             <Button
               variant={isSaved ? 'secondary' : 'outline'}
               size="sm"
               disabled={savingState}
               onClick={handleToggleSave}
               leftIcon={<Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-kth-primary-600 text-kth-primary-600' : ''}`} />}
+              className="flex-1 sm:flex-none justify-center"
             >
               {isSaved ? 'Saved to Bench' : 'Save Candidate'}
             </Button>
@@ -312,6 +313,7 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
                   }
                 }}
                 leftIcon={<Calendar className="w-3.5 h-3.5" />}
+                className="flex-1 sm:flex-none justify-center"
               >
                 Schedule Interview
               </Button>
@@ -326,41 +328,41 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
         )}
 
         {/* Section 1: Candidate Overview & Application Header Card */}
-        <Card className="p-6 md:p-8 bg-white border-kth-slate-200 shadow-xs">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-            <div className="flex items-start gap-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-kth-primary-600 to-kth-slate-900 text-white font-extrabold text-2xl flex items-center justify-center shrink-0 shadow-xs">
+        <Card className="p-4 sm:p-6 md:p-8 bg-white border-kth-slate-200 shadow-xs w-full min-w-0">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 w-full min-w-0">
+            <div className="flex flex-col sm:flex-row items-start gap-4 min-w-0 flex-1 w-full">
+              <div className="w-16 h-16 rounded-2xl sm:rounded-full bg-gradient-to-br from-kth-primary-600 to-kth-slate-900 text-white font-extrabold text-2xl flex items-center justify-center shrink-0 shadow-xs">
                 {name.split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
               </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <h1 className="font-display text-2xl font-extrabold text-kth-slate-900">{name}</h1>
+              <div className="space-y-1 min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="font-display text-xl sm:text-2xl font-extrabold text-kth-slate-900 break-words">{name}</h1>
                   {candidate?.profileCompletion && (
-                    <Badge variant="emerald" hasPulse>
+                    <Badge variant="emerald" hasPulse className="text-[10px] sm:text-[11px]">
                       {candidate.profileCompletion}% Complete
                     </Badge>
                   )}
                   {application && (
-                    <Badge variant="indigo" className="capitalize font-mono text-xs">
+                    <Badge variant="indigo" className="capitalize font-mono text-[10px] sm:text-xs">
                       Stage: {application.stage.replace('_', ' ')}
                     </Badge>
                   )}
                 </div>
 
-                <p className="text-sm font-semibold text-kth-slate-700">{headline}</p>
+                <p className="text-xs sm:text-sm font-semibold text-kth-slate-700 break-words">{headline}</p>
 
-                <div className="flex items-center gap-4 text-xs text-kth-slate-500 flex-wrap pt-1">
+                <div className="flex items-center gap-3 sm:gap-4 text-xs text-kth-slate-500 flex-wrap pt-1">
                   <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-kth-slate-400" /> {location}
+                    <MapPin className="w-3.5 h-3.5 text-kth-slate-400 shrink-0" /> <span className="break-words">{location}</span>
                   </span>
                   {email && (
-                    <span className="flex items-center gap-1">
-                      <Mail className="w-3.5 h-3.5 text-kth-slate-400" /> {email}
+                    <span className="flex items-center gap-1 break-all">
+                      <Mail className="w-3.5 h-3.5 text-kth-slate-400 shrink-0" /> <span>{email}</span>
                     </span>
                   )}
                   {phone && (
                     <span className="flex items-center gap-1">
-                      <Phone className="w-3.5 h-3.5 text-kth-slate-400" /> {phone}
+                      <Phone className="w-3.5 h-3.5 text-kth-slate-400 shrink-0" /> <span>{phone}</span>
                     </span>
                   )}
                 </div>

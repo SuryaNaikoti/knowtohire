@@ -177,19 +177,19 @@ export const EmployerCompanyProfilePage: React.FC = () => {
         ) : (
           <>
             {/* Company Header Card */}
-            <Card className="p-6 md:p-8">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-kth-primary-600 to-kth-slate-900 text-white font-extrabold text-2xl flex items-center justify-center shrink-0 shadow-md">
+            <Card className="p-4 sm:p-6 md:p-8 w-full min-w-0">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 w-full min-w-0">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 min-w-0 flex-1 w-full">
+                  <div className="w-16 h-16 rounded-2xl sm:rounded-xl bg-gradient-to-br from-kth-primary-600 to-kth-slate-900 text-white font-extrabold text-2xl flex items-center justify-center shrink-0 shadow-md">
                     {company.name
                       .split(' ')
                       .map((n) => n[0])
                       .slice(0, 2)
                       .join('')}
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h1 className="font-display text-2xl font-extrabold text-kth-slate-900">{company.name}</h1>
+                      <h1 className="font-display text-xl sm:text-2xl font-extrabold text-kth-slate-900 break-words">{company.name}</h1>
                       <Badge
                         variant={
                           company.verification_status === 'verified'
@@ -200,44 +200,44 @@ export const EmployerCompanyProfilePage: React.FC = () => {
                             ? 'rose'
                             : 'slate'
                         }
-                        className="capitalize"
+                        className="capitalize text-[10px] sm:text-[11px]"
                       >
                         {(company.verification_status || 'unverified').replace('_', ' ')}
                       </Badge>
                       {saveSuccess && (
-                        <Badge variant="emerald" className="flex items-center gap-1">
+                        <Badge variant="emerald" className="flex items-center gap-1 text-[10px] sm:text-[11px]">
                           <Check className="w-3 h-3" /> Changes Saved
                         </Badge>
                       )}
                     </div>
                     {company.legal_name && company.legal_name !== company.name && (
-                      <p className="text-xs text-kth-slate-500 font-medium mb-1">{company.legal_name}</p>
+                      <p className="text-xs text-kth-slate-500 font-medium mb-1 break-words">{company.legal_name}</p>
                     )}
-                    <p className="text-xs font-semibold text-kth-slate-700 mb-1">{company.industry || 'Industry not specified'}</p>
-                    <div className="flex items-center gap-4 text-xs text-kth-slate-500 flex-wrap">
+                    <p className="text-xs font-semibold text-kth-slate-700 mb-1 break-words">{company.industry || 'Industry not specified'}</p>
+                    <div className="flex items-center gap-3 sm:gap-4 text-xs text-kth-slate-500 flex-wrap">
                       <span className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-kth-slate-400" /> {company.headquarters_location || 'Location not specified'}
+                        <MapPin className="w-3.5 h-3.5 text-kth-slate-400 shrink-0" /> <span className="break-words">{company.headquarters_location || 'Location not specified'}</span>
                       </span>
                       <span className="flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5 text-kth-slate-400" /> {company.company_size || 'Size not specified'}
+                        <Users className="w-3.5 h-3.5 text-kth-slate-400 shrink-0" /> <span>{company.company_size || 'Size not specified'}</span>
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2 flex-wrap w-full md:w-auto shrink-0">
                   {isEditing ? (
                     <>
-                      <Button variant="ghost" size="sm" onClick={handleCancelEdit} disabled={isSaving}>
+                      <Button variant="ghost" size="sm" onClick={handleCancelEdit} disabled={isSaving} className="flex-1 md:flex-none justify-center">
                         Cancel
                       </Button>
-                      <Button variant="primary" size="sm" isLoading={isSaving} onClick={handleSave}>
+                      <Button variant="primary" size="sm" isLoading={isSaving} onClick={handleSave} className="flex-1 md:flex-none justify-center">
                         Save Changes
                       </Button>
                     </>
                   ) : (
                     <>
-                      <Button variant="outline" size="sm" onClick={handleStartEdit}>
+                      <Button variant="outline" size="sm" onClick={handleStartEdit} className="flex-1 md:flex-none justify-center">
                         Edit Company Info
                       </Button>
                       {company.website_url && (
@@ -249,8 +249,9 @@ export const EmployerCompanyProfilePage: React.FC = () => {
                             const url = company.website_url?.startsWith('http') ? company.website_url : `https://${company.website_url}`;
                             window.open(url, '_blank');
                           }}
+                          className="flex-1 md:flex-none justify-center"
                         >
-                          Visit Website
+                          Visit Site
                         </Button>
                       )}
                     </>

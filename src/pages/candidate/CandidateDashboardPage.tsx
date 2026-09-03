@@ -241,13 +241,13 @@ export const CandidateDashboardPage: React.FC = () => {
           </div>
         ) : latestApplication ? (
           /* Application progress tracker for latest active application */
-          <div className="bg-white p-6 rounded-2xl border border-kth-slate-200 shadow-xs">
-            <div className="flex justify-between items-center mb-4 pb-3 border-b border-kth-slate-100">
-              <div>
+          <div className="bg-white p-4 sm:p-6 rounded-2xl border border-kth-slate-200 shadow-xs w-full min-w-0">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 pb-3 border-b border-kth-slate-100 w-full min-w-0">
+              <div className="min-w-0 flex-1">
                 <span className="text-[10px] font-bold text-kth-slate-400 uppercase tracking-wider block">
                   LATEST ACTIVE APPLICATION
                 </span>
-                <h2 className="font-display font-bold text-sm text-kth-slate-900 mt-0.5">
+                <h2 className="font-display font-bold text-sm text-kth-slate-900 mt-0.5 break-words">
                   {latestApplication.job?.title || 'Job Position'}&nbsp;—&nbsp;
                   {latestApplication.job?.company?.name || 'Company'}&nbsp;
                   <span className="text-kth-slate-500 font-normal">
@@ -258,7 +258,7 @@ export const CandidateDashboardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleNavigate(`/candidate/applications/${latestApplication.id}`)}
-                className="text-xs font-bold text-kth-primary-600 hover:text-kth-primary-700 transition-colors whitespace-nowrap"
+                className="text-xs font-bold text-kth-primary-600 hover:text-kth-primary-700 transition-colors whitespace-nowrap self-start sm:self-auto shrink-0"
               >
                 View Timeline →
               </button>

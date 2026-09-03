@@ -198,30 +198,30 @@ export function CandidateEditProfilePage({ onNavigate }: CandidateEditProfilePag
     <CandidateShell title="Edit Candidate Profile" currentPath="/candidate/profile">
       <div className="max-w-5xl mx-auto space-y-6 font-sans">
         {/* Navigation & Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full min-w-0">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <button
               onClick={handleBack}
-              className="p-2.5 rounded-xl border border-kth-slate-200 bg-white text-kth-slate-600 hover:text-kth-slate-900 hover:border-kth-slate-300 transition shadow-sm"
+              className="p-2.5 rounded-xl border border-kth-slate-200 bg-white text-kth-slate-600 hover:text-kth-slate-900 hover:border-kth-slate-300 transition shadow-sm shrink-0"
               title="Return to My Profile"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div>
-              <h1 className="font-display text-2xl font-bold text-kth-slate-900">
+            <div className="min-w-0 flex-1">
+              <h1 className="font-display text-xl sm:text-2xl font-bold text-kth-slate-900 truncate">
                 Edit Candidate Profile
               </h1>
-              <p className="text-sm text-kth-slate-500">
+              <p className="text-xs sm:text-sm text-kth-slate-500 break-words">
                 Update your professional profile information, experience, education, and skills.
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto shrink-0">
             <Button
               type="button"
               variant="outline"
               onClick={handleBack}
-              className="flex-1 sm:flex-none"
+              className="flex-1 sm:flex-none justify-center"
             >
               Cancel
             </Button>
@@ -230,9 +230,9 @@ export function CandidateEditProfilePage({ onNavigate }: CandidateEditProfilePag
               form="edit-profile-form"
               disabled={isSaving}
               leftIcon={isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              className="flex-1 sm:flex-none bg-kth-primary-600 hover:bg-kth-primary-700 text-white font-semibold"
+              className="flex-1 sm:flex-none bg-kth-primary-600 hover:bg-kth-primary-700 text-white font-semibold justify-center"
             >
-              {isSaving ? 'Saving Changes...' : 'Save All Changes'}
+              {isSaving ? 'Saving...' : 'Save All'}
             </Button>
           </div>
         </div>
@@ -255,9 +255,9 @@ export function CandidateEditProfilePage({ onNavigate }: CandidateEditProfilePag
             <p className="text-kth-slate-500 font-medium">Loading profile information...</p>
           </Card>
         ) : (
-          <form id="edit-profile-form" onSubmit={handleSave} className="space-y-6">
+          <form id="edit-profile-form" onSubmit={handleSave} className="space-y-6 w-full min-w-0">
             {/* Tab Navigation */}
-            <div className="flex items-center gap-2 border-b border-kth-slate-200 pb-2 overflow-x-auto">
+            <div className="flex items-center gap-2 border-b border-kth-slate-200 pb-2 overflow-x-auto scrollbar-none touch-scroll -mx-3 px-3 sm:mx-0 sm:px-0">
               <button
                 type="button"
                 onClick={() => setActiveTab('basic')}

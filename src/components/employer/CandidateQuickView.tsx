@@ -327,14 +327,14 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
 
           {/* Section 2: Recruiter Quick Actions Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-kth-slate-50 p-3 rounded-2xl border border-kth-slate-200">
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
               {candidateResume ? (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setIsPreviewOpen(true)}
                   leftIcon={<FileText className="w-3.5 h-3.5" />}
-                  className="text-xs font-semibold"
+                  className="text-xs font-semibold flex-1 sm:flex-none justify-center"
                 >
                   View Resume
                 </Button>
@@ -344,7 +344,7 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
                   size="sm"
                   onClick={() => setIsPreviewOpen(true)}
                   leftIcon={<FileText className="w-3.5 h-3.5" />}
-                  className="text-xs font-semibold"
+                  className="text-xs font-semibold flex-1 sm:flex-none justify-center"
                 >
                   Profile Snapshot
                 </Button>
@@ -361,7 +361,7 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
                     }`}
                   />
                 }
-                className="text-xs font-semibold"
+                className="text-xs font-semibold flex-1 sm:flex-none justify-center"
               >
                 {isSaved ? 'Saved to Bench' : 'Save Candidate'}
               </Button>
@@ -372,7 +372,7 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
                   size="sm"
                   onClick={() => setIsScheduleModalOpen(true)}
                   leftIcon={<Calendar className="w-3.5 h-3.5" />}
-                  className="text-xs font-semibold"
+                  className="text-xs font-semibold flex-1 sm:flex-none justify-center"
                 >
                   Interview
                 </Button>
@@ -383,7 +383,7 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
               variant="primary"
               size="sm"
               onClick={handleNavigateToFullProfile}
-              className="text-xs font-bold bg-kth-primary-600 hover:bg-kth-primary-700 text-white shadow-xs whitespace-nowrap"
+              className="text-xs font-bold bg-kth-primary-600 hover:bg-kth-primary-700 text-white shadow-xs w-full sm:w-auto justify-center"
             >
               View Full Profile <ArrowRight className="w-3.5 h-3.5 ml-1" />
             </Button>
@@ -394,8 +394,8 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
             <h4 className="font-bold text-[10px] text-kth-slate-400 uppercase tracking-wider font-mono">
               Candidate Snapshot
             </h4>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
+              <div className="bg-kth-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                 <span className="text-[10px] text-kth-slate-400 uppercase font-bold block">
                   Profile Completion
                 </span>
@@ -403,7 +403,7 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
                   {profileCompletion !== undefined ? `${profileCompletion}% Complete` : 'Completed Profile'}
                 </span>
               </div>
-              <div>
+              <div className="bg-kth-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                 <span className="text-[10px] text-kth-slate-400 uppercase font-bold block">
                   Experience
                 </span>
@@ -411,7 +411,7 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
                   {experienceYears !== undefined ? `${experienceYears}+ Years` : 'Demonstrated Track Record'}
                 </span>
               </div>
-              <div>
+              <div className="bg-kth-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                 <span className="text-[10px] text-kth-slate-400 uppercase font-bold block">
                   Domain / Specialty
                 </span>
@@ -419,7 +419,7 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
                   {domain}
                 </span>
               </div>
-              <div>
+              <div className="bg-kth-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                 <span className="text-[10px] text-kth-slate-400 uppercase font-bold block">
                   Location
                 </span>
@@ -427,7 +427,7 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
                   {candidateLocation}
                 </span>
               </div>
-              <div>
+              <div className="bg-kth-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                 <span className="text-[10px] text-kth-slate-400 uppercase font-bold block">
                   Education
                 </span>
@@ -435,7 +435,7 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
                   {educationText}
                 </span>
               </div>
-              <div>
+              <div className="bg-kth-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                 <span className="text-[10px] text-kth-slate-400 uppercase font-bold block">
                   Expected Salary
                 </span>
@@ -443,7 +443,7 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
                   {expectedSalaryFormatted}
                 </span>
               </div>
-              <div>
+              <div className="bg-kth-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                 <span className="text-[10px] text-kth-slate-400 uppercase font-bold block">
                   Notice Period
                 </span>
@@ -451,7 +451,7 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
                   {noticePeriodFormatted}
                 </span>
               </div>
-              <div>
+              <div className="bg-kth-slate-50/70 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                 <span className="text-[10px] text-kth-slate-400 uppercase font-bold block">
                   Work Mode
                 </span>

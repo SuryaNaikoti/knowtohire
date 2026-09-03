@@ -290,16 +290,16 @@ export const CandidateApplyPage: React.FC<CandidateApplyPageProps> = ({ jobId: p
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div className="p-3.5 rounded-xl bg-kth-slate-50 border border-kth-slate-200/80">
+                  <div className="p-3.5 rounded-xl bg-kth-slate-50 border border-kth-slate-200/80 min-w-0">
                     <span className="text-[11px] text-kth-slate-500 font-medium block">Applicant Name</span>
-                    <strong className="text-sm text-kth-slate-900 block mt-0.5">
+                    <strong className="text-sm text-kth-slate-900 block mt-0.5 break-words">
                       {profile?.full_name || user?.email?.split('@')[0] || (isAuthenticated ? 'Authenticated Candidate' : 'Candidate (Guest)')}
                     </strong>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-kth-slate-50 border border-kth-slate-200/80">
+                  <div className="p-3.5 rounded-xl bg-kth-slate-50 border border-kth-slate-200/80 min-w-0">
                     <span className="text-[11px] text-kth-slate-500 font-medium block">Applicant Email</span>
-                    <span className="text-xs font-mono font-bold text-kth-slate-900 block mt-0.5">
+                    <span className="text-xs font-mono font-bold text-kth-slate-900 block mt-0.5 break-all">
                       {user?.email || 'candidate@knowtohire.com'}
                     </span>
                   </div>

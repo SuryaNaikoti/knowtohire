@@ -358,33 +358,34 @@ export const CandidateResumePage: React.FC<CandidateResumePageProps> = ({ onNavi
 
             {/* ATS Score Improvement Recommendations - Evidence-Driven */}
             {hasResume && isPDF && (
-              <Card className="p-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
-                  <div>
-                    <h3 className="font-display font-bold text-base text-kth-slate-900 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-kth-accent-emerald" /> ATS Optimization Recommendations
+              <Card className="p-4 sm:p-6 w-full min-w-0">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 w-full min-w-0">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-display font-bold text-sm sm:text-base text-kth-slate-900 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-kth-accent-emerald shrink-0" />
+                      <span className="truncate sm:overflow-visible sm:whitespace-normal">ATS Optimization Recommendations</span>
                     </h3>
-                    <p className="text-xs text-kth-slate-500 mt-0.5">
+                    <p className="text-xs text-kth-slate-500 mt-0.5 break-words">
                       Evaluated directly from your verified resume text, structure, and machine readability.
                     </p>
                   </div>
-                  <Badge variant={isUploading ? 'mono' : 'emerald'}>
+                  <Badge variant={isUploading ? 'mono' : 'emerald'} className="shrink-0 self-start sm:self-auto text-[10px] sm:text-[11px]">
                     {isUploading ? 'Analyzing...' : 'Evidence-Based Audit'}
                   </Badge>
                 </div>
 
                 {isUploading ? (
-                  <div className="p-8 text-center bg-kth-slate-50 rounded-xl border border-kth-slate-200">
+                  <div className="p-6 sm:p-8 text-center bg-kth-slate-50 rounded-xl border border-kth-slate-200 w-full min-w-0">
                     <RefreshCw className="w-6 h-6 animate-spin text-kth-primary-600 mx-auto mb-2" />
                     <p className="text-xs font-bold text-kth-slate-800">Analyzing Document Compatibility & Extracting Evidence...</p>
                     <p className="text-[11px] text-kth-slate-500 mt-0.5">Generating tailored recommendations for your newly uploaded resume.</p>
                   </div>
                 ) : atsRecommendations.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-3 w-full min-w-0">
                     {atsRecommendations.map((rec) => (
                       <div
                         key={rec.id}
-                        className={`p-4 rounded-xl border flex items-start gap-3.5 transition-all ${
+                        className={`p-3.5 sm:p-4 rounded-xl border flex items-start gap-3 transition-all w-full min-w-0 ${
                           rec.type === 'positive'
                             ? 'bg-emerald-50/70 border-emerald-200'
                             : rec.severity === 'high'
@@ -400,9 +401,9 @@ export const CandidateResumePage: React.FC<CandidateResumePageProps> = ({ onNavi
                           <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                         )}
                         <div className="space-y-1.5 flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex flex-col xs:flex-row sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2">
                             <h4
-                              className={`font-bold text-xs ${
+                              className={`font-bold text-xs break-words ${
                                 rec.type === 'positive'
                                   ? 'text-emerald-950'
                                   : rec.severity === 'high'
@@ -413,7 +414,7 @@ export const CandidateResumePage: React.FC<CandidateResumePageProps> = ({ onNavi
                               {rec.title}
                             </h4>
                             <span
-                              className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                              className={`text-[10px] font-semibold px-2 py-0.5 rounded shrink-0 self-start sm:self-auto ${
                                 rec.type === 'positive'
                                   ? 'bg-emerald-100 text-emerald-800'
                                   : rec.severity === 'high'
@@ -426,7 +427,7 @@ export const CandidateResumePage: React.FC<CandidateResumePageProps> = ({ onNavi
                           </div>
 
                           <p
-                            className={`text-xs ${
+                            className={`text-xs leading-relaxed break-words ${
                               rec.type === 'positive'
                                 ? 'text-emerald-900'
                                 : rec.severity === 'high'
@@ -438,12 +439,12 @@ export const CandidateResumePage: React.FC<CandidateResumePageProps> = ({ onNavi
                           </p>
 
                           {/* Evidence Source & Suggested Action */}
-                          <div className="pt-1.5 mt-1 border-t border-black/5 flex flex-col gap-1 text-[11px]">
-                            <p className="text-kth-slate-600">
+                          <div className="pt-1.5 mt-1 border-t border-black/5 flex flex-col gap-1 text-[11px] min-w-0">
+                            <p className="text-kth-slate-600 break-words [overflow-wrap:anywhere]">
                               <strong className="text-kth-slate-700">Source Evidence:</strong> {rec.evidence}
                             </p>
                             {rec.suggestedAction && rec.type !== 'positive' && (
-                              <p className="text-kth-slate-700 font-medium">
+                              <p className="text-kth-slate-700 font-medium break-words [overflow-wrap:anywhere]">
                                 <strong className="text-kth-slate-800">Suggested Action:</strong> {rec.suggestedAction}
                               </p>
                             )}
@@ -464,11 +465,11 @@ export const CandidateResumePage: React.FC<CandidateResumePageProps> = ({ onNavi
             )}
 
             {/* ─── Real Resume Document Preview Card ─────────────────────────── */}
-            <Card className="p-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-                <div>
+            <Card className="p-4 sm:p-6 w-full min-w-0">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 w-full min-w-0">
+                <div className="min-w-0 flex-1">
                   <h3 className="font-display font-bold text-base text-kth-slate-900">Document Preview</h3>
-                  <p className="text-xs text-kth-slate-500">
+                  <p className="text-xs text-kth-slate-500 break-words">
                     {hasResume && isPDF
                       ? 'Live preview of your verified PDF resume stored in Supabase.'
                       : hasResume && !isPDF
@@ -477,7 +478,7 @@ export const CandidateResumePage: React.FC<CandidateResumePageProps> = ({ onNavi
                   </p>
                 </div>
                 {hasResume && isPDF && profile?.resumeUrl && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
                     <Badge variant="mono">PDF Format</Badge>
                     <Button
                       variant="outline"
@@ -497,7 +498,7 @@ export const CandidateResumePage: React.FC<CandidateResumePageProps> = ({ onNavi
                   <iframe
                     src={`${profile.resumeUrl}#toolbar=1&navpanes=0`}
                     title="Candidate Resume Document"
-                    className="w-full h-[640px] border-0 rounded-xl bg-white"
+                    className="w-full h-[460px] sm:h-[640px] border-0 rounded-xl bg-white"
                   />
                 </div>
               ) : hasResume && !isPDF ? (

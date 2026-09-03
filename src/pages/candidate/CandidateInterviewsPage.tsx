@@ -278,7 +278,7 @@ export const CandidateInterviewsPage: React.FC<CandidateInterviewsPageProps> = (
         </div>
 
         {/* Action Button Strip */}
-        <div className="pt-4 mt-3 border-t border-kth-slate-100 flex items-center justify-between gap-3">
+        <div className="pt-4 mt-3 border-t border-kth-slate-100 flex flex-col xs:flex-row sm:flex-row items-stretch xs:items-center justify-between gap-2.5">
           <Button
             variant="ghost"
             size="sm"
@@ -291,20 +291,20 @@ export const CandidateInterviewsPage: React.FC<CandidateInterviewsPageProps> = (
                 window.dispatchEvent(new PopStateEvent('popstate'));
               }
             }}
-            className="text-xs text-kth-slate-600 font-semibold"
+            className="text-xs text-kth-slate-600 font-semibold justify-center"
           >
             View Full Briefing
           </Button>
 
           {isJoinable && (
-            <div>
+            <div className="flex items-center gap-2">
               {(isVideo || isExternal) && hasValidMeetingLink && (
                 <Button
                   variant="primary"
                   size="sm"
                   leftIcon={<Video className="w-3.5 h-3.5" />}
                   onClick={() => window.open(interview.meeting_link!, '_blank')}
-                  className="font-bold text-xs"
+                  className="font-bold text-xs w-full xs:w-auto justify-center"
                 >
                   Join Interview
                 </Button>
@@ -323,7 +323,7 @@ export const CandidateInterviewsPage: React.FC<CandidateInterviewsPageProps> = (
                       window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
                     }
                   }}
-                  className="text-xs font-semibold"
+                  className="text-xs font-semibold w-full xs:w-auto justify-center"
                 >
                   View Location
                 </Button>
@@ -335,7 +335,7 @@ export const CandidateInterviewsPage: React.FC<CandidateInterviewsPageProps> = (
                   size="sm"
                   leftIcon={<Info className="w-3.5 h-3.5" />}
                   onClick={() => { window.location.href = `/candidate/interviews/${interview.id}`; }}
-                  className="text-xs font-semibold"
+                  className="text-xs font-semibold w-full xs:w-auto justify-center"
                 >
                   View Interview Details
                 </Button>

@@ -302,46 +302,46 @@ export const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ onNa
         {!isLoading && profile && (
           <>
             {/* Profile Header Summary */}
-            <Card className="p-6 md:p-8">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-kth-primary-600 to-kth-accent-cyan text-white font-extrabold text-2xl flex items-center justify-center shadow-md shrink-0">
+            <Card className="p-4 sm:p-6 md:p-8 w-full min-w-0">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 w-full min-w-0">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 min-w-0 flex-1 w-full">
+                  <div className="w-16 h-16 rounded-2xl sm:rounded-full bg-gradient-to-br from-kth-primary-600 to-kth-accent-cyan text-white font-extrabold text-2xl flex items-center justify-center shadow-md shrink-0">
                     {getInitials(profile.fullName)}
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h1 className="font-display text-2xl font-extrabold text-kth-slate-900">
+                      <h1 className="font-display text-xl sm:text-2xl font-extrabold text-kth-slate-900 break-words">
                         {profile.fullName || 'Candidate'}
                       </h1>
-                      <Badge variant="emerald" hasPulse>
+                      <Badge variant="emerald" hasPulse className="text-[10px] sm:text-[11px]">
                         {profile.employmentPreference || 'Available for Hire'}
                       </Badge>
                       {profile.profileCompletionPct !== undefined && (
-                        <span className="text-xs font-mono font-bold text-kth-primary-700 bg-kth-primary-50 px-2 py-0.5 rounded border border-kth-primary-100">
+                        <span className="text-[10px] sm:text-xs font-mono font-bold text-kth-primary-700 bg-kth-primary-50 px-2 py-0.5 rounded border border-kth-primary-100">
                           {profile.profileCompletionPct}% Complete
                         </span>
                       )}
                     </div>
-                    <p className="text-sm font-semibold text-kth-slate-700 mb-1">
+                    <p className="text-xs sm:text-sm font-semibold text-kth-slate-700 mb-2 break-words">
                       {profile.headline || 'No professional headline added yet'}
                     </p>
-                    <div className="flex items-center gap-4 text-xs text-kth-slate-500 flex-wrap">
+                    <div className="flex items-center gap-3 sm:gap-4 text-xs text-kth-slate-500 flex-wrap">
                       {profile.location && (
                         <span className="flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-kth-slate-400" />
-                          {profile.location}
+                          <MapPin className="w-3.5 h-3.5 text-kth-slate-400 shrink-0" />
+                          <span className="break-words">{profile.location}</span>
                         </span>
                       )}
                       {profile.email && (
-                        <span className="flex items-center gap-1">
-                          <Mail className="w-3.5 h-3.5 text-kth-slate-400" />
-                          {profile.email}
+                        <span className="flex items-center gap-1 break-all">
+                          <Mail className="w-3.5 h-3.5 text-kth-slate-400 shrink-0" />
+                          <span>{profile.email}</span>
                         </span>
                       )}
                       {profile.phone && (
                         <span className="flex items-center gap-1">
-                          <Phone className="w-3.5 h-3.5 text-kth-slate-400" />
-                          {profile.phone}
+                          <Phone className="w-3.5 h-3.5 text-kth-slate-400 shrink-0" />
+                          <span>{profile.phone}</span>
                         </span>
                       )}
                     </div>
@@ -352,7 +352,7 @@ export const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ onNa
                   variant="outline"
                   leftIcon={<Edit className="w-4 h-4" />}
                   onClick={handleOpenEdit}
-                  className="shrink-0"
+                  className="w-full md:w-auto shrink-0 justify-center"
                 >
                   Edit Profile
                 </Button>
