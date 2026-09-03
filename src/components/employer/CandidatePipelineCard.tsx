@@ -1,18 +1,20 @@
 import React from 'react';
 import { Card } from '@/components/ui/Card';
 import { JobApplication, ApplicationStage } from '@/services';
-import { MapPin, Star, ArrowRight } from 'lucide-react';
+import { MapPin, Star, ArrowRight, UserX } from 'lucide-react';
 
 export interface CandidatePipelineCardProps {
   application: JobApplication;
   onQuickView: (application: JobApplication) => void;
   onAdvanceStage?: (application: JobApplication, nextStage: ApplicationStage) => void;
+  onRejectCandidate?: (application: JobApplication) => void;
 }
 
 export const CandidatePipelineCard: React.FC<CandidatePipelineCardProps> = ({
   application,
   onQuickView,
   onAdvanceStage,
+  onRejectCandidate,
 }) => {
   const snapshot = (application.candidate_snapshot || {}) as Record<string, any>;
   const candidateName = application.candidate?.full_name || snapshot.full_name || 'Candidate';
@@ -32,6 +34,7 @@ export const CandidatePipelineCard: React.FC<CandidatePipelineCardProps> = ({
   };
 
   const nextStage = getNextStage(application.stage);
+  const isRejectable = application.stage !== 'rejected' && application.stage !== 'withdrawn' && application.stage !== 'hired';
 
   return (
     <Card
@@ -60,26 +63,43 @@ export const CandidatePipelineCard: React.FC<CandidatePipelineCardProps> = ({
         <span className="font-semibold text-kth-slate-700 truncate">{jobTitle}</span>
       </div>
 
-      <div className="flex items-center justify-between text-[10px] text-kth-slate-400 border-t border-kth-slate-100 pt-2">
-        <span className="flex items-center gap-1">
-          <MapPin className="w-3 h-3 text-kth-slate-400" /> {location.split(',')[0]}
+      <div className="flex items-center justify-between text-[10px] text-kth-slate-400 border-t border-kth-slate-100 pt-2 gap-2">
+        <span className="flex items-center gap-1 truncate">
+          <MapPin className="w-3 h-3 text-kth-slate-400 shrink-0" /> {location.split(',')[0]}
         </span>
-        {nextStage && onAdvanceStage ? (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onAdvanceStage(application, nextStage);
-            }}
-            className="text-[10px] font-bold text-kth-primary-600 hover:text-kth-primary-700 flex items-center gap-0.5 hover:underline"
-          >
-            Advance <ArrowRight className="w-2.5 h-2.5" />
-          </button>
-        ) : (
-          <span>
-            {new Date(application.applied_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
-          </span>
-        )}
+
+        <div className="flex items-center gap-2 shrink-0">
+          {isRejectable && onRejectCandidate && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRejectCandidate(application);
+              }}
+              className="text-[10px] font-bold text-rose-500 hover:text-rose-700 flex items-center gap-0.5 hover:underline"
+              title="Decline / Reject candidate at this stage"
+            >
+              <UserX className="w-2.5 h-2.5" /> Reject
+            </button>
+          )}
+
+          {nextStage && onAdvanceStage ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdvanceStage(application, nextStage);
+              }}
+              className="text-[10px] font-bold text-kth-primary-600 hover:text-kth-primary-700 flex items-center gap-0.5 hover:underline"
+            >
+              Advance <ArrowRight className="w-2.5 h-2.5" />
+            </button>
+          ) : (
+            <span>
+              {new Date(application.applied_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+            </span>
+          )}
+        </div>
       </div>
     </Card>
   );

@@ -27,7 +27,7 @@ export const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, o
       case 'hired':
         return { variant: 'emerald', label: 'Hired' };
       case 'rejected':
-        return { variant: 'slate', label: 'Archived' };
+        return { variant: 'slate', label: 'Not Selected' };
       case 'withdrawn':
         return { variant: 'slate', label: 'Withdrawn' };
       default:
@@ -96,6 +96,13 @@ export const ApplicationCard: React.FC<ApplicationCardProps> = ({ application, o
           <div className="bg-cyan-50/70 p-2.5 rounded-lg border border-cyan-200 text-xs mb-3">
             <span className="font-bold text-cyan-900 uppercase text-[10px] block mb-0.5">NEXT STEP</span>
             <span className="font-semibold text-cyan-950">Interview Scheduled</span>
+          </div>
+        )}
+
+        {application.stage === 'rejected' && (
+          <div className="bg-rose-50/70 p-2.5 rounded-lg border border-rose-200 text-xs mb-3 text-rose-800">
+            <span className="font-bold text-rose-900 uppercase text-[10px] block mb-0.5">APPLICATION CONCLUDED</span>
+            Application process concluded. Candidate not selected for this opening.
           </div>
         )}
 

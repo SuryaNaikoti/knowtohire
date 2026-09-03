@@ -30,6 +30,8 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
+  UserX,
+  AlertTriangle,
 } from 'lucide-react';
 
 export interface CandidateQuickViewProps {
@@ -213,6 +215,10 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
     }
   };
 
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('Qualifications / Experience Mismatch');
+  const [isRejecting, setIsRejecting] = useState(false);
+
   const currentStage: ApplicationStage = currentApp?.stage || 'new';
 
   // Stage advancement
@@ -226,6 +232,18 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
     if (data) {
       setCurrentApp(data);
       onApplicationUpdated?.(data);
+    }
+  };
+
+  const handleConfirmReject = async () => {
+    if (!currentApp) return;
+    setIsRejecting(true);
+    const { data } = await applicationService.rejectApplication(currentApp.id, rejectionReason);
+    setIsRejecting(false);
+    if (data) {
+      setCurrentApp(data);
+      onApplicationUpdated?.(data);
+      setIsRejectDialogOpen(false);
     }
   };
 
@@ -375,6 +393,18 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
                   className="text-xs font-semibold flex-1 sm:flex-none justify-center"
                 >
                   Interview
+                </Button>
+              )}
+
+              {currentApp && currentApp.stage !== 'rejected' && currentApp.stage !== 'withdrawn' && currentApp.stage !== 'hired' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsRejectDialogOpen(true)}
+                  leftIcon={<UserX className="w-3.5 h-3.5 text-rose-500" />}
+                  className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 flex-1 sm:flex-none justify-center"
+                >
+                  Reject Candidate
                 </Button>
               )}
             </div>
@@ -555,10 +585,39 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
 
           {/* Section 8: ATS Pipeline Stage Movement (Only when in ATS pipeline mode) */}
           {currentApp && (
-            <div className="bg-white p-3.5 rounded-xl border border-kth-slate-200 space-y-2">
-              <label className="text-[10px] font-bold text-kth-slate-700 uppercase tracking-wider block font-mono">
-                ATS Pipeline Stage
-              </label>
+            <div className="bg-white p-3.5 rounded-xl border border-kth-slate-200 space-y-2.5">
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-bold text-kth-slate-700 uppercase tracking-wider block font-mono">
+                  ATS Pipeline Stage
+                </label>
+                {currentApp.stage !== 'rejected' && currentApp.stage !== 'withdrawn' && currentApp.stage !== 'hired' && (
+                  <button
+                    type="button"
+                    onClick={() => setIsRejectDialogOpen(true)}
+                    className="text-xs font-bold text-rose-600 hover:text-rose-800 flex items-center gap-1 hover:underline"
+                  >
+                    <UserX className="w-3 h-3" /> Decline Candidacy
+                  </button>
+                )}
+              </div>
+
+              {currentApp.stage === 'rejected' && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <UserX className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Candidate Marked as Not Selected (Archived)</span>
+                  </div>
+                  {currentApp.rejection_reason && (
+                    <p className="text-[11px] text-rose-700">
+                      Reason: <strong className="font-semibold">{currentApp.rejection_reason}</strong>
+                    </p>
+                  )}
+                  <p className="text-[10px] text-rose-600 font-mono">
+                    Updated: {new Date(currentApp.updated_at).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              )}
+
               <div className="flex items-center gap-2">
                 <div className="flex-1">
                   <Select
@@ -724,6 +783,77 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
             onApplicationUpdated?.({ ...currentApp, stage: 'interview' });
           }}
         />
+      )}
+      {/* Candidate Rejection Modal */}
+      {currentApp && (
+        <Dialog
+          isOpen={isRejectDialogOpen}
+          onClose={() => setIsRejectDialogOpen(false)}
+          title="Decline / Reject Candidacy"
+          description={`Update candidate application status to Not Selected (Archived).`}
+        >
+          <div className="space-y-4 text-left font-sans">
+            <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-xs text-rose-900 space-y-1">
+              <div className="flex items-center gap-2 font-bold">
+                <UserX className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{candidateName}</span>
+              </div>
+              <p className="text-[11px] text-rose-700">
+                Current Stage: <strong className="capitalize">{currentApp.stage}</strong>
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-kth-slate-700 uppercase tracking-wider block font-mono">
+                Primary Reason for Decline
+              </label>
+              <Select
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                options={[
+                  { value: 'Qualifications / Experience Mismatch', label: 'Qualifications / Experience Mismatch' },
+                  { value: 'Salary Expectation Mismatch', label: 'Salary Expectation Mismatch' },
+                  { value: 'Selected Another Candidate for Position', label: 'Selected Another Candidate for Position' },
+                  { value: 'Technical Evaluation Not Cleared', label: 'Technical Evaluation Not Cleared' },
+                  { value: 'Culture & Communication Fit Mismatch', label: 'Culture & Communication Fit Mismatch' },
+                  { value: 'Candidate Withdrew / Unresponsive', label: 'Candidate Withdrew / Unresponsive' },
+                  { value: 'Position Placed on Hold / Closed', label: 'Position Placed on Hold / Closed' },
+                  { value: 'Other Requirements Unmet', label: 'Other Requirements Unmet' },
+                ]}
+              />
+            </div>
+
+            <div className="flex items-start gap-2 p-2.5 bg-kth-slate-50 rounded-xl border border-kth-slate-200 text-[11px] text-kth-slate-600">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <span>
+                The candidate's tracker will immediately update to reflect that the selection process has concluded.
+              </span>
+            </div>
+
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-kth-slate-100">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsRejectDialogOpen(false)}
+                disabled={isRejecting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleConfirmReject}
+                disabled={isRejecting}
+                isLoading={isRejecting}
+                className="bg-rose-600 text-white hover:bg-rose-700 border-transparent font-bold"
+              >
+                {isRejecting ? 'Confirming...' : 'Confirm Rejection'}
+              </Button>
+            </div>
+          </div>
+        </Dialog>
       )}
     </>
   );

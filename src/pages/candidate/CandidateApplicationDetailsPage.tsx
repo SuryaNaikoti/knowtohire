@@ -8,7 +8,7 @@ import { Alert } from '@/components/ui/Alert';
 import { ProgressTimeline, TimelineStep } from '@/components/data-display/ProgressTimeline';
 import { applicationService, interviewService, JobApplication, ApplicationStatusHistory, Interview, ApplicationStage } from '@/services';
 import { formatINR } from '@/design-system/tokens';
-import { Calendar, Video, FileText, ArrowLeft, AlertTriangle, Building2, MapPin, Briefcase, Sparkles, PartyPopper, ArrowRight, ShieldCheck, Rocket, X } from 'lucide-react';
+import { Calendar, Video, FileText, ArrowLeft, AlertTriangle, Building2, MapPin, Briefcase, Sparkles, PartyPopper, ArrowRight, ShieldCheck, Rocket, X, UserX } from 'lucide-react';
 
 export interface CandidateApplicationDetailsPageProps {
   appId?: string;
@@ -334,8 +334,57 @@ export const CandidateApplicationDetailsPage: React.FC<CandidateApplicationDetai
             </div>
           )}
 
+          {/* Rejection / Application Concluded Banner (When stage is 'rejected') */}
+          {application.stage === 'rejected' && (
+            <div className="bg-gradient-to-r from-slate-900 via-rose-950 to-slate-900 rounded-2xl p-6 text-white shadow-md border border-rose-800/60 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[11px] font-bold border border-rose-500/30">
+                    <UserX className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Application Process Concluded · Not Selected</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white tracking-tight">
+                    Thank You for Your Interest in {job?.company?.name || 'this Requisition'}
+                  </h3>
+                  <p className="text-xs text-slate-300 max-w-xl leading-relaxed">
+                    The hiring team has reviewed all candidates and decided not to move forward with your application for this specific opening at this time.
+                  </p>
+                </div>
+                <div className="text-right sm:text-left shrink-0">
+                  <Badge variant="slate" className="text-xs py-1 px-3 bg-rose-900/60 text-rose-200 border-rose-700">
+                    Status: Concluded
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+                <div className="bg-white/10 p-3.5 rounded-xl border border-white/10 space-y-1">
+                  <span className="text-[10px] text-rose-300 font-bold uppercase tracking-wider block font-mono">
+                    Candidate Talent Pool
+                  </span>
+                  <p className="text-white font-semibold">Active Verified Profile</p>
+                  <span className="text-[11px] text-slate-300 block">Your credentials remain discoverable to verified enterprise recruiters.</span>
+                </div>
+                <div className="bg-white/10 p-3.5 rounded-xl border border-white/10 space-y-1">
+                  <span className="text-[10px] text-cyan-300 font-bold uppercase tracking-wider block font-mono">
+                    Matching Openings
+                  </span>
+                  <p className="text-white font-semibold">Similar Roles Available</p>
+                  <span className="text-[11px] text-slate-300 block">Explore other enterprise vacancies tailored to your skillset.</span>
+                </div>
+                <div className="bg-white/10 p-3.5 rounded-xl border border-white/10 space-y-1">
+                  <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block font-mono">
+                    Next Step
+                  </span>
+                  <p className="text-white font-semibold">Apply to New Openings</p>
+                  <span className="text-[11px] text-slate-300 block">Submit your verified resume to other live requisitions.</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Scheduled Interview Section */}
-          {interviews.length > 0 && application.stage !== 'hired' && (
+          {interviews.length > 0 && application.stage !== 'hired' && application.stage !== 'rejected' && (
             <div className="bg-cyan-50 p-5 rounded-xl border border-cyan-200">
               <div className="flex items-center gap-2.5 mb-2">
                 <Calendar className="w-5 h-5 text-cyan-600" />

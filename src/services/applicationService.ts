@@ -827,7 +827,17 @@ export const applicationService = {
   },
 
   /**
-   * Update candidate application stage (e.g. from 'screening' to 'interview').
+   * Reject a candidate application at any stage of the recruitment process.
+   */
+  async rejectApplication(
+    applicationId: string,
+    rejectionReason: string = 'Profile does not meet requirements for this requisition'
+  ): Promise<ServiceResult<JobApplication>> {
+    return this.updateApplicationStage(applicationId, 'rejected', rejectionReason);
+  },
+
+  /**
+   * Update candidate application stage (e.g. from 'screening' to 'interview' or 'rejected').
    */
   async updateApplicationStage(
     applicationId: string,
@@ -856,7 +866,7 @@ export const applicationService = {
           interview: 'Interview Stage',
           offer: 'Offer Extended',
           hired: 'Candidate Hired',
-          rejected: 'Candidate Archived',
+          rejected: 'Application Not Selected',
         };
 
         if (stageTitles[stage]) {
@@ -867,7 +877,9 @@ export const applicationService = {
             job_id: allDemo[idx].job_id,
             type: stage === 'offer' || stage === 'hired' ? 'offer' : 'application',
             title: `${stageTitles[stage]}: ${candidateName}`,
-            message: `${candidateName} was moved to ${stage.toUpperCase()} for "${jobTitle}".`,
+            message: stage === 'rejected'
+              ? `Application for "${jobTitle}" has been concluded (Not Selected).`
+              : `${candidateName} was moved to ${stage.toUpperCase()} for "${jobTitle}".`,
             link: '/employer/pipeline',
           }).catch(() => {});
         }

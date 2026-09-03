@@ -1,13 +1,29 @@
 import React, { useState } from 'react';
 import { CandidatePipelineCard } from './CandidatePipelineCard';
 import { CandidateQuickView } from './CandidateQuickView';
+import { Dialog } from '@/components/ui/Dialog';
+import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
+import { Alert } from '@/components/ui/Alert';
 import { applicationService, JobApplication, ApplicationStage } from '@/services';
+import { UserX, AlertCircle } from 'lucide-react';
 
 export interface CandidatePipelineProps {
   applications: JobApplication[];
   onApplicationUpdated?: (updatedApp: JobApplication) => void;
   showArchives?: boolean;
 }
+
+const REJECTION_REASONS = [
+  'Qualifications / Experience Mismatch',
+  'Salary Expectation Mismatch',
+  'Selected Another Candidate for Position',
+  'Technical Evaluation Not Cleared',
+  'Culture & Communication Fit Mismatch',
+  'Candidate Withdrew / Unresponsive',
+  'Position Placed on Hold / Closed',
+  'Other Requirements Unmet',
+];
 
 export const CandidatePipeline: React.FC<CandidatePipelineProps> = ({
   applications,
@@ -16,6 +32,12 @@ export const CandidatePipeline: React.FC<CandidatePipelineProps> = ({
 }) => {
   const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null);
   const [mobileActiveStage, setMobileActiveStage] = useState<ApplicationStage>('new');
+  
+  // Rejection modal state
+  const [appToReject, setAppToReject] = useState<JobApplication | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string>(REJECTION_REASONS[0]);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [rejectError, setRejectError] = useState<string | null>(null);
 
   const activeStages: { stage: ApplicationStage; label: string }[] = [
     { stage: 'new', label: 'New Applicants' },
@@ -37,6 +59,31 @@ export const CandidatePipeline: React.FC<CandidatePipelineProps> = ({
     const { data } = await applicationService.updateApplicationStage(app.id, nextStage);
     if (data) {
       onApplicationUpdated?.(data);
+    }
+  };
+
+  const handleOpenRejectModal = (app: JobApplication) => {
+    setAppToReject(app);
+    setRejectionReason(REJECTION_REASONS[0]);
+    setRejectError(null);
+  };
+
+  const handleConfirmReject = async () => {
+    if (!appToReject) return;
+    setIsRejecting(true);
+    setRejectError(null);
+
+    const { data, error } = await applicationService.rejectApplication(appToReject.id, rejectionReason);
+    setIsRejecting(false);
+
+    if (error) {
+      setRejectError(error.message);
+    } else if (data) {
+      onApplicationUpdated?.(data);
+      setAppToReject(null);
+      if (selectedApplication?.id === data.id) {
+        setSelectedApplication(data);
+      }
     }
   };
 
@@ -88,6 +135,7 @@ export const CandidatePipeline: React.FC<CandidatePipelineProps> = ({
                   application={app}
                   onQuickView={(a) => setSelectedApplication(a)}
                   onAdvanceStage={handleAdvanceStage}
+                  onRejectCandidate={handleOpenRejectModal}
                 />
               ))
             ) : (
@@ -128,6 +176,7 @@ export const CandidatePipeline: React.FC<CandidatePipelineProps> = ({
                       application={app}
                       onQuickView={(a) => setSelectedApplication(a)}
                       onAdvanceStage={handleAdvanceStage}
+                      onRejectCandidate={handleOpenRejectModal}
                     />
                   ))
                 ) : (
@@ -151,6 +200,77 @@ export const CandidatePipeline: React.FC<CandidatePipelineProps> = ({
           onApplicationUpdated?.(updated);
         }}
       />
+
+      {/* Candidate Rejection Confirmation Dialog */}
+      <Dialog
+        isOpen={appToReject !== null}
+        onClose={() => setAppToReject(null)}
+        title="Conclude Application (Decline / Reject)"
+        description={`Are you sure you want to mark this candidate as not selected? This will update the candidate's tracking dashboard and move them to the archived pipeline.`}
+      >
+        <div className="space-y-4 text-left font-sans">
+          {rejectError && (
+            <Alert variant="error" title="Rejection Failed">
+              {rejectError}
+            </Alert>
+          )}
+
+          {appToReject && (
+            <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-xs text-rose-900 space-y-1">
+              <div className="flex items-center gap-2 font-bold">
+                <UserX className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>
+                  {appToReject.candidate?.full_name || (appToReject.candidate_snapshot as any)?.full_name || 'Candidate'}
+                </span>
+              </div>
+              <p className="text-[11px] text-rose-700">
+                Applied for: <strong>{appToReject.job?.title || 'Requisition'}</strong> · Current stage: <strong className="capitalize">{appToReject.stage}</strong>
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-kth-slate-700 uppercase tracking-wider block font-mono">
+              Primary Rejection Reason
+            </label>
+            <Select
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              options={REJECTION_REASONS.map((r) => ({ value: r, label: r }))}
+            />
+          </div>
+
+          <div className="flex items-start gap-2 p-2.5 bg-kth-slate-50 rounded-xl border border-kth-slate-200 text-[11px] text-kth-slate-600">
+            <AlertCircle className="w-4 h-4 text-kth-slate-400 shrink-0 mt-0.5" />
+            <span>
+              The candidate will receive an updated status in their application tracker stating that the selection process for this opening has concluded.
+            </span>
+          </div>
+
+          <div className="flex justify-end gap-2.5 pt-3 border-t border-kth-slate-100">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setAppToReject(null)}
+              disabled={isRejecting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleConfirmReject}
+              disabled={isRejecting}
+              isLoading={isRejecting}
+              className="bg-rose-600 text-white hover:bg-rose-700 border-transparent font-bold"
+            >
+              {isRejecting ? 'Rejecting...' : 'Confirm Rejection'}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </>
   );
 };

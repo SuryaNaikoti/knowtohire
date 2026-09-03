@@ -19,6 +19,7 @@ import {
   DiscoverableCandidate,
 } from '@/services';
 import { navigateTo } from '@/utils/navigation';
+import { Dialog } from '@/components/ui/Dialog';
 import {
   MapPin,
   FileText,
@@ -37,6 +38,8 @@ import {
   CheckCircle2,
   Download,
   Eye,
+  UserX,
+  AlertTriangle,
 } from 'lucide-react';
 
 export interface EmployerCandidateDetailsPageProps {
@@ -52,6 +55,7 @@ const ATS_STAGES: { stage: ApplicationStage; label: string }[] = [
   { stage: 'interview', label: 'Interview' },
   { stage: 'offer', label: 'Offer' },
   { stage: 'hired', label: 'Hired' },
+  { stage: 'rejected', label: 'Not Selected' },
 ];
 
 export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPageProps> = ({
@@ -83,6 +87,11 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
 
   // ATS Stage transition
   const [stageLoading, setStageLoading] = useState(false);
+
+  // Rejection modal state
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('Qualifications / Experience Mismatch');
+  const [isRejecting, setIsRejecting] = useState(false);
 
   const handleNavigate = (path: string) => {
     if (onNavigate) {
@@ -170,6 +179,19 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
       setErrorMessage(error.message);
     } else if (data) {
       setApplication(data);
+    }
+  };
+
+  const handleConfirmReject = async () => {
+    if (!application) return;
+    setIsRejecting(true);
+    const { data, error } = await applicationService.rejectApplication(application.id, rejectionReason);
+    setIsRejecting(false);
+    if (error) {
+      setErrorMessage(error.message);
+    } else if (data) {
+      setApplication(data);
+      setIsRejectModalOpen(false);
     }
   };
 
@@ -318,6 +340,17 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
                 Schedule Interview
               </Button>
             )}
+            {application && application.stage !== 'rejected' && application.stage !== 'withdrawn' && application.stage !== 'hired' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsRejectModalOpen(true)}
+                leftIcon={<UserX className="w-3.5 h-3.5 text-rose-500" />}
+                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 flex-1 sm:flex-none justify-center"
+              >
+                Reject Candidate
+              </Button>
+            )}
           </div>
         </div>
 
@@ -403,28 +436,41 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
             <h3 className="font-display font-bold text-xs uppercase tracking-wider text-kth-slate-500 mb-4">
               Recruitment Pipeline Progress
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
               {ATS_STAGES.map((s, idx) => {
                 const isCurrent = application.stage === s.stage;
+                const isRejectedStage = s.stage === 'rejected';
                 const stageIndex = ATS_STAGES.findIndex((st) => st.stage === application.stage);
-                const isPassed = idx < stageIndex;
+                const isPassed = !isRejectedStage && application.stage !== 'rejected' && idx < stageIndex;
 
                 return (
                   <button
                     key={s.stage}
                     type="button"
-                    onClick={() => handleStageChange(s.stage)}
+                    onClick={() => {
+                      if (s.stage === 'rejected') {
+                        setIsRejectModalOpen(true);
+                      } else {
+                        handleStageChange(s.stage);
+                      }
+                    }}
                     className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 ${
                       isCurrent
-                        ? 'bg-kth-primary-50 border-kth-primary-600 text-kth-primary-900 font-bold shadow-xs ring-2 ring-kth-primary-500/20'
+                        ? isRejectedStage
+                          ? 'bg-rose-50 border-rose-600 text-rose-900 font-bold shadow-xs ring-2 ring-rose-500/20'
+                          : 'bg-kth-primary-50 border-kth-primary-600 text-kth-primary-900 font-bold shadow-xs ring-2 ring-kth-primary-500/20'
                         : isPassed
                         ? 'bg-emerald-50/60 border-emerald-300 text-emerald-900'
+                        : isRejectedStage
+                        ? 'bg-rose-50/50 border-rose-200 text-rose-600 hover:border-rose-400'
                         : 'bg-kth-slate-50 border-kth-slate-200 text-kth-slate-500 hover:border-kth-slate-300'
                     }`}
                   >
                     <div className="flex items-center gap-1">
                       {isPassed ? (
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      ) : isRejectedStage && isCurrent ? (
+                        <UserX className="w-3.5 h-3.5 text-rose-600" />
                       ) : (
                         <span className="w-4 h-4 rounded-full bg-kth-slate-200 text-[10px] font-mono flex items-center justify-center font-bold">
                           {idx + 1}
@@ -433,12 +479,42 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
                       <span className="text-xs">{s.label}</span>
                     </div>
                     {isCurrent && (
-                      <span className="text-[10px] uppercase font-mono font-bold text-kth-primary-600">Current</span>
+                      <span className={`text-[10px] uppercase font-mono font-bold ${isRejectedStage ? 'text-rose-600' : 'text-kth-primary-600'}`}>Current</span>
                     )}
                   </button>
                 );
               })}
             </div>
+          </Card>
+        )}
+
+        {/* Section 4C: Candidate Not Selected / Rejection Status Banner (When Rejected) */}
+        {application && application.stage === 'rejected' && (
+          <Card className="p-6 bg-rose-50 border border-rose-200 rounded-2xl shadow-xs space-y-3 font-sans text-rose-950">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[11px] font-bold border border-rose-200">
+                  <UserX className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Candidacy Concluded · Not Selected</span>
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-rose-950">
+                  {name} is marked as Not Selected for this requisition.
+                </h3>
+                <p className="text-xs text-rose-800 max-w-2xl">
+                  This candidate has been moved to the archived pipeline. Their profile remains in the verified talent directory and may be engaged for other matching requisitions.
+                </p>
+              </div>
+              <Badge variant="slate" className="text-xs py-1 px-3 self-start sm:self-auto bg-rose-200 text-rose-900 border-rose-300">
+                Stage: Archived / Not Selected
+              </Badge>
+            </div>
+
+            {application.rejection_reason && (
+              <div className="p-3 bg-white rounded-xl border border-rose-200 text-xs text-rose-900">
+                <span className="font-bold text-rose-700 block text-[10px] uppercase font-mono">Recorded Feedback / Reason:</span>
+                <span className="font-medium">{application.rejection_reason}</span>
+              </div>
+            )}
           </Card>
         )}
 
@@ -814,6 +890,78 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
           </div>
         </div>
       </div>
+
+      {/* Rejection Confirmation Dialog */}
+      {application && (
+        <Dialog
+          isOpen={isRejectModalOpen}
+          onClose={() => setIsRejectModalOpen(false)}
+          title="Decline / Reject Candidacy"
+          description={`Update candidate application status to Not Selected (Archived).`}
+        >
+          <div className="space-y-4 text-left font-sans">
+            <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-xs text-rose-900 space-y-1">
+              <div className="flex items-center gap-2 font-bold">
+                <UserX className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{name}</span>
+              </div>
+              <p className="text-[11px] text-rose-700">
+                Applied for: <strong>{job?.title || 'Requisition'}</strong> · Current stage: <strong className="capitalize">{application.stage}</strong>
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-kth-slate-700 uppercase tracking-wider block font-mono">
+                Primary Reason for Decline
+              </label>
+              <Select
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                options={[
+                  { value: 'Qualifications / Experience Mismatch', label: 'Qualifications / Experience Mismatch' },
+                  { value: 'Salary Expectation Mismatch', label: 'Salary Expectation Mismatch' },
+                  { value: 'Selected Another Candidate for Position', label: 'Selected Another Candidate for Position' },
+                  { value: 'Technical Evaluation Not Cleared', label: 'Technical Evaluation Not Cleared' },
+                  { value: 'Culture & Communication Fit Mismatch', label: 'Culture & Communication Fit Mismatch' },
+                  { value: 'Candidate Withdrew / Unresponsive', label: 'Candidate Withdrew / Unresponsive' },
+                  { value: 'Position Placed on Hold / Closed', label: 'Position Placed on Hold / Closed' },
+                  { value: 'Other Requirements Unmet', label: 'Other Requirements Unmet' },
+                ]}
+              />
+            </div>
+
+            <div className="flex items-start gap-2 p-2.5 bg-kth-slate-50 rounded-xl border border-kth-slate-200 text-[11px] text-kth-slate-600">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <span>
+                The candidate's tracker will immediately update to reflect that the selection process has concluded.
+              </span>
+            </div>
+
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-kth-slate-100">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsRejectModalOpen(false)}
+                disabled={isRejecting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleConfirmReject}
+                disabled={isRejecting}
+                isLoading={isRejecting}
+                className="bg-rose-600 text-white hover:bg-rose-700 border-transparent font-bold"
+              >
+                {isRejecting ? 'Confirming...' : 'Confirm Rejection'}
+              </Button>
+            </div>
+          </div>
+        </Dialog>
+      )}
     </EmployerShell>
   );
 };
