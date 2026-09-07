@@ -2,6 +2,7 @@ import React from 'react';
 import { HeroSection } from '@/components/public/HeroSection';
 import { CategoryGrid } from '@/components/public/CategoryGrid';
 import { FeaturedJobs } from '@/components/public/FeaturedJobs';
+import { CuratedExternalJobs } from '@/components/public/CuratedExternalJobs';
 import { FeaturedResources } from '@/components/public/FeaturedResources';
 import { FeaturedTemplates } from '@/components/public/FeaturedTemplates';
 import { CareerGrowthSection } from '@/components/public/CareerGrowthSection';
@@ -15,6 +16,7 @@ export const HomePage: React.FC = () => {
       <HeroSection />
       <CategoryGrid />
       <FeaturedJobs />
+      <CuratedExternalJobs />
       <FeaturedResources />
       <FeaturedTemplates />
       <CareerGrowthSection />

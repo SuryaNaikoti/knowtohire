@@ -29,7 +29,11 @@ import {
 
 type TaxonomyTab = 'categories' | 'industries' | 'domains' | 'roles' | 'skills' | 'geography';
 
-export const AdminTaxonomyPage: React.FC = () => {
+export interface AdminTaxonomyPageProps {
+  onNavigate?: (path: string) => void;
+}
+
+export const AdminTaxonomyPage: React.FC<AdminTaxonomyPageProps> = ({ onNavigate }) => {
   const [activeTab, setActiveTab] = useState<TaxonomyTab>('categories');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -84,7 +88,7 @@ export const AdminTaxonomyPage: React.FC = () => {
   };
 
   return (
-    <AdminShell title="Master Taxonomy & Geography" currentPath="/admin/taxonomy">
+    <AdminShell title="Master Taxonomy & Geography" currentPath="/admin/taxonomy" onNavigate={onNavigate}>
       <div className="max-w-7xl mx-auto space-y-6 font-sans">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-kth-slate-200 shadow-sm">
@@ -105,7 +109,13 @@ export const AdminTaxonomyPage: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <Button
               size="sm"
-              onClick={() => { window.location.href = '/admin/taxonomy/new'; }}
+              onClick={() => {
+                if (onNavigate) {
+                  onNavigate('/admin/taxonomy/new');
+                } else {
+                  window.location.href = '/admin/taxonomy/new';
+                }
+              }}
               className="bg-kth-slate-900 text-white hover:bg-black gap-1.5 text-xs font-bold"
             >
               <Plus className="w-3.5 h-3.5" />

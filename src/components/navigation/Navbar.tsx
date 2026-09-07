@@ -94,6 +94,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               Find Jobs
             </a>
             <a
+              href="/external-jobs"
+              onClick={(e) => { e.preventDefault(); handleNav('/external-jobs'); }}
+              className="text-sm font-semibold text-kth-primary-600 hover:text-kth-primary-700 transition-colors no-underline flex items-center gap-1"
+            >
+              Curated Drives
+            </a>
+            <a
               href="/careers"
               onClick={(e) => { e.preventDefault(); handleNav('/careers'); }}
               className="text-sm font-medium text-kth-slate-600 hover:text-kth-slate-900 transition-colors no-underline"
@@ -209,6 +216,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="text-xs font-bold text-kth-slate-800 hover:text-kth-primary-600 p-2 rounded-lg hover:bg-kth-slate-50 transition-colors"
             >
               Find Jobs
+            </a>
+            <a
+              href="/external-jobs"
+              onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); handleNav('/external-jobs'); }}
+              className="text-xs font-bold text-kth-primary-600 hover:text-kth-primary-700 p-2 rounded-lg hover:bg-kth-primary-50 transition-colors"
+            >
+              Curated Drives
             </a>
             <a
               href="/careers"

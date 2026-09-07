@@ -30,3 +30,5 @@ export * from './taxonomyTypes';
 export * from './taxonomyService';
 export * from './adminSettingsService';
 export * from './creatorService';
+export * from './externalJobService';
+export * from '@/types/externalJob';

@@ -35,6 +35,7 @@ const TemplateDetailsPage = lazy(() => import('@/pages/public/TemplateDetailsPag
 const BlogPage = lazy(() => import('@/pages/public/BlogPage').then(m => ({ default: m.BlogPage })));
 const BlogDetailsPage = lazy(() => import('@/pages/public/BlogDetailsPage').then(m => ({ default: m.BlogDetailsPage })));
 const PricingPage = lazy(() => import('@/pages/public/PricingPage').then(m => ({ default: m.PricingPage })));
+const ExternalJobsPage = lazy(() => import('@/pages/public/ExternalJobsPage').then(m => ({ default: m.ExternalJobsPage })));
 const AboutPage = lazy(() => import('@/pages/public/AboutPage').then(m => ({ default: m.AboutPage })));
 const ContactPage = lazy(() => import('@/pages/public/ContactPage').then(m => ({ default: m.ContactPage })));
 const PrivacyPage = lazy(() => import('@/pages/public/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
@@ -93,6 +94,8 @@ const AdminCreateUserPage = lazy(() => import('@/pages/admin/AdminCreateUserPage
 const AdminEmployersPage = lazy(() => import('@/pages/admin/AdminEmployersPage').then(m => ({ default: m.AdminEmployersPage })));
 const AdminEmployerDossierPage = lazy(() => import('@/pages/admin/AdminEmployerDossierPage').then(m => ({ default: m.AdminEmployerDossierPage })));
 const AdminJobsPage = lazy(() => import('@/pages/admin/AdminJobsPage').then(m => ({ default: m.AdminJobsPage })));
+const AdminExternalJobsPage = lazy(() => import('@/pages/admin/AdminExternalJobsPage').then(m => ({ default: m.AdminExternalJobsPage })));
+const AdminExternalJobEditPage = lazy(() => import('@/pages/admin/AdminExternalJobEditPage').then(m => ({ default: m.AdminExternalJobEditPage })));
 const AdminJobInspectPage = lazy(() => import('@/pages/admin/AdminJobInspectPage').then(m => ({ default: m.AdminJobInspectPage })));
 const AdminApplicationsPage = lazy(() => import('@/pages/admin/AdminApplicationsPage').then(m => ({ default: m.AdminApplicationsPage })));
 const AdminApplicationDetailsPage = lazy(() => import('@/pages/admin/AdminApplicationDetailsPage').then(m => ({ default: m.AdminApplicationDetailsPage })));
@@ -171,6 +174,12 @@ export function App() {
         adminComponent = <AdminJobInspectPage jobId={jobId} onNavigate={navigateTo} />;
       }
       else if (path === '/admin/jobs') adminComponent = <AdminJobsPage onNavigate={navigateTo} />;
+      else if (path === '/admin/external-jobs/new' || path === '/admin/external-jobs/create') adminComponent = <AdminExternalJobEditPage onNavigate={navigateTo} />;
+      else if (path.startsWith('/admin/external-jobs/') && path.endsWith('/edit')) {
+        const extId = path.replace('/admin/external-jobs/', '').replace('/edit', '');
+        adminComponent = <AdminExternalJobEditPage jobId={extId} onNavigate={navigateTo} />;
+      }
+      else if (path === '/admin/external-jobs') adminComponent = <AdminExternalJobsPage onNavigate={navigateTo} />;
       else if (path.startsWith('/admin/applications/') && path !== '/admin/applications') {
         const appId = path.replace('/admin/applications/', '');
         adminComponent = <AdminApplicationDetailsPage applicationId={appId} onNavigate={navigateTo} />;
@@ -208,7 +217,7 @@ export function App() {
         adminComponent = <ResourceMetricsPage itemId={tmplId} itemType="template" onNavigate={navigateTo} />;
       }
       else if (path === '/admin/taxonomy/new') adminComponent = <AdminTaxonomyNewPage onNavigate={navigateTo} />;
-      else if (path === '/admin/taxonomy') adminComponent = <AdminTaxonomyPage />;
+      else if (path === '/admin/taxonomy') adminComponent = <AdminTaxonomyPage onNavigate={navigateTo} />;
       else if (path === '/admin/settings') adminComponent = <AdminSettingsPage onNavigate={navigateTo} />;
 
       return (
@@ -247,7 +256,11 @@ export function App() {
     if (path === '/onboarding' || path === '/onboarding/') {
       return (
         <ProtectedRoute currentPath={currentPath} onNavigate={navigateTo}>
-          <div />
+          {role === 'employer' ? (
+            <EmployerOnboardingPage onNavigate={navigateTo} />
+          ) : (
+            <CandidateOnboardingPage onNavigate={navigateTo} />
+          )}
         </ProtectedRoute>
       );
     }
@@ -423,6 +436,7 @@ export function App() {
       return <CandidateApplyPage jobId={jobId} onNavigate={navigateTo} />;
     }
     if (path === '/jobs') return <JobsPage />;
+    if (path === '/external-jobs' || path === '/jobs/external') return <ExternalJobsPage onNavigate={navigateTo} />;
     if (path.startsWith('/jobs/')) {
       const jobId = path.replace('/jobs/', '');
       return <JobDetailsPage jobId={jobId} onNavigate={navigateTo} />;
