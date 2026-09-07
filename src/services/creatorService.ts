@@ -22,6 +22,42 @@ export interface CreatorStats {
   commissionPercentage: number;
   isEligibleForPayout: boolean;
   payoutProgressPercentage: number;
+
+  // Content Workflow Status Counts
+  publishedCount: number;
+  underReviewCount: number;
+  actionRequiredCount: number;
+  draftCount: number;
+  changesRequestedCount: number;
+  rejectedCount: number;
+}
+
+export type ContentItemType = 'resource' | 'template';
+
+export interface CreatorContentQueueItem {
+  id: string;
+  type: ContentItemType;
+  title: string;
+  category: string;
+  creatorName: string;
+  creatorEmail: string;
+  status: string;
+  submittedAt?: string;
+  sellingPriceINR?: number;
+  creatorCommissionPct?: number;
+  platformSharePct?: number;
+  creatorEarningsPerSaleINR?: number;
+  termsVersion?: number;
+  reviewFeedback?: string;
+  rejectionReason?: string;
+  adminNotes?: string;
+  fileUrl?: string | null;
+  fileName?: string | null;
+  fileSize?: string | null;
+  description: string;
+  coverUrl?: string | null;
+  format?: string;
+  updatedAt?: string;
 }
 
 export interface CreatorSaleItem {
@@ -122,6 +158,20 @@ function getStoredPayouts(): CreatorPayoutRecord[] {
   }
 }
 
+function getActiveUserRole(): string | null {
+  if (typeof window === 'undefined' || !window.localStorage) return null;
+  try {
+    const raw = window.localStorage.getItem('kth_demo_auth_session');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return parsed?.role || null;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 export const creatorService = {
   /**
    * Get configured commission rate and payout threshold from Admin Settings
@@ -183,6 +233,19 @@ export const creatorService = {
       const isEligibleForPayout = netAvailable >= config.minPayoutThresholdINR;
       const progress = Math.min(100, Math.round((netAvailable / config.minPayoutThresholdINR) * 100));
 
+      // Calculate Content Workflow Counts across both resources and templates
+      const allItems = [
+        ...resources.map((r) => ({ ...r, itemType: 'resource' as const })),
+        ...templates.map((t) => ({ ...t, itemType: 'template' as const })),
+      ];
+
+      const publishedCount = allItems.filter((i) => i.status === 'published').length;
+      const underReviewCount = allItems.filter((i) => i.status === 'pending_review').length;
+      const actionRequiredCount = allItems.filter((i) => i.status === 'terms_pending').length;
+      const draftCount = allItems.filter((i) => i.status === 'draft').length;
+      const changesRequestedCount = allItems.filter((i) => i.status === 'changes_requested').length;
+      const rejectedCount = allItems.filter((i) => i.status === 'rejected').length;
+
       return {
         data: {
           totalResources: resources.length,
@@ -197,6 +260,12 @@ export const creatorService = {
           commissionPercentage: config.commissionPercentage,
           isEligibleForPayout,
           payoutProgressPercentage: progress,
+          publishedCount,
+          underReviewCount,
+          actionRequiredCount,
+          draftCount,
+          changesRequestedCount,
+          rejectedCount,
         },
         error: null,
       };
@@ -302,5 +371,469 @@ export const creatorService = {
       salesHistory: allSales,
       commissionPercentage: config.commissionPercentage,
     };
+  },
+
+  /**
+   * Admin: Get all Creator content submissions in a unified queue
+   */
+  async getAdminContentQueue(filterStatus?: string): Promise<ServiceResult<CreatorContentQueueItem[]>> {
+    try {
+      const [resList, tplList] = await Promise.all([
+        knowledgeService.getResources({ status: 'all' }),
+        templateService.getTemplates({ status: 'all' }),
+      ]);
+
+      const items: CreatorContentQueueItem[] = [];
+
+      for (const r of resList.data || []) {
+        // Exclude system items that are not part of review lifecycle if needed, or include all
+        items.push({
+          id: r.id,
+          type: 'resource',
+          title: r.title,
+          category: r.category,
+          creatorName: r.author || 'KnowToHire Creator Desk',
+          creatorEmail: 'creator@knowtohire.com',
+          status: r.status,
+          submittedAt: r.submitted_at || r.created_at,
+          sellingPriceINR: r.selling_price_inr ?? r.price_inr,
+          creatorCommissionPct: r.creator_commission_pct,
+          platformSharePct: r.platform_share_pct,
+          creatorEarningsPerSaleINR: r.creator_earnings_per_sale_inr,
+          termsVersion: r.terms_version,
+          reviewFeedback: r.review_feedback,
+          rejectionReason: r.rejection_reason,
+          adminNotes: r.admin_notes,
+          fileUrl: r.file_url,
+          fileName: r.file_name,
+          fileSize: r.file_size,
+          description: r.description,
+          coverUrl: r.cover_url,
+          format: r.format,
+          updatedAt: r.updated_at || r.created_at,
+        });
+      }
+
+      for (const t of tplList.data || []) {
+        items.push({
+          id: t.id,
+          type: 'template',
+          title: t.title,
+          category: t.category,
+          creatorName: 'Aarav Sharma (Verified Creator)',
+          creatorEmail: 'aarav.sharma@knowtohire.com',
+          status: t.status,
+          submittedAt: t.submitted_at || t.created_at,
+          sellingPriceINR: t.selling_price_inr ?? t.price_inr,
+          creatorCommissionPct: t.creator_commission_pct,
+          platformSharePct: t.platform_share_pct,
+          creatorEarningsPerSaleINR: t.creator_earnings_per_sale_inr,
+          termsVersion: t.terms_version,
+          reviewFeedback: t.review_feedback,
+          rejectionReason: t.rejection_reason,
+          adminNotes: t.admin_notes,
+          fileUrl: t.file_url || t.download_url,
+          fileName: t.file_name,
+          fileSize: t.file_size,
+          description: t.description,
+          coverUrl: t.cover_url,
+          format: t.formats?.[0] || 'DOCX',
+          updatedAt: t.updated_at || t.created_at,
+        });
+      }
+
+      // Sort newest submitted first
+      items.sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());
+
+      if (filterStatus && filterStatus !== 'all') {
+        return { data: items.filter((i) => i.status === filterStatus), error: null };
+      }
+
+      return { data: items, error: null };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
+   * Admin: Set Commercial Terms & Send to Creator for Acceptance
+   */
+  async adminSetCommercialTerms(
+    id: string,
+    type: ContentItemType,
+    terms: {
+      sellingPriceINR: number;
+      creatorCommissionPct: number;
+      adminNotes?: string;
+      adminEmail?: string;
+    }
+  ): Promise<ServiceResult<boolean>> {
+    try {
+      // Authorization Guard: Only Admin can set commercial terms
+      const activeRole = getActiveUserRole();
+      if (activeRole && activeRole !== 'admin') {
+        return {
+          data: null,
+          error: {
+            message: 'Unauthorized: Only platform administrators can set commercial terms or royalties.',
+            code: 'FORBIDDEN',
+            status: 403,
+          },
+        };
+      }
+
+      const price = Number(terms.sellingPriceINR) || 0;
+      const commissionPct = Number(terms.creatorCommissionPct) || 0;
+      const platformSharePct = Math.max(0, 100 - commissionPct);
+      // Accurate two-decimal currency math: (price * commissionPct) / 100 rounded to 2 decimals
+      const creatorEarnings = Math.round(((price * commissionPct) / 100) * 100) / 100;
+      const now = new Date().toISOString();
+
+      const extraUpdates: any = {
+        selling_price_inr: price,
+        creator_commission_pct: commissionPct,
+        platform_share_pct: platformSharePct,
+        creator_earnings_per_sale_inr: creatorEarnings,
+        terms_version: Date.now(),
+        terms_set_by: terms.adminEmail || 'admin@knowtohire.com',
+        terms_set_at: now,
+        admin_notes: terms.adminNotes,
+        // Reset any previous acceptance since terms changed
+        terms_accepted_at: undefined,
+        terms_accepted_by: undefined,
+        terms_accepted_version: undefined,
+      };
+
+      if (type === 'resource') {
+        extraUpdates.price_inr = price;
+        extraUpdates.is_free = price === 0;
+        await knowledgeService.updateResourceStatus(id, 'terms_pending', extraUpdates);
+      } else {
+        extraUpdates.price = price;
+        extraUpdates.price_inr = price;
+        extraUpdates.is_free = price === 0;
+        await templateService.updateTemplateStatus(id, 'terms_pending', extraUpdates);
+      }
+
+      notifyCreatorChanged();
+      return { data: true, error: null };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
+   * Admin: Request Changes from Creator
+   */
+  async adminRequestChanges(
+    id: string,
+    type: ContentItemType,
+    feedback: string
+  ): Promise<ServiceResult<boolean>> {
+    try {
+      const activeRole = getActiveUserRole();
+      if (activeRole && activeRole !== 'admin') {
+        return {
+          data: null,
+          error: {
+            message: 'Unauthorized: Only platform administrators can request content revisions.',
+            code: 'FORBIDDEN',
+            status: 403,
+          },
+        };
+      }
+
+      const extraUpdates = {
+        review_feedback: feedback.trim(),
+        updated_at: new Date().toISOString(),
+      };
+
+      if (type === 'resource') {
+        await knowledgeService.updateResourceStatus(id, 'changes_requested', extraUpdates);
+      } else {
+        await templateService.updateTemplateStatus(id, 'changes_requested', extraUpdates);
+      }
+
+      notifyCreatorChanged();
+      return { data: true, error: null };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
+   * Admin: Reject Content Submission
+   */
+  async adminRejectContent(
+    id: string,
+    type: ContentItemType,
+    reason: string
+  ): Promise<ServiceResult<boolean>> {
+    try {
+      const activeRole = getActiveUserRole();
+      if (activeRole && activeRole !== 'admin') {
+        return {
+          data: null,
+          error: {
+            message: 'Unauthorized: Only platform administrators can reject content submissions.',
+            code: 'FORBIDDEN',
+            status: 403,
+          },
+        };
+      }
+
+      const extraUpdates = {
+        rejection_reason: reason.trim(),
+        updated_at: new Date().toISOString(),
+      };
+
+      if (type === 'resource') {
+        await knowledgeService.updateResourceStatus(id, 'rejected', extraUpdates);
+      } else {
+        await templateService.updateTemplateStatus(id, 'rejected', extraUpdates);
+      }
+
+      notifyCreatorChanged();
+      return { data: true, error: null };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
+   * Creator: Review & Accept Commercial Terms
+   */
+  async creatorAcceptTerms(
+    id: string,
+    type: ContentItemType,
+    creatorEmail: string = 'creator@knowtohire.com'
+  ): Promise<ServiceResult<boolean>> {
+    try {
+      let currentItem: any = null;
+      if (type === 'resource') {
+        const res = await knowledgeService.getResourceByIdOrSlug(id);
+        currentItem = res.data;
+      } else {
+        const res = await templateService.getTemplateByIdOrSlug(id);
+        currentItem = res.data;
+      }
+
+      if (!currentItem) {
+        return { data: null, error: { message: 'Item not found', code: 'NOT_FOUND', status: 404 } };
+      }
+
+      // Ownership Guard: Only content owner or admin can accept terms
+      const authSessionRaw = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('kth_demo_auth_session') : null;
+      if (authSessionRaw) {
+        try {
+          const authUser = JSON.parse(authSessionRaw);
+          if (authUser.role === 'creator' && currentItem.creator_id && currentItem.creator_id !== authUser.id) {
+            return {
+              data: null,
+              error: { message: 'Forbidden: You cannot accept terms for another creator\'s content.', code: 'FORBIDDEN', status: 403 },
+            };
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      if (currentItem.status !== 'terms_pending') {
+        return {
+          data: null,
+          error: { message: 'Item is not awaiting terms acceptance.', code: 'INVALID_STATE', status: 400 },
+        };
+      }
+
+      const now = new Date().toISOString();
+      const acceptanceRecord = {
+        terms_accepted_by: creatorEmail,
+        terms_accepted_at: now,
+        terms_accepted_version: currentItem.terms_version || Date.now(),
+      };
+
+      if (type === 'resource') {
+        await knowledgeService.updateResourceStatus(id, 'ready_to_publish', acceptanceRecord);
+      } else {
+        await templateService.updateTemplateStatus(id, 'ready_to_publish', acceptanceRecord);
+      }
+
+      notifyCreatorChanged();
+      return { data: true, error: null };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
+   * Creator: Decline Commercial Terms
+   */
+  async creatorDeclineTerms(
+    id: string,
+    type: ContentItemType,
+    feedback?: string
+  ): Promise<ServiceResult<boolean>> {
+    try {
+      let currentItem: any = null;
+      if (type === 'resource') {
+        const res = await knowledgeService.getResourceByIdOrSlug(id);
+        currentItem = res.data;
+      } else {
+        const res = await templateService.getTemplateByIdOrSlug(id);
+        currentItem = res.data;
+      }
+
+      if (!currentItem) {
+        return { data: null, error: { message: 'Item not found', code: 'NOT_FOUND', status: 404 } };
+      }
+
+      // Ownership Guard: Only content owner or admin can decline terms
+      const authSessionRaw = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('kth_demo_auth_session') : null;
+      if (authSessionRaw) {
+        try {
+          const authUser = JSON.parse(authSessionRaw);
+          if (authUser.role === 'creator' && currentItem.creator_id && currentItem.creator_id !== authUser.id) {
+            return {
+              data: null,
+              error: { message: 'Forbidden: You cannot decline terms for another creator\'s content.', code: 'FORBIDDEN', status: 403 },
+            };
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      const declineReason = feedback?.trim() || 'Creator declined proposed commercial terms. Awaiting revised commercial terms or discussion.';
+      const extraUpdates = {
+        review_feedback: `[Creator Declined Terms]: ${declineReason}`,
+        admin_notes: `Creator declined commercial terms on ${new Date().toLocaleDateString()}: "${declineReason}"`,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (type === 'resource') {
+        await knowledgeService.updateResourceStatus(id, 'changes_requested', extraUpdates);
+      } else {
+        await templateService.updateTemplateStatus(id, 'changes_requested', extraUpdates);
+      }
+
+      notifyCreatorChanged();
+      return { data: true, error: null };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
+   * Admin: Final Publication of Content
+   */
+  async adminFinalPublish(
+    id: string,
+    type: ContentItemType
+  ): Promise<ServiceResult<boolean>> {
+    try {
+      // Authorization Guard: Only Admin can publish content
+      const activeRole = getActiveUserRole();
+      if (activeRole && activeRole !== 'admin') {
+        return {
+          data: null,
+          error: {
+            message: 'Unauthorized: Only platform administrators can publish content to the marketplace.',
+            code: 'FORBIDDEN',
+            status: 403,
+          },
+        };
+      }
+
+      let currentItem: any = null;
+      if (type === 'resource') {
+        const res = await knowledgeService.getResourceByIdOrSlug(id);
+        currentItem = res.data;
+      } else {
+        const res = await templateService.getTemplateByIdOrSlug(id);
+        currentItem = res.data;
+      }
+
+      if (!currentItem) {
+        return { data: null, error: { message: 'Item not found', code: 'NOT_FOUND', status: 404 } };
+      }
+
+      // STRICT GATE 1: Status check
+      if (currentItem.status !== 'ready_to_publish' && currentItem.status !== 'published') {
+        return {
+          data: null,
+          error: {
+            message: 'Content cannot be published until creator has reviewed and explicitly accepted commercial terms.',
+            code: 'TERMS_NOT_ACCEPTED',
+            status: 403,
+          },
+        };
+      }
+
+      // STRICT GATE 2: Commercial terms & exact version acceptance check
+      if (
+        !currentItem.creator_commission_pct ||
+        !currentItem.terms_version ||
+        currentItem.terms_accepted_version !== currentItem.terms_version
+      ) {
+        return {
+          data: null,
+          error: {
+            message: 'Content cannot be published because the current commercial terms version was not accepted by the creator.',
+            code: 'TERMS_VERSION_MISMATCH',
+            status: 403,
+          },
+        };
+      }
+
+      const now = new Date().toISOString();
+      const publishRecord = {
+        published_at: now,
+        is_active: true,
+      };
+
+      if (type === 'resource') {
+        await knowledgeService.updateResourceStatus(id, 'published', publishRecord);
+      } else {
+        await templateService.updateTemplateStatus(id, 'published', publishRecord);
+      }
+
+      notifyCreatorChanged();
+      return { data: true, error: null };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
+   * Admin: Archive / Unpublish Content
+   */
+  async adminUnpublish(
+    id: string,
+    type: ContentItemType
+  ): Promise<ServiceResult<boolean>> {
+    try {
+      const activeRole = getActiveUserRole();
+      if (activeRole && activeRole !== 'admin') {
+        return {
+          data: null,
+          error: {
+            message: 'Unauthorized: Only platform administrators can archive or unpublish content.',
+            code: 'FORBIDDEN',
+            status: 403,
+          },
+        };
+      }
+
+      if (type === 'resource') {
+        await knowledgeService.updateResourceStatus(id, 'archived');
+      } else {
+        await templateService.updateTemplateStatus(id, 'archived');
+      }
+
+      notifyCreatorChanged();
+      return { data: true, error: null };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
   },
 };

@@ -16,6 +16,7 @@ import {
   LogOut,
   Menu,
   ExternalLink,
+  Sparkles,
 } from 'lucide-react';
 
 import { Drawer } from '@/components/ui/Drawer';
@@ -43,6 +44,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     { path: '/admin/jobs', label: 'Job Moderation', icon: Briefcase },
     { path: '/admin/external-jobs', label: 'External Jobs', icon: ExternalLink },
     { path: '/admin/applications', label: 'Application Management', icon: FileCheck },
+    { path: '/admin/creator-content', label: 'Creator Content Queue', icon: Sparkles },
     { path: '/admin/resources', label: 'Knowledge Hub CMS', icon: BookOpen },
     { path: '/admin/templates', label: 'Templates Marketplace', icon: HelpCircle },
     { path: '/admin/requests', label: 'Content Requests', icon: ShieldAlert },

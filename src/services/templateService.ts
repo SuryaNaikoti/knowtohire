@@ -8,7 +8,15 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { ServiceResult, normalizeServiceError } from './types';
 import { contentStorageService } from './contentStorageService';
 
-export type TemplateStatus = 'draft' | 'published' | 'archived';
+export type TemplateStatus =
+  | 'draft'
+  | 'pending_review'
+  | 'changes_requested'
+  | 'terms_pending'
+  | 'ready_to_publish'
+  | 'published'
+  | 'rejected'
+  | 'archived';
 
 export interface MarketplaceTemplate {
   id: string;
@@ -36,6 +44,22 @@ export interface MarketplaceTemplate {
   tags?: string[];
   created_at: string;
   updated_at?: string;
+
+  // Commercial Terms & Approval Workflow Fields
+  selling_price_inr?: number;
+  creator_commission_pct?: number;
+  platform_share_pct?: number;
+  creator_earnings_per_sale_inr?: number;
+  terms_version?: number;
+  terms_set_by?: string;
+  terms_set_at?: string;
+  terms_accepted_by?: string;
+  terms_accepted_at?: string;
+  terms_accepted_version?: number;
+  review_feedback?: string;
+  rejection_reason?: string;
+  admin_notes?: string;
+  submitted_at?: string;
 }
 
 export interface TemplateFilterParams {
@@ -62,6 +86,22 @@ export interface CreateTemplateInput {
   status?: TemplateStatus;
   file?: File;
   onProgress?: (progress: number) => void;
+
+  // Commercial Terms & Approval Workflow Fields
+  selling_price_inr?: number;
+  creator_commission_pct?: number;
+  platform_share_pct?: number;
+  creator_earnings_per_sale_inr?: number;
+  terms_version?: number;
+  terms_set_by?: string;
+  terms_set_at?: string;
+  terms_accepted_by?: string;
+  terms_accepted_at?: string;
+  terms_accepted_version?: number;
+  review_feedback?: string;
+  rejection_reason?: string;
+  admin_notes?: string;
+  submitted_at?: string;
 }
 
 const DEMO_TEMPLATES_KEY = 'kth_demo_marketplace_templates';
@@ -308,6 +348,20 @@ function mapDatabaseRowToTemplate(t: Record<string, any>): MarketplaceTemplate {
     tags: Array.isArray(t.tags) ? t.tags : ['ATS Resume', 'Legal', 'ESG'],
     created_at: t.created_at || new Date().toISOString(),
     updated_at: t.updated_at,
+    selling_price_inr: t.selling_price_inr !== undefined ? Number(t.selling_price_inr) : (t.price !== undefined ? Number(t.price) : undefined),
+    creator_commission_pct: t.creator_commission_pct !== undefined ? Number(t.creator_commission_pct) : undefined,
+    platform_share_pct: t.platform_share_pct !== undefined ? Number(t.platform_share_pct) : undefined,
+    creator_earnings_per_sale_inr: t.creator_earnings_per_sale_inr !== undefined ? Number(t.creator_earnings_per_sale_inr) : undefined,
+    terms_version: t.terms_version !== undefined ? Number(t.terms_version) : undefined,
+    terms_set_by: t.terms_set_by || undefined,
+    terms_set_at: t.terms_set_at || undefined,
+    terms_accepted_by: t.terms_accepted_by || undefined,
+    terms_accepted_at: t.terms_accepted_at || undefined,
+    terms_accepted_version: t.terms_accepted_version !== undefined ? Number(t.terms_accepted_version) : undefined,
+    review_feedback: t.review_feedback || undefined,
+    rejection_reason: t.rejection_reason || undefined,
+    admin_notes: t.admin_notes || undefined,
+    submitted_at: t.submitted_at || undefined,
   };
 }
 
@@ -588,13 +642,54 @@ export const templateService = {
         downloads_count: 0,
         price_inr: input.price_inr || 0,
         is_free: !input.price_inr || input.price_inr === 0,
-        is_active: input.status !== 'archived',
-        status: input.status || 'published',
-        published_at: input.status === 'published' ? now : null,
+        is_active: true,
+        status: (input.status === 'draft' ? 'draft' : 'pending_review') as TemplateStatus,
+        published_at: null,
         tags: ['ATS Resume', 'Legal', 'ESG'],
         created_at: now,
         updated_at: now,
+        selling_price_inr: 0,
+        creator_commission_pct: undefined,
+        platform_share_pct: undefined,
+        creator_earnings_per_sale_inr: undefined,
+        terms_version: undefined,
+        terms_set_by: undefined,
+        terms_set_at: undefined,
+        terms_accepted_by: undefined,
+        terms_accepted_at: undefined,
+        terms_accepted_version: undefined,
+        review_feedback: undefined,
+        rejection_reason: undefined,
+        admin_notes: undefined,
+        submitted_at: now,
       };
+
+      // If called by an Admin explicitly, allow overrides
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const authRaw = window.localStorage.getItem('kth_demo_auth_session');
+          if (authRaw && JSON.parse(authRaw)?.role === 'admin') {
+            newTemplate.status = input.status || 'published';
+            newTemplate.published_at = input.status === 'published' ? now : null;
+            newTemplate.is_active = input.status !== 'archived';
+            newTemplate.selling_price_inr = input.selling_price_inr ?? input.price_inr ?? 0;
+            newTemplate.creator_commission_pct = input.creator_commission_pct;
+            newTemplate.platform_share_pct = input.platform_share_pct;
+            newTemplate.creator_earnings_per_sale_inr = input.creator_earnings_per_sale_inr;
+            newTemplate.terms_version = input.terms_version;
+            newTemplate.terms_set_by = input.terms_set_by;
+            newTemplate.terms_set_at = input.terms_set_at;
+            newTemplate.terms_accepted_by = input.terms_accepted_by;
+            newTemplate.terms_accepted_at = input.terms_accepted_at;
+            newTemplate.terms_accepted_version = input.terms_accepted_version;
+            newTemplate.review_feedback = input.review_feedback;
+            newTemplate.rejection_reason = input.rejection_reason;
+            newTemplate.admin_notes = input.admin_notes;
+          }
+        } catch {
+          // ignore
+        }
+      }
 
       if (isSupabaseConfigured()) {
         try {
@@ -640,6 +735,35 @@ export const templateService = {
       const existingRes = await this.getTemplateByIdOrSlug(id);
       const existing = existingRes.data;
 
+      if (!existing) {
+        return { data: null, error: { message: 'Template not found', code: 'NOT_FOUND', status: 404 } };
+      }
+
+      // Authoritative Ownership Guard:
+      // A creator can only edit their own content. They cannot alter another creator's content.
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const authRaw = window.localStorage.getItem('kth_demo_auth_session');
+          if (authRaw) {
+            const currentSession = JSON.parse(authRaw);
+            if (currentSession.role === 'creator') {
+              if (existing.creator_id && existing.creator_id !== currentSession.id) {
+                return {
+                  data: null,
+                  error: {
+                    message: 'Forbidden: You cannot modify templates belonging to another creator.',
+                    code: 'FORBIDDEN',
+                    status: 403,
+                  },
+                };
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       let fileUrl = input.file_url || existing?.file_url;
       let fileName = input.file_name || existing?.file_name;
       let fileSize = input.file_size || existing?.file_size;
@@ -670,8 +794,21 @@ export const templateService = {
         formats = [uploadResult.format || 'DOCX'];
       }
 
+      // Authoritative Data Layer Guard:
+      // Creators cannot directly manipulate pricing, royalty %, platform share, or published status.
+      const safeInput = { ...input };
+      delete safeInput.selling_price_inr;
+      delete safeInput.creator_commission_pct;
+      delete safeInput.platform_share_pct;
+      delete safeInput.creator_earnings_per_sale_inr;
+      delete safeInput.terms_version;
+      delete safeInput.terms_set_by;
+      delete safeInput.terms_set_at;
+      delete safeInput.terms_accepted_version;
+      delete safeInput.status;
+
       const updates: Partial<MarketplaceTemplate> = {
-        ...input,
+        ...safeInput,
         file_url: fileUrl,
         download_url: fileUrl,
         file_name: fileName,
@@ -680,13 +817,9 @@ export const templateService = {
         mime_type: mimeType,
         formats,
         is_free: input.price_inr !== undefined ? input.price_inr === 0 : existing?.is_free,
-        is_active: input.status ? input.status !== 'archived' : existing?.is_active,
+        is_active: existing?.is_active ?? true,
         updated_at: new Date().toISOString(),
       };
-
-      if (input.status === 'published' && !existing?.published_at) {
-        updates.published_at = new Date().toISOString();
-      }
 
       if (isSupabaseConfigured()) {
         try {
@@ -704,12 +837,39 @@ export const templateService = {
   },
 
   /**
-   * Admin: Update template status directly (published, draft, archived).
+   * Admin: Update template status directly with optional review/commercial metadata.
    */
-  async updateTemplateStatus(id: string, status: TemplateStatus): Promise<ServiceResult<boolean>> {
+  async updateTemplateStatus(id: string, status: TemplateStatus, extraUpdates?: Partial<MarketplaceTemplate>): Promise<ServiceResult<boolean>> {
     try {
+      // Authorization Guard:
+      // Creators cannot set 'published', 'terms_pending', or 'rejected'.
+      // Only Admin can set commercial terms or authorize publication.
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const authRaw = window.localStorage.getItem('kth_demo_auth_session');
+          if (authRaw) {
+            const currentRole = JSON.parse(authRaw)?.role;
+            if (currentRole === 'creator') {
+              if (status === 'published' || status === 'terms_pending' || status === 'rejected') {
+                return {
+                  data: null,
+                  error: {
+                    message: `Unauthorized: Creators cannot set status to "${status}". Action requires Admin authorization.`,
+                    code: 'FORBIDDEN',
+                    status: 403,
+                  },
+                };
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const updates = {
         status,
+        ...(extraUpdates || {}),
         is_active: status !== 'archived',
         published_at: status === 'published' ? new Date().toISOString() : undefined,
         updated_at: new Date().toISOString(),

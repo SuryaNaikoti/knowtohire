@@ -145,6 +145,51 @@ CREATE TABLE IF NOT EXISTS public.skills (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Non-destructive reconciliation of columns for pre-existing legacy skills table
+ALTER TABLE public.skills ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE public.skills ADD COLUMN IF NOT EXISTS slug TEXT;
+ALTER TABLE public.skills ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'Technical';
+ALTER TABLE public.skills ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.skills ADD COLUMN IF NOT EXISTS is_verified BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE public.skills ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE public.skills ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE public.skills ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+-- If legacy skill_name exists, safely backfill name and deterministic slug
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' AND table_name = 'skills' AND column_name = 'skill_name'
+  ) THEN
+    EXECUTE 'UPDATE public.skills SET name = skill_name WHERE name IS NULL AND skill_name IS NOT NULL';
+    EXECUTE 'UPDATE public.skills SET slug = LOWER(REGEXP_REPLACE(name, ''[^a-zA-Z0-9]+'', ''-'', ''g'')) || ''-'' || SUBSTRING(id::text, 1, 8) WHERE slug IS NULL AND name IS NOT NULL';
+  END IF;
+END $$;
+
+-- Enforce constraints idempotently
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'uq_skills_name' AND conrelid = 'public.skills'::regclass
+  ) THEN
+    ALTER TABLE public.skills ADD CONSTRAINT uq_skills_name UNIQUE (name);
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'uq_skills_slug' AND conrelid = 'public.skills'::regclass
+  ) THEN
+    ALTER TABLE public.skills ADD CONSTRAINT uq_skills_slug UNIQUE (slug);
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_skills_slug ON public.skills(slug);
 CREATE INDEX IF NOT EXISTS idx_skills_category ON public.skills(category);
 

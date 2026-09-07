@@ -110,9 +110,15 @@ const AdminBlogEditPage = lazy(() => import('@/pages/admin/AdminBlogEditPage').t
 const AdminTaxonomyPage = lazy(() => import('@/pages/admin/AdminTaxonomyPage').then(m => ({ default: m.AdminTaxonomyPage })));
 const AdminTaxonomyNewPage = lazy(() => import('@/pages/admin/AdminTaxonomyNewPage').then(m => ({ default: m.AdminTaxonomyNewPage })));
 const AdminSettingsPage = lazy(() => import('@/pages/admin/AdminSettingsPage').then(m => ({ default: m.AdminSettingsPage })));
+const AdminCreatorContentPage = lazy(() => import('@/pages/admin/AdminCreatorContentPage').then(m => ({ default: m.AdminCreatorContentPage })));
+const AdminContentReviewDetailPage = lazy(() => import('@/pages/admin/AdminContentReviewDetailPage').then(m => ({ default: m.AdminContentReviewDetailPage })));
 
 // Lazy-loaded Creator Pages
 const CreatorDashboardPage = lazy(() => import('@/pages/creator/CreatorDashboardPage').then(m => ({ default: m.CreatorDashboardPage })));
+const CreatorUploadResourcePage = lazy(() => import('@/pages/creator/CreatorUploadResourcePage').then(m => ({ default: m.CreatorUploadResourcePage })));
+const CreatorAddTemplatePage = lazy(() => import('@/pages/creator/CreatorAddTemplatePage').then(m => ({ default: m.CreatorAddTemplatePage })));
+const CreatorReviewTermsPage = lazy(() => import('@/pages/creator/CreatorReviewTermsPage').then(m => ({ default: m.CreatorReviewTermsPage })));
+const CreatorWithdrawPage = lazy(() => import('@/pages/creator/CreatorWithdrawPage').then(m => ({ default: m.CreatorWithdrawPage })));
 const ResourceMetricsPage = lazy(() => import('@/pages/creator/ResourceMetricsPage').then(m => ({ default: m.ResourceMetricsPage })));
 
 export function App() {
@@ -185,6 +191,14 @@ export function App() {
         adminComponent = <AdminApplicationDetailsPage applicationId={appId} onNavigate={navigateTo} />;
       }
       else if (path === '/admin/applications') adminComponent = <AdminApplicationsPage onNavigate={navigateTo} />;
+      else if (path.startsWith('/admin/creator-content/') && path.endsWith('/review')) {
+        // e.g. /admin/creator-content/resource/res-1/review or /admin/creator-content/template/tmpl-1/review
+        const parts = path.replace('/admin/creator-content/', '').replace('/review', '').split('/');
+        const cType = parts[0] as 'resource' | 'template';
+        const cId = parts[1];
+        adminComponent = <AdminContentReviewDetailPage itemId={cId} itemType={cType} onNavigate={navigateTo} />;
+      }
+      else if (path === '/admin/creator-content') adminComponent = <AdminCreatorContentPage onNavigate={navigateTo} />;
       else if (path === '/admin/resources/new') adminComponent = <AdminResourceEditPage onNavigate={navigateTo} />;
       else if (path.startsWith('/admin/resources/') && path.endsWith('/edit')) {
         const resId = path.replace('/admin/resources/', '').replace('/edit', '');
@@ -235,6 +249,18 @@ export function App() {
 
       if (path === '/creator' || path === '/creator/') {
         creatorComponent = <CreatorDashboardPage onNavigate={navigateTo} />;
+      } else if (path === '/creator/resources/new') {
+        creatorComponent = <CreatorUploadResourcePage onNavigate={navigateTo} />;
+      } else if (path === '/creator/templates/new') {
+        creatorComponent = <CreatorAddTemplatePage onNavigate={navigateTo} />;
+      } else if (path.startsWith('/creator/terms/')) {
+        // e.g. /creator/terms/resource/res-1 or /creator/terms/template/tmpl-1
+        const parts = path.replace('/creator/terms/', '').split('/');
+        const cType = parts[0] as 'resource' | 'template';
+        const cId = parts[1];
+        creatorComponent = <CreatorReviewTermsPage itemId={cId} itemType={cType} onNavigate={navigateTo} />;
+      } else if (path === '/creator/withdraw') {
+        creatorComponent = <CreatorWithdrawPage onNavigate={navigateTo} />;
       } else if (path.startsWith('/creator/resources/') && path.endsWith('/metrics')) {
         const resId = path.replace('/creator/resources/', '').replace('/metrics', '');
         creatorComponent = <ResourceMetricsPage itemId={resId} itemType="resource" onNavigate={navigateTo} />;

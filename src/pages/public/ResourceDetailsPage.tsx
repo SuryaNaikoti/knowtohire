@@ -30,7 +30,7 @@ export const ResourceDetailsPage: React.FC<ResourceDetailsPageProps> = ({ resour
     const fetchResource = async () => {
       setIsLoading(true);
       setError(null);
-      const res = await knowledgeService.getResourceByIdOrSlug(activeId);
+      const res = await knowledgeService.getResourceByIdOrSlug(activeId, { requirePublished: true });
       if (!isMounted) return;
       if (res.error) {
         setError(res.error.message);

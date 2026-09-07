@@ -132,19 +132,114 @@ class UnifiedPaymentService {
       // Simulate payment processing delay (realistic UX)
       await new Promise(resolve => setTimeout(resolve, 1500));
 
+      // Authoritative Public Marketplace Gating:
+      // Content is ONLY purchasable when:
+      // 1. Approved by Admin
+      // 2. Commercial terms assigned
+      // 3. Creator accepted current terms
+      // 4. Admin published
+      // 5. Not archived
+      let approvedCommissionPct = 70; // fallback default
+      let authoritativePriceINR = options.amountINR;
+
+      if (options.itemType === 'template' || options.itemType === 'resource') {
+        let matchedItem: any = null;
+        if (typeof window !== 'undefined' && window.localStorage) {
+          if (options.itemType === 'resource') {
+            const resRaw = window.localStorage.getItem('kth_demo_knowledge_resources');
+            if (resRaw) {
+              const resources = JSON.parse(resRaw);
+              matchedItem = resources.find((r: any) => r.id === options.itemId || r.slug === options.itemId);
+            }
+          } else {
+            const tplRaw = window.localStorage.getItem('kth_demo_marketplace_templates');
+            if (tplRaw) {
+              const templates = JSON.parse(tplRaw);
+              matchedItem = templates.find((t: any) => t.id === options.itemId || t.slug === options.itemId);
+            }
+          }
+        }
+
+        if (matchedItem) {
+          // Gating Rule 1 & 4: Must be published and active (not archived)
+          if (matchedItem.status !== 'published' || matchedItem.is_active === false) {
+            return {
+              data: null,
+              error: {
+                message: `This item is not publicly purchasable (current status: ${matchedItem.status}).`,
+                code: 'ITEM_NOT_PUBLISHED',
+                status: 403,
+              },
+            };
+          }
+
+          // Gating Rule 2 & 3: Commercial terms assigned and accepted by creator
+          if (
+            matchedItem.terms_version &&
+            matchedItem.terms_accepted_version !== matchedItem.terms_version
+          ) {
+            return {
+              data: null,
+              error: {
+                message: 'This item has pending commercial terms adjustments and cannot be purchased at this time.',
+                code: 'TERMS_NOT_ACCEPTED',
+                status: 403,
+              },
+            };
+          }
+
+          if (matchedItem.creator_commission_pct !== undefined) {
+            approvedCommissionPct = Number(matchedItem.creator_commission_pct);
+          }
+          if (matchedItem.selling_price_inr !== undefined && matchedItem.selling_price_inr > 0) {
+            authoritativePriceINR = Number(matchedItem.selling_price_inr);
+          }
+        }
+      }
+
       // Optionally record to database if user is authenticated
       try {
         const { data: userData } = await supabase.auth.getUser();
         if (userData?.user) {
           await supabase.from('orders').insert({
             user_id: userData.user.id,
-            total_amount: options.amountINR,
+            total_amount: authoritativePriceINR,
             status: 'paid',
             payment_id: transactionId,
           }).then(() => { /* ignore errors — table may not exist */ });
         }
       } catch {
         // DB recording is optional in simulation phase
+      }
+
+      // Record transaction into Creator Sales Ledger with frozen snapshot of commercial terms
+      try {
+        if (options.itemType === 'template' || options.itemType === 'resource') {
+          // Accurate currency rounding (two decimal places) on authoritative price
+          const finalSalePrice = authoritativePriceINR;
+          const commissionINR = Math.round(((finalSalePrice * approvedCommissionPct) / 100) * 100) / 100;
+
+          if (typeof window !== 'undefined' && window.localStorage) {
+            const salesRaw = window.localStorage.getItem('kth_creator_sales_data');
+            const salesList = salesRaw ? JSON.parse(salesRaw) : [];
+            const newSale = {
+              id: `sale-${Date.now()}`,
+              itemId: options.itemId,
+              itemTitle: options.itemName,
+              itemType: options.itemType,
+              amountINR: finalSalePrice,
+              commissionINR,
+              commissionStatus: 'available', // available post settlement
+              purchasedAt: new Date().toISOString(),
+              buyerEmail: 'customer@knowtohire.com',
+            };
+            salesList.unshift(newSale);
+            window.localStorage.setItem('kth_creator_sales_data', JSON.stringify(salesList));
+            window.dispatchEvent(new CustomEvent('kth_creator_data_changed'));
+          }
+        }
+      } catch {
+        // Continue flow even if ledger simulation encounters storage issue
       }
 
       const result: SimulatedCheckoutResult = {

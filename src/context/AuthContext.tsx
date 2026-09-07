@@ -135,7 +135,13 @@ export const resolveEffectiveStatus = (
   }
 
   // Demo user overrides default active
-  if (user.id?.startsWith('demo-') || user.id === DEMO_CREDENTIALS.candidate.id || user.id === DEMO_CREDENTIALS.employer.id) {
+  if (
+    user.id?.startsWith('demo-') ||
+    user.id === DEMO_CREDENTIALS.candidate.id ||
+    user.id === DEMO_CREDENTIALS.employer.id ||
+    user.id === DEMO_CREDENTIALS.admin.id ||
+    user.id === DEMO_CREDENTIALS.creator.id
+  ) {
     return 'active';
   }
 
@@ -268,6 +274,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       state.user.id === DEMO_CREDENTIALS.candidate.id ||
       state.user.id === DEMO_CREDENTIALS.employer.id ||
       state.user.id === DEMO_CREDENTIALS.admin.id ||
+      state.user.id === DEMO_CREDENTIALS.creator.id ||
       state.user.id.startsWith('demo-')
     );
     if (isDemoId && state.user?.id) {

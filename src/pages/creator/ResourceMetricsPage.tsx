@@ -126,8 +126,8 @@ export const ResourceMetricsPage: React.FC<ResourceMetricsPageProps> = ({
       </div>
 
       {/* Item Header Banner */}
-      <div className="bg-white rounded-2xl p-6 border border-kth-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
+      <div className="bg-white rounded-xl p-6 border border-kth-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="indigo" className="text-[10px] uppercase font-bold">
               {inferredType === 'resource' ? 'Knowledge Hub E-Book' : 'ATS Marketplace Template'}
@@ -135,20 +135,20 @@ export const ResourceMetricsPage: React.FC<ResourceMetricsPageProps> = ({
             <Badge variant={itemData?.status === 'published' ? 'emerald' : 'slate'} className="text-[10px] uppercase">
               {itemData?.status || 'Published'}
             </Badge>
-            <span className="text-xs text-kth-slate-500">{itemData?.category}</span>
+            <span className="text-xs font-medium text-kth-slate-500">{itemData?.category}</span>
           </div>
-          <h1 className="font-display font-extrabold text-xl sm:text-2xl text-kth-slate-900">
+          <h1 className="font-display font-extrabold text-xl sm:text-2xl text-kth-slate-900 tracking-tight">
             {itemData?.title || 'Resource Analytics'}
           </h1>
           <p className="text-xs text-kth-slate-500">
-            Internal ID: <span className="font-mono text-kth-slate-700">{inferredId}</span>
+            Internal ID: <span className="font-mono text-kth-slate-700 font-semibold">{inferredId}</span>
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="text-right">
-            <span className="text-[11px] text-kth-slate-400 block font-medium">List Price</span>
-            <span className="text-lg font-bold text-emerald-700">
+          <div className="text-left md:text-right">
+            <span className="text-[11px] text-kth-slate-500 block font-bold uppercase tracking-wider">List Price</span>
+            <span className="text-xl font-mono font-extrabold text-emerald-700">
               {itemData?.is_free ? 'Free' : formatINR(itemData?.price_inr || 999)}
             </span>
           </div>
@@ -157,70 +157,73 @@ export const ResourceMetricsPage: React.FC<ResourceMetricsPageProps> = ({
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="p-5 bg-white border-kth-slate-200 space-y-2">
-          <span className="text-xs font-bold text-kth-slate-500 uppercase tracking-wider flex items-center justify-between">
-            <span>Views & Impressions</span>
+        <Card className="p-5 bg-white border border-kth-slate-200/90 rounded-xl shadow-2xs space-y-2">
+          <span className="text-[11px] font-bold text-kth-slate-500 uppercase tracking-wider flex items-center justify-between">
+            <span>Views</span>
             <Eye className="w-4 h-4 text-sky-600" />
           </span>
-          <div className="text-2xl font-bold text-kth-slate-900">{metrics?.views || 142}</div>
-          <p className="text-[11px] text-kth-slate-500">Public catalogue visits</p>
+          <div className="text-2xl font-mono font-extrabold text-kth-slate-900">{metrics?.views || 142}</div>
+          <p className="text-[11px] text-kth-slate-500 font-medium">Public catalogue visits</p>
         </Card>
 
-        <Card className="p-5 bg-white border-kth-slate-200 space-y-2">
-          <span className="text-xs font-bold text-kth-slate-500 uppercase tracking-wider flex items-center justify-between">
-            <span>Direct Purchases</span>
+        <Card className="p-5 bg-white border border-kth-slate-200/90 rounded-xl shadow-2xs space-y-2">
+          <span className="text-[11px] font-bold text-kth-slate-500 uppercase tracking-wider flex items-center justify-between">
+            <span>Purchases</span>
             <ShoppingBag className="w-4 h-4 text-indigo-600" />
           </span>
-          <div className="text-2xl font-bold text-kth-slate-900">{metrics?.salesCount || 0}</div>
-          <p className="text-[11px] text-kth-slate-500">Total copies acquired</p>
+          <div className="text-2xl font-mono font-extrabold text-kth-slate-900">{metrics?.salesCount || 0}</div>
+          <p className="text-[11px] text-kth-slate-500 font-medium">Total copies acquired</p>
         </Card>
 
-        <Card className="p-5 bg-white border-kth-slate-200 space-y-2">
-          <span className="text-xs font-bold text-kth-slate-500 uppercase tracking-wider flex items-center justify-between">
+        <Card className="p-5 bg-white border border-kth-slate-200/90 rounded-xl shadow-2xs space-y-2">
+          <span className="text-[11px] font-bold text-kth-slate-500 uppercase tracking-wider flex items-center justify-between">
             <span>Gross Sales</span>
             <IndianRupee className="w-4 h-4 text-emerald-600" />
           </span>
-          <div className="text-2xl font-bold text-kth-slate-900">{formatINR(metrics?.totalRevenueINR || 0)}</div>
-          <p className="text-[11px] text-kth-slate-500">Gross revenue generated</p>
+          <div className="text-2xl font-mono font-extrabold text-kth-slate-900">{formatINR(metrics?.totalRevenueINR || 0)}</div>
+          <p className="text-[11px] text-kth-slate-500 font-medium">Gross revenue generated</p>
         </Card>
 
-        <Card className="p-5 bg-white border-kth-slate-200 space-y-2">
-          <span className="text-xs font-bold text-kth-slate-500 uppercase tracking-wider flex items-center justify-between">
-            <span>Conversion Rate</span>
+        <Card className="p-5 bg-white border border-kth-slate-200/90 rounded-xl shadow-2xs space-y-2">
+          <span className="text-[11px] font-bold text-kth-slate-500 uppercase tracking-wider flex items-center justify-between">
+            <span>Conversion</span>
             <TrendingUp className="w-4 h-4 text-emerald-600" />
           </span>
-          <div className="text-2xl font-bold text-kth-slate-900">{metrics?.conversionRate || '2.8%'}</div>
-          <p className="text-[11px] text-kth-slate-500">Visitor to acquisition ratio</p>
+          <div className="text-2xl font-mono font-extrabold text-kth-slate-900">{metrics?.conversionRate || '2.8%'}</div>
+          <p className="text-[11px] text-kth-slate-500 font-medium">Visitor to purchase ratio</p>
         </Card>
 
-        <Card className="p-5 bg-white border-kth-slate-200 space-y-2">
-          <span className="text-xs font-bold text-kth-slate-500 uppercase tracking-wider flex items-center justify-between">
-            <span>Creator Net Share</span>
+        <Card className="p-5 bg-white border border-kth-slate-200/90 rounded-xl shadow-2xs space-y-2">
+          <span className="text-[11px] font-bold text-kth-slate-500 uppercase tracking-wider flex items-center justify-between">
+            <span>Creator Net</span>
             <IndianRupee className="w-4 h-4 text-amber-600" />
           </span>
-          <div className="text-2xl font-bold text-emerald-700">{formatINR(metrics?.creatorCommissionINR || 0)}</div>
-          <p className="text-[11px] text-kth-slate-500">Earned at {metrics?.commissionPercentage || 70}% share</p>
+          <div className="text-2xl font-mono font-extrabold text-emerald-700">{formatINR(metrics?.creatorCommissionINR || 0)}</div>
+          <p className="text-[11px] text-kth-slate-500 font-medium">Earned at {metrics?.commissionPercentage || 70}% share</p>
         </Card>
       </div>
 
       {/* Sales Transactions for this item */}
-      <Card className="p-6 bg-white border-kth-slate-200 space-y-4">
-        <h3 className="font-display font-bold text-sm text-kth-slate-900 border-b border-kth-slate-100 pb-3">
-          Purchase & License Audit History
-        </h3>
+      <Card className="p-6 bg-white border border-kth-slate-200/90 rounded-xl shadow-2xs space-y-4">
+        <div className="border-b border-kth-slate-100 pb-3">
+          <h3 className="font-display font-bold text-sm text-kth-slate-900">
+            Purchase & License Audit History
+          </h3>
+          <p className="text-[11px] text-kth-slate-500 mt-0.5">Direct transaction breakdown recorded for this asset</p>
+        </div>
         {metrics?.salesHistory && metrics.salesHistory.length > 0 ? (
           <div className="divide-y divide-kth-slate-100">
             {metrics.salesHistory.map((s: any) => (
-              <div key={s.id} className="py-3 flex items-center justify-between text-xs">
+              <div key={s.id} className="py-3 flex items-center justify-between text-xs gap-3">
                 <div>
-                  <p className="font-bold text-kth-slate-900 font-mono">{s.buyerEmail}</p>
-                  <p className="text-[11px] text-kth-slate-500">
+                  <p className="font-mono font-bold text-kth-slate-900">{s.buyerEmail}</p>
+                  <p className="text-[11px] text-kth-slate-500 mt-0.5">
                     {new Date(s.purchasedAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
                   </p>
                 </div>
                 <div className="text-right">
-                  <span className="font-bold text-kth-slate-900 block">{formatINR(s.amountINR)}</span>
-                  <span className="text-[11px] text-emerald-700 font-bold">Commission: +{formatINR(s.commissionINR)}</span>
+                  <span className="font-mono font-bold text-kth-slate-900 block">{formatINR(s.amountINR)}</span>
+                  <span className="text-[11px] text-emerald-700 font-mono font-bold">Commission: +{formatINR(s.commissionINR)}</span>
                 </div>
               </div>
             ))}

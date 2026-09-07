@@ -19,8 +19,7 @@ ON CONFLICT (id) DO UPDATE SET
   file_size_limit = 10485760,
   allowed_mime_types = ARRAY['application/pdf'];
 
--- 2. Enable Row-Level Security on storage.objects
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- 2. Storage RLS Policies (storage.objects has RLS enabled by default in Supabase)
 
 -- 3. Policy: Authenticated candidate can INSERT their own resume into their own folder.
 -- Path structure: {candidate_id}/{filename}.pdf OR resumes/{candidate_id}/{filename}.pdf

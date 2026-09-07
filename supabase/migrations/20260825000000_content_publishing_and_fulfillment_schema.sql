@@ -81,7 +81,6 @@ ON CONFLICT (id) DO UPDATE SET
 -- --------------------------------------------------------------------
 -- 2. STORAGE ROW LEVEL SECURITY POLICIES
 -- --------------------------------------------------------------------
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
 -- 2.1 Admin Full Access on Content, Knowledge-Hub, and Templates buckets
 DROP POLICY IF EXISTS "content_admin_all_objects" ON storage.objects;

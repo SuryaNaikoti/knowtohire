@@ -36,11 +36,12 @@ export const GuestRoute: React.FC<GuestRouteProps> = ({
         if (redirectParam && (
           (role === 'candidate' && (redirectParam.startsWith('/candidate') || redirectParam.startsWith('/jobs') || redirectParam.startsWith('/knowledge') || redirectParam.startsWith('/templates'))) ||
           (role === 'employer' && redirectParam.startsWith('/employer')) ||
+          (role === 'creator' && redirectParam.startsWith('/creator')) ||
           (role === 'admin' && redirectParam.startsWith('/admin'))
         )) {
           destination = redirectParam;
         } else {
-          destination = role === 'employer' ? '/employer' : role === 'admin' ? '/admin' : '/candidate';
+          destination = role === 'employer' ? '/employer' : role === 'admin' ? '/admin' : role === 'creator' ? '/creator' : '/candidate';
         }
       } else {
         destination = '/verify-email';

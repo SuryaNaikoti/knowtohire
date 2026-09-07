@@ -8,7 +8,15 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { ServiceResult, normalizeServiceError } from './types';
 import { contentStorageService } from './contentStorageService';
 
-export type ResourceStatus = 'draft' | 'published' | 'archived';
+export type ResourceStatus =
+  | 'draft'
+  | 'pending_review'
+  | 'changes_requested'
+  | 'terms_pending'
+  | 'ready_to_publish'
+  | 'published'
+  | 'rejected'
+  | 'archived';
 
 export interface KnowledgeResource {
   id: string;
@@ -37,6 +45,22 @@ export interface KnowledgeResource {
   created_from_request_id?: string | null;
   created_at: string;
   updated_at?: string;
+
+  // Commercial Terms & Approval Workflow Fields
+  selling_price_inr?: number;
+  creator_commission_pct?: number;
+  platform_share_pct?: number;
+  creator_earnings_per_sale_inr?: number;
+  terms_version?: number;
+  terms_set_by?: string;
+  terms_set_at?: string;
+  terms_accepted_by?: string;
+  terms_accepted_at?: string;
+  terms_accepted_version?: number;
+  review_feedback?: string;
+  rejection_reason?: string;
+  admin_notes?: string;
+  submitted_at?: string;
 }
 
 export interface ResourceFilterParams {
@@ -62,10 +86,28 @@ export interface CreateResourceInput {
   cover_url?: string;
   rating?: number;
   tags?: string[];
+  is_free?: boolean;
+  price_inr?: number;
   status?: ResourceStatus;
   created_from_request_id?: string;
   file?: File;
   onProgress?: (progress: number) => void;
+
+  // Commercial Terms & Approval Workflow Fields
+  selling_price_inr?: number;
+  creator_commission_pct?: number;
+  platform_share_pct?: number;
+  creator_earnings_per_sale_inr?: number;
+  terms_version?: number;
+  terms_set_by?: string;
+  terms_set_at?: string;
+  terms_accepted_by?: string;
+  terms_accepted_at?: string;
+  terms_accepted_version?: number;
+  review_feedback?: string;
+  rejection_reason?: string;
+  admin_notes?: string;
+  submitted_at?: string;
 }
 
 const DEMO_RESOURCES_KEY = 'kth_demo_knowledge_resources';
@@ -334,6 +376,20 @@ function mapDatabaseRowToResource(r: Record<string, any>): KnowledgeResource {
     created_from_request_id: r.created_from_request_id || null,
     created_at: r.created_at || new Date().toISOString(),
     updated_at: r.updated_at,
+    selling_price_inr: r.selling_price_inr !== undefined ? Number(r.selling_price_inr) : (r.price !== undefined ? Number(r.price) : undefined),
+    creator_commission_pct: r.creator_commission_pct !== undefined ? Number(r.creator_commission_pct) : undefined,
+    platform_share_pct: r.platform_share_pct !== undefined ? Number(r.platform_share_pct) : undefined,
+    creator_earnings_per_sale_inr: r.creator_earnings_per_sale_inr !== undefined ? Number(r.creator_earnings_per_sale_inr) : undefined,
+    terms_version: r.terms_version !== undefined ? Number(r.terms_version) : undefined,
+    terms_set_by: r.terms_set_by || undefined,
+    terms_set_at: r.terms_set_at || undefined,
+    terms_accepted_by: r.terms_accepted_by || undefined,
+    terms_accepted_at: r.terms_accepted_at || undefined,
+    terms_accepted_version: r.terms_accepted_version !== undefined ? Number(r.terms_accepted_version) : undefined,
+    review_feedback: r.review_feedback || undefined,
+    rejection_reason: r.rejection_reason || undefined,
+    admin_notes: r.admin_notes || undefined,
+    submitted_at: r.submitted_at || undefined,
   };
 }
 
@@ -419,7 +475,10 @@ export const knowledgeService = {
   /**
    * Fetch a single resource by ID or Slug.
    */
-  async getResourceByIdOrSlug(idOrSlug: string): Promise<ServiceResult<KnowledgeResource>> {
+  async getResourceByIdOrSlug(
+    idOrSlug: string,
+    options?: { requirePublished?: boolean }
+  ): Promise<ServiceResult<KnowledgeResource>> {
     try {
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
 
@@ -433,12 +492,20 @@ export const knowledgeService = {
             query = query.eq('slug', idOrSlug);
           }
 
+          if (options?.requirePublished) {
+            query = query.eq('status', 'published');
+          }
+
           const { data, error } = await query.maybeSingle();
 
           if (!error && data) {
             const mapped = mapDatabaseRowToResource(data);
             const demo = getDemoResources().find((r) => r.id === data.id || r.slug === data.slug);
-            return { data: demo ? { ...mapped, ...demo } : mapped, error: null };
+            const finalRes = demo ? { ...mapped, ...demo } : mapped;
+            if (options?.requirePublished && finalRes.status !== 'published') {
+              return { data: null, error: { message: 'Resource not available or unpublished.', code: 'NOT_FOUND', status: 404 } };
+            }
+            return { data: finalRes, error: null };
           }
         } catch {
           // Fallback
@@ -447,6 +514,9 @@ export const knowledgeService = {
 
       const demo = getDemoResources().find((r) => r.id === idOrSlug || r.slug === idOrSlug);
       if (demo) {
+        if (options?.requirePublished && demo.status !== 'published') {
+          return { data: null, error: { message: 'Resource not available or unpublished.', code: 'NOT_FOUND', status: 404 } };
+        }
         return { data: demo, error: null };
       }
 
@@ -457,6 +527,13 @@ export const knowledgeService = {
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }
+  },
+
+  /**
+   * Fetch a single published resource by Slug (Public Knowledge Hub).
+   */
+  async getResourceBySlug(slug: string): Promise<ServiceResult<KnowledgeResource>> {
+    return this.getResourceByIdOrSlug(slug, { requirePublished: true });
   },
 
   /**
@@ -556,15 +633,55 @@ export const knowledgeService = {
         pageCount: 48,
         rating: input.rating || 4.8,
         downloads_count: 0,
-        is_free: true,
-        price_inr: 0,
+        is_free: input.is_free !== undefined ? input.is_free : (input.price_inr ? input.price_inr === 0 : true),
+        price_inr: input.price_inr || 0,
         tags: input.tags || ['Compliance', 'ESG', 'Research'],
-        status: input.status || 'published',
-        published_at: input.status === 'published' ? now : null,
+        status: (input.status === 'draft' ? 'draft' : 'pending_review') as ResourceStatus,
+        published_at: null,
         created_from_request_id: input.created_from_request_id || null,
         created_at: now,
         updated_at: now,
+        selling_price_inr: 0,
+        creator_commission_pct: undefined,
+        platform_share_pct: undefined,
+        creator_earnings_per_sale_inr: undefined,
+        terms_version: undefined,
+        terms_set_by: undefined,
+        terms_set_at: undefined,
+        terms_accepted_by: undefined,
+        terms_accepted_at: undefined,
+        terms_accepted_version: undefined,
+        review_feedback: undefined,
+        rejection_reason: undefined,
+        admin_notes: undefined,
+        submitted_at: now,
       };
+
+      // If called by an Admin explicitly, allow overrides
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const authRaw = window.localStorage.getItem('kth_demo_auth_session');
+          if (authRaw && JSON.parse(authRaw)?.role === 'admin') {
+            newResource.status = input.status || 'published';
+            newResource.published_at = input.status === 'published' ? now : null;
+            newResource.selling_price_inr = input.selling_price_inr ?? input.price_inr ?? 0;
+            newResource.creator_commission_pct = input.creator_commission_pct;
+            newResource.platform_share_pct = input.platform_share_pct;
+            newResource.creator_earnings_per_sale_inr = input.creator_earnings_per_sale_inr;
+            newResource.terms_version = input.terms_version;
+            newResource.terms_set_by = input.terms_set_by;
+            newResource.terms_set_at = input.terms_set_at;
+            newResource.terms_accepted_by = input.terms_accepted_by;
+            newResource.terms_accepted_at = input.terms_accepted_at;
+            newResource.terms_accepted_version = input.terms_accepted_version;
+            newResource.review_feedback = input.review_feedback;
+            newResource.rejection_reason = input.rejection_reason;
+            newResource.admin_notes = input.admin_notes;
+          }
+        } catch {
+          // ignore
+        }
+      }
 
       if (isSupabaseConfigured()) {
         try {
@@ -610,6 +727,35 @@ export const knowledgeService = {
       const existingRes = await this.getResourceByIdOrSlug(id);
       const existing = existingRes.data;
 
+      if (!existing) {
+        return { data: null, error: { message: 'Resource not found', code: 'NOT_FOUND', status: 404 } };
+      }
+
+      // Authoritative Ownership Guard:
+      // A creator can only edit their own content. They cannot alter another creator's content.
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const authRaw = window.localStorage.getItem('kth_demo_auth_session');
+          if (authRaw) {
+            const currentSession = JSON.parse(authRaw);
+            if (currentSession.role === 'creator') {
+              if (existing.creator_id && existing.creator_id !== currentSession.id) {
+                return {
+                  data: null,
+                  error: {
+                    message: 'Forbidden: You cannot modify content belonging to another creator.',
+                    code: 'FORBIDDEN',
+                    status: 403,
+                  },
+                };
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       let fileUrl = input.file_url || existing?.file_url;
       let fileName = input.file_name || existing?.file_name;
       let fileSize = input.file_size || existing?.file_size;
@@ -640,8 +786,23 @@ export const knowledgeService = {
         format = uploadResult.format || 'PDF';
       }
 
+      // Authoritative Data Layer Guard:
+      // Creators updating content cannot directly manipulate pricing, royalty %, platform share, or published status.
+      // Commercial terms and publication are strictly governed by Admin review.
+      const safeInput = { ...input };
+      delete safeInput.selling_price_inr;
+      delete safeInput.creator_commission_pct;
+      delete safeInput.platform_share_pct;
+      delete safeInput.creator_earnings_per_sale_inr;
+      delete safeInput.terms_version;
+      delete safeInput.terms_set_by;
+      delete safeInput.terms_set_at;
+      delete safeInput.terms_accepted_version;
+      // Status changes must go through updateResourceStatus or Admin review
+      delete safeInput.status;
+
       const updates: Partial<KnowledgeResource> = {
-        ...input,
+        ...safeInput,
         file_url: fileUrl,
         file_name: fileName,
         file_size: fileSize,
@@ -650,10 +811,6 @@ export const knowledgeService = {
         format,
         updated_at: new Date().toISOString(),
       };
-
-      if (input.status === 'published' && !existing?.published_at) {
-        updates.published_at = new Date().toISOString();
-      }
 
       if (isSupabaseConfigured()) {
         try {
@@ -665,6 +822,59 @@ export const knowledgeService = {
 
       updateDemoResource(id, updates);
       return this.getResourceByIdOrSlug(id);
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
+
+  /**
+   * Admin: Update resource status and associated review/commercial metadata.
+   */
+  async updateResourceStatus(id: string, status: ResourceStatus, extraUpdates?: Partial<KnowledgeResource>): Promise<ServiceResult<boolean>> {
+    try {
+      // Authorization Guard:
+      // Creators cannot set 'published', 'terms_pending', or 'rejected'.
+      // Only Admin can set commercial terms or authorize publication.
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const authRaw = window.localStorage.getItem('kth_demo_auth_session');
+          if (authRaw) {
+            const currentRole = JSON.parse(authRaw)?.role;
+            if (currentRole === 'creator') {
+              if (status === 'published' || status === 'terms_pending' || status === 'rejected') {
+                return {
+                  data: null,
+                  error: {
+                    message: `Unauthorized: Creators cannot set status to "${status}". Action requires Admin authorization.`,
+                    code: 'FORBIDDEN',
+                    status: 403,
+                  },
+                };
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      const updates: Partial<KnowledgeResource> = {
+        status,
+        ...(extraUpdates || {}),
+        published_at: status === 'published' ? new Date().toISOString() : undefined,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (isSupabaseConfigured()) {
+        try {
+          await supabase.from('resources').update(updates).eq('id', id);
+        } catch {
+          // Ignore
+        }
+      }
+
+      updateDemoResource(id, updates);
+      return { data: true, error: null };
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }
