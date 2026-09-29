@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { knowledgeService, KnowledgeResource } from '@/services/knowledgeService';
 import { paymentService } from '@/services/paymentService';
+import { useAuth } from '@/context/AuthContext';
 import { Star, Download, FileText, CheckCircle2, ArrowLeft, Loader2, AlertCircle, ShoppingCart, CreditCard, Shield, IndianRupee } from 'lucide-react';
 
 export interface ResourceDetailsPageProps {
@@ -14,6 +15,7 @@ export interface ResourceDetailsPageProps {
 type CheckoutStep = 'idle' | 'cart' | 'processing' | 'success';
 
 export const ResourceDetailsPage: React.FC<ResourceDetailsPageProps> = ({ resourceId }) => {
+  const { user } = useAuth();
   const [resource, setResource] = useState<KnowledgeResource | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +23,7 @@ export const ResourceDetailsPage: React.FC<ResourceDetailsPageProps> = ({ resour
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [isPurchased, setIsPurchased] = useState(false);
+  const [activeDownloadUrl, setActiveDownloadUrl] = useState<string | null>(null);
 
   // Extract ID from pathname if not provided directly
   const activeId = resourceId || window.location.pathname.replace('/knowledge/', '');
@@ -36,8 +39,9 @@ export const ResourceDetailsPage: React.FC<ResourceDetailsPageProps> = ({ resour
         setError(res.error.message);
       } else {
         setResource(res.data);
-        if (res.data && paymentService.isPurchased(res.data.id)) {
-          setIsPurchased(true);
+        if (res.data) {
+          const purchased = await paymentService.isPurchased(res.data.id, user?.id);
+          setIsPurchased(purchased);
         }
       }
       setIsLoading(false);
@@ -47,35 +51,41 @@ export const ResourceDetailsPage: React.FC<ResourceDetailsPageProps> = ({ resour
     return () => {
       isMounted = false;
     };
-  }, [activeId]);
+  }, [activeId, user?.id]);
 
   // Free resource: direct download
   const handleFreeDownload = async () => {
     if (!resource) return;
     setIsProcessing(true);
-    const res = await knowledgeService.trackDownload(resource.id);
+    const res = await knowledgeService.trackDownload(resource.id, user?.id);
     setIsProcessing(false);
-    setCheckoutStep('success');
-    const targetUrl = res.data?.downloadUrl || resource.file_url;
-    if (targetUrl) {
-      window.open(targetUrl, '_blank');
+    if (res.data?.downloadUrl) {
+      setActiveDownloadUrl(res.data.downloadUrl);
+      setCheckoutStep('success');
+      window.open(res.data.downloadUrl, '_blank');
+    } else if (res.error) {
+      alert(res.error.message);
     }
   };
 
-  // Paid resource: open cart modal
+  // Paid resource: initiate payment directly
   const handlePurchaseClick = () => {
     if (!resource) return;
     if (isPurchased) {
       handleDirectDownload();
       return;
     }
-    setCheckoutStep('cart');
+    handleConfirmPayment();
   };
 
-  // Process simulated payment
+  // Process payment with Razorpay
   const handleConfirmPayment = async () => {
     if (!resource) return;
-    setCheckoutStep('processing');
+
+    // CRITICAL: Ensure no KnowToHire dialog overlay is blocking the screen.
+    // The Dialog component renders a fixed inset-0 z-[999] overlay that blocks
+    // the Razorpay checkout iframe from receiving pointer events.
+    setCheckoutStep('idle');
     setIsProcessing(true);
 
     const res = await paymentService.initiateCheckout({
@@ -83,11 +93,21 @@ export const ResourceDetailsPage: React.FC<ResourceDetailsPageProps> = ({ resour
       itemId: resource.id,
       itemName: resource.title,
       amountINR: resource.price_inr ?? 0,
+      provider: 'razorpay',
+      userId: user?.id,
+      customer: {
+        email: user?.email,
+        name: user?.user_metadata?.full_name,
+      },
       onSuccess: async (payId) => {
+        setCheckoutStep('processing'); // Brief processing state while verifying
         setTransactionId(payId);
-        paymentService.recordPurchase(resource.id, payId);
         setIsPurchased(true);
-        await knowledgeService.trackDownload(resource.id);
+        const downloadRes = await knowledgeService.trackDownload(resource.id, user?.id);
+        if (downloadRes.data?.downloadUrl) {
+          setActiveDownloadUrl(downloadRes.data.downloadUrl);
+          window.open(downloadRes.data.downloadUrl, '_blank');
+        }
         setIsProcessing(false);
         setCheckoutStep('success');
       },
@@ -100,6 +120,9 @@ export const ResourceDetailsPage: React.FC<ResourceDetailsPageProps> = ({ resour
     if (res.error) {
       setIsProcessing(false);
       setCheckoutStep('idle');
+      if (res.error.code !== 'PAYMENT_CANCELLED') {
+        alert(res.error.message || 'Unable to open checkout modal. Please check your connection or payment settings.');
+      }
     }
   };
 
@@ -107,12 +130,14 @@ export const ResourceDetailsPage: React.FC<ResourceDetailsPageProps> = ({ resour
   const handleDirectDownload = async () => {
     if (!resource) return;
     setIsProcessing(true);
-    const res = await knowledgeService.trackDownload(resource.id);
+    const res = await knowledgeService.trackDownload(resource.id, user?.id);
     setIsProcessing(false);
-    setCheckoutStep('success');
-    const targetUrl = res.data?.downloadUrl || resource.file_url;
-    if (targetUrl) {
-      window.open(targetUrl, '_blank');
+    if (res.data?.downloadUrl) {
+      setActiveDownloadUrl(res.data.downloadUrl);
+      setCheckoutStep('success');
+      window.open(res.data.downloadUrl, '_blank');
+    } else if (res.error) {
+      alert(res.error.message);
     }
   };
 
@@ -358,9 +383,10 @@ export const ResourceDetailsPage: React.FC<ResourceDetailsPageProps> = ({ resour
               className="flex-1"
               leftIcon={<Download className="w-4 h-4" />}
               onClick={() => {
-                const targetUrl = resource.file_url;
-                if (targetUrl) {
-                  window.open(targetUrl, '_blank');
+                if (activeDownloadUrl) {
+                  window.open(activeDownloadUrl, '_blank');
+                } else {
+                  handleDirectDownload();
                 }
                 handleCloseModal();
               }}

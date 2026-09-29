@@ -554,8 +554,9 @@ export const templateService = {
 
   /**
    * Track template download / acquisition.
+   * Enforces server entitlement check for paid resources and generates short-lived signed download URLs.
    */
-  async trackDownload(templateId: string): Promise<ServiceResult<{ downloadUrl: string }>> {
+  async trackDownload(templateId: string, userId?: string): Promise<ServiceResult<{ downloadUrl: string }>> {
     try {
       const res = await this.getTemplateByIdOrSlug(templateId);
       if (!res.data) {
@@ -563,6 +564,23 @@ export const templateService = {
       }
 
       const tmpl = res.data;
+
+      // Access Gate: If not free, verify purchase entitlement
+      if (!tmpl.is_free && (tmpl.price_inr > 0 || (tmpl.selling_price_inr && tmpl.selling_price_inr > 0))) {
+        const { entitlementService } = await import('./payment/entitlementService');
+        const isEntitled = await entitlementService.hasPurchased(tmpl.id, userId);
+        if (!isEntitled) {
+          return {
+            data: null,
+            error: {
+              message: 'Unauthorized: You must purchase this template before accessing its downloadable file.',
+              code: 'UNAUTHORIZED_ACCESS',
+              status: 403,
+            },
+          };
+        }
+      }
+
       const newCount = (tmpl.downloads_count || 0) + 1;
 
       if (isSupabaseConfigured()) {
@@ -575,8 +593,16 @@ export const templateService = {
 
       updateDemoTemplate(tmpl.id, { downloads_count: newCount });
 
+      // Generate short-lived signed URL (300 seconds = 5 minutes expiry)
+      let secureUrl: string | null = null;
+      if (tmpl.file_path && isSupabaseConfigured()) {
+        secureUrl = await contentStorageService.getDownloadUrl('templates', tmpl.file_path, 300);
+      }
+
+      const finalUrl = secureUrl || tmpl.file_url || tmpl.download_url || 'https://knowtohire.com/templates/download.docx';
+
       return {
-        data: { downloadUrl: tmpl.file_url || tmpl.download_url || 'https://knowtohire.com/templates/download.docx' },
+        data: { downloadUrl: finalUrl },
         error: null,
       };
     } catch (err) {

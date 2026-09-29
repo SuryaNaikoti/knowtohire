@@ -4,6 +4,7 @@ import { Footer } from '@/components/public/Footer';
 import { CommandPalette } from '@/components/ui/CommandPalette';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import { SubscriptionGuard } from '@/components/auth/SubscriptionGuard';
 import { GuestRoute } from '@/components/auth/GuestRoute';
 import { useAuth } from '@/context/AuthContext';
 import { PageLoading } from '@/components/ui/PageLoading';
@@ -359,10 +360,23 @@ export function App() {
       else if (path === '/employer/notifications') pageComponent = <EmployerNotificationsPage onNavigate={navigateTo} />;
       else if (path === '/employer/settings') pageComponent = <EmployerSettingsPage />;
 
+      const isCompanyManagementRoute =
+        path === '/employer/company-profile' ||
+        path === '/employer/notifications' ||
+        path === '/employer/settings';
+
+      const content = isCompanyManagementRoute ? (
+        pageComponent
+      ) : (
+        <SubscriptionGuard onNavigate={navigateTo}>
+          {pageComponent}
+        </SubscriptionGuard>
+      );
+
       return (
         <ProtectedRoute currentPath={currentPath} onNavigate={navigateTo}>
           <RoleGuard allowedRoles={['employer']} onNavigate={navigateTo}>
-            {pageComponent}
+            {content}
           </RoleGuard>
         </ProtectedRoute>
       );

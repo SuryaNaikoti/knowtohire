@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { templateService, MarketplaceTemplate } from '@/services/templateService';
 import { paymentService } from '@/services/paymentService';
+import { useAuth } from '@/context/AuthContext';
 import { FileText, Download, CheckCircle2, ArrowLeft, Loader2, AlertCircle, ShoppingCart, CreditCard, Shield, IndianRupee } from 'lucide-react';
 
 export interface TemplateDetailsPageProps {
@@ -14,6 +15,7 @@ export interface TemplateDetailsPageProps {
 type CheckoutStep = 'idle' | 'cart' | 'processing' | 'success';
 
 export const TemplateDetailsPage: React.FC<TemplateDetailsPageProps> = ({ templateId }) => {
+  const { user } = useAuth();
   const [template, setTemplate] = useState<MarketplaceTemplate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +23,7 @@ export const TemplateDetailsPage: React.FC<TemplateDetailsPageProps> = ({ templa
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [isPurchased, setIsPurchased] = useState(false);
+  const [activeDownloadUrl, setActiveDownloadUrl] = useState<string | null>(null);
 
   const activeId = templateId || window.location.pathname.replace('/templates/', '');
 
@@ -35,9 +38,10 @@ export const TemplateDetailsPage: React.FC<TemplateDetailsPageProps> = ({ templa
         setError(res.error.message);
       } else {
         setTemplate(res.data);
-        // Check if already purchased in this session
-        if (res.data && paymentService.isPurchased(res.data.id)) {
-          setIsPurchased(true);
+        // Authoritative purchase entitlement check
+        if (res.data) {
+          const purchased = await paymentService.isPurchased(res.data.id, user?.id);
+          setIsPurchased(purchased);
         }
       }
       setIsLoading(false);
@@ -47,18 +51,20 @@ export const TemplateDetailsPage: React.FC<TemplateDetailsPageProps> = ({ templa
     return () => {
       isMounted = false;
     };
-  }, [activeId]);
+  }, [activeId, user?.id]);
 
   // Free template: direct download
   const handleFreeDownload = async () => {
     if (!template) return;
     setIsProcessing(true);
-    const res = await templateService.trackDownload(template.id);
+    const res = await templateService.trackDownload(template.id, user?.id);
     setIsProcessing(false);
-    setCheckoutStep('success');
-    const targetUrl = res.data?.downloadUrl || template.file_url || template.download_url;
-    if (targetUrl) {
-      window.open(targetUrl, '_blank');
+    if (res.data?.downloadUrl) {
+      setActiveDownloadUrl(res.data.downloadUrl);
+      setCheckoutStep('success');
+      window.open(res.data.downloadUrl, '_blank');
+    } else if (res.error) {
+      alert(res.error.message);
     }
   };
 
@@ -66,17 +72,20 @@ export const TemplateDetailsPage: React.FC<TemplateDetailsPageProps> = ({ templa
   const handlePurchaseClick = () => {
     if (!template) return;
     if (isPurchased) {
-      // Already purchased — go straight to download
       handleDirectDownload();
       return;
     }
     setCheckoutStep('cart');
   };
 
-  // Process simulated payment
+  // Process payment with Razorpay
   const handleConfirmPayment = async () => {
     if (!template) return;
-    setCheckoutStep('processing');
+
+    // CRITICAL: Dismiss the cart dialog BEFORE opening Razorpay.
+    // The Dialog component renders a fixed inset-0 z-[999] overlay that blocks
+    // the Razorpay checkout iframe from receiving pointer events.
+    setCheckoutStep('idle');
     setIsProcessing(true);
 
     const res = await paymentService.initiateCheckout({
@@ -84,11 +93,21 @@ export const TemplateDetailsPage: React.FC<TemplateDetailsPageProps> = ({ templa
       itemId: template.id,
       itemName: template.title,
       amountINR: template.price_inr,
+      provider: 'razorpay',
+      userId: user?.id,
+      customer: {
+        email: user?.email,
+        name: user?.user_metadata?.full_name,
+      },
       onSuccess: async (payId) => {
+        setCheckoutStep('processing'); // Brief state while verifying
         setTransactionId(payId);
-        paymentService.recordPurchase(template.id, payId);
         setIsPurchased(true);
-        await templateService.trackDownload(template.id);
+        const downloadRes = await templateService.trackDownload(template.id, user?.id);
+        if (downloadRes.data?.downloadUrl) {
+          setActiveDownloadUrl(downloadRes.data.downloadUrl);
+          window.open(downloadRes.data.downloadUrl, '_blank');
+        }
         setIsProcessing(false);
         setCheckoutStep('success');
       },
@@ -104,16 +123,18 @@ export const TemplateDetailsPage: React.FC<TemplateDetailsPageProps> = ({ templa
     }
   };
 
-  // Direct download for already-purchased templates
+  // Direct download for already-purchased templates using signed download URL
   const handleDirectDownload = async () => {
     if (!template) return;
     setIsProcessing(true);
-    const res = await templateService.trackDownload(template.id);
+    const res = await templateService.trackDownload(template.id, user?.id);
     setIsProcessing(false);
-    setCheckoutStep('success');
-    const targetUrl = res.data?.downloadUrl || template.file_url || template.download_url;
-    if (targetUrl) {
-      window.open(targetUrl, '_blank');
+    if (res.data?.downloadUrl) {
+      setActiveDownloadUrl(res.data.downloadUrl);
+      setCheckoutStep('success');
+      window.open(res.data.downloadUrl, '_blank');
+    } else if (res.error) {
+      alert(res.error.message);
     }
   };
 
@@ -357,9 +378,10 @@ export const TemplateDetailsPage: React.FC<TemplateDetailsPageProps> = ({ templa
               className="flex-1"
               leftIcon={<Download className="w-4 h-4" />}
               onClick={() => {
-                const targetUrl = template.file_url || template.download_url;
-                if (targetUrl) {
-                  window.open(targetUrl, '_blank');
+                if (activeDownloadUrl) {
+                  window.open(activeDownloadUrl, '_blank');
+                } else {
+                  handleDirectDownload();
                 }
                 handleCloseModal();
               }}

@@ -545,8 +545,9 @@ export const knowledgeService = {
 
   /**
    * Track a download event and increment download counter.
+   * Enforces server entitlement check for paid resources and generates short-lived signed download URLs.
    */
-  async trackDownload(resourceId: string): Promise<ServiceResult<{ downloadUrl: string }>> {
+  async trackDownload(resourceId: string, userId?: string): Promise<ServiceResult<{ downloadUrl: string }>> {
     try {
       const res = await this.getResourceByIdOrSlug(resourceId);
       if (!res.data) {
@@ -554,6 +555,23 @@ export const knowledgeService = {
       }
 
       const resource = res.data;
+
+      // Access Gate: If not free, verify purchase entitlement
+      if (!resource.is_free && (Number(resource.price_inr || 0) > 0 || Number(resource.selling_price_inr || 0) > 0)) {
+        const { entitlementService } = await import('./payment/entitlementService');
+        const isEntitled = await entitlementService.hasPurchased(resource.id, userId);
+        if (!isEntitled) {
+          return {
+            data: null,
+            error: {
+              message: 'Unauthorized: You must purchase this resource before accessing its downloadable file.',
+              code: 'UNAUTHORIZED_ACCESS',
+              status: 403,
+            },
+          };
+        }
+      }
+
       const newCount = (resource.downloads_count || 0) + 1;
 
       if (isSupabaseConfigured()) {
@@ -566,8 +584,16 @@ export const knowledgeService = {
 
       updateDemoResource(resource.id, { downloads_count: newCount });
 
+      // Generate short-lived signed URL (300 seconds = 5 minutes expiry)
+      let secureUrl: string | null = null;
+      if (resource.file_path && isSupabaseConfigured()) {
+        secureUrl = await contentStorageService.getDownloadUrl('knowledge-hub', resource.file_path, 300);
+      }
+
+      const finalUrl = secureUrl || `/api/download-resource?resource_id=${encodeURIComponent(resource.id)}&user_id=${encodeURIComponent(userId || '')}`;
+
       return {
-        data: { downloadUrl: resource.file_url || 'https://knowtohire.com/resources/download.pdf' },
+        data: { downloadUrl: finalUrl },
         error: null,
       };
     } catch (err) {

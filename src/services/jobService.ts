@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { subscriptionEntitlementService } from './subscriptionEntitlementService';
 import {
   Job,
   JobStatus,
@@ -774,6 +775,19 @@ export const jobService = {
       }
 
       const targetCompanyId = input.company_id || authCtx.companyId;
+
+      // Subscription entitlement check: Must have active plan & not exceed limits for published jobs
+      const limitCheck = await subscriptionEntitlementService.canPostJob(targetCompanyId);
+      if (input.status === 'published' && !limitCheck.canPost) {
+        return {
+          data: null,
+          error: {
+            message: limitCheck.reason || 'Subscription limit reached. Please upgrade to post additional jobs.',
+            code: 'SUBSCRIPTION_LIMIT_EXCEEDED',
+            status: 403,
+          },
+        };
+      }
 
       const generatedSlug =
         input.title

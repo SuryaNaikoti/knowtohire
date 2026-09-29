@@ -22,7 +22,7 @@ export const PricingPage: React.FC = () => {
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('idle');
   const [selectedPlan, setSelectedPlan] = useState<SelectedPlan | null>(null);
   const [transactionId, setTransactionId] = useState<string | null>(null);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user, profile } = useAuth();
 
   const handleSubscribe = (tier: 'starter' | 'enterprise', amountINR: number) => {
     if (!isAuthenticated) {
@@ -37,13 +37,23 @@ export const PricingPage: React.FC = () => {
 
   const handleConfirmPayment = async () => {
     if (!selectedPlan) return;
-    setCheckoutStep('processing');
 
-    await paymentService.initiateCheckout({
+    // CRITICAL: Dismiss the cart dialog BEFORE opening Razorpay.
+    // The Dialog component renders a fixed inset-0 z-[999] overlay that blocks
+    // the Razorpay checkout iframe from receiving pointer events.
+    setCheckoutStep('idle');
+
+    const res = await paymentService.initiateCheckout({
       itemType: 'employer_subscription',
       itemId: `sub_${selectedPlan.tier}_${selectedPlan.billingCycle}`,
       itemName: `KnowToHire ${selectedPlan.name} (${selectedPlan.billingCycle})`,
       amountINR: selectedPlan.amountINR,
+      provider: 'razorpay',
+      userId: user?.id,
+      customer: {
+        email: user?.email,
+        name: profile?.full_name || (user?.user_metadata?.full_name as string),
+      },
       onSuccess: (payId) => {
         setTransactionId(payId);
         setCheckoutStep('success');
@@ -52,6 +62,10 @@ export const PricingPage: React.FC = () => {
         setCheckoutStep('idle');
       },
     });
+
+    if (res.error) {
+      setCheckoutStep('idle');
+    }
   };
 
   const handleCloseModal = () => {

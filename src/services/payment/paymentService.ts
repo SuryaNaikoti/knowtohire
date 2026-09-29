@@ -2,15 +2,9 @@
  * KnowToHire Payment Service Layer
  * Clean provider-agnostic facade coordinating order creation, checkout initiation,
  * and entitlement tracking.
- *
- * CURRENT PHASE: "Simulated Checkout" (Cashfree not integrated yet)
- * - Provides a complete purchase workflow simulation (select → cart → pay → download).
- * - NO real Cashfree API calls, no live payments, no real card processing.
- * - Generates simulated order IDs and transaction IDs for UI flow continuity.
- * - Works without Supabase auth for public-facing purchase buttons.
  */
 
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { ServiceResult, normalizeServiceError } from '../types';
 import {
   CreateOrderRequest,
@@ -19,19 +13,27 @@ import {
   VerifyPaymentResult,
   PaymentProductType,
 } from './types';
+import { openRazorpayCheckout } from './razorpayClient';
+import { entitlementService } from './entitlementService';
+import { getAuthoritativeItem } from './authoritativePricing';
 
 export interface LegacyCheckoutOptions {
   itemType: 'template' | 'resource' | 'content_request' | 'candidate_subscription' | 'employer_subscription' | 'job_post';
   itemId: string;
   itemName: string;
   amountINR: number;
+  provider?: 'razorpay' | 'simulated';
+  customer?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  userId?: string;
+  companyId?: string;
   onSuccess?: (paymentId: string) => void;
   onCancel?: () => void;
 }
 
-/**
- * Result of a simulated checkout flow
- */
 export interface SimulatedCheckoutResult {
   success: boolean;
   transactionId: string;
@@ -43,27 +45,14 @@ export interface SimulatedCheckoutResult {
   productId: string;
 }
 
-/**
- * Generate a human-readable order number
- */
 function generateOrderNumber(): string {
   const year = new Date().getFullYear();
   const seq = Math.floor(100000 + Math.random() * 900000);
   return `KTH-${year}-${seq}`;
 }
 
-/**
- * Generate a unique order ID
- */
 function generateOrderId(): string {
   return `kth_ord_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-/**
- * Generate a simulated payment/transaction ID
- */
-function generateTransactionId(): string {
-  return `pay_sim_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 }
 
 class UnifiedPaymentService {
@@ -92,173 +81,186 @@ class UnifiedPaymentService {
   }
 
   /**
-   * Verify Payment Status (simulated — always returns successful for demo)
+   * Verify Payment Status
    */
-  public async verifyPayment(_req: VerifyPaymentRequest): Promise<ServiceResult<VerifyPaymentResult>> {
-    return {
-      data: {
-        isVerified: true,
-        orderStatus: 'paid',
-        transactionId: generateTransactionId(),
-        paidAmountINR: 0,
-        paidAt: new Date().toISOString(),
-        message: 'Simulated payment verified successfully.',
-      },
-      error: null,
-    };
+  public async verifyPayment(req: VerifyPaymentRequest): Promise<ServiceResult<VerifyPaymentResult>> {
+    try {
+      const res = await fetch('/api/verify-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req),
+      });
+      const data = await res.json();
+      return {
+        data: {
+          isVerified: Boolean(data.success),
+          orderStatus: data.success ? 'paid' : 'failed',
+          transactionId: data.payment_id,
+          paidAmountINR: data.amount_inr,
+          paidAt: new Date().toISOString(),
+          message: data.message || 'Payment status resolved',
+        },
+        error: null,
+      };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
   }
 
   /**
-   * Simulated Checkout Flow
-   * 
-   * This is the primary method called by all purchase buttons across the platform.
-   * It simulates a complete payment cycle:
-   * 1. Creates an order record
-   * 2. Simulates a brief "processing" delay (1.5 seconds)
-   * 3. Returns a successful payment result
-   * 4. Calls onSuccess callback to enable download
-   *
-   * Works without authentication for public-facing buttons.
-   * When auth is available, optionally records to orders table.
+   * Primary Checkout Initiation
    */
   public async initiateCheckout(
     options: LegacyCheckoutOptions
   ): Promise<ServiceResult<SimulatedCheckoutResult>> {
     try {
-      const orderId = generateOrderId();
-      const orderNumber = generateOrderNumber();
-      const transactionId = generateTransactionId();
+      // 1. Resolve Current User ID & Customer Info
+      let effectiveUserId = options.userId;
+      let effectiveCustomerEmail = options.customer?.email;
+      let effectiveCustomerName = options.customer?.name;
 
-      // Simulate payment processing delay (realistic UX)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (isSupabaseConfigured()) {
+        try {
+          const { data: authData } = await supabase.auth.getUser();
+          if (authData?.user) {
+            effectiveUserId = effectiveUserId || authData.user.id;
+            effectiveCustomerEmail = effectiveCustomerEmail || authData.user.email;
+            effectiveCustomerName = effectiveCustomerName || (authData.user.user_metadata?.full_name as string);
+          }
+        } catch {
+          // ignore
+        }
+      }
 
-      // Authoritative Public Marketplace Gating:
-      // Content is ONLY purchasable when:
-      // 1. Approved by Admin
-      // 2. Commercial terms assigned
-      // 3. Creator accepted current terms
-      // 4. Admin published
-      // 5. Not archived
-      let approvedCommissionPct = 70; // fallback default
-      let authoritativePriceINR = options.amountINR;
+      if (!effectiveUserId && typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const demoRaw = window.localStorage.getItem('kth_demo_auth_session');
+          if (demoRaw) {
+            const demo = JSON.parse(demoRaw);
+            effectiveUserId = effectiveUserId || demo.id;
+            effectiveCustomerEmail = effectiveCustomerEmail || demo.email;
+            effectiveCustomerName = effectiveCustomerName || demo.full_name;
+          }
+        } catch {
+          // ignore
+        }
+      }
 
-      if (options.itemType === 'template' || options.itemType === 'resource') {
-        let matchedItem: any = null;
-        if (typeof window !== 'undefined' && window.localStorage) {
-          if (options.itemType === 'resource') {
-            const resRaw = window.localStorage.getItem('kth_demo_knowledge_resources');
-            if (resRaw) {
-              const resources = JSON.parse(resRaw);
-              matchedItem = resources.find((r: any) => r.id === options.itemId || r.slug === options.itemId);
+      // 2. Authoritative Price Resolution
+      const catalogItem = getAuthoritativeItem(options.itemId, options.itemType);
+      const finalPriceINR = catalogItem ? catalogItem.priceINR : options.amountINR;
+
+      // 3. Razorpay Standard Checkout Flow
+      return new Promise((resolve) => {
+        openRazorpayCheckout({
+          amountINR: finalPriceINR,
+          name: 'KnowToHire',
+          description: catalogItem?.title || options.itemName,
+          receipt: `rcpt_${options.itemType}_${Date.now()}`,
+          notes: {
+            itemId: options.itemId,
+            itemType: options.itemType,
+          },
+          prefill: {
+            name: effectiveCustomerName || '',
+            email: effectiveCustomerEmail || '',
+            contact: options.customer?.phone || '',
+          },
+          itemId: options.itemId,
+          itemType: options.itemType,
+          userId: effectiveUserId,
+          companyId: options.companyId,
+          onSuccess: async (rzpRes) => {
+            const resResult: SimulatedCheckoutResult = {
+              success: true,
+              transactionId: rzpRes.razorpay_payment_id,
+              orderId: rzpRes.razorpay_order_id,
+              orderNumber: generateOrderNumber(),
+              amountINR: finalPriceINR,
+              paidAt: new Date().toISOString(),
+              productType: options.itemType,
+              productId: options.itemId,
+            };
+
+            // Authoritatively persist order in Supabase payment_orders
+            if (isSupabaseConfigured() && effectiveUserId) {
+              try {
+                await supabase.from('payment_orders').insert({
+                  order_number: resResult.orderNumber,
+                  user_id: effectiveUserId,
+                  product_type: options.itemType === 'resource' ? 'knowledge_resource' : options.itemType,
+                  product_id: options.itemId,
+                  product_title: options.itemName,
+                  amount_inr: finalPriceINR,
+                  currency: 'INR',
+                  status: 'paid',
+                  provider: 'razorpay',
+                  provider_order_id: rzpRes.razorpay_order_id,
+                  customer_name: effectiveCustomerName,
+                  customer_email: effectiveCustomerEmail,
+                  customer_phone: options.customer?.phone,
+                  is_paid: true,
+                  paid_at: new Date().toISOString(),
+                });
+              } catch (dbErr) {
+                console.warn('[UnifiedPaymentService] Supabase payment_orders insert warning:', dbErr);
+              }
             }
-          } else {
-            const tplRaw = window.localStorage.getItem('kth_demo_marketplace_templates');
-            if (tplRaw) {
-              const templates = JSON.parse(tplRaw);
-              matchedItem = templates.find((t: any) => t.id === options.itemId || t.slug === options.itemId);
+
+            // Record into Creator Sales Ledger if template or resource
+            try {
+              if (options.itemType === 'template' || options.itemType === 'resource') {
+                const commissionRate = 70;
+                const commissionINR = Math.round(((finalPriceINR * commissionRate) / 100) * 100) / 100;
+
+                if (typeof window !== 'undefined' && window.localStorage) {
+                  const salesRaw = window.localStorage.getItem('kth_creator_sales_data');
+                  const salesList = salesRaw ? JSON.parse(salesRaw) : [];
+                  const newSale = {
+                    id: `sale-${Date.now()}`,
+                    itemId: options.itemId,
+                    itemTitle: options.itemName,
+                    itemType: options.itemType,
+                    amountINR: finalPriceINR,
+                    commissionINR,
+                    commissionStatus: 'available',
+                    purchasedAt: new Date().toISOString(),
+                    buyerEmail: effectiveCustomerEmail || 'customer@knowtohire.com',
+                  };
+                  salesList.unshift(newSale);
+                  window.localStorage.setItem('kth_creator_sales_data', JSON.stringify(salesList));
+                  window.dispatchEvent(new CustomEvent('kth_creator_data_changed'));
+                }
+              }
+            } catch {
+              // ignore
             }
-          }
-        }
 
-        if (matchedItem) {
-          // Gating Rule 1 & 4: Must be published and active (not archived)
-          if (matchedItem.status !== 'published' || matchedItem.is_active === false) {
-            return {
+            if (options.onSuccess) {
+              options.onSuccess(rzpRes.razorpay_payment_id);
+            }
+            resolve({ data: resResult, error: null });
+          },
+          onDismiss: () => {
+            if (options.onCancel) {
+              options.onCancel();
+            }
+            resolve({
               data: null,
-              error: {
-                message: `This item is not publicly purchasable (current status: ${matchedItem.status}).`,
-                code: 'ITEM_NOT_PUBLISHED',
-                status: 403,
-              },
-            };
-          }
-
-          // Gating Rule 2 & 3: Commercial terms assigned and accepted by creator
-          if (
-            matchedItem.terms_version &&
-            matchedItem.terms_accepted_version !== matchedItem.terms_version
-          ) {
-            return {
+              error: { message: 'Payment cancelled by user', code: 'PAYMENT_CANCELLED' },
+            });
+          },
+          onError: (err) => {
+            if (options.onCancel) {
+              options.onCancel();
+            }
+            resolve({
               data: null,
-              error: {
-                message: 'This item has pending commercial terms adjustments and cannot be purchased at this time.',
-                code: 'TERMS_NOT_ACCEPTED',
-                status: 403,
-              },
-            };
-          }
-
-          if (matchedItem.creator_commission_pct !== undefined) {
-            approvedCommissionPct = Number(matchedItem.creator_commission_pct);
-          }
-          if (matchedItem.selling_price_inr !== undefined && matchedItem.selling_price_inr > 0) {
-            authoritativePriceINR = Number(matchedItem.selling_price_inr);
-          }
-        }
-      }
-
-      // Optionally record to database if user is authenticated
-      try {
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData?.user) {
-          await supabase.from('orders').insert({
-            user_id: userData.user.id,
-            total_amount: authoritativePriceINR,
-            status: 'paid',
-            payment_id: transactionId,
-          }).then(() => { /* ignore errors — table may not exist */ });
-        }
-      } catch {
-        // DB recording is optional in simulation phase
-      }
-
-      // Record transaction into Creator Sales Ledger with frozen snapshot of commercial terms
-      try {
-        if (options.itemType === 'template' || options.itemType === 'resource') {
-          // Accurate currency rounding (two decimal places) on authoritative price
-          const finalSalePrice = authoritativePriceINR;
-          const commissionINR = Math.round(((finalSalePrice * approvedCommissionPct) / 100) * 100) / 100;
-
-          if (typeof window !== 'undefined' && window.localStorage) {
-            const salesRaw = window.localStorage.getItem('kth_creator_sales_data');
-            const salesList = salesRaw ? JSON.parse(salesRaw) : [];
-            const newSale = {
-              id: `sale-${Date.now()}`,
-              itemId: options.itemId,
-              itemTitle: options.itemName,
-              itemType: options.itemType,
-              amountINR: finalSalePrice,
-              commissionINR,
-              commissionStatus: 'available', // available post settlement
-              purchasedAt: new Date().toISOString(),
-              buyerEmail: 'customer@knowtohire.com',
-            };
-            salesList.unshift(newSale);
-            window.localStorage.setItem('kth_creator_sales_data', JSON.stringify(salesList));
-            window.dispatchEvent(new CustomEvent('kth_creator_data_changed'));
-          }
-        }
-      } catch {
-        // Continue flow even if ledger simulation encounters storage issue
-      }
-
-      const result: SimulatedCheckoutResult = {
-        success: true,
-        transactionId,
-        orderId,
-        orderNumber,
-        amountINR: options.amountINR,
-        paidAt: new Date().toISOString(),
-        productType: options.itemType,
-        productId: options.itemId,
-      };
-
-      // Call success callback
-      if (options.onSuccess) {
-        options.onSuccess(transactionId);
-      }
-
-      return { data: result, error: null };
+              error: { message: err.message || 'Payment failed', code: 'PAYMENT_ERROR' },
+            });
+          },
+        });
+      });
     } catch (err) {
       if (options.onCancel) {
         options.onCancel();
@@ -268,37 +270,45 @@ class UnifiedPaymentService {
   }
 
   /**
-   * Check if a product has been "purchased" in the current session.
-   * Uses sessionStorage to track simulated purchases.
+   * Check if a product has been purchased.
+   * Supabase + verified Razorpay payment state is authoritative.
    */
-  public isPurchased(productId: string): boolean {
-    try {
-      const purchases = JSON.parse(sessionStorage.getItem('kth_purchases') || '{}');
-      return !!purchases[productId];
-    } catch {
-      return false;
-    }
+  public async isPurchased(productId: string, userId?: string): Promise<boolean> {
+    return entitlementService.hasPurchased(productId, userId);
   }
 
   /**
-   * Record a simulated purchase in session storage.
+   * Record verified purchase in authoritative entitlement store.
    */
-  public recordPurchase(productId: string, transactionId: string): void {
-    try {
-      const purchases = JSON.parse(sessionStorage.getItem('kth_purchases') || '{}');
-      purchases[productId] = {
-        transactionId,
-        purchasedAt: new Date().toISOString(),
-      };
-      sessionStorage.setItem('kth_purchases', JSON.stringify(purchases));
-    } catch {
-      // Silently fail if sessionStorage is unavailable
+  public async recordPurchase(
+    productId: string,
+    transactionId: string,
+    userId?: string,
+    itemType: 'template' | 'knowledge_resource' = 'template',
+    title: string = 'Digital Resource'
+  ): Promise<void> {
+    let effectiveUserId = userId;
+    if (!effectiveUserId && typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const demoAuth = window.localStorage.getItem('kth_demo_auth_session');
+        if (demoAuth) effectiveUserId = JSON.parse(demoAuth)?.id;
+      } catch {
+        // ignore
+      }
+    }
+
+    if (effectiveUserId) {
+      await entitlementService.recordPurchase({
+        userId: effectiveUserId,
+        productType: itemType,
+        productId,
+        productTitle: title,
+        amountINR: 0,
+        paymentId: transactionId,
+      });
     }
   }
 
-  /**
-   * Get the mapped PaymentProductType from a legacy item type string.
-   */
   public mapItemType(itemType: LegacyCheckoutOptions['itemType']): PaymentProductType {
     const map: Record<LegacyCheckoutOptions['itemType'], PaymentProductType> = {
       template: 'template',
@@ -313,3 +323,6 @@ class UnifiedPaymentService {
 }
 
 export const paymentService = new UnifiedPaymentService();
+export { entitlementService } from './entitlementService';
+export { subscriptionService } from './subscriptionService';
+export { getAuthoritativeItem } from './authoritativePricing';

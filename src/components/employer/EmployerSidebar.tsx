@@ -11,6 +11,7 @@ import {
 } from '@/services';
 import { Button } from '@/components/ui/Button';
 import { navigateTo } from '@/utils/navigation';
+import { useSubscription } from '@/hooks/useSubscription';
 import {
   LayoutDashboard,
   Briefcase,
@@ -25,6 +26,8 @@ import {
   Bell,
   Settings,
   Plus,
+  Sparkles,
+  Lock,
 } from 'lucide-react';
 
 export interface EmployerSidebarProps {
@@ -39,6 +42,7 @@ export const EmployerSidebar: React.FC<EmployerSidebarProps> = ({
   onPostJobClick,
 }) => {
   const { user } = useAuth();
+  const { isActive, tier, isExpired } = useSubscription();
   const [companyName, setCompanyName] = useState<string>(
     (user?.user_metadata?.company_name as string) || 'Enterprise ATS'
   );
@@ -236,6 +240,58 @@ export const EmployerSidebar: React.FC<EmployerSidebarProps> = ({
           );
         })}
       </nav>
+
+      {/* Subscription Plan Status Footer */}
+      <div className="mt-auto pt-3 border-t border-kth-slate-100">
+        <div
+          onClick={() => navigateTo('/pricing')}
+          className={cn(
+            "p-3 rounded-xl border cursor-pointer transition-all duration-150 flex flex-col gap-1.5",
+            isActive
+              ? tier === 'enterprise'
+                ? "bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 hover:border-amber-300"
+                : "bg-gradient-to-r from-indigo-50 to-blue-50 border-indigo-200 hover:border-indigo-300"
+              : "bg-rose-50/70 border-rose-200 hover:border-rose-300"
+          )}
+          title="Manage Subscription & Billing"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold tracking-tight text-slate-800 flex items-center gap-1.5">
+              {isActive && tier === 'enterprise' ? (
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              ) : isActive ? (
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              ) : (
+                <Lock className="w-3.5 h-3.5 text-rose-600" />
+              )}
+              {isActive
+                ? tier === 'enterprise'
+                  ? 'Enterprise Hiring'
+                  : 'Employer Starter'
+                : isExpired
+                ? 'Subscription Expired'
+                : 'No Active Plan'}
+            </span>
+            <span
+              className={cn(
+                "text-[9px] uppercase font-mono px-1.5 py-0.5 rounded font-bold",
+                isActive
+                  ? "bg-white text-indigo-700 shadow-2xs border border-indigo-100"
+                  : "bg-rose-600 text-white"
+              )}
+            >
+              {isActive ? 'Active' : 'Upgrade'}
+            </span>
+          </div>
+          <p className="text-[10px] text-slate-500 leading-tight">
+            {isActive
+              ? tier === 'enterprise'
+                ? 'Unlimited jobs & dedicated manager'
+                : 'Up to 5 active jobs · Click to upgrade'
+              : 'Subscribe to post jobs & unlock ATS'}
+          </p>
+        </div>
+      </div>
     </aside>
   );
 };

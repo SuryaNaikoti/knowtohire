@@ -66,6 +66,7 @@ export const CandidateRequestDetailsPage: React.FC<CandidateRequestDetailsPagePr
       itemId: req.id,
       itemType: 'content_request',
       itemName: req.deliverable_title || req.title,
+      provider: 'razorpay',
       onSuccess: async (paymentId: string) => {
         await requestService.markRequestPaid(req.id, paymentId);
         await fetchRequest();
