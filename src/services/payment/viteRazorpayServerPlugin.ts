@@ -5,11 +5,13 @@ import path from 'path';
 import { getAuthoritativeItem } from './authoritativePricing';
 import {
   processPaymentVerification,
+  fulfillSuccessfulPayment,
   recordFailedPayment,
   verifyWebhookSignature,
-  getStoredOrder,
   saveStoredOrder,
   getAllStoredOrders,
+  getServerEntitlementsForUser,
+  hasServerEntitlement,
 } from './serverPaymentCoordinator';
 
 // Parse .env directly without third-party dependencies if process.env is not yet populated
@@ -334,14 +336,10 @@ export function razorpayApiPlugin(): Plugin {
             const paymentId = paymentEntity?.id;
 
             if (event === 'order.paid' || event === 'payment.captured') {
-              if (orderId) {
-                const existingOrder = getStoredOrder(orderId);
-                saveStoredOrder(orderId, {
-                  ...(existingOrder || {}),
-                  status: 'paid',
-                  is_paid: true,
-                  paid_at: new Date().toISOString(),
-                  payment_id: paymentId || existingOrder?.payment_id,
+              if (orderId && paymentId) {
+                await fulfillSuccessfulPayment({
+                  orderId,
+                  paymentId,
                 });
               }
               res.statusCode = 200;
@@ -497,6 +495,34 @@ startxref
             res.statusCode = 500;
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({ error: e?.message || 'Download error' }));
+            return;
+          }
+        }
+
+        // 6. Server-Authoritative User Entitlements endpoint: GET /api/user-entitlements
+        if (url === '/api/user-entitlements' && req.method === 'GET') {
+          try {
+            const parsedUrl = new URL(req.url || '', `http://${req.headers.host || 'localhost'}`);
+            const userId = parsedUrl.searchParams.get('user_id') || '';
+            const productId = parsedUrl.searchParams.get('product_id') || '';
+
+            if (productId && userId) {
+              const entitled = hasServerEntitlement(productId, userId);
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ entitled, product_id: productId, user_id: userId }));
+              return;
+            }
+
+            const entitlements = getServerEntitlementsForUser(userId);
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ entitlements }));
+            return;
+          } catch (e: any) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: e?.message || 'Entitlements error' }));
             return;
           }
         }

@@ -3,7 +3,6 @@
  * Handles order creation, modal invocation, and payment signature verification.
  */
 
-import { entitlementService } from './entitlementService';
 import { subscriptionService } from './subscriptionService';
 
 export interface RazorpayCustomerPrefill {
@@ -209,20 +208,22 @@ export async function openRazorpayCheckout(options: RazorpayCheckoutOptions): Pr
             throw new Error(verifyData.error || 'Payment signature verification failed.');
           }
 
-          // Step 4: Persist Entitlement in Supabase & local store
-          if (userId && itemId && (itemType === 'template' || itemType === 'resource' || itemType === 'knowledge_resource')) {
-            await entitlementService.recordPurchase({
-              userId,
-              productId: itemId,
-              productType: (itemType === 'template' ? 'template' : 'knowledge_resource'),
-              productTitle: description,
-              amountINR,
-              orderId: response.razorpay_order_id,
-              paymentId: response.razorpay_payment_id,
-            });
+          // Fulfillment is authoritatively owned and completed by the server during /api/verify-payment.
+          // In the browser, we dispatch an update event so listening components update immediately.
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('kth_purchases_updated', {
+                detail: {
+                  userId,
+                  productId: itemId,
+                  orderId: response.razorpay_order_id,
+                  paymentId: response.razorpay_payment_id,
+                },
+              })
+            );
           }
 
-          // Step 5: If Employer Subscription, synchronize company record
+          // If Employer Subscription, synchronize company record
           if (itemType === 'employer_subscription') {
             const tier = itemId?.includes('enterprise') ? 'enterprise' : 'starter';
             const billingCycle = itemId?.includes('annual') ? 'annual' : 'monthly';

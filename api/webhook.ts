@@ -1,4 +1,10 @@
-import { verifyWebhookSignature, getStoredOrder, saveStoredOrder, recordFailedPayment } from '../src/services/payment/serverPaymentCoordinator';
+import {
+  verifyWebhookSignature,
+  getStoredOrder,
+  saveStoredOrder,
+  recordFailedPayment,
+  fulfillSuccessfulPayment,
+} from '../src/services/payment/serverPaymentCoordinator';
 
 // Helper to read raw body for HMAC SHA256 signature verification
 async function getRawBody(req: any): Promise<string> {
@@ -64,14 +70,10 @@ export default async function handler(req: any, res: any) {
     const paymentId = paymentEntity?.id;
 
     if (event === 'order.paid' || event === 'payment.captured') {
-      if (orderId) {
-        const existingOrder = getStoredOrder(orderId);
-        saveStoredOrder(orderId, {
-          ...(existingOrder || {}),
-          status: 'paid',
-          is_paid: true,
-          paid_at: new Date().toISOString(),
-          payment_id: paymentId || existingOrder?.payment_id,
+      if (orderId && paymentId) {
+        await fulfillSuccessfulPayment({
+          orderId,
+          paymentId,
         });
       }
       return res.status(200).json({ status: 'ok', handled: true, event });

@@ -104,11 +104,26 @@ export const entitlementService = {
           return true;
         }
       } catch {
-        // Fallback to local store if table not migrated or offline
+        // Fallback to server check if offline or database error
       }
     }
 
-    // 2. Check persistent user-scoped local store
+    // 2. Query Server-Authoritative Entitlements Endpoint (/api/user-entitlements)
+    if (typeof window !== 'undefined' && typeof fetch !== 'undefined') {
+      try {
+        const resp = await fetch(`/api/user-entitlements?user_id=${encodeURIComponent(effectiveUserId)}&product_id=${encodeURIComponent(productId)}`);
+        if (resp.ok) {
+          const resJson = await resp.json();
+          if (resJson.entitled) {
+            return true;
+          }
+        }
+      } catch {
+        // Continue to local check
+      }
+    }
+
+    // 3. Check persistent user-scoped local store
     const local = getLocalEntitlements(effectiveUserId);
     if (local[productId]) return true;
 
