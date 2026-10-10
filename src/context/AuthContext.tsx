@@ -644,7 +644,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       password,
       options: {
         data: metadata,
-        emailRedirectTo: `${window.location.origin}/verify-email`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
     if (error) {
@@ -668,7 +668,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      const initialStatus = 'pending_onboarding';
+      const isEmailConfirmed = Boolean(data.user.email_confirmed_at || (data.user as any).confirmed_at);
+      const initialStatus = isEmailConfirmed ? 'pending_onboarding' : 'unverified';
+
+      // Persist registered email in sessionStorage for verify-email screen resilience
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        window.sessionStorage.setItem('kth_pending_verification_email', data.user.email || email.trim());
+      }
 
       let profile: Profile | null = null;
       try {
@@ -718,12 +724,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const effectiveStatus = resolveEffectiveStatus(data.user, profile);
       const resolvedRole = resolveRole(data.user, profile, metadata.role);
 
+      // Note: If email confirmation is enabled in Supabase Auth, data.session may be null until confirmed.
+      // We set state accordingly so that unconfirmed user is strictly marked as unverified and not authenticated with full permissions
       setState({
         user: data.user,
         profile,
         role: resolvedRole,
         status: effectiveStatus,
-        isAuthenticated: true,
+        isAuthenticated: isEmailConfirmed,
         isLoading: false,
         isInitialized: true,
         error: null,

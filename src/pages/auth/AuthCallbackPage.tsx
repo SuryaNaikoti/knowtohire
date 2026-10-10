@@ -12,7 +12,7 @@ export interface AuthCallbackPageProps {
 export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }) => {
   const { refreshProfile } = useAuth();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string>('Verifying Google authentication credentials...');
+  const [statusMessage, setStatusMessage] = useState<string>('Verifying authentication credentials...');
 
   const navigate = (path: string) => {
     if (onNavigate) {
@@ -55,11 +55,43 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
       }
 
       try {
+        // 2. Check for PKCE 'code' or email confirmation 'token_hash' in URL
+        const code = searchParams.get('code') || hashParams.get('code');
+        const tokenHash = searchParams.get('token_hash') || hashParams.get('token_hash');
+        const otpType = (searchParams.get('type') || hashParams.get('type') || 'signup') as any;
+
+        if (tokenHash) {
+          if (isMounted) {
+            setStatusMessage('Verifying email confirmation token...');
+          }
+          const { error: verifyErr } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: otpType,
+          });
+          if (verifyErr) {
+            if (isMounted) {
+              setErrorMessage(verifyErr.message || 'The confirmation link has expired or is invalid.');
+            }
+            return;
+          }
+        } else if (code) {
+          if (isMounted) {
+            setStatusMessage('Exchanging authorization code for secure session...');
+          }
+          const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeErr) {
+            if (isMounted) {
+              setErrorMessage(exchangeErr.message || 'Failed to exchange authorization code.');
+            }
+            return;
+          }
+        }
+
         if (isMounted) {
           setStatusMessage('Retrieving active session & user profile...');
         }
 
-        // 2. Fetch session from Supabase
+        // 3. Fetch session from Supabase
         const {
           data: { session },
           error: sessionError,
@@ -80,7 +112,7 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
 
           if (!currentUser) {
             if (isMounted) {
-              setErrorMessage('No authenticated user session found from Google sign-in.');
+              setErrorMessage('No authenticated user session found from verification or sign-in.');
             }
             return;
           }
@@ -209,7 +241,7 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
               Authentication Notice
             </h2>
 
-            <Alert variant="error" title="Google Sign-In Unsuccessful">
+            <Alert variant="error" title="Authentication Unsuccessful">
               {errorMessage}
             </Alert>
 

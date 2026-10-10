@@ -133,9 +133,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     if (error) {
       setFormError(error.message);
     } else {
-      // Forward directly to role dashboard / onboarding
-      const targetPath = selectedRole === 'employer' ? '/onboarding/employer' : selectedRole === 'creator' ? '/creator' : '/onboarding/candidate';
-      navigate(targetPath);
+      // If user requires email verification, navigate directly to verify-email
+      const encodedEmail = encodeURIComponent(email.trim());
+      navigate(`/verify-email?email=${encodedEmail}`);
     }
   };
 
