@@ -1,8 +1,9 @@
 import Razorpay from 'razorpay';
-import { getAuthoritativeItem } from '../src/services/payment/authoritativePricing';
-import { saveStoredOrder } from '../src/services/payment/serverPaymentCoordinator';
+import {
+  getAuthoritativeItem,
+  saveStoredOrder,
+} from './_serverPayment.js';
 
-// Helper to read JSON request body in Vercel Serverless environment
 async function parseBody(req: any) {
   if (req.body && typeof req.body === 'object') {
     return req.body;
@@ -48,7 +49,6 @@ export default async function handler(req: any, res: any) {
     const { itemId, itemType, receipt, notes, userId, userEmail, userName, companyId } = body;
 
     // --- SERVER-AUTHORITATIVE PRICING ---
-    // If itemId is provided, price MUST be verified from canonical catalog, never blindly trusted from client.
     let authoritativeAmountINR: number | null = null;
     let productTitle = 'KnowToHire Purchase';
 
@@ -60,7 +60,6 @@ export default async function handler(req: any, res: any) {
       }
     }
 
-    // Fallback if no catalog item matched (or legacy amount passed for custom requests)
     if (authoritativeAmountINR === null) {
       const clientAmountPaise = Math.round(Number(body.amount));
       if (clientAmountPaise && !isNaN(clientAmountPaise) && clientAmountPaise >= 100) {
@@ -96,7 +95,6 @@ export default async function handler(req: any, res: any) {
 
     const order = await razorpay.orders.create(orderOptions);
 
-    // Save order in server-side state for idempotent verification
     saveStoredOrder(order.id, {
       id: order.id,
       provider_order_id: order.id,
