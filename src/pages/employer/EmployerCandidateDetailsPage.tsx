@@ -19,7 +19,6 @@ import {
   DiscoverableCandidate,
 } from '@/services';
 import { navigateTo } from '@/utils/navigation';
-import { Dialog } from '@/components/ui/Dialog';
 import {
   MapPin,
   FileText,
@@ -518,6 +517,83 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
           </Card>
         )}
 
+        {/* Section 4A: Inline Rejection Confirmation Card */}
+        {application && isRejectModalOpen && (
+          <Card className="p-6 bg-white border-2 border-rose-300 rounded-2xl shadow-sm space-y-4 font-sans text-kth-slate-900">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-rose-100">
+              <div className="flex items-center gap-2 text-rose-700 font-bold">
+                <UserX className="w-5 h-5 shrink-0" />
+                <h3 className="font-display text-base sm:text-lg font-bold text-rose-950">
+                  Decline / Reject Candidacy
+                </h3>
+              </div>
+              <Badge variant="rose" className="text-xs self-start sm:self-auto">
+                Action: Move to Archived / Not Selected
+              </Badge>
+            </div>
+
+            <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-xs text-rose-900 space-y-1">
+              <div className="font-bold flex items-center gap-1.5">
+                <span>Candidate: {name}</span>
+              </div>
+              <p className="text-[11px] text-rose-700">
+                Applied for: <strong>{job?.title || 'Requisition'}</strong> · Current stage: <strong className="capitalize">{application.stage}</strong>
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-kth-slate-700 uppercase tracking-wider block font-mono">
+                Primary Reason for Decline
+              </label>
+              <Select
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                options={[
+                  { value: 'Qualifications / Experience Mismatch', label: 'Qualifications / Experience Mismatch' },
+                  { value: 'Salary Expectation Mismatch', label: 'Salary Expectation Mismatch' },
+                  { value: 'Selected Another Candidate for Position', label: 'Selected Another Candidate for Position' },
+                  { value: 'Technical Evaluation Not Cleared', label: 'Technical Evaluation Not Cleared' },
+                  { value: 'Culture & Communication Fit Mismatch', label: 'Culture & Communication Fit Mismatch' },
+                  { value: 'Candidate Withdrew / Unresponsive', label: 'Candidate Withdrew / Unresponsive' },
+                  { value: 'Position Placed on Hold / Closed', label: 'Position Placed on Hold / Closed' },
+                  { value: 'Other Requirements Unmet', label: 'Other Requirements Unmet' },
+                ]}
+              />
+            </div>
+
+            <div className="flex items-start gap-2 p-3 bg-kth-slate-50 rounded-xl border border-kth-slate-200 text-xs text-kth-slate-600">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <span>
+                The candidate's status will immediately update to <strong>Not Selected</strong>. You can reverse or schedule further rounds at any time from this dossier.
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-end gap-2.5 pt-3 border-t border-kth-slate-100">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsRejectModalOpen(false)}
+                disabled={isRejecting}
+                className="justify-center"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleConfirmReject}
+                disabled={isRejecting}
+                isLoading={isRejecting}
+                className="bg-rose-600 text-white hover:bg-rose-700 border-transparent font-bold justify-center"
+              >
+                {isRejecting ? 'Confirming...' : 'Confirm Rejection'}
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {/* Section 4C: Candidate Not Selected / Rejection Status Banner (When Rejected) */}
         {application && application.stage === 'rejected' && (
           <Card className="p-6 bg-rose-50 border border-rose-200 rounded-2xl shadow-xs space-y-3 font-sans text-rose-950">
@@ -920,78 +996,6 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
           </div>
         </div>
       </div>
-
-      {/* Rejection Confirmation Dialog */}
-      {application && (
-        <Dialog
-          isOpen={isRejectModalOpen}
-          onClose={() => setIsRejectModalOpen(false)}
-          title="Decline / Reject Candidacy"
-          description={`Update candidate application status to Not Selected (Archived).`}
-        >
-          <div className="space-y-4 text-left font-sans">
-            <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-xs text-rose-900 space-y-1">
-              <div className="flex items-center gap-2 font-bold">
-                <UserX className="w-4 h-4 text-rose-600 shrink-0" />
-                <span>{name}</span>
-              </div>
-              <p className="text-[11px] text-rose-700">
-                Applied for: <strong>{job?.title || 'Requisition'}</strong> · Current stage: <strong className="capitalize">{application.stage}</strong>
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-kth-slate-700 uppercase tracking-wider block font-mono">
-                Primary Reason for Decline
-              </label>
-              <Select
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                options={[
-                  { value: 'Qualifications / Experience Mismatch', label: 'Qualifications / Experience Mismatch' },
-                  { value: 'Salary Expectation Mismatch', label: 'Salary Expectation Mismatch' },
-                  { value: 'Selected Another Candidate for Position', label: 'Selected Another Candidate for Position' },
-                  { value: 'Technical Evaluation Not Cleared', label: 'Technical Evaluation Not Cleared' },
-                  { value: 'Culture & Communication Fit Mismatch', label: 'Culture & Communication Fit Mismatch' },
-                  { value: 'Candidate Withdrew / Unresponsive', label: 'Candidate Withdrew / Unresponsive' },
-                  { value: 'Position Placed on Hold / Closed', label: 'Position Placed on Hold / Closed' },
-                  { value: 'Other Requirements Unmet', label: 'Other Requirements Unmet' },
-                ]}
-              />
-            </div>
-
-            <div className="flex items-start gap-2 p-2.5 bg-kth-slate-50 rounded-xl border border-kth-slate-200 text-[11px] text-kth-slate-600">
-              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-              <span>
-                The candidate's tracker will immediately update to reflect that the selection process has concluded.
-              </span>
-            </div>
-
-            <div className="flex justify-end gap-2.5 pt-3 border-t border-kth-slate-100">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsRejectModalOpen(false)}
-                disabled={isRejecting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleConfirmReject}
-                disabled={isRejecting}
-                isLoading={isRejecting}
-                className="bg-rose-600 text-white hover:bg-rose-700 border-transparent font-bold"
-              >
-                {isRejecting ? 'Confirming...' : 'Confirm Rejection'}
-              </Button>
-            </div>
-          </div>
-        </Dialog>
-      )}
     </EmployerShell>
   );
 };

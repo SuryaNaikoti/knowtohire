@@ -1,0 +1,33 @@
+User-agent: *
+Allow: /
+Allow: /jobs
+Allow: /external-jobs
+Allow: /knowledge
+Allow: /templates
+Allow: /blog
+Allow: /pricing
+Allow: /about
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+Allow: /careers
+Allow: /companies
+
+# Disallow private user portals, administrative consoles, and internal APIs
+# Note: robots.txt is for crawler guidance only; sensitive paths are protected by authentication and authorization
+Disallow: /admin
+Disallow: /admin/
+Disallow: /candidate
+Disallow: /candidate/
+Disallow: /employer
+Disallow: /employer/
+Disallow: /creator
+Disallow: /creator/
+Disallow: /onboarding
+Disallow: /onboarding/
+Disallow: /api
+Disallow: /api/
+Disallow: /auth/
+
+# Sitemap location
+Sitemap: https://knowtohire-mu.vercel.app/sitemap.xml
