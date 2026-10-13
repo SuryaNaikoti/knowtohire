@@ -759,6 +759,17 @@ export async function claimPaymentVerification(params: {
     };
   }
 
+  // Check if target order is already stored as paid under a DIFFERENT payment ID
+  const storedTargetOrder = getStoredOrder(orderId);
+  if (storedTargetOrder && storedTargetOrder.status === 'paid' && storedTargetOrder.payment_id && storedTargetOrder.payment_id !== paymentId) {
+    return {
+      claimed: false,
+      status: 'conflict' as any,
+      orderId: storedTargetOrder.id,
+      errorMessage: `Order ${orderId} is already paid under payment ID ${storedTargetOrder.payment_id}.`,
+    };
+  }
+
   // 2. Persistent database atomic claim if service role key configured
   if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
     try {

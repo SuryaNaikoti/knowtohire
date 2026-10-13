@@ -799,15 +799,23 @@ async function runStagingE2EValidation() {
       console.error('Cleanup operation warnings/errors:', cleanupErrors.join('; '));
     }
 
-    // Verify that tables returned to zero rows
-    const { count: ordCount } = await supabaseAdmin.from('payment_orders').select('*', { count: 'exact', head: true });
-    const { count: entCount } = await supabaseAdmin.from('company_subscription_entitlements').select('*', { count: 'exact', head: true });
-    const { count: compCount } = await supabaseAdmin.from('company_profiles').select('*', { count: 'exact', head: true });
+    // Verify that all specifically created synthetic records were deleted
+    let remainingTrackedOrders = 0;
+    if (orderIds.length > 0) {
+      const { count } = await supabaseAdmin.from('payment_orders').select('*', { count: 'exact', head: true }).in('id', orderIds);
+      remainingTrackedOrders = count || 0;
+    }
+    let remainingTrackedCompanies = 0;
+    if (companyIds.length > 0) {
+      const { count } = await supabaseAdmin.from('company_profiles').select('*', { count: 'exact', head: true }).in('id', companyIds);
+      remainingTrackedCompanies = count || 0;
+    }
+    const { count: entCount } = await supabaseAdmin.from('company_subscription_entitlements').select('*', { count: 'exact', head: true }).in('company_id', companyIds);
 
     record(
       'Teardown: All synthetic records safely removed from staging database',
-      ordCount === 0 && entCount === 0 && compCount === 0 && cleanupErrors.length === 0,
-      `Remaining counts: payment_orders=${ordCount}, entitlements=${entCount}, company_profiles=${compCount}. Errors: ${cleanupErrors.join('; ') || 'none'}`
+      remainingTrackedOrders === 0 && (entCount || 0) === 0 && remainingTrackedCompanies === 0 && cleanupErrors.length === 0,
+      `Remaining tracked: orders=${remainingTrackedOrders}, entitlements=${entCount}, companies=${remainingTrackedCompanies}. Errors: ${cleanupErrors.join('; ') || 'none'}`
     );
   }
 
