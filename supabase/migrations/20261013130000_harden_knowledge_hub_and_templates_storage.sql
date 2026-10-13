@@ -7,7 +7,7 @@
 --   3. Introduces strict, entitlement-based SELECT policies:
 --      - Knowledge Hub:
 --        * Administrators (role = 'admin') retain review and management access.
---        * Any authenticated user can read if the resource is free (price = 0 OR is_free = true).
+--        * Any authenticated user can read if the resource is free (selling_price_inr = 0 OR is_free = true).
 --        * Authenticated users can read paid resources if they have an active purchase
 --          entitlement recorded in public.user_purchases.
 --      - Templates:
@@ -54,7 +54,7 @@ CREATE POLICY "knowledge_hub_select_policy"
           AND role = 'admin'
       )
       OR
-      -- Rule 2: Free Knowledge Hub resource (price = 0 or free status)
+      -- Rule 2: Free Knowledge Hub resource (selling_price_inr = 0 or free status)
       EXISTS (
         SELECT 1
         FROM public.resources r
@@ -63,7 +63,7 @@ CREATE POLICY "knowledge_hub_select_policy"
           OR r.file_url LIKE '%' || storage.objects.name || '%'
           OR storage.objects.name LIKE '%' || COALESCE(r.file_path, '___none___') || '%'
         )
-        AND COALESCE(r.price, 0) <= 0
+        AND COALESCE(r.selling_price_inr, 0) <= 0
         AND r.status = 'published'
       )
       OR
