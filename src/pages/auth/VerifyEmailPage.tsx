@@ -71,10 +71,22 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
   useEffect(() => {
     if (isInitialized && !isLoading && isAuthenticated && role !== null) {
       if (status === 'pending_onboarding') {
-        const onboardingPath = role === 'employer' ? '/onboarding/employer' : '/onboarding/candidate';
+        const onboardingPath =
+          role === 'employer'
+            ? '/onboarding/employer'
+            : role === 'creator'
+            ? '/creator'
+            : '/onboarding/candidate';
         navigate(onboardingPath);
       } else if (status === 'active') {
-        const portalPath = role === 'employer' ? '/employer' : '/candidate';
+        const portalPath =
+          role === 'employer'
+            ? '/employer'
+            : role === 'creator'
+            ? '/creator'
+            : role === 'admin'
+            ? '/admin'
+            : '/candidate';
         navigate(portalPath);
       }
     }
@@ -211,7 +223,12 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
         });
         const updatedProfile = await refreshProfile();
         const targetRole = resolveRole(data.user, updatedProfile, role) || 'candidate';
-        const onboardingPath = targetRole === 'employer' ? '/onboarding/employer' : '/onboarding/candidate';
+        const onboardingPath =
+          targetRole === 'employer'
+            ? '/onboarding/employer'
+            : targetRole === 'creator'
+            ? '/creator'
+            : '/onboarding/candidate';
         navigate(onboardingPath);
       }
     } catch (err: any) {
@@ -256,10 +273,22 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
       const targetRole = resolveRole(freshUser, updatedProfile, role) || 'candidate';
 
       if (updatedProfile?.status === 'active') {
-        const portalPath = targetRole === 'employer' ? '/employer' : '/candidate';
+        const portalPath =
+          targetRole === 'employer'
+            ? '/employer'
+            : targetRole === 'creator'
+            ? '/creator'
+            : targetRole === 'admin'
+            ? '/admin'
+            : '/candidate';
         navigate(portalPath);
       } else {
-        const onboardingPath = targetRole === 'employer' ? '/onboarding/employer' : '/onboarding/candidate';
+        const onboardingPath =
+          targetRole === 'employer'
+            ? '/onboarding/employer'
+            : targetRole === 'creator'
+            ? '/creator'
+            : '/onboarding/candidate';
         navigate(onboardingPath);
       }
     } catch {

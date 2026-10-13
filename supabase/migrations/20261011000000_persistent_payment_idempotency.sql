@@ -129,15 +129,28 @@ AS $$
 DECLARE
   v_updated INTEGER;
 BEGIN
-  -- Strict Fencing check: Only allow completion if lease_token matches current active claimant
+  -- 1. Strictly enforce allowed status transitions
+  IF p_status NOT IN ('processed', 'failed') THEN
+    RETURN QUERY SELECT FALSE, 'Invalid status: Must be processed or failed'::TEXT;
+    RETURN;
+  END IF;
+
+  -- 2. Strictly require non-empty lease fencing token
+  IF p_lease_token IS NULL OR length(trim(p_lease_token)) = 0 THEN
+    RETURN QUERY SELECT FALSE, 'Fencing token required for completion'::TEXT;
+    RETURN;
+  END IF;
+
+  -- 3. Strict Fencing check: Only allow completion if lease_token matches current active claimant
   UPDATE public.payment_webhook_events
   SET processed_status = p_status,
       processed_at = CASE WHEN p_status = 'processed' THEN now() ELSE processed_at END,
       processing_error = p_error,
       order_id = COALESCE(p_order_id, order_id),
-      lease_timeout = NULL
+      lease_timeout = NULL,
+      lease_token = NULL
   WHERE event_id = p_event_id
-    AND (lease_token IS NULL OR lease_token = p_lease_token);
+    AND lease_token = p_lease_token;
 
   GET DIAGNOSTICS v_updated = ROW_COUNT;
 
@@ -160,7 +173,7 @@ CREATE OR REPLACE FUNCTION public.claim_payment_verification(
   p_product_title TEXT DEFAULT NULL
 )
 RETURNS TABLE (
-  status TEXT, -- 'claimed' | 'already_processed'
+  status TEXT, -- 'claimed' | 'already_processed' | 'conflict' | 'error'
   order_id UUID
 )
 LANGUAGE plpgsql
@@ -169,11 +182,26 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_existing_order RECORD;
+  v_conflicting_order RECORD;
+  v_parsed_uuid UUID := NULL;
 BEGIN
-  -- 1. Check if order with this payment_id already exists and is paid
+  -- 1. Payment ID reuse prevention: Check if payment_id is already assigned to a DIFFERENT order
+  SELECT * INTO v_conflicting_order
+  FROM public.payment_orders
+  WHERE provider_payment_id = p_payment_id
+    AND provider_order_id IS DISTINCT FROM p_order_id
+  FOR UPDATE;
+
+  IF v_conflicting_order IS NOT NULL THEN
+    RETURN QUERY SELECT 'conflict'::TEXT, v_conflicting_order.id;
+    RETURN;
+  END IF;
+
+  -- 2. Idempotent replay: Check if this exact order already exists with this payment_id and is paid
   SELECT * INTO v_existing_order 
   FROM public.payment_orders 
   WHERE provider_payment_id = p_payment_id
+    AND provider_order_id = p_order_id
   FOR UPDATE;
 
   IF v_existing_order IS NOT NULL AND v_existing_order.status = 'paid' THEN
@@ -181,17 +209,47 @@ BEGIN
     RETURN;
   END IF;
 
-  -- 2. Check if order exists by provider_order_id
+  -- 3. Resolve authoritative order: First try provider_order_id (Razorpay provider order ID)
+  SELECT * INTO v_existing_order 
+  FROM public.payment_orders 
+  WHERE provider_order_id = p_order_id
+  FOR UPDATE;
+
+  -- If not found by provider_order_id, test if p_order_id is a valid internal UUID
   IF v_existing_order IS NULL THEN
-    SELECT * INTO v_existing_order 
-    FROM public.payment_orders 
-    WHERE provider_order_id = p_order_id
-    FOR UPDATE;
+    BEGIN
+      v_parsed_uuid := p_order_id::UUID;
+      SELECT * INTO v_existing_order
+      FROM public.payment_orders
+      WHERE id = v_parsed_uuid
+      FOR UPDATE;
+    EXCEPTION WHEN invalid_text_representation THEN
+      v_parsed_uuid := NULL;
+    END;
   END IF;
 
+  -- 4. If authoritative order is found, validate integrity before claiming
   IF v_existing_order IS NOT NULL THEN
     IF v_existing_order.status = 'paid' THEN
       RETURN QUERY SELECT 'already_processed'::TEXT, v_existing_order.id;
+      RETURN;
+    END IF;
+
+    -- Strict Exact Amount Equality Check: Verified amount must exactly match authoritative order amount
+    IF p_amount_inr IS NOT NULL AND v_existing_order.amount_inr <> p_amount_inr THEN
+      RETURN QUERY SELECT 'conflict'::TEXT, v_existing_order.id;
+      RETURN;
+    END IF;
+
+    -- Strict Currency Check: Must be INR
+    IF v_existing_order.currency IS NOT NULL AND v_existing_order.currency <> 'INR' THEN
+      RETURN QUERY SELECT 'conflict'::TEXT, v_existing_order.id;
+      RETURN;
+    END IF;
+
+    -- Purchaser Identity Consistency Check
+    IF v_existing_order.user_id IS NOT NULL AND p_user_id IS NOT NULL AND v_existing_order.user_id <> p_user_id THEN
+      RETURN QUERY SELECT 'conflict'::TEXT, v_existing_order.id;
       RETURN;
     END IF;
 
@@ -200,49 +258,16 @@ BEGIN
     SET provider_payment_id = p_payment_id,
         status = 'paid',
         is_paid = true,
-        paid_at = now()
+        paid_at = now(),
+        updated_at = now()
     WHERE id = v_existing_order.id;
 
     RETURN QUERY SELECT 'claimed'::TEXT, v_existing_order.id;
     RETURN;
   END IF;
 
-  -- 3. Insert new paid order atomically
-  INSERT INTO public.payment_orders (
-    order_number,
-    user_id,
-    product_type,
-    product_id,
-    product_title,
-    amount_inr,
-    currency,
-    status,
-    provider,
-    provider_order_id,
-    provider_payment_id,
-    is_paid,
-    paid_at
-  ) VALUES (
-    'ORD_' || p_payment_id,
-    p_user_id,
-    COALESCE(p_product_type, 'knowledge_resource'),
-    COALESCE(p_product_id, 'catalog_item'),
-    COALESCE(p_product_title, 'KnowToHire Purchase'),
-    COALESCE(p_amount_inr, 0),
-    'INR',
-    'paid',
-    'razorpay',
-    p_order_id,
-    p_payment_id,
-    true,
-    now()
-  )
-  RETURNING id INTO v_existing_order;
-
-  RETURN QUERY SELECT 'claimed'::TEXT, v_existing_order.id;
-EXCEPTION WHEN unique_violation THEN
-  SELECT id INTO v_existing_order FROM public.payment_orders WHERE provider_payment_id = p_payment_id;
-  RETURN QUERY SELECT 'already_processed'::TEXT, v_existing_order.id;
+  -- 5. Order row does not exist in payment_orders; fail closed (do not insert arbitrary untrusted order)
+  RETURN QUERY SELECT 'error'::TEXT, NULL::UUID;
 END;
 $$;
 

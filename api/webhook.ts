@@ -4,6 +4,9 @@ import {
   fulfillSuccessfulPayment,
   claimWebhookEvent,
   completeWebhookEvent,
+  claimPaymentVerification,
+  loadPersistentPaymentOrder,
+  isProductionEnvironment,
 } from './_serverPayment.js';
 
 async function getRawBody(req: any): Promise<string> {
@@ -29,7 +32,17 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET;
+  // Enforce dedicated webhook secret in production; allow key_secret fallback only in non-production local development
+  let webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    if (isProductionEnvironment()) {
+      console.error('[ServerPaymentSecurity] CRITICAL: RAZORPAY_WEBHOOK_SECRET is missing in production environment. Webhook verification aborted.');
+      return res.status(500).json({ error: 'Webhook configuration error: RAZORPAY_WEBHOOK_SECRET is required in production.' });
+    }
+    // Non-production / local test fallback
+    webhookSecret = process.env.RAZORPAY_KEY_SECRET;
+  }
 
   if (!webhookSecret) {
     return res.status(401).json({ error: 'Webhook secret not configured on server.' });
@@ -77,12 +90,53 @@ export default async function handler(req: any, res: any) {
     // 3. Process Event Fulfillment
     try {
       if (event === 'order.paid' || event === 'payment.captured') {
-        if (orderId && paymentId) {
-          await fulfillSuccessfulPayment({
-            orderId,
-            paymentId,
-          });
+        if (!orderId || !paymentId) {
+          // Missing critical identifiers in payload: complete event and acknowledge
+          console.warn(`[Webhook] Event ${event} missing orderId or paymentId: orderId=${orderId}, paymentId=${paymentId}`);
+          await completeWebhookEvent(eventId, 'processed', claimResult.leaseToken, undefined, orderId);
+          return res.status(200).json({ status: 'ok', handled: false, message: 'Missing orderId or paymentId in payload' });
         }
+
+        // Authoritatively resolve order and amount
+        const trustedOrder = await loadPersistentPaymentOrder(orderId, paymentId);
+        const amountPaise = paymentEntity?.amount ?? orderEntity?.amount_paid ?? orderEntity?.amount;
+        const eventAmountInr = amountPaise !== undefined ? Math.round(Number(amountPaise)) / 100 : undefined;
+        const authoritativeAmountInr = eventAmountInr ?? trustedOrder?.amount_inr ?? 0;
+
+        // Atomically claim payment verification in database before fulfillment
+        const claim = await claimPaymentVerification({
+          paymentId,
+          orderId,
+          amountInr: authoritativeAmountInr,
+          userId: trustedOrder?.user_id,
+          productType: trustedOrder?.item_type,
+          productId: trustedOrder?.item_id,
+          productTitle: trustedOrder?.product_title,
+        });
+
+        if (claim.status === 'error') {
+          // Transient database error: throw to mark webhook event failed and trigger Razorpay retry
+          throw new Error(claim.errorMessage || 'Database error occurred during payment verification claim.');
+        }
+
+        if ((claim.status as string) === 'conflict') {
+          console.warn(`[Webhook] Payment ID / order conflict detected: paymentId=${paymentId}, orderId=${orderId}`);
+          await completeWebhookEvent(eventId, 'processed', claimResult.leaseToken, claim.errorMessage, orderId);
+          return res.status(200).json({ status: 'conflict', message: claim.errorMessage, event });
+        }
+
+        // status is 'claimed' or 'already_processed' -> Safely execute authoritative fulfillment
+        await fulfillSuccessfulPayment({
+          orderId,
+          paymentId,
+          userId: trustedOrder?.user_id,
+          userEmail: trustedOrder?.customer_email,
+          userName: trustedOrder?.customer_name,
+          itemId: trustedOrder?.item_id,
+          itemType: trustedOrder?.item_type,
+          companyId: trustedOrder?.company_id,
+        });
+
         await completeWebhookEvent(eventId, 'processed', claimResult.leaseToken, undefined, orderId);
         return res.status(200).json({ status: 'ok', handled: true, event });
       }
@@ -100,13 +154,14 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({ status: 'ok', handled: true, event });
       }
 
-      // Safe ignore for other informational events
+      // Non-actionable or informational events (e.g. payment.authorized, refund.processed)
+      // Acknowledge cleanly with 200 so Razorpay does not endlessly retry non-actionable webhooks
       await completeWebhookEvent(eventId, 'processed', claimResult.leaseToken, undefined, orderId);
-      return res.status(200).json({ status: 'ok', handled: false, event });
+      return res.status(200).json({ status: 'ok', handled: false, event, message: 'Event acknowledged' });
     } catch (fulfillmentErr: any) {
-      // Mark event failed so subsequent delivery can safely retry
+      // Mark event failed so subsequent delivery can safely retry, and return 500 so Razorpay retries
       await completeWebhookEvent(eventId, 'failed', claimResult.leaseToken, fulfillmentErr?.message || 'Fulfillment error');
-      throw fulfillmentErr;
+      return res.status(500).json({ error: fulfillmentErr?.message || 'Transient fulfillment error' });
     }
   } catch (err: any) {
     return res.status(500).json({ error: err.message || 'Webhook processing failed' });

@@ -51,6 +51,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
     // 3. Pending Onboarding -> redirect to role-specific onboarding wizard
     if (status === 'pending_onboarding') {
+      if (role === 'creator') {
+        // Creators proceed directly to Creator Studio / Terms workspace
+        if (currentPath.startsWith('/onboarding')) {
+          navigate('/creator');
+        }
+        return;
+      }
+
       const targetOnboarding = role === 'employer' ? '/onboarding/employer' : '/onboarding/candidate';
       const wrongOnboarding = role === 'employer' ? '/onboarding/candidate' : '/onboarding/employer';
 
@@ -72,20 +80,31 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
     // 4. Active Account trying to access /onboarding -> redirect to authorized portal
     if (status === 'active' && currentPath.startsWith('/onboarding')) {
-      const targetPortal = role === 'employer' ? '/employer' : '/candidate';
+      const targetPortal =
+        role === 'employer'
+          ? '/employer'
+          : role === 'creator'
+          ? '/creator'
+          : role === 'admin'
+          ? '/admin'
+          : '/candidate';
       navigate(targetPortal);
       return;
     }
 
     // 5. Cross-role portal protection
-    if (role === 'employer' && currentPath.startsWith('/candidate')) {
+    if (role === 'employer' && (currentPath.startsWith('/candidate') || currentPath.startsWith('/creator'))) {
       const target = status === 'active' ? '/employer' : '/onboarding/employer';
       navigate(target);
       return;
     }
-    if (role === 'candidate' && currentPath.startsWith('/employer')) {
+    if (role === 'candidate' && (currentPath.startsWith('/employer') || currentPath.startsWith('/creator'))) {
       const target = status === 'active' ? '/candidate' : '/onboarding/candidate';
       navigate(target);
+      return;
+    }
+    if (role === 'creator' && (currentPath.startsWith('/employer') || currentPath.startsWith('/candidate'))) {
+      navigate('/creator');
       return;
     }
   }, [isInitialized, isLoading, isAuthenticated, status, role, currentPath]);

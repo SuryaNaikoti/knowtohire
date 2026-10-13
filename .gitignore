@@ -42,3 +42,6 @@ supabase/.temp/
 cross_role_e2e.cjs
 next-env.d.ts
 
+
+.vercel
+.env*

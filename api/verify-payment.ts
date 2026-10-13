@@ -2,7 +2,6 @@ import {
   verifyRazorpaySignature,
   fulfillSuccessfulPayment,
   recordFailedPayment,
-  getStoredOrder,
   loadPersistentPaymentOrder,
   getAuthoritativeItem,
   claimPaymentVerification,
@@ -67,7 +66,17 @@ export default async function handler(req: any, res: any) {
 
     // Handle failed payment notification
     if (status === 'failed') {
-      await recordFailedPayment(razorpay_order_id, razorpay_payment_id, error_code, error_description);
+      if (razorpay_order_id) {
+        const existingOrder = await loadPersistentPaymentOrder(razorpay_order_id, razorpay_payment_id);
+        if (existingOrder && (existingOrder.is_paid || existingOrder.status === 'paid')) {
+          // STRICT RULE: Never let client-side failure callback downgrade an order that has already been paid
+          return res.status(200).json({
+            success: true,
+            message: 'Order already paid; failure callback ignored',
+          });
+        }
+        await recordFailedPayment(razorpay_order_id, razorpay_payment_id, error_code, error_description);
+      }
       return res.status(200).json({
         success: true,
         message: 'Failed payment recorded',
@@ -101,8 +110,20 @@ export default async function handler(req: any, res: any) {
     // Replay/reconciliation must use trusted server-persisted order details rather than arbitrary client parameters
     const trustedOrder = await loadPersistentPaymentOrder(razorpay_order_id, razorpay_payment_id);
 
-    // If an existing order is found, enforce security: purchaser and product cannot be substituted by the client
+    // If an existing order is found, enforce security: purchaser, product, currency and amount integrity
     if (trustedOrder) {
+      if (body.currency && body.currency !== 'INR') {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid currency: Only INR currency is supported.',
+        });
+      }
+      if (trustedOrder.currency && trustedOrder.currency !== 'INR') {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid order currency: Expected INR.',
+        });
+      }
       if (trustedOrder.user_id && user_id && trustedOrder.user_id !== user_id) {
         return res.status(403).json({
           success: false,
@@ -113,6 +134,39 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({
           success: false,
           error: 'Invalid request: Product ID does not match original payment order.',
+        });
+      }
+      // Exact amount validation: if amount or amount_paise is supplied by client, it must match trusted order
+      if (body.amount_paise !== undefined) {
+        const expectedPaise = Math.round(trustedOrder.amount_inr * 100);
+        if (Number(body.amount_paise) !== expectedPaise) {
+          return res.status(400).json({
+            success: false,
+            error: `Payment amount mismatch: Expected ${expectedPaise} paise (${trustedOrder.amount_inr} INR) but received ${body.amount_paise} paise.`,
+          });
+        }
+      }
+      // If order is already paid, enforce that incoming payment ID matches the recorded payment ID exactly
+      if (trustedOrder.is_paid || trustedOrder.status === 'paid') {
+        if (trustedOrder.payment_id && trustedOrder.payment_id !== razorpay_payment_id) {
+          return res.status(409).json({
+            success: false,
+            error: 'Conflict: Order is already paid with a different payment ID.',
+          });
+        }
+      }
+      if (body.amount_inr !== undefined && Number(body.amount_inr) !== trustedOrder.amount_inr) {
+        return res.status(400).json({
+          success: false,
+          error: `Payment amount mismatch: Expected ${trustedOrder.amount_inr} INR but received ${body.amount_inr} INR.`,
+        });
+      }
+    } else {
+      // Reject verification of unrecorded order if client provides unsupported currency
+      if (body.currency && body.currency !== 'INR') {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid currency: Only INR currency is supported.',
         });
       }
     }
@@ -142,6 +196,13 @@ export default async function handler(req: any, res: any) {
       return res.status(500).json({
         success: false,
         error: claim.errorMessage || 'Database error occurred during payment verification claim.',
+      });
+    }
+
+    if ((claim.status as string) === 'conflict') {
+      return res.status(409).json({
+        success: false,
+        error: claim.errorMessage || 'Payment ID or order conflict detected.',
       });
     }
 

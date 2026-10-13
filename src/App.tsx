@@ -285,6 +285,8 @@ export function App() {
         <ProtectedRoute currentPath={currentPath} onNavigate={navigateTo}>
           {role === 'employer' ? (
             <EmployerOnboardingPage onNavigate={navigateTo} />
+          ) : role === 'creator' ? (
+            <CreatorDashboardPage onNavigate={navigateTo} />
           ) : (
             <CandidateOnboardingPage onNavigate={navigateTo} />
           )}
@@ -538,9 +540,23 @@ export function App() {
               if (!isAuthenticated) {
                 navigateTo('/login');
               } else if (status === 'pending_onboarding') {
-                navigateTo(role === 'employer' ? '/onboarding/employer' : '/onboarding/candidate');
+                navigateTo(
+                  role === 'employer'
+                    ? '/onboarding/employer'
+                    : role === 'creator'
+                    ? '/creator'
+                    : '/onboarding/candidate'
+                );
               } else {
-                navigateTo(role === 'employer' ? '/employer' : role === 'admin' ? '/admin' : '/candidate');
+                navigateTo(
+                  role === 'employer'
+                    ? '/employer'
+                    : role === 'creator'
+                    ? '/creator'
+                    : role === 'admin'
+                    ? '/admin'
+                    : '/candidate'
+                );
               }
             }}
           />

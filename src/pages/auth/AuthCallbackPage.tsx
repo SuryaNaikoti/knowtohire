@@ -140,7 +140,7 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
         // If new Google user with no profile record in DB yet, create initial record
         const storedRole =
           typeof window !== 'undefined' && window.sessionStorage
-            ? (window.sessionStorage.getItem('kth_oauth_intended_role') as 'candidate' | 'employer' | null)
+            ? (window.sessionStorage.getItem('kth_oauth_intended_role') as 'candidate' | 'employer' | 'creator' | null)
             : null;
 
         const targetRole =
@@ -184,13 +184,20 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
         // 5. Determine target destination
         let targetPath = '/onboarding/candidate';
         if (effectiveStatus === 'pending_onboarding') {
-          targetPath = targetRole === 'employer' ? '/onboarding/employer' : '/onboarding/candidate';
+          targetPath =
+            targetRole === 'employer'
+              ? '/onboarding/employer'
+              : targetRole === 'creator'
+              ? '/creator'
+              : '/onboarding/candidate';
         } else if (effectiveStatus === 'active') {
           targetPath =
             targetRole === 'employer'
               ? '/employer'
               : targetRole === 'admin'
               ? '/admin'
+              : targetRole === 'creator'
+              ? '/creator'
               : '/candidate';
         } else if (effectiveStatus === 'suspended') {
           targetPath = '/login';

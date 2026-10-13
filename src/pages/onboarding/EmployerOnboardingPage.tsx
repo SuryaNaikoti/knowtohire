@@ -94,6 +94,57 @@ export const EmployerOnboardingPage: React.FC<EmployerOnboardingPageProps> = ({
     isCompanyAdmin: true,
   });
 
+  // Load existing employer and company profile if already provisioned
+  useEffect(() => {
+    let isMounted = true;
+    async function loadExistingEmployerProfile() {
+      if (!isSupabaseConfigured() || !user) return;
+      try {
+        const { data: ep } = await supabase
+          .from('employer_profiles')
+          .select('job_title, work_phone, is_company_admin, company_id')
+          .eq('profile_id', user.id)
+          .maybeSingle();
+
+        if (ep && isMounted) {
+          let companyData: any = null;
+          if (ep.company_id) {
+            const { data: cp } = await supabase
+              .from('company_profiles')
+              .select('name, legal_name, website_url, industry, company_size, headquarters_location, description')
+              .eq('id', ep.company_id)
+              .maybeSingle();
+            companyData = cp;
+          }
+
+          setFormData((prev) => ({
+            ...prev,
+            jobTitle: ep.job_title || prev.jobTitle,
+            workPhone: ep.work_phone || prev.workPhone,
+            isCompanyAdmin: ep.is_company_admin ?? prev.isCompanyAdmin,
+            ...(companyData
+              ? {
+                  companyName: companyData.name || prev.companyName,
+                  legalName: companyData.legal_name || prev.legalName,
+                  websiteUrl: companyData.website_url || prev.websiteUrl,
+                  industry: companyData.industry || prev.industry,
+                  companySize: companyData.company_size || prev.companySize,
+                  headquartersLocation: companyData.headquarters_location || prev.headquartersLocation,
+                  description: companyData.description || prev.description,
+                }
+              : {}),
+          }));
+        }
+      } catch (err) {
+        console.error('[EmployerOnboarding] Error loading existing profile:', err);
+      }
+    }
+    loadExistingEmployerProfile();
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
   const handleUpdate = (updates: Partial<EmployerOnboardingData>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
     setServerError(null);
@@ -249,6 +300,9 @@ export const EmployerOnboardingPage: React.FC<EmployerOnboardingPageProps> = ({
 
         if (companyUpdateErr) {
           console.error('[EmployerOnboarding] Company update error:', companyUpdateErr.message);
+          setServerError("Failed to update company profile record. Please try again.");
+          setIsLoading(false);
+          return false;
         }
       } else {
         // Insert new company profile

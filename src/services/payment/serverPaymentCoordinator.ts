@@ -67,10 +67,15 @@ declare global {
   var __kth_processed_payments: Map<string, { timestamp: number; orderId: string; userId?: string }> | undefined;
   // eslint-disable-next-line no-var
   var __kth_server_entitlements: Map<string, ServerEntitlement> | undefined;
+  // eslint-disable-next-line no-var
+  var __kth_company_subscription_entitlements: Map<string, any> | undefined;
 }
 
 if (!globalThis.__kth_orders) {
   globalThis.__kth_orders = new Map<string, StoredOrder>();
+}
+if (!globalThis.__kth_company_subscription_entitlements) {
+  globalThis.__kth_company_subscription_entitlements = new Map<string, any>();
 }
 if (!globalThis.__kth_processed_payments) {
   globalThis.__kth_processed_payments = new Map<string, { timestamp: number; orderId: string; userId?: string }>();
@@ -82,6 +87,7 @@ if (!globalThis.__kth_server_entitlements) {
 const orderStorage = globalThis.__kth_orders;
 const processedPayments = globalThis.__kth_processed_payments;
 const serverEntitlements = globalThis.__kth_server_entitlements;
+export const companySubscriptionEntitlements = globalThis.__kth_company_subscription_entitlements!;
 
 export function getStoredOrder(orderId: string): StoredOrder | null {
   return orderStorage.get(orderId) || null;
@@ -259,6 +265,30 @@ export async function fulfillSuccessfulPayment(params: {
       serverEntitlements.set(entitlementKey, entitlement);
     } else {
       entitlement = serverEntitlements.get(entitlementKey);
+    }
+  }
+
+  // Durable Employer Subscription Entitlement
+  if (effectiveItemType === 'employer_subscription' && effectiveCompanyId) {
+    const isEnterprise = effectiveItemId?.includes('enterprise');
+    const isAnnual = effectiveItemId?.includes('annual');
+    const durationMs = (isAnnual ? 365 : 30) * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+
+    if (!companySubscriptionEntitlements.has(orderId)) {
+      companySubscriptionEntitlements.set(orderId, {
+        id: `sub_ent_${now}_${Math.random().toString(36).substring(2, 7)}`,
+        company_id: effectiveCompanyId,
+        order_id: orderId,
+        provider_order_id: orderId,
+        provider_payment_id: paymentId,
+        plan_tier: isEnterprise ? 'enterprise' : 'starter',
+        billing_cycle: isAnnual ? 'annual' : 'monthly',
+        starts_at: new Date(now).toISOString(),
+        expires_at: new Date(now + durationMs).toISOString(),
+        amount_inr: canonicalPriceINR,
+        created_at: new Date(now).toISOString(),
+      });
     }
   }
 

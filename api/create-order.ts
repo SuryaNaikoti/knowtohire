@@ -2,6 +2,9 @@ import Razorpay from 'razorpay';
 import {
   getAuthoritativeItem,
   saveStoredOrder,
+  createDurablePaymentOrder,
+  getServerSupabaseClient,
+  hasSupabaseServiceRole,
 } from './_serverPayment.js';
 
 async function parseBody(req: any) {
@@ -51,13 +54,11 @@ export default async function handler(req: any, res: any) {
     // --- SERVER-AUTHORITATIVE PRICING ---
     let authoritativeAmountINR: number | null = null;
     let productTitle = 'KnowToHire Purchase';
+    const catalogItem = itemId ? getAuthoritativeItem(itemId, itemType) : null;
 
-    if (itemId) {
-      const catalogItem = getAuthoritativeItem(itemId, itemType);
-      if (catalogItem) {
-        authoritativeAmountINR = catalogItem.priceINR;
-        productTitle = catalogItem.title;
-      }
+    if (catalogItem) {
+      authoritativeAmountINR = catalogItem.priceINR;
+      productTitle = catalogItem.title;
     }
 
     if (authoritativeAmountINR === null) {
@@ -80,6 +81,47 @@ export default async function handler(req: any, res: any) {
       key_secret: keySecret,
     });
 
+    const effectiveProductType = catalogItem?.type || itemType || 'knowledge_resource';
+    let validatedCompanyId = companyId || null;
+
+    // Strict Employer-Company Relationship Validation for employer subscriptions
+    if (effectiveProductType === 'employer_subscription') {
+      if (!userId) {
+        return res.status(400).json({
+          error: 'Authenticated user ID is required for employer subscriptions.',
+        });
+      }
+
+      if (hasSupabaseServiceRole()) {
+        try {
+          const supabase = getServerSupabaseClient();
+          const { data: ep, error: epErr } = await supabase
+            .from('employer_profiles')
+            .select('company_id')
+            .eq('profile_id', userId)
+            .maybeSingle();
+
+          if (epErr || !ep || !ep.company_id) {
+            return res.status(403).json({
+              error: 'Forbidden: No registered employer company profile found for this account. Please complete employer onboarding first.',
+            });
+          }
+
+          if (companyId && companyId !== ep.company_id) {
+            return res.status(403).json({
+              error: 'Forbidden: Client company ID does not match authoritative employer company profile.',
+            });
+          }
+
+          validatedCompanyId = ep.company_id;
+        } catch (dbErr: any) {
+          return res.status(500).json({
+            error: dbErr?.message || 'Failed to verify employer company profile.',
+          });
+        }
+      }
+    }
+
     const orderOptions = {
       amount: amountInPaise,
       currency: 'INR',
@@ -87,14 +129,15 @@ export default async function handler(req: any, res: any) {
       notes: {
         ...(notes || {}),
         itemId: itemId || '',
-        itemType: itemType || '',
+        itemType: effectiveProductType,
         userId: userId || '',
-        companyId: companyId || '',
+        companyId: validatedCompanyId || '',
       },
     };
 
     const order = await razorpay.orders.create(orderOptions);
 
+    // 1. In-memory cache for fast local retrieval
     saveStoredOrder(order.id, {
       id: order.id,
       provider_order_id: order.id,
@@ -106,11 +149,35 @@ export default async function handler(req: any, res: any) {
       customer_email: userEmail,
       customer_name: userName,
       item_id: itemId,
-      item_type: itemType,
+      item_type: effectiveProductType,
       product_title: productTitle,
-      company_id: companyId,
+      company_id: validatedCompanyId || undefined,
       created_at: new Date().toISOString(),
     });
+
+    // 2. Durable database persistence in Supabase
+    const durableResult = await createDurablePaymentOrder({
+      providerOrderId: order.id,
+      amountINR: authoritativeAmountINR,
+      currency: 'INR',
+      productType: effectiveProductType,
+      productId: catalogItem?.id || itemId || order.id,
+      productTitle,
+      userId,
+      customerEmail: userEmail,
+      customerName: userName,
+      companyId: validatedCompanyId || undefined,
+      metadata: {
+        receipt: order.receipt,
+        notes: orderOptions.notes,
+      },
+    });
+
+    if (!durableResult.success) {
+      return res.status(500).json({
+        error: durableResult.error || 'Failed to persist order in payment ledger.',
+      });
+    }
 
     return res.status(200).json({
       key_id: keyId,

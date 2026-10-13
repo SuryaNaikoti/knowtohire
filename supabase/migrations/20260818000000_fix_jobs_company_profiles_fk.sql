@@ -2,34 +2,41 @@
 -- MIGRATION: Fix jobs -> company_profiles Foreign Key & Data Sync
 -- ====================================================================
 
--- 1. Copy any existing companies into company_profiles to preserve legacy rows
-INSERT INTO public.company_profiles (
-  id, 
-  name, 
-  logo_url, 
-  website_url, 
-  industry, 
-  company_size, 
-  headquarters_location, 
-  description, 
-  verification_status, 
-  created_at, 
-  updated_at
-)
-SELECT 
-  c.id, 
-  c.name, 
-  c.logo_url, 
-  COALESCE(c.website_url, c.website), 
-  c.industry, 
-  c.size, 
-  c.headquarters, 
-  c.description, 
-  'unverified', 
-  COALESCE(c.created_at, NOW()), 
-  COALESCE(c.updated_at, NOW())
-FROM public.companies c
-ON CONFLICT (id) DO NOTHING;
+-- 1. Copy any existing companies into company_profiles to preserve legacy rows (if legacy table exists)
+DO $$
+BEGIN
+  IF to_regclass('public.companies') IS NOT NULL THEN
+    EXECUTE $mig$
+      INSERT INTO public.company_profiles (
+        id, 
+        name, 
+        logo_url, 
+        website_url, 
+        industry, 
+        company_size, 
+        headquarters_location, 
+        description, 
+        verification_status, 
+        created_at, 
+        updated_at
+      )
+      SELECT 
+        c.id, 
+        c.name, 
+        c.logo_url, 
+        COALESCE(c.website_url, c.website), 
+        c.industry, 
+        c.size, 
+        c.headquarters, 
+        c.description, 
+        'unverified', 
+        COALESCE(c.created_at, NOW()), 
+        COALESCE(c.updated_at, NOW())
+      FROM public.companies c
+      ON CONFLICT (id) DO NOTHING;
+    $mig$;
+  END IF;
+END $$;
 
 -- 2. Drop the old foreign key constraint pointing to companies
 ALTER TABLE public.jobs DROP CONSTRAINT IF EXISTS jobs_company_id_fkey;

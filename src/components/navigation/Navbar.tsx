@@ -41,7 +41,12 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
 
     if (status === 'pending_onboarding') {
-      const onboardingPath = role === 'employer' ? '/onboarding/employer' : '/onboarding/candidate';
+      const onboardingPath =
+        role === 'employer'
+          ? '/onboarding/employer'
+          : role === 'creator'
+          ? '/creator'
+          : '/onboarding/candidate';
       handleNav(onboardingPath);
       return;
     }

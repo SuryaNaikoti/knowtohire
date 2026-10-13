@@ -175,7 +175,13 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
         {/* Premium Google OAuth Sign Up Action */}
         <GoogleAuthButton
           role={selectedRole}
-          text={`Sign up with Google as ${selectedRole === 'employer' ? 'Employer' : 'Candidate'}`}
+          text={`Sign up with Google as ${
+            selectedRole === 'employer'
+              ? 'Employer'
+              : selectedRole === 'creator'
+              ? 'Creator'
+              : 'Candidate'
+          }`}
           onError={(err) => setFormError(err)}
         />
 
@@ -318,7 +324,13 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
           disabled={isLoading}
           rightIcon={<ArrowRight className="w-4 h-4" />}
         >
-          Create {selectedRole === 'employer' ? 'Employer' : 'Candidate'} Account
+          Create{' '}
+          {selectedRole === 'employer'
+            ? 'Employer'
+            : selectedRole === 'creator'
+            ? 'Creator'
+            : 'Candidate'}{' '}
+          Account
         </Button>
 
         {/* Navigation back to Sign In */}

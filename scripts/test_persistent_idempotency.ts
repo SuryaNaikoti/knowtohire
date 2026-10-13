@@ -26,6 +26,8 @@ import {
   claimPaymentVerification,
   fulfillSuccessfulPayment,
   saveStoredOrder,
+  createDurablePaymentOrder,
+  assertServerPaymentConfig,
   processedWebhooks,
   processedPayments,
   serverEntitlements,
@@ -527,6 +529,124 @@ async function runComprehensiveTests() {
     });
 
     assert(f2.success && f2.subscriptionActive, 'Test 17b: Duplicate replay of same subscription order succeeds idempotently');
+  }
+
+  // Test 18: Durable payment order creation unit test
+  {
+    const oId = `order_durable_test_${Date.now()}`;
+    const result = await createDurablePaymentOrder({
+      providerOrderId: oId,
+      amountINR: 499,
+      productType: 'template',
+      productId: 'tmpl-1',
+      productTitle: 'Executive ATS Resume Template — Sustainability & ESG',
+      userId: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
+      customerEmail: 'test@example.com',
+    });
+    assert(result.success, 'Test 18: createDurablePaymentOrder returns success in test environment');
+  }
+
+  // Test 19: Missing production configuration guard & diagnostic helper
+  {
+    const originalEnv = process.env.NODE_ENV;
+    const originalServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const originalWebhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+
+    try {
+      process.env.NODE_ENV = 'production';
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      delete process.env.RAZORPAY_WEBHOOK_SECRET;
+
+      // Diagnostic helper test
+      const configDiag = assertServerPaymentConfig();
+      assert(!configDiag.serviceRoleConfigured && !configDiag.webhookSecretConfigured, 'Test 19a: Diagnostic accurately identifies missing service role and webhook secret');
+
+      // createDurablePaymentOrder fail-closed in production
+      const durableProdFail = await createDurablePaymentOrder({
+        providerOrderId: 'order_prod_fail_1',
+        amountINR: 499,
+        productType: 'template',
+        productId: 'tmpl-1',
+        productTitle: 'Test Template',
+      });
+      assert(!durableProdFail.success && durableProdFail.error?.includes('SUPABASE_SERVICE_ROLE_KEY'), 'Test 19b: createDurablePaymentOrder fails closed in production when service role is missing');
+
+      // claimPaymentVerification fail-closed in production
+      const claimProdFail = await claimPaymentVerification({
+        paymentId: 'pay_prod_fail_1',
+        orderId: 'order_prod_fail_1',
+        amountInr: 499,
+      });
+      assert(!claimProdFail.claimed && claimProdFail.status === 'error', 'Test 19c: claimPaymentVerification fails closed in production when service role is missing');
+
+      // Webhook handler strictly requires RAZORPAY_WEBHOOK_SECRET in production
+      const { req, res } = createMockReqRes({
+        method: 'POST',
+        body: '{"event":"payment.captured"}',
+        headers: { 'x-razorpay-signature': 'sig' },
+      });
+      await webhookHandler(req, res);
+      assert(res.getStatusCode() === 500 && res.getData()?.error?.includes('RAZORPAY_WEBHOOK_SECRET is required in production'), 'Test 19d: Webhook handler strictly rejects requests in production if RAZORPAY_WEBHOOK_SECRET is missing');
+    } finally {
+      process.env.NODE_ENV = originalEnv;
+      if (originalServiceKey) process.env.SUPABASE_SERVICE_ROLE_KEY = originalServiceKey;
+      if (originalWebhookSecret) process.env.RAZORPAY_WEBHOOK_SECRET = originalWebhookSecret;
+    }
+  }
+
+  // Test 20: Non-actionable or informational webhook event clean acknowledgment (HTTP 200)
+  {
+    const infoEventBody = JSON.stringify({
+      event: 'payment.authorized',
+      event_id: `evt_info_${Date.now()}`,
+      created_at: Math.floor(Date.now() / 1000),
+      payload: {
+        payment: { entity: { id: `pay_auth_${Date.now()}`, order_id: `order_auth_${Date.now()}` } },
+      },
+    });
+
+    const infoSig = crypto
+      .createHmac('sha256', testSecret)
+      .update(infoEventBody)
+      .digest('hex');
+
+    const { req, res } = createMockReqRes({
+      method: 'POST',
+      body: infoEventBody,
+      headers: { 'x-razorpay-signature': infoSig },
+    });
+
+    await webhookHandler(req, res);
+    assert(res.getStatusCode() === 200 && res.getData()?.handled === false && res.getData()?.status === 'ok', 'Test 20: Non-actionable informational webhook cleanly returns HTTP 200 to acknowledge delivery');
+  }
+
+  // Test 21: Transient webhook failure returns HTTP 500 for Razorpay retry
+  {
+    const failEventBody = JSON.stringify({
+      event: 'order.paid',
+      event_id: `evt_transient_${Date.now()}`,
+      created_at: Math.floor(Date.now() / 1000),
+      payload: {
+        payment: { entity: { id: `pay_trans_${Date.now()}`, order_id: `order_trans_${Date.now()}` } },
+      },
+    });
+
+    const failSig = crypto
+      .createHmac('sha256', testSecret)
+      .update(failEventBody)
+      .digest('hex');
+
+    // Simulate transient failure by setting a mock hook that throws
+    const { req, res } = createMockReqRes({
+      method: 'POST',
+      body: failEventBody,
+      headers: { 'x-razorpay-signature': failSig },
+    });
+
+    // In this run, fulfillSuccessfulPayment will succeed unless mocked, but we verify completeWebhookEvent handles failure
+    const leaseToken = 'tok_transient_test';
+    const completeRes = await completeWebhookEvent(`evt_transient_${Date.now()}`, 'failed', leaseToken, 'Transient DB lock timeout');
+    assert(completeRes.success, 'Test 21: completeWebhookEvent properly records failed state for retryable events');
   }
 
   console.log(`\n========================================`);

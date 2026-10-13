@@ -248,14 +248,30 @@ export interface ServerEntitlement {
   purchased_at: string;
 }
 
+export interface ServerCompanySubscriptionEntitlement {
+  id: string;
+  company_id: string;
+  order_id: string;
+  provider_order_id?: string;
+  provider_payment_id: string;
+  plan_tier: 'starter' | 'enterprise';
+  billing_cycle: 'monthly' | 'annual';
+  starts_at: string;
+  expires_at: string;
+  amount_inr: number;
+  created_at: string;
+}
+
 // In-memory cache optimization (Secondary layer, not correctness layer)
 declare global {
   // eslint-disable-next-line no-var
   var __kth_orders: Map<string, StoredOrder> | undefined;
   // eslint-disable-next-line no-var
-  var __kth_processed_payments: Map<string, { timestamp: number; orderId: string; userId?: string }> | undefined;
+  var __kth_processed_payments: Map<string, { timestamp: number; orderId: string; providerOrderId?: string; dbOrderId?: string; userId?: string }> | undefined;
   // eslint-disable-next-line no-var
   var __kth_server_entitlements: Map<string, ServerEntitlement> | undefined;
+  // eslint-disable-next-line no-var
+  var __kth_company_subscription_entitlements: Map<string, ServerCompanySubscriptionEntitlement> | undefined;
   // eslint-disable-next-line no-var
   var __kth_processed_webhooks: Map<string, { status: 'pending' | 'processed' | 'failed'; timestamp: number; lease: number; leaseToken?: string }> | undefined;
 }
@@ -264,10 +280,13 @@ if (!globalThis.__kth_orders) {
   globalThis.__kth_orders = new Map<string, StoredOrder>();
 }
 if (!globalThis.__kth_processed_payments) {
-  globalThis.__kth_processed_payments = new Map<string, { timestamp: number; orderId: string; userId?: string }>();
+  globalThis.__kth_processed_payments = new Map<string, { timestamp: number; orderId: string; providerOrderId?: string; dbOrderId?: string; userId?: string }>();
 }
 if (!globalThis.__kth_server_entitlements) {
   globalThis.__kth_server_entitlements = new Map<string, ServerEntitlement>();
+}
+if (!globalThis.__kth_company_subscription_entitlements) {
+  globalThis.__kth_company_subscription_entitlements = new Map<string, ServerCompanySubscriptionEntitlement>();
 }
 if (!globalThis.__kth_processed_webhooks) {
   globalThis.__kth_processed_webhooks = new Map<string, { status: 'pending' | 'processed' | 'failed'; timestamp: number; lease: number; leaseToken?: string }>();
@@ -276,7 +295,42 @@ if (!globalThis.__kth_processed_webhooks) {
 export const orderStorage = globalThis.__kth_orders;
 export const processedPayments = globalThis.__kth_processed_payments;
 export const serverEntitlements = globalThis.__kth_server_entitlements;
+export const companySubscriptionEntitlements = globalThis.__kth_company_subscription_entitlements;
 export const processedWebhooks = globalThis.__kth_processed_webhooks;
+
+export function hasSupabaseServiceRole(): boolean {
+  return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY.trim().length > 0);
+}
+
+export function isProductionEnvironment(): boolean {
+  return process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+}
+
+/**
+ * Diagnostic logger that safely reports configuration status without leaking secret values
+ */
+export function assertServerPaymentConfig(): {
+  serviceRoleConfigured: boolean;
+  webhookSecretConfigured: boolean;
+  razorpayKeyConfigured: boolean;
+  razorpaySecretConfigured: boolean;
+} {
+  const serviceRoleConfigured = hasSupabaseServiceRole();
+  const webhookSecretConfigured = Boolean(process.env.RAZORPAY_WEBHOOK_SECRET && process.env.RAZORPAY_WEBHOOK_SECRET.trim().length > 0);
+  const razorpayKeyConfigured = Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_ID.trim().length > 0);
+  const razorpaySecretConfigured = Boolean(process.env.RAZORPAY_KEY_SECRET && process.env.RAZORPAY_KEY_SECRET.trim().length > 0);
+
+  if (!serviceRoleConfigured && isProductionEnvironment()) {
+    console.error('[ServerPaymentSecurity] CRITICAL: SUPABASE_SERVICE_ROLE_KEY is missing in production environment. Persistent payment verification and idempotency will fail closed.');
+  }
+
+  return {
+    serviceRoleConfigured,
+    webhookSecretConfigured,
+    razorpayKeyConfigured,
+    razorpaySecretConfigured,
+  };
+}
 
 /**
  * Server-Side Supabase Client (Uses service role key in serverless environment)
@@ -301,6 +355,89 @@ export function saveStoredOrder(orderId: string, orderData: StoredOrder): void {
 }
 
 /**
+ * Inserts a durable record into Supabase payment_orders.
+ * In production, fails closed if SUPABASE_SERVICE_ROLE_KEY is absent or if the DB write fails.
+ */
+export async function createDurablePaymentOrder(params: {
+  providerOrderId: string;
+  orderNumber?: string;
+  amountINR: number;
+  currency?: string;
+  productType: string;
+  productId: string;
+  productTitle: string;
+  userId?: string;
+  customerEmail?: string;
+  customerName?: string;
+  companyId?: string;
+  metadata?: Record<string, any>;
+}): Promise<{ success: boolean; error?: string }> {
+  const {
+    providerOrderId,
+    orderNumber,
+    amountINR,
+    currency = 'INR',
+    productType,
+    productId,
+    productTitle,
+    userId,
+    customerEmail,
+    customerName,
+    companyId,
+    metadata = {},
+  } = params;
+
+  if (hasSupabaseServiceRole()) {
+    try {
+      const supabase = getServerSupabaseClient();
+      const seq = Math.floor(100000 + Math.random() * 900000);
+      const generatedOrderNumber = orderNumber || `KTH-${new Date().getFullYear()}-${seq}`;
+
+      const { error } = await supabase.from('payment_orders').insert({
+        order_number: generatedOrderNumber,
+        user_id: userId || null,
+        product_type: productType,
+        product_id: productId,
+        product_title: productTitle,
+        amount_inr: amountINR,
+        currency,
+        status: 'created',
+        provider: 'razorpay',
+        provider_order_id: providerOrderId,
+        customer_name: customerName || null,
+        customer_email: customerEmail || null,
+        metadata: {
+          ...metadata,
+          company_id: companyId || null,
+        },
+        is_paid: false,
+      });
+
+      if (error) {
+        console.error('[ServerPayment] Database insert into payment_orders failed:', error.message);
+        return { success: false, error: `Failed to persist payment order: ${error.message}` };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      console.error('[ServerPayment] Exception inserting payment order:', err?.message);
+      return { success: false, error: err?.message || 'Database error persisting payment order' };
+    }
+  }
+
+  // If in production and service role key is absent, fail closed
+  if (isProductionEnvironment()) {
+    return {
+      success: false,
+      error: 'Persistent payment configuration unavailable: SUPABASE_SERVICE_ROLE_KEY is required in production.',
+    };
+  }
+
+  // Allowed in local development / simulated test mode without service role
+  return { success: true };
+}
+
+/**
  * Loads the trusted persistent payment order from Supabase or memory.
  * Never trusts arbitrary client overrides.
  */
@@ -311,6 +448,14 @@ export async function loadPersistentPaymentOrder(
   // 1. Check in-memory store
   const cached = orderStorage.get(providerOrderId);
   if (cached) return cached;
+
+  if (providerPaymentId) {
+    for (const order of orderStorage.values()) {
+      if (order.payment_id === providerPaymentId) {
+        return order;
+      }
+    }
+  }
 
   // 2. Query persistent Supabase payment_orders if service key available
   if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -486,6 +631,16 @@ export async function claimWebhookEvent(
       processedWebhooks.delete(eventId);
       return { claimed: false, status: 'error', leaseToken, errorMessage: err?.message || 'Database connection error during claim' };
     }
+  } else if (isProductionEnvironment()) {
+    // FAIL CLOSED: In production, do not silently fallback to in-memory webhook claims
+    processedWebhooks.delete(eventId);
+    console.error('[ServerPaymentSecurity] CRITICAL: claimWebhookEvent rejected in production because SUPABASE_SERVICE_ROLE_KEY is absent.');
+    return {
+      claimed: false,
+      status: 'error',
+      leaseToken,
+      errorMessage: 'Persistent webhook processing unavailable: SUPABASE_SERVICE_ROLE_KEY is required in production.',
+    };
   }
 
   return { claimed: true, status: 'claimed', leaseToken };
@@ -513,21 +668,46 @@ export async function completeWebhookEvent(
   if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
     try {
       const supabase = getServerSupabaseClient();
+
+      let dbOrderUuid: string | null = null;
+      if (orderId) {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
+        if (isUuid) {
+          dbOrderUuid = orderId;
+        } else {
+          // Resolve internal UUID from provider_order_id
+          const { data: ordRow } = await supabase
+            .from('payment_orders')
+            .select('id')
+            .eq('provider_order_id', orderId)
+            .limit(1)
+            .maybeSingle();
+          if (ordRow?.id) {
+            dbOrderUuid = ordRow.id;
+          }
+        }
+      }
+
       const { data, error } = await supabase.rpc('complete_payment_webhook_event', {
         p_event_id: eventId,
         p_status: status,
         p_lease_token: leaseToken,
         p_error: errorMessage || null,
-        p_order_id: orderId || null,
+        p_order_id: dbOrderUuid,
       });
 
       if (error) {
+        console.error('[ServerPayment] complete_payment_webhook_event error:', error.message);
         return { success: false, message: error.message };
       }
       if (data && data[0]) {
+        if (!data[0].success) {
+          console.warn('[ServerPayment] complete_payment_webhook_event unfulfilled:', data[0].message);
+        }
         return { success: data[0].success, message: data[0].message };
       }
     } catch (err: any) {
+      console.error('[ServerPayment] complete_payment_webhook_event exception:', err?.message || err);
       return { success: false, message: err?.message || 'Database error during completion' };
     }
   }
@@ -559,6 +739,19 @@ export async function claimPaymentVerification(params: {
   // 1. In-memory check for immediate replay detection
   if (processedPayments.has(paymentId)) {
     const existing = processedPayments.get(paymentId)!;
+    const matchesOrder =
+      existing.orderId === orderId ||
+      existing.providerOrderId === orderId ||
+      existing.dbOrderId === orderId;
+
+    if (!matchesOrder) {
+      return {
+        claimed: false,
+        status: 'conflict' as any,
+        orderId: existing.orderId,
+        errorMessage: 'Payment ID is already associated with a different order.',
+      };
+    }
     return {
       claimed: false,
       status: 'already_processed',
@@ -589,24 +782,78 @@ export async function claimPaymentVerification(params: {
         const claimStatus = data[0].status;
         const verifiedOrderId = data[0].order_id || orderId;
 
+        if (claimStatus === 'conflict') {
+          return { claimed: false, status: 'conflict' as any, orderId: verifiedOrderId, errorMessage: 'Payment ID is already associated with a different order.' };
+        }
+
         if (claimStatus === 'already_processed') {
-          processedPayments.set(paymentId, { timestamp: Date.now(), orderId: verifiedOrderId, userId });
+          processedPayments.set(paymentId, {
+            timestamp: Date.now(),
+            orderId: verifiedOrderId,
+            providerOrderId: orderId,
+            dbOrderId: verifiedOrderId,
+            userId,
+          });
           return { claimed: false, status: 'already_processed', orderId: verifiedOrderId };
         }
 
         if (claimStatus === 'claimed') {
-          processedPayments.set(paymentId, { timestamp: Date.now(), orderId: verifiedOrderId, userId });
+          processedPayments.set(paymentId, {
+            timestamp: Date.now(),
+            orderId: verifiedOrderId,
+            providerOrderId: orderId,
+            dbOrderId: verifiedOrderId,
+            userId,
+          });
           return { claimed: true, status: 'claimed', orderId: verifiedOrderId };
         }
+
+        if (claimStatus === 'error') {
+          return {
+            claimed: false,
+            status: 'error',
+            orderId: verifiedOrderId,
+            errorMessage: 'Payment order record not found or verification claim rejected by database.',
+          };
+        }
+
+        // Any unexpected status must fail closed
+        return {
+          claimed: false,
+          status: 'error',
+          orderId: verifiedOrderId,
+          errorMessage: `Unexpected claim verification status received from database: ${claimStatus}`,
+        };
       }
+
+      return {
+        claimed: false,
+        status: 'error',
+        orderId,
+        errorMessage: 'Empty response returned from payment claim verification RPC.',
+      };
     } catch (err: any) {
       // FAIL CLOSED: Database outage must prevent double fulfillment
       return { claimed: false, status: 'error', errorMessage: err?.message || 'Database outage during payment verification' };
     }
+  } else if (isProductionEnvironment()) {
+    // FAIL CLOSED: In production, do not silently fallback to in-memory payment claims
+    console.error('[ServerPaymentSecurity] CRITICAL: claimPaymentVerification rejected in production because SUPABASE_SERVICE_ROLE_KEY is absent.');
+    return {
+      claimed: false,
+      status: 'error',
+      errorMessage: 'Persistent payment verification unavailable: SUPABASE_SERVICE_ROLE_KEY is required in production.',
+    };
   }
 
-  // Fallback to local memory lock when service role key not configured (e.g. testing)
-  processedPayments.set(paymentId, { timestamp: Date.now(), orderId, userId });
+  // Fallback to local memory lock when service role key not configured in non-production (e.g. testing)
+  processedPayments.set(paymentId, {
+    timestamp: Date.now(),
+    orderId,
+    providerOrderId: orderId,
+    dbOrderId: orderId,
+    userId,
+  });
   return { claimed: true, status: 'claimed', orderId };
 }
 
@@ -713,56 +960,74 @@ export async function fulfillSuccessfulPayment(params: {
 
   // Persistent Subscription Synchronization
   if (effectiveItemType === 'employer_subscription') {
-    const tier = effectiveItemId?.includes('enterprise') ? 'enterprise' : 'starter';
+    const tier: 'starter' | 'enterprise' = effectiveItemId?.includes('enterprise') ? 'enterprise' : 'starter';
     const isAnnual = effectiveItemId?.includes('annual');
+    const billingCycle: 'monthly' | 'annual' = isAnnual ? 'annual' : 'monthly';
     const durationMs = (isAnnual ? 365 : 30) * 24 * 60 * 60 * 1000;
 
-    if (process.env.SUPABASE_SERVICE_ROLE_KEY && effectiveCompanyId) {
+    // 1. Persistent RPC fulfillment if service role key is configured
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
       const supabase = getServerSupabaseClient();
-      
-      // Fetch current subscription status to prevent shortening or duplicate extension
-      const { data: currentComp, error: fetchErr } = await supabase
-        .from('company_profiles')
-        .select('subscription_tier, subscription_status, subscription_expires_at, subscription_order_id')
-        .eq('id', effectiveCompanyId)
-        .maybeSingle();
+      const { data, error: rpcErr } = await supabase.rpc('fulfill_company_subscription', {
+        p_order_id: orderId,
+        p_payment_id: paymentId,
+        p_user_id: effectiveUserId || null,
+      });
 
-      if (fetchErr) {
-        throw new Error(`Failed to query company profile for subscription update: ${fetchErr.message}`);
+      if (rpcErr) {
+        throw new Error(`Failed to execute fulfill_company_subscription RPC: ${rpcErr.message}`);
       }
 
-      // Check if this exact order was already applied to the company profile (Replay / Retry)
-      const isSameOrderReplay = currentComp?.subscription_order_id === orderId && currentComp?.subscription_status === 'active';
+      if (data && data[0]) {
+        const res = data[0];
+        if (res.status === 'order_not_found') {
+          throw new Error(`Subscription fulfillment failed: Order ${orderId} not found.`);
+        }
+        if (res.status === 'order_not_paid') {
+          throw new Error(`Subscription fulfillment failed: Order ${orderId} is not in paid status.`);
+        }
+        if (res.status === 'payment_id_mismatch') {
+          throw new Error(`Subscription fulfillment failed: Payment ID ${paymentId} does not match order.`);
+        }
+        if (res.status === 'invalid_relationship') {
+          throw new Error(`Subscription fulfillment failed: ${res.error_message || 'Employer is not authorized for company.'}`);
+        }
+        if (res.status === 'error') {
+          throw new Error(`Subscription fulfillment failed: ${res.error_message || 'Database error during subscription fulfillment.'}`);
+        }
+        // status is 'fulfilled' or 'already_fulfilled'
+        if (res.company_id) {
+          updatedOrder.company_id = res.company_id;
+          saveStoredOrder(orderId, updatedOrder);
+        }
+      }
+    } else if (isProductionEnvironment()) {
+      // In production, SUPABASE_SERVICE_ROLE_KEY is required for authoritative fulfillment
+      throw new Error('Persistent subscription fulfillment unavailable: SUPABASE_SERVICE_ROLE_KEY is required in production.');
+    } else {
+      // 2. In-memory fallback for local unit / integration test environments
+      if (!effectiveCompanyId) {
+        throw new Error('Subscription fulfillment failed: No company ID provided or found for employer.');
+      }
 
-      let expiresAt: string;
-      if (isSameOrderReplay && currentComp?.subscription_expires_at) {
-        // Keep existing expiration timestamp intact; DO NOT reset or alter on replay!
-        expiresAt = currentComp.subscription_expires_at;
-      } else {
-        // Genuine new subscription or renewal
+      // Check durable per-order idempotency in memory
+      const existingEntitlement = companySubscriptionEntitlements.get(orderId);
+      if (!existingEntitlement) {
         const now = Date.now();
-        const currentExpiry = currentComp?.subscription_expires_at ? new Date(currentComp.subscription_expires_at).getTime() : 0;
-        
-        // If current subscription is active and still valid in the future, extend from current expiry; otherwise from now
-        const baseTime = (currentComp?.subscription_status === 'active' && currentExpiry > now)
-          ? currentExpiry
-          : now;
-
-        expiresAt = new Date(baseTime + durationMs).toISOString();
-      }
-
-      const { error: subErr } = await supabase.from('company_profiles').update({
-        subscription_tier: tier,
-        subscription_status: 'active',
-        subscription_billing_cycle: isAnnual ? 'annual' : 'monthly',
-        subscription_expires_at: expiresAt,
-        subscription_order_id: orderId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) ? orderId : null,
-        subscription_updated_at: new Date().toISOString(),
-      }).eq('id', effectiveCompanyId);
-
-      if (subErr) {
-        // PROPAGATE REQUIRED SUBSCRIPTION ERROR: Never report success if company subscription fails
-        throw new Error(`Failed to update company subscription: ${subErr.message}`);
+        const entitlementRecord: ServerCompanySubscriptionEntitlement = {
+          id: `sub_ent_${now}_${Math.random().toString(36).substring(2, 7)}`,
+          company_id: effectiveCompanyId,
+          order_id: orderId,
+          provider_order_id: orderId,
+          provider_payment_id: paymentId,
+          plan_tier: tier,
+          billing_cycle: billingCycle,
+          starts_at: new Date(now).toISOString(),
+          expires_at: new Date(now + durationMs).toISOString(),
+          amount_inr: canonicalPriceINR,
+          created_at: new Date(now).toISOString(),
+        };
+        companySubscriptionEntitlements.set(orderId, entitlementRecord);
       }
     }
   }
@@ -781,15 +1046,59 @@ export async function recordFailedPayment(
   errorCode?: string,
   errorDescription?: string
 ): Promise<void> {
+  // 1. Guard in-memory order from being downgraded if already paid
   const existing = getStoredOrder(orderId);
   if (existing) {
-    saveStoredOrder(orderId, {
-      ...existing,
-      status: 'failed',
-      is_paid: false,
-      last_error_code: errorCode,
-      last_error_message: errorDescription,
-      failed_at: new Date().toISOString(),
-    });
+    if (existing.status !== 'paid' && !existing.is_paid) {
+      saveStoredOrder(orderId, {
+        ...existing,
+        status: 'failed',
+        is_paid: false,
+        last_error_code: errorCode,
+        last_error_message: errorDescription,
+        failed_at: new Date().toISOString(),
+      });
+    }
+  }
+
+  // 2. Persist to Supabase payment_orders if service role is configured, strictly protecting paid orders
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const supabase = getServerSupabaseClient();
+      let isUuid = false;
+      try {
+        if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId)) {
+          isUuid = true;
+        }
+      } catch {
+        isUuid = false;
+      }
+
+      let updateQuery = supabase
+        .from('payment_orders')
+        .update({
+          status: 'failed',
+          is_paid: false,
+          metadata: {
+            last_error_code: errorCode || null,
+            last_error_message: errorDescription || null,
+            failed_at: new Date().toISOString(),
+          },
+          updated_at: new Date().toISOString(),
+        });
+
+      if (isUuid) {
+        updateQuery = updateQuery.or(`provider_order_id.eq.${orderId},id.eq.${orderId}`);
+      } else {
+        updateQuery = updateQuery.eq('provider_order_id', orderId);
+      }
+
+      // STRICT PROTECTION: Never let a failure event downgrade an order that has already been paid
+      await updateQuery
+        .neq('status', 'paid')
+        .neq('is_paid', true);
+    } catch (err: any) {
+      console.error('[ServerPayment] Failed to persist failed payment status:', err?.message || err);
+    }
   }
 }
