@@ -595,8 +595,10 @@ export const templateService = {
 
       // Generate short-lived signed URL (300 seconds = 5 minutes expiry)
       let secureUrl: string | null = null;
-      if (tmpl.file_path && isSupabaseConfigured()) {
-        secureUrl = await contentStorageService.getDownloadUrl('templates', tmpl.file_path, 300);
+      const targetFilePath = tmpl.file_path || (tmpl.file_url && !tmpl.file_url.startsWith('http') ? tmpl.file_url : null);
+      if (targetFilePath && isSupabaseConfigured()) {
+        const cleanPath = targetFilePath.replace(/^templates\//, '');
+        secureUrl = await contentStorageService.getDownloadUrl('templates', cleanPath, 300);
       }
 
       const finalUrl = secureUrl || tmpl.file_url || tmpl.download_url || 'https://knowtohire.com/templates/download.docx';

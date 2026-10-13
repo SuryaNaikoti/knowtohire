@@ -265,7 +265,7 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
   const resumeUrl = rawResumeUrl;
   const resumeFileName = candidate?.resumeFileName || (resumeUrl && !resumeUrl.startsWith('data:') ? resumeUrl.split('/').pop() : `${name.replace(/\s+/g, '_')}_Resume.pdf`);
 
-  const handleDownloadResume = () => {
+  const handleDownloadResume = async () => {
     if (!resumeUrl) return;
     if (resumeUrl.startsWith('data:')) {
       const link = document.createElement('a');
@@ -275,7 +275,16 @@ export const EmployerCandidateDetailsPage: React.FC<EmployerCandidateDetailsPage
       link.click();
       document.body.removeChild(link);
     } else {
-      window.open(resumeUrl, '_blank');
+      const authUrl = await resumeService.getAuthorizedResumeUrl(
+        resumeUrl,
+        resolvedCandidateId || application?.candidate_id,
+        300
+      );
+      if (authUrl) {
+        window.open(authUrl, '_blank');
+      } else {
+        alert('You do not have active authorization to view this candidate resume.');
+      }
     }
   };
 

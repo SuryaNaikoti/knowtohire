@@ -325,11 +325,11 @@ export async function uploadResume(
   // 2. Real Supabase Storage Upload
   try {
     const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const filePath = `${userId}/${Date.now()}_${cleanFileName}`;
+    const storagePath = `${userId}/${Date.now()}_${cleanFileName}`;
 
     const { data, error } = await supabase.storage
       .from('resumes')
-      .upload(filePath, file, {
+      .upload(storagePath, file, {
         cacheControl: '3600',
         upsert: true,
         contentType: 'application/pdf',
@@ -337,53 +337,27 @@ export async function uploadResume(
 
     if (error) {
       console.warn('[ResumeService] Storage upload error:', error.message);
-      
-      if (error.message?.includes('row-level security') || error.message?.includes('policy') || error.message?.includes('Bucket not found')) {
-        let fallbackUrl = '';
-        try {
-          fallbackUrl = await fileToDataUrl(file);
-        } catch {
-          fallbackUrl = URL.createObjectURL(file);
-        }
-
-        saveStoredDemoResume(userId, {
-          url: fallbackUrl,
-          fileName: file.name,
-          fileSize: file.size,
-          uploadedAt: new Date().toISOString(),
-        });
-
-        return {
-          url: fallbackUrl,
-          fileName: file.name,
-          fileSize: file.size,
-          error: null,
-        };
-      }
-
       return {
         url: null,
         fileName: null,
         fileSize: null,
-        error: "We couldn't upload your resume. Please try again.",
+        error: `Resume upload failed: ${error.message || 'Please check your connection and try again.'}`,
       };
     }
 
-    // Get public URL for valid uploaded object
-    const { data: publicUrlData } = supabase.storage
-      .from('resumes')
-      .getPublicUrl(data.path);
+    // Persist storage object path in storage rather than public URL
+    const objectPath = data.path || storagePath;
 
-    // Save demo cache as backup for instant fast local loading
+    // Cache metadata with objectPath
     saveStoredDemoResume(userId, {
-      url: publicUrlData.publicUrl,
+      url: objectPath,
       fileName: file.name,
       fileSize: file.size,
       uploadedAt: new Date().toISOString(),
     });
 
     return {
-      url: publicUrlData.publicUrl,
+      url: objectPath,
       fileName: file.name,
       fileSize: file.size,
       error: null,
@@ -399,6 +373,164 @@ export async function uploadResume(
   }
 }
 
+/**
+ * Extracts the storage object path from a raw resume reference (whether path, full URL, or UUID pattern).
+ */
+export function extractResumeStoragePath(rawResumeRef?: string | null): string | null {
+  if (!rawResumeRef || typeof rawResumeRef !== 'string') return null;
+  const trimmed = rawResumeRef.trim();
+  if (!trimmed || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return null;
+
+  // If already a clean relative path (e.g. "userId/123_resume.pdf" or "resumes/userId/123_resume.pdf")
+  if (trimmed.includes('/') && !trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+    return trimmed.replace(/^resumes\//, '');
+  }
+
+  // If it's a Supabase public/signed storage URL:
+  // e.g. https://.../storage/v1/object/public/resumes/userId/timestamp_file.pdf
+  const marker = '/storage/v1/object/public/resumes/';
+  const signMarker = '/storage/v1/object/sign/resumes/';
+  const authMarker = '/storage/v1/object/authenticated/resumes/';
+
+  for (const m of [marker, signMarker, authMarker]) {
+    const idx = trimmed.indexOf(m);
+    if (idx !== -1) {
+      const pathWithQuery = trimmed.substring(idx + m.length);
+      return decodeURIComponent(pathWithQuery.split('?')[0]);
+    }
+  }
+
+  // Fallback pattern match: /resumes/(...)
+  const genericMatch = trimmed.match(/\/resumes\/(.+?)(\?|$)/);
+  if (genericMatch && genericMatch[1]) {
+    return decodeURIComponent(genericMatch[1].replace(/^resumes\//, ''));
+  }
+
+  return null;
+}
+
+/**
+ * Authoritatively verifies access permissions and generates a short-lived signed URL for a candidate resume.
+ * Authorization Rules:
+ * 1. Admin users have global inspection rights.
+ * 2. Candidate users can access ONLY their own resume.
+ * 3. Employer users can access resumes ONLY if the candidate has applied to one of their company jobs,
+ *    or if the candidate profile is marked discoverable and unlocked.
+ */
+export async function getAuthorizedResumeUrl(
+  resumeRef: string,
+  targetCandidateId?: string,
+  expiresIn = 300
+): Promise<string | null> {
+  if (!resumeRef) return null;
+
+  // Data URLs or Blob URLs in local/demo mode pass through directly
+  if (resumeRef.startsWith('data:') || resumeRef.startsWith('blob:')) {
+    return resumeRef;
+  }
+
+  const storagePath = extractResumeStoragePath(resumeRef);
+  if (!storagePath || !isSupabaseConfigured()) {
+    return resumeRef.startsWith('http') ? resumeRef : null;
+  }
+
+  try {
+    const { data: authData } = await supabase.auth.getUser();
+    const currentUser = authData?.user;
+
+    // In local demo mode (no active Supabase session), verify demo session authorization
+    if (!currentUser) {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const demoAuth = window.localStorage.getItem('kth_demo_auth_session');
+        if (demoAuth) {
+          const parsed = JSON.parse(demoAuth);
+          if (parsed?.role === 'admin' || parsed?.role === 'employer') {
+            // Demo employer/admin can view preview
+            const { data: signed } = await supabase.storage.from('resumes').createSignedUrl(storagePath, expiresIn);
+            return signed?.signedUrl || null;
+          }
+          if (parsed?.role === 'candidate') {
+            if (!targetCandidateId || targetCandidateId === parsed.id || storagePath.startsWith(`${parsed.id}/`)) {
+              const { data: signed } = await supabase.storage.from('resumes').createSignedUrl(storagePath, expiresIn);
+              return signed?.signedUrl || null;
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    // 1. Resolve role of current authenticated user
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', currentUser.id)
+      .maybeSingle();
+
+    const role = profile?.role;
+
+    // Admin has global audit permission
+    if (role === 'admin') {
+      const { data: signed } = await supabase.storage.from('resumes').createSignedUrl(storagePath, expiresIn);
+      return signed?.signedUrl || null;
+    }
+
+    // Candidate can view only their own resume
+    if (role === 'candidate') {
+      const isOwner = storagePath.startsWith(`${currentUser.id}/`) || targetCandidateId === currentUser.id;
+      if (isOwner) {
+        const { data: signed } = await supabase.storage.from('resumes').createSignedUrl(storagePath, expiresIn);
+        return signed?.signedUrl || null;
+      }
+      return null;
+    }
+
+    // Employer can view if candidate applied to their company's job
+    if (role === 'employer') {
+      // Find employer's company
+      const { data: emp } = await supabase
+        .from('employer_profiles')
+        .select('company_id')
+        .eq('profile_id', currentUser.id)
+        .maybeSingle();
+
+      if (emp?.company_id) {
+        // Check if application exists from this candidate to any job posted by this company
+        const candidateIdToCheck = targetCandidateId || storagePath.split('/')[0];
+        const { data: apps } = await supabase
+          .from('job_applications')
+          .select('id, jobs!inner(company_id)')
+          .eq('candidate_id', candidateIdToCheck)
+          .eq('jobs.company_id', emp.company_id)
+          .limit(1);
+
+        if (apps && apps.length > 0) {
+          const { data: signed } = await supabase.storage.from('resumes').createSignedUrl(storagePath, expiresIn);
+          return signed?.signedUrl || null;
+        }
+
+        // Also check if candidate is discoverable
+        const { data: candProfile } = await supabase
+          .from('candidate_profiles')
+          .select('is_discoverable')
+          .eq('profile_id', candidateIdToCheck)
+          .maybeSingle();
+
+        if (candProfile?.is_discoverable) {
+          const { data: signed } = await supabase.storage.from('resumes').createSignedUrl(storagePath, expiresIn);
+          return signed?.signedUrl || null;
+        }
+      }
+      return null;
+    }
+
+    return null;
+  } catch (err) {
+    console.warn('[ResumeService] getAuthorizedResumeUrl failed:', err);
+    return null;
+  }
+}
+
 export const resumeService = {
   validateResumeFile,
   validatePDFResumeFile,
@@ -407,6 +539,8 @@ export const resumeService = {
   getResumeFormat,
   extractResumeFileName,
   uploadResume,
+  extractResumeStoragePath,
+  getAuthorizedResumeUrl,
   getStoredDemoResume,
   saveStoredDemoResume,
 };

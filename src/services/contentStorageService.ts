@@ -214,67 +214,6 @@ export const contentStorageService = {
 
       if (error) {
         console.warn(`[ContentStorageService] Storage upload error on bucket '${bucket}':`, error.message);
-
-        // Graceful fallback to persistent Data URL if RLS or bucket missing
-        try {
-          const fallbackDataUrl = await fileToDataUrl(file);
-          onProgress?.(100);
-          return {
-            url: fallbackDataUrl,
-            fileName: file.name,
-            filePath: storagePath,
-            fileSize: formattedSize,
-            fileSizeBytes: file.size,
-            mimeType: file.type || 'application/octet-stream',
-            format: detectedFormat,
-            error: null,
-          };
-        } catch {
-          return {
-            url: null,
-            fileName: null,
-            filePath: null,
-            fileSize: null,
-            fileSizeBytes: null,
-            mimeType: null,
-            format: null,
-            error: error.message || 'Upload failed. Please try again.',
-          };
-        }
-      }
-
-      onProgress?.(90);
-
-      // Retrieve public URL from bucket
-      const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(data.path);
-      onProgress?.(100);
-
-      return {
-        url: publicUrlData.publicUrl,
-        fileName: file.name,
-        filePath: data.path,
-        fileSize: formattedSize,
-        fileSizeBytes: file.size,
-        mimeType: file.type || 'application/octet-stream',
-        format: detectedFormat,
-        error: null,
-      };
-    } catch (err) {
-      console.error('[ContentStorageService] Unexpected upload exception:', err);
-      try {
-        const fallbackUrl = await fileToDataUrl(file);
-        onProgress?.(100);
-        return {
-          url: fallbackUrl,
-          fileName: file.name,
-          filePath: storagePath,
-          fileSize: formattedSize,
-          fileSizeBytes: file.size,
-          mimeType: file.type || 'application/octet-stream',
-          format: detectedFormat,
-          error: null,
-        };
-      } catch {
         return {
           url: null,
           fileName: null,
@@ -283,9 +222,45 @@ export const contentStorageService = {
           fileSizeBytes: null,
           mimeType: null,
           format: null,
-          error: 'Upload failed. Please try again.',
+          error: `Upload to storage failed: ${error.message || 'Please check your connection and try again.'}`,
         };
       }
+
+      onProgress?.(90);
+
+      // For public buckets ('knowledge-hub', 'templates'), public URL can be referenced for preview.
+      // For private buckets ('content'), never generate or save a public URL — save storage path.
+      let resolvedUrl: string | null = null;
+      if (bucket === 'content') {
+        resolvedUrl = data.path; // Store storage path directly
+      } else {
+        const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(data.path);
+        resolvedUrl = publicUrlData.publicUrl;
+      }
+      onProgress?.(100);
+
+      return {
+        url: resolvedUrl,
+        fileName: file.name,
+        filePath: data.path,
+        fileSize: formattedSize,
+        fileSizeBytes: file.size,
+        mimeType: file.type || 'application/octet-stream',
+        format: detectedFormat,
+        error: null,
+      };
+    } catch (err: any) {
+      console.error('[ContentStorageService] Unexpected upload exception:', err);
+      return {
+        url: null,
+        fileName: null,
+        filePath: null,
+        fileSize: null,
+        fileSizeBytes: null,
+        mimeType: null,
+        format: null,
+        error: err?.message || 'Upload failed. Please try again.',
+      };
     }
   },
 

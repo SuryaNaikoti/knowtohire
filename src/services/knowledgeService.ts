@@ -586,11 +586,13 @@ export const knowledgeService = {
 
       // Generate short-lived signed URL (300 seconds = 5 minutes expiry)
       let secureUrl: string | null = null;
-      if (resource.file_path && isSupabaseConfigured()) {
-        secureUrl = await contentStorageService.getDownloadUrl('knowledge-hub', resource.file_path, 300);
+      const targetFilePath = resource.file_path || (resource.file_url && !resource.file_url.startsWith('http') ? resource.file_url : null);
+      if (targetFilePath && isSupabaseConfigured()) {
+        const cleanPath = targetFilePath.replace(/^knowledge-hub\//, '');
+        secureUrl = await contentStorageService.getDownloadUrl('knowledge-hub', cleanPath, 300);
       }
 
-      const finalUrl = secureUrl || `/api/download-resource?resource_id=${encodeURIComponent(resource.id)}&user_id=${encodeURIComponent(userId || '')}`;
+      const finalUrl = secureUrl || resource.file_url || `/api/download-resource?resource_id=${encodeURIComponent(resource.id)}&user_id=${encodeURIComponent(userId || '')}`;
 
       return {
         data: { downloadUrl: finalUrl },

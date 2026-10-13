@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { adminService, AdminApplicationRecord } from '@/services/adminService';
+import { resumeService } from '@/services/resumeService';
 import { navigateTo } from '@/utils/navigation';
 import {
   ArrowLeft,
@@ -179,16 +180,26 @@ export const AdminApplicationDetailsPage: React.FC<AdminApplicationDetailsPagePr
                 {/* Attached Resume Link */}
                 {application.resume_url && (
                   <div className="pt-2">
-                    <a
-                      href={application.resume_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const authUrl = await resumeService.getAuthorizedResumeUrl(
+                          application.resume_url!,
+                          application.candidate_id,
+                          300
+                        );
+                        if (authUrl) {
+                          window.open(authUrl, '_blank');
+                        } else {
+                          alert('Failed to generate authorized view URL for candidate resume.');
+                        }
+                      }}
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-kth-slate-100 hover:bg-kth-slate-200 text-kth-slate-900 text-xs font-bold transition-colors"
                     >
                       <FileText className="w-4 h-4 text-kth-primary-600" />
                       <span>View Attached Candidate Resume</span>
                       <ExternalLink className="w-3.5 h-3.5 text-kth-slate-500" />
-                    </a>
+                    </button>
                   </div>
                 )}
               </Card>

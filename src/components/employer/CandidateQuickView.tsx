@@ -200,7 +200,7 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
   const candidateResume = rawResume;
   const resumeFileName = `${candidateName.replace(/\s+/g, '_')}_Resume.pdf`;
 
-  const handleDownloadResume = () => {
+  const handleDownloadResume = async () => {
     if (!candidateResume) return;
     if (candidateResume.startsWith('data:')) {
       const link = document.createElement('a');
@@ -210,7 +210,16 @@ export const CandidateQuickView: React.FC<CandidateQuickViewProps> = ({
       link.click();
       document.body.removeChild(link);
     } else {
-      window.open(candidateResume, '_blank');
+      const authUrl = await resumeService.getAuthorizedResumeUrl(
+        candidateResume,
+        candidateId || currentApp?.candidate_id,
+        300
+      );
+      if (authUrl) {
+        window.open(authUrl, '_blank');
+      } else {
+        alert('You do not have active authorization to view this candidate resume.');
+      }
     }
   };
 

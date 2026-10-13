@@ -276,7 +276,14 @@ export const CandidateRequestDetailsPage: React.FC<CandidateRequestDetailsPagePr
                           variant="primary"
                           size="sm"
                           leftIcon={<Download className="w-3.5 h-3.5" />}
-                          onClick={() => window.open(request.deliverable_url || '', '_blank')}
+                          onClick={async () => {
+                            const authUrlRes = await requestService.getAuthorizedDeliverableUrl(request.id);
+                            if (authUrlRes.data?.downloadUrl) {
+                              window.open(authUrlRes.data.downloadUrl, '_blank');
+                            } else {
+                              alert(authUrlRes.error?.message || 'Unauthorized or deliverable unavailable.');
+                            }
+                          }}
                         >
                           Download Deliverable
                         </Button>

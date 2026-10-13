@@ -413,7 +413,14 @@ export const AdminFulfillRequestPage: React.FC<AdminFulfillRequestPageProps> = (
                         variant="secondary"
                         size="sm"
                         leftIcon={<Download className="w-3.5 h-3.5" />}
-                        onClick={() => window.open(request.deliverable_url || '', '_blank')}
+                        onClick={async () => {
+                          const authRes = await requestService.getAuthorizedDeliverableUrl(request.id);
+                          if (authRes.data?.downloadUrl) {
+                            window.open(authRes.data.downloadUrl, '_blank');
+                          } else {
+                            window.open(request.deliverable_url || '', '_blank');
+                          }
+                        }}
                       >
                         Download Current File
                       </Button>

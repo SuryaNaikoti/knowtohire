@@ -86,7 +86,7 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
 
   const resumeFileName = candidate ? `${candidate.full_name.replace(/\s+/g, '_')}_Resume.pdf` : 'Candidate_Resume.pdf';
 
-  const handleDownloadResume = () => {
+  const handleDownloadResume = async () => {
     if (!resolvedResumeUrl) return;
     if (resolvedResumeUrl.startsWith('data:')) {
       const link = document.createElement('a');
@@ -96,7 +96,16 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
       link.click();
       document.body.removeChild(link);
     } else {
-      window.open(resolvedResumeUrl, '_blank');
+      const authUrl = await resumeService.getAuthorizedResumeUrl(
+        resolvedResumeUrl,
+        candidate?.id,
+        300
+      );
+      if (authUrl) {
+        window.open(authUrl, '_blank');
+      } else {
+        alert('Failed to generate authorized download URL for candidate resume.');
+      }
     }
   };
 

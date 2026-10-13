@@ -27,8 +27,10 @@ export const CandidateResumePreviewPage: React.FC<CandidateResumePreviewPageProp
   const [fileFormat, setFileFormat] = useState('PDF');
   const [uploadDate, setUploadDate] = useState('Recently updated');
 
+  const [signedResumeUrl, setSignedResumeUrl] = useState<string | null>(null);
+
   useEffect(() => {
-    candidateProfileService.getMyCandidateProfile().then((res) => {
+    candidateProfileService.getMyCandidateProfile().then(async (res) => {
       if (res.data) {
         setProfile(res.data);
         const effectiveUserId = user?.id || res.data.id || '00000000-0000-0000-0000-000000000001';
@@ -45,6 +47,15 @@ export const CandidateResumePreviewPage: React.FC<CandidateResumePreviewPageProp
             year: 'numeric',
           }));
         }
+
+        // Asynchronously resolve authorized signed URL for real storage object paths
+        const rawUrl = res.data.resumeUrl || stored?.url;
+        if (rawUrl) {
+          const authUrl = await resumeService.getAuthorizedResumeUrl(rawUrl, effectiveUserId, 600);
+          if (authUrl) {
+            setSignedResumeUrl(authUrl);
+          }
+        }
       }
       setIsLoading(false);
     });
@@ -60,6 +71,7 @@ export const CandidateResumePreviewPage: React.FC<CandidateResumePreviewPageProp
   };
 
   const effectiveResumeUrl = React.useMemo(() => {
+    if (signedResumeUrl) return signedResumeUrl;
     if (profile?.resumeUrl && profile.resumeUrl.startsWith('data:application/pdf')) {
       return profile.resumeUrl;
     }
@@ -77,7 +89,7 @@ export const CandidateResumePreviewPage: React.FC<CandidateResumePreviewPageProp
       skills: profile?.skills || ['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'TailwindCSS', 'Cloud Architecture'],
       bio: profile?.bio || 'Experienced engineering professional with proven expertise delivering scalable full-stack applications, distributed services, and business solutions.',
     });
-  }, [profile, user]);
+  }, [signedResumeUrl, profile, user]);
 
   return (
     <CandidateShell title="Resume Document Studio" currentPath="/candidate/resume">

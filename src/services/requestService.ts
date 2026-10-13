@@ -725,4 +725,100 @@ export const requestService = {
       completed_resource_id: completedResourceId,
     });
   },
+
+  /**
+   * Generates an authorized, time-limited signed URL for an on-demand deliverable.
+   * Enforces:
+   * 1. The user must be authenticated.
+   * 2. The user must be the requesting owner (or an administrator).
+   * 3. If the deliverable is paid, payment must be completed (`is_paid === true`).
+   */
+  async getAuthorizedDeliverableUrl(
+    requestId: string,
+    expiresIn = 300
+  ): Promise<ServiceResult<{ downloadUrl: string }>> {
+    try {
+      const res = await this.getRequestById(requestId);
+      if (!res.data) {
+        return { data: null, error: { message: 'Request not found.', code: 'NOT_FOUND', status: 404 } };
+      }
+
+      const req = res.data;
+      if (req.status !== 'completed' || (!req.deliverable_url && !req.storage_path)) {
+        return { data: null, error: { message: 'No completed deliverable is available for this request.', code: 'NOT_AVAILABLE', status: 400 } };
+      }
+
+      // 1. Resolve requesting user
+      const { data: authData } = await supabase.auth.getUser();
+      const currentUser = authData?.user;
+
+      let effectiveUserId: string | null = currentUser?.id || null;
+      let effectiveRole = 'candidate';
+
+      if (!effectiveUserId && typeof window !== 'undefined' && window.localStorage) {
+        const demoAuth = window.localStorage.getItem('kth_demo_auth_session');
+        if (demoAuth) {
+          const parsed = JSON.parse(demoAuth);
+          effectiveUserId = parsed?.id || null;
+          effectiveRole = parsed?.role || 'candidate';
+        }
+      }
+
+      if (!effectiveUserId) {
+        return { data: null, error: { message: 'Authentication required to access this deliverable.', code: 'UNAUTHORIZED', status: 401 } };
+      }
+
+      // Check role in profiles if real user
+      if (currentUser) {
+        const { data: prof } = await supabase.from('profiles').select('role').eq('id', currentUser.id).maybeSingle();
+        if (prof?.role) effectiveRole = prof.role;
+      }
+
+      const isOwner = req.user_id === effectiveUserId;
+      const isAdmin = effectiveRole === 'admin';
+
+      if (!isOwner && !isAdmin) {
+        return { data: null, error: { message: 'Forbidden: You are not authorized to access this private deliverable.', code: 'FORBIDDEN', status: 403 } };
+      }
+
+      // 2. Enforce payment check if paid request
+      if (Number(req.price_inr || 0) > 0 && !req.is_paid && !isAdmin) {
+        return { data: null, error: { message: 'Payment required before downloading this deliverable.', code: 'PAYMENT_REQUIRED', status: 402 } };
+      }
+
+      // 3. Resolve storage path
+      const targetPath = req.storage_path || req.deliverable_url;
+      if (!targetPath) {
+        return { data: null, error: { message: 'Deliverable file path missing.', code: 'FILE_MISSING', status: 404 } };
+      }
+
+      // If data URL or blob URL in demo mode
+      if (targetPath.startsWith('data:') || targetPath.startsWith('blob:')) {
+        return { data: { downloadUrl: targetPath }, error: null };
+      }
+
+      // If stored path or storage URL
+      let cleanPath = targetPath;
+      const marker = '/storage/v1/object/public/content/';
+      if (cleanPath.includes(marker)) {
+        cleanPath = cleanPath.substring(cleanPath.indexOf(marker) + marker.length);
+      }
+      cleanPath = cleanPath.replace(/^content\//, '');
+
+      const bucket = (req.storage_bucket as any) || 'content';
+      const signedUrl = await contentStorageService.getDownloadUrl(bucket, cleanPath, expiresIn);
+
+      if (!signedUrl) {
+        // Fallback: if already a complete valid URL and signing returned null
+        if (targetPath.startsWith('http://') || targetPath.startsWith('https://')) {
+          return { data: { downloadUrl: targetPath }, error: null };
+        }
+        return { data: null, error: { message: 'Failed to generate secure download URL.', code: 'STORAGE_ERROR', status: 500 } };
+      }
+
+      return { data: { downloadUrl: signedUrl }, error: null };
+    } catch (err) {
+      return { data: null, error: normalizeServiceError(err) };
+    }
+  },
 };
