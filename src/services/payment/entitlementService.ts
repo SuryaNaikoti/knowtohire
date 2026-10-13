@@ -164,49 +164,24 @@ export const entitlementService = {
       purchased_at: new Date().toISOString(),
     };
 
-    // Save locally
+    // Save in local user-scoped cache for immediate UI responsiveness
     saveLocalEntitlement(entitlement.userId, record);
 
-    // Save in Supabase
-    if (isSupabaseConfigured()) {
-      try {
-        const { error: upsertErr } = await supabase.from('user_purchases').upsert({
-          user_id: record.user_id,
-          product_type: record.product_type,
-          product_id: record.product_id,
-          product_title: record.product_title,
-          amount_inr: record.amount_inr,
-          order_id: record.order_id,
-          payment_id: record.payment_id,
-          purchased_at: record.purchased_at,
-        }, { onConflict: 'user_id,product_type,product_id' });
-
-        if (upsertErr) {
-          console.warn('[EntitlementService] Supabase user_purchases upsert notice:', upsertErr.message);
-        }
-
-        // If the productId has a canonical alias (e.g. res-2 vs patent-filing-ipr-guide-tech-startups),
-        // also store canonical ID to ensure seamless matching whether queried by id or slug
-        const { getAuthoritativeItem } = await import('./authoritativePricing');
-        const canonical = getAuthoritativeItem(entitlement.productId);
-        if (canonical && canonical.id && canonical.id !== record.product_id) {
-          await supabase.from('user_purchases').upsert({
-            user_id: record.user_id,
-            product_type: record.product_type,
-            product_id: canonical.id,
-            product_title: record.product_title,
-            amount_inr: record.amount_inr,
-            order_id: record.order_id,
-            payment_id: record.payment_id,
-            purchased_at: record.purchased_at,
-          }, { onConflict: 'user_id,product_type,product_id' });
-          saveLocalEntitlement(entitlement.userId, { ...record, product_id: canonical.id });
-        }
-      } catch (err) {
-        console.warn('[EntitlementService] Supabase user_purchases upsert warning:', err);
+    // If the productId has a canonical alias (e.g. res-2 vs slug), cache alias locally as well
+    try {
+      const { getAuthoritativeItem } = await import('./authoritativePricing');
+      const canonical = getAuthoritativeItem(entitlement.productId);
+      if (canonical && canonical.id && canonical.id !== record.product_id) {
+        saveLocalEntitlement(entitlement.userId, { ...record, product_id: canonical.id });
       }
+    } catch {
+      // ignore
     }
 
+    // NOTE: Direct client-side writes to public.user_purchases are prohibited by RLS policy.
+    // Database entitlement persistence is authoritatively managed by the server endpoint
+    // (/api/verify-payment -> fulfillSuccessfulPayment) using service-role credentials upon
+    // verified payment signature.
     return { data: record, error: null };
   },
 

@@ -33,11 +33,33 @@ WHERE id IN ('resumes', 'content');
 -- 2. DROP PERMISSIVE PUBLIC POLICIES ON RESUMES & CONTENT OBJECTS
 -- --------------------------------------------------------------------
 
--- Drop legacy broad read policy on resumes
+-- Drop legacy broad read policy on resumes and unauthenticated/unrestricted policies
 DROP POLICY IF EXISTS "resumes_select_policy" ON storage.objects;
 DROP POLICY IF EXISTS "resumes_select_own" ON storage.objects;
 DROP POLICY IF EXISTS "resumes_select_authenticated" ON storage.objects;
 DROP POLICY IF EXISTS "resumes_select_employer" ON storage.objects;
+DROP POLICY IF EXISTS "resumes_select_public" ON storage.objects;
+
+-- Drop legacy unrestricted insert policy on resumes (preserving resumes_insert_own)
+DROP POLICY IF EXISTS "resumes_insert_authenticated" ON storage.objects;
+
+-- Ensure verified owner-scoped upload policy exists (candidate folder check)
+DROP POLICY IF EXISTS "resumes_insert_own" ON storage.objects;
+CREATE POLICY "resumes_insert_own"
+  ON storage.objects
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    bucket_id = 'resumes' AND
+    (
+      (storage.foldername(name))[1] = auth.uid()::text
+      OR
+      (
+        (storage.foldername(name))[1] = 'resumes' AND
+        (storage.foldername(name))[2] = auth.uid()::text
+      )
+    )
+  );
 
 -- Drop legacy broad read policy on content deliverables
 DROP POLICY IF EXISTS "content_deliverables_select_policy" ON storage.objects;
