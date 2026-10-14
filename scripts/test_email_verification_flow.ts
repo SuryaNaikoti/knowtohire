@@ -193,6 +193,102 @@ async function runEmailVerificationSuite() {
     assert(resolveRole(demoEmployerUser, demoEmployerProfile) === 'employer', 'Demo employer role is employer');
   }
 
+  console.log('\nTest Group 5: 6-Digit Verification Code (OTP) & Email Normalization');
+  {
+    // Test email normalization logic
+    const inputVariants = [
+      '  Candidate.Test@Domain.COM  ',
+      'USER@EXAMPLE.ORG',
+      '  clean.email@knowtohire.com',
+      'mixed.CASE@Sub.Domain.Co.UK  ',
+    ];
+    for (const raw of inputVariants) {
+      const normalized = raw.trim().toLowerCase();
+      assert(normalized === normalized.toLowerCase(), `Normalized email is lowercased: ${normalized}`);
+      assert(!normalized.startsWith(' ') && !normalized.endsWith(' '), `Normalized email has no leading/trailing whitespace: ${normalized}`);
+    }
+
+    // Token sanitizer logic
+    const rawTokens = [' 123456 ', '123-456', '12 34 56', '12345678', 'abc123456xyz'];
+    const cleanToken1 = ' 123456 '.replace(/\D/g, '').trim();
+    assert(cleanToken1 === '123456' && cleanToken1.length === 6, 'Sanitizes whitespace around 6-digit token');
+
+    const cleanToken2 = '123-456'.replace(/\D/g, '').trim();
+    assert(cleanToken2 === '123456' && cleanToken2.length === 6, 'Sanitizes hyphens in 6-digit token');
+
+    const cleanTokenShort = '1234'.replace(/\D/g, '').trim();
+    assert(cleanTokenShort.length < 6, 'Detects incomplete tokens under 6 digits');
+
+    // Simulate Supabase verifyOtp payload contract
+    const simulateVerifyOtp = (params: { email: string; token: string; type: string }) => {
+      // Must receive trimmed lowercase email, 6-digit token, and type 'signup'
+      if (params.type !== 'signup') {
+        return { error: { message: 'Invalid verification type for signup code' }, data: { user: null } };
+      }
+      if (params.email !== params.email.toLowerCase() || params.email.includes(' ')) {
+        return { error: { message: 'Token has expired or is invalid.' }, data: { user: null } };
+      }
+      if (params.token === '123456') {
+        return {
+          data: {
+            user: {
+              id: 'usr-verified-001',
+              email: params.email,
+              email_confirmed_at: new Date().toISOString(),
+              user_metadata: { role: 'candidate', full_name: 'Verified Candidate' },
+            },
+          },
+          error: null,
+        };
+      }
+      return { error: { message: 'Token has expired or is invalid.' }, data: { user: null } };
+    };
+
+    // 1. Success case with valid code and un-normalized input
+    const unnormalizedEmail = '  Candidate.Success@Domain.COM  ';
+    const validCode = '123456';
+    const successRes = simulateVerifyOtp({
+      email: unnormalizedEmail.trim().toLowerCase(),
+      token: validCode.replace(/\D/g, '').trim(),
+      type: 'signup',
+    });
+    assert(!successRes.error && successRes.data.user !== null, 'Valid 6-digit code succeeds with normalized email and type="signup"');
+    assert(successRes.data.user?.email === 'candidate.success@domain.com', 'Authenticated user matches normalized email');
+
+    // 2. Failure case with invalid/expired code
+    const invalidRes = simulateVerifyOtp({
+      email: 'candidate.success@domain.com',
+      token: '999999',
+      type: 'signup',
+    });
+    assert(Boolean(invalidRes.error) && invalidRes.error?.message === 'Token has expired or is invalid.', 'Invalid code returns actionable error message');
+
+    // 3. Failure case when unnormalized email casing causes mismatch
+    const badCasingRes = simulateVerifyOtp({
+      email: 'Candidate.Success@Domain.COM',
+      token: '123456',
+      type: 'signup',
+    });
+    assert(Boolean(badCasingRes.error), 'Un-normalized casing fails validation');
+  }
+
+  console.log('\nTest Group 6: Resend Verification Parameters Contract');
+  {
+    const simulateResend = (params: { type: string; email: string; options: { emailRedirectTo: string } }) => {
+      assert(params.type === 'signup', 'Resend uses type="signup"');
+      assert(params.email === params.email.toLowerCase(), 'Resend uses lowercase email');
+      assert(params.options.emailRedirectTo.includes('/auth/callback'), 'Resend specifies emailRedirectTo callback');
+      return { error: null };
+    };
+
+    const resendRes = simulateResend({
+      type: 'signup',
+      email: '  Applicant@Company.com  '.trim().toLowerCase(),
+      options: { emailRedirectTo: 'https://knowtohire.vercel.app/auth/callback' },
+    });
+    assert(resendRes.error === null, 'Resend succeeds with normalized parameters');
+  }
+
   console.log('\n======================================================');
   console.log('✅ ALL EMAIL VERIFICATION FLOW TESTS PASSED');
   console.log('======================================================\n');

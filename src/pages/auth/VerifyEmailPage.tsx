@@ -23,12 +23,11 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
     ? window.sessionStorage.getItem('kth_pending_verification_email')
     : null;
 
-  const rawCandidateEmail = user?.email || emailFromUrl || emailFromStorage || '';
-  const trimmedCandidateEmail = rawCandidateEmail.trim();
-  const isCandidateEmailValid = Boolean(trimmedCandidateEmail && EMAIL_REGEX.test(trimmedCandidateEmail));
+  const rawCandidateEmail = (user?.email || emailFromUrl || emailFromStorage || '').trim().toLowerCase();
+  const isCandidateEmailValid = Boolean(rawCandidateEmail && EMAIL_REGEX.test(rawCandidateEmail));
 
   // Editable email state in case user arrived without state or made a typo
-  const [emailInput, setEmailInput] = useState<string>(isCandidateEmailValid ? trimmedCandidateEmail : '');
+  const [emailInput, setEmailInput] = useState<string>(isCandidateEmailValid ? rawCandidateEmail : '');
   const [isEditingEmail, setIsEditingEmail] = useState<boolean>(!isCandidateEmailValid);
 
   // OTP input state for users receiving 6-digit verification code
@@ -37,16 +36,16 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
 
   // Synchronize email state if auth user or URL changes
   useEffect(() => {
-    if (trimmedCandidateEmail && EMAIL_REGEX.test(trimmedCandidateEmail)) {
-      setEmailInput(trimmedCandidateEmail);
+    if (rawCandidateEmail && EMAIL_REGEX.test(rawCandidateEmail)) {
+      setEmailInput(rawCandidateEmail);
       setIsEditingEmail(false);
       if (typeof window !== 'undefined' && window.sessionStorage) {
-        window.sessionStorage.setItem('kth_pending_verification_email', trimmedCandidateEmail);
+        window.sessionStorage.setItem('kth_pending_verification_email', rawCandidateEmail);
       }
     }
-  }, [trimmedCandidateEmail]);
+  }, [rawCandidateEmail]);
 
-  const activeTargetEmail = (emailInput || trimmedCandidateEmail).trim();
+  const activeTargetEmail = (emailInput || rawCandidateEmail).trim().toLowerCase();
   const isTargetEmailValid = Boolean(activeTargetEmail && EMAIL_REGEX.test(activeTargetEmail));
 
   const [cooldown, setCooldown] = useState(0);
@@ -108,7 +107,8 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
 
     setPageAlert(null);
 
-    if (!isTargetEmailValid) {
+    const normalizedTargetEmail = activeTargetEmail.trim().toLowerCase();
+    if (!normalizedTargetEmail || !EMAIL_REGEX.test(normalizedTargetEmail)) {
       setPageAlert({
         type: 'error',
         title: 'Invalid Email Address',
@@ -132,7 +132,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
     try {
       const { error } = await supabase.auth.resend({
         type: 'signup',
-        email: activeTargetEmail,
+        email: normalizedTargetEmail,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
@@ -163,7 +163,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
         setPageAlert({
           type: 'success',
           title: 'Verification Link Dispatched',
-          message: `A fresh verification link has been sent to ${activeTargetEmail}. Please check your inbox and spam folder.`,
+          message: `A fresh verification link has been sent to ${normalizedTargetEmail}. Please check your inbox and spam folder.`,
         });
         setCooldown(60);
         setIsEditingEmail(false);
@@ -181,7 +181,10 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otpCode.trim() || otpCode.trim().length < 6) {
+    if (isVerifyingOtp) return;
+
+    const cleanToken = otpCode.replace(/\D/g, '').trim();
+    if (!cleanToken || cleanToken.length < 6) {
       setPageAlert({
         type: 'error',
         title: 'Code Required',
@@ -190,12 +193,14 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
       return;
     }
 
-    if (!isTargetEmailValid) {
+    const normalizedTargetEmail = activeTargetEmail.trim().toLowerCase();
+    if (!normalizedTargetEmail || !EMAIL_REGEX.test(normalizedTargetEmail)) {
       setPageAlert({
         type: 'error',
         title: 'Email Required',
-        message: 'Please provide a valid email address matching the verification code.',
+        message: 'Please provide a valid registered email address matching the verification code.',
       });
+      setIsEditingEmail(true);
       return;
     }
 
@@ -203,17 +208,19 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
     setPageAlert(null);
 
     try {
+      // The signup email code dispatched by Supabase Auth uses type: 'signup'
       const { data, error } = await supabase.auth.verifyOtp({
-        email: activeTargetEmail,
-        token: otpCode.trim(),
+        email: normalizedTargetEmail,
+        token: cleanToken,
         type: 'signup',
       });
 
       if (error) {
+        const errorMsg = error.message || 'Invalid or expired confirmation code. Please request a new one.';
         setPageAlert({
           type: 'error',
           title: 'Verification Failed',
-          message: error.message || 'Invalid or expired confirmation code. Please request a new one.',
+          message: errorMsg,
         });
       } else if (data.user) {
         setPageAlert({
@@ -235,7 +242,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
       setPageAlert({
         type: 'error',
         title: 'Verification Error',
-        message: err?.message || 'An error occurred while verifying the code.',
+        message: err?.message || 'An unexpected error occurred while verifying the code. Please try again.',
       });
     } finally {
       setIsVerifyingOtp(false);
