@@ -293,8 +293,6 @@ export const EmployerOnboardingPage: React.FC<EmployerOnboardingPageProps> = ({
             company_size: formData.companySize || null,
             headquarters_location: formData.headquartersLocation.trim() || null,
             description: formData.description.trim() || null,
-            // Verification status remains unverified as required
-            verification_status: 'unverified',
           })
           .eq('id', companyId);
 

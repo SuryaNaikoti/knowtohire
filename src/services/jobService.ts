@@ -157,7 +157,8 @@ async function getEmployerAuthContext(): Promise<{ userId: string; companyId: st
     if (employerProfile?.company_id) {
       return { userId: userData.user.id, companyId: employerProfile.company_id };
     }
-    return { userId: userData.user.id, companyId: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396' };
+    // Real authenticated user without an employer_profile/company yet
+    return null;
   }
 
   if (typeof window !== 'undefined' && window.localStorage) {
@@ -315,9 +316,19 @@ export const jobService = {
         salary_currency: 'INR',
         status: 'published',
         is_verified: true,
-        published_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        published_at: (() => {
+          if (!mj.postedDate) return new Date(Date.now() - 30 * 86400000).toISOString();
+          const pd = mj.postedDate.toLowerCase();
+          if (pd === 'today' || pd === 'just now') return new Date(Date.now() - 3600000).toISOString();
+          if (pd === 'yesterday' || pd === '1 day ago') return new Date(Date.now() - 86400000).toISOString();
+          const daysMatch = pd.match(/(\d+)\s*d/);
+          if (daysMatch) return new Date(Date.now() - parseInt(daysMatch[1], 10) * 86400000).toISOString();
+          const weeksMatch = pd.match(/(\d+)\s*w/);
+          if (weeksMatch) return new Date(Date.now() - parseInt(weeksMatch[1], 10) * 7 * 86400000).toISOString();
+          return new Date(Date.now() - 14 * 86400000).toISOString();
+        })(),
+        created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+        updated_at: new Date(Date.now() - 30 * 86400000).toISOString(),
         company: {
           id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
           name: mj.company,
@@ -447,9 +458,9 @@ export const jobService = {
         return { data: normalizeJobEntity(data), error: null };
       }
 
-      // Check local created jobs
+      // Check local created jobs (must be published)
       const localJobs = getLocalCreatedJobs();
-      const localJob = localJobs.find((j) => j.id === jobId);
+      const localJob = localJobs.find((j) => j.id === jobId && j.status === 'published');
       if (localJob) {
         return { data: normalizeJobEntity(localJob), error: null };
       }

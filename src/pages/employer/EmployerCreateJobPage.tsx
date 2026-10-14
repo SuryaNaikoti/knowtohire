@@ -146,11 +146,32 @@ export const EmployerCreateJobPage: React.FC<EmployerCreateJobPageProps> = ({ on
 
   const handleSave = async (status: 'draft' | 'published') => {
     if (!title.trim()) {
-      setErrorMessage('Please provide a job title.');
+      setErrorMessage('Job title is required');
+      return;
+    }
+    if (!department.trim()) {
+      setErrorMessage('Department is required');
       return;
     }
     if (!description.trim()) {
-      setErrorMessage('Please provide a job overview description.');
+      setErrorMessage('Job description is required');
+      return;
+    }
+
+    const minSal = parseInt(minSalary, 10);
+    if (isNaN(minSal) || minSal <= 0) {
+      setErrorMessage('Please provide a valid minimum salary in INR');
+      return;
+    }
+
+    const maxSal = parseInt(maxSalary, 10);
+    if (isNaN(maxSal) || maxSal <= 0) {
+      setErrorMessage('Please provide a valid maximum salary in INR');
+      return;
+    }
+
+    if (maxSal < minSal) {
+      setErrorMessage('Maximum salary cannot be less than minimum salary');
       return;
     }
 

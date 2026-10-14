@@ -17,6 +17,29 @@
  * 13. Admin moderation actions (Pause -> Reopen -> Close).
  */
 
+// Setup mock local storage environment if in Node BEFORE importing services
+const store: Record<string, string> = {
+  kth_demo_auth_session: JSON.stringify({
+    id: '00000000-0000-0000-0000-000000000002',
+    role: 'employer',
+    company_id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
+    email: 'employer@ecostrategy.in',
+  }),
+};
+if (typeof window === 'undefined') {
+  (global as any).window = {
+    localStorage: {
+      getItem: (k: string) => store[k] || null,
+      setItem: (k: string, v: string) => { store[k] = v; },
+      removeItem: (k: string) => { delete store[k]; },
+    },
+    dispatchEvent: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  };
+  (global as any).localStorage = (global as any).window.localStorage;
+}
+
 import {
   jobService,
   taxonomyService,
@@ -26,34 +49,12 @@ import {
   JobCreateInput,
   JobUpdateInput,
 } from '../src/services';
+import { subscriptionEntitlementService } from '../src/services/subscriptionEntitlementService';
 
 async function runEmployerCreateJobE2ETests() {
   console.log('========================================================================');
   console.log('  KnowToHire: Employer Create Job Lifecycle E2E Certification Suite');
   console.log('========================================================================\n');
-
-  // Setup mock local storage environment if in Node
-  if (typeof window === 'undefined') {
-    const store: Record<string, string> = {
-      kth_demo_auth_session: JSON.stringify({
-        id: '00000000-0000-0000-0000-000000000002',
-        role: 'employer',
-        company_id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-        email: 'employer@ecostrategy.in',
-      }),
-    };
-    (global as any).window = {
-      localStorage: {
-        getItem: (k: string) => store[k] || null,
-        setItem: (k: string, v: string) => { store[k] = v; },
-        removeItem: (k: string) => { delete store[k]; },
-      },
-      dispatchEvent: () => {},
-      addEventListener: () => {},
-      removeEventListener: () => {},
-    };
-    (global as any).localStorage = (global as any).window.localStorage;
-  }
 
   let passedCount = 0;
 
@@ -163,6 +164,14 @@ async function runEmployerCreateJobE2ETests() {
   // 5. PUBLISH JOB & DOWNSTREAM DISCOVERY
   // -------------------------------------------------------------------------
   console.log('\n--- 5. Publish Job & Cross-Portal Propagation ---');
+  // In test environment, configure subscription entitlement for the mock employer
+  subscriptionEntitlementService.canPostJob = async () => ({
+    canPost: true,
+    activeCount: 0,
+    maxAllowed: 5,
+    tier: 'starter',
+  });
+
   const publishPayload: JobCreateInput = {
     title: 'Senior ESG Compliance Specialist',
     department: 'Environmental & Sustainability',

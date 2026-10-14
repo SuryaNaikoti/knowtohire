@@ -119,6 +119,20 @@ export const EmployerJobsPage: React.FC = () => {
     }
   };
 
+  const handleConfirmDeleteDraft = async (jobId: string, jobTitle: string) => {
+    if (confirm(`Permanently delete unpublished draft "${jobTitle}"?`)) {
+      setActionLoadingId(jobId);
+      setActionError(null);
+      const { error } = await jobService.deleteDraftJob(jobId);
+      setActionLoadingId(null);
+      if (error) {
+        setActionError(error.message);
+      } else {
+        loadJobs();
+      }
+    }
+  };
+
   const handleNavigate = (path: string) => {
     navigateTo(path);
   };
@@ -226,12 +240,7 @@ export const EmployerJobsPage: React.FC = () => {
                 onPause={() => handlePause(job.id)}
                 onCloseJob={() => handleClose(job.id)}
                 onReopen={() => handleReopen(job.id)}
-                onDeleteDraft={async () => {
-                  if (confirm(`Permanently delete unpublished draft "${job.title}"?`)) {
-                    await jobService.deleteDraftJob(job.id);
-                    loadJobs();
-                  }
-                }}
+                onDeleteDraft={() => handleConfirmDeleteDraft(job.id, job.title)}
                 onViewApplicants={() => handleNavigate(`/employer/jobs/${job.id}/applicants`)}
                 onEdit={() => handleNavigate(`/employer/jobs/${job.id}/edit`)}
               />
