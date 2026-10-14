@@ -3,9 +3,9 @@ import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
-import { useAuth, resolveRole } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { MailCheck, RefreshCw, ArrowLeft, CheckCircle2, KeyRound } from 'lucide-react';
+import { MailCheck, RefreshCw, ArrowLeft, Mail } from 'lucide-react';
 
 export interface VerifyEmailPageProps {
   onNavigate?: (path: string) => void;
@@ -14,7 +14,7 @@ export interface VerifyEmailPageProps {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) => {
-  const { user, role, status, isAuthenticated, isInitialized, isLoading, refreshProfile, logout } = useAuth();
+  const { user, role, status, isAuthenticated, isInitialized, isLoading, logout } = useAuth();
 
   // Extract candidate email from query parameter, current session, or sessionStorage
   const searchParams = new URLSearchParams(window.location.search);
@@ -29,10 +29,6 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
   // Editable email state in case user arrived without state or made a typo
   const [emailInput, setEmailInput] = useState<string>(isCandidateEmailValid ? rawCandidateEmail : '');
   const [isEditingEmail, setIsEditingEmail] = useState<boolean>(!isCandidateEmailValid);
-
-  // OTP input state for users receiving 6-digit verification code
-  const [otpCode, setOtpCode] = useState<string>('');
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState<boolean>(false);
 
   // Synchronize email state if auth user or URL changes
   useEffect(() => {
@@ -50,7 +46,6 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
 
   const [cooldown, setCooldown] = useState(0);
   const [isResending, setIsResending] = useState(false);
-  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [pageAlert, setPageAlert] = useState<{
     type: 'success' | 'error' | 'warning';
     title: string;
@@ -163,9 +158,8 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
         setPageAlert({
           type: 'success',
           title: 'Verification Link Dispatched',
-          message: `A fresh verification link and code have been sent to ${normalizedTargetEmail}. Note: Any previously received codes have been invalidated. Please use only the newest code.`,
+          message: `A new confirmation link has been sent to ${normalizedTargetEmail}. Please open the email and click the confirmation link. If you requested multiple emails, make sure to use the link from the newest message.`,
         });
-        setOtpCode('');
         setCooldown(60);
         setIsEditingEmail(false);
       }
@@ -180,154 +174,6 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isVerifyingOtp) return;
-
-    const cleanToken = otpCode.replace(/\D/g, '').trim();
-    if (!cleanToken || cleanToken.length < 6) {
-      setPageAlert({
-        type: 'error',
-        title: 'Code Required',
-        message: 'Please enter the 6-digit confirmation code received in your email.',
-      });
-      return;
-    }
-
-    const normalizedTargetEmail = activeTargetEmail.trim().toLowerCase();
-    if (!normalizedTargetEmail || !EMAIL_REGEX.test(normalizedTargetEmail)) {
-      setPageAlert({
-        type: 'error',
-        title: 'Email Required',
-        message: 'Please provide a valid registered email address matching the verification code.',
-      });
-      setIsEditingEmail(true);
-      return;
-    }
-
-    setIsVerifyingOtp(true);
-    setPageAlert(null);
-
-    try {
-      // Step 1: Attempt verification with type 'signup' (dispatched on registration & signup resend)
-      let verifyResult = await supabase.auth.verifyOtp({
-        email: normalizedTargetEmail,
-        token: cleanToken,
-        type: 'signup',
-      });
-
-      // Step 2: Fallback to type 'email' if project is configured with email OTP template
-      if (
-        verifyResult.error &&
-        (verifyResult.error.message.toLowerCase().includes('expired') ||
-          verifyResult.error.message.toLowerCase().includes('invalid'))
-      ) {
-        const fallbackResult = await supabase.auth.verifyOtp({
-          email: normalizedTargetEmail,
-          token: cleanToken,
-          type: 'email',
-        });
-        if (!fallbackResult.error && fallbackResult.data.user) {
-          verifyResult = fallbackResult;
-        }
-      }
-
-      if (verifyResult.error) {
-        const errorMsg =
-          verifyResult.error.message ||
-          'Verification failed: The confirmation code is invalid or has expired.';
-        setPageAlert({
-          type: 'error',
-          title: 'Verification Failed',
-          message: `${errorMsg} If you recently requested a new email or clicked "Resend", only the latest code is valid. Earlier codes are automatically invalidated.`,
-        });
-      } else if (verifyResult.data.user) {
-        setPageAlert({
-          type: 'success',
-          title: 'Email Confirmed!',
-          message: 'Your email address has been successfully confirmed. Directing to onboarding...',
-        });
-        const updatedProfile = await refreshProfile();
-        const targetRole = resolveRole(verifyResult.data.user, updatedProfile, role) || 'candidate';
-        const onboardingPath =
-          targetRole === 'employer'
-            ? '/onboarding/employer'
-            : targetRole === 'creator'
-            ? '/creator'
-            : '/onboarding/candidate';
-        navigate(onboardingPath);
-      }
-    } catch (err: any) {
-      setPageAlert({
-        type: 'error',
-        title: 'Verification Error',
-        message: err?.message || 'An unexpected error occurred while verifying the code. Please try again.',
-      });
-    } finally {
-      setIsVerifyingOtp(false);
-    }
-  };
-
-  const handleCheckStatus = async () => {
-    setIsCheckingStatus(true);
-    setPageAlert(null);
-
-    try {
-      const { data: { user: freshUser }, error: userError } = await supabase.auth.getUser();
-
-      if (userError || !freshUser) {
-        setPageAlert({
-          type: 'warning',
-          title: 'Confirmation Pending',
-          message: 'Your email confirmation link has not been activated yet. Please click the link in your verification email or sign in after confirming.',
-        });
-        return;
-      }
-
-      const isConfirmed = Boolean(freshUser.email_confirmed_at || (freshUser as any).confirmed_at);
-      if (!isConfirmed) {
-        setPageAlert({
-          type: 'warning',
-          title: 'Verification Incomplete',
-          message: 'Your email address has not been confirmed in Supabase Auth yet. Please open the confirmation link sent to your inbox.',
-        });
-        return;
-      }
-
-      // Confirmed in Supabase! Refresh profile and proceed
-      const updatedProfile = await refreshProfile();
-      const targetRole = resolveRole(freshUser, updatedProfile, role) || 'candidate';
-
-      if (updatedProfile?.status === 'active') {
-        const portalPath =
-          targetRole === 'employer'
-            ? '/employer'
-            : targetRole === 'creator'
-            ? '/creator'
-            : targetRole === 'admin'
-            ? '/admin'
-            : '/candidate';
-        navigate(portalPath);
-      } else {
-        const onboardingPath =
-          targetRole === 'employer'
-            ? '/onboarding/employer'
-            : targetRole === 'creator'
-            ? '/creator'
-            : '/onboarding/candidate';
-        navigate(onboardingPath);
-      }
-    } catch {
-      setPageAlert({
-        type: 'error',
-        title: 'Check Failed',
-        message: 'Could not verify confirmation status. Please check your network connection.',
-      });
-    } finally {
-      setIsCheckingStatus(false);
-    }
-  };
-
   const handleBackToSignIn = async () => {
     if (isAuthenticated) {
       await logout();
@@ -338,7 +184,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
   return (
     <AuthLayout
       title="Verify your email"
-      subtitle="We've sent a verification link to your registered email address to secure your account."
+      subtitle="Click the confirmation link sent to your registered inbox to activate your account."
       badgeText="Email Verification Required"
     >
       <div className="space-y-6 text-center">
@@ -382,12 +228,20 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
           </div>
         )}
 
-        <div className="text-xs text-kth-slate-600 leading-relaxed max-w-sm mx-auto space-y-1">
-          <p>
-            Please check your inbox and click the verification link to activate your KnowToHire account.
-          </p>
-          <p className="text-kth-slate-400 text-[11px]">
-            Links are valid for 24 hours. Check your spam or promotions folder if you do not see it immediately.
+        <div className="text-xs text-kth-slate-600 leading-relaxed max-w-sm mx-auto space-y-2 bg-blue-50/60 p-3.5 rounded-xl border border-blue-100 text-left">
+          <div className="flex items-start gap-2.5">
+            <Mail className="w-4 h-4 text-kth-primary-600 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-semibold text-kth-slate-800">
+                Check your inbox for "Confirm your email address"
+              </p>
+              <p className="text-kth-slate-600 text-[11px] leading-relaxed">
+                Clicking the confirmation link inside the email will automatically verify your account and take you directly to your onboarding setup.
+              </p>
+            </div>
+          </div>
+          <p className="text-kth-slate-500 text-[11px] pt-1 border-t border-blue-100/70">
+            Links are valid for 24 hours. Check your spam or promotions folder if the email doesn't appear within a few minutes.
           </p>
         </div>
 
@@ -398,54 +252,8 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
           </Alert>
         )}
 
-        {/* Optional 6-digit Code verification section */}
-        <div className="border-t border-kth-slate-100 pt-4 text-left">
-          <details className="group cursor-pointer">
-            <summary className="text-xs font-bold text-kth-slate-700 flex items-center justify-between list-none py-1">
-              <span className="flex items-center gap-1.5">
-                <KeyRound className="w-3.5 h-3.5 text-kth-primary-600" />
-                Have a 6-digit confirmation code instead?
-              </span>
-              <span className="text-[11px] text-kth-primary-600 group-open:rotate-180 transition-transform">
-                ▼
-              </span>
-            </summary>
-            <form onSubmit={handleVerifyOtp} className="mt-3 space-y-2.5">
-              <Input
-                type="text"
-                maxLength={6}
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="Enter 6-digit code (e.g. 123456)"
-                className="tracking-widest font-mono text-center font-bold"
-              />
-              <Button
-                type="submit"
-                variant="primary"
-                size="sm"
-                className="w-full font-semibold"
-                isLoading={isVerifyingOtp}
-                disabled={isVerifyingOtp || otpCode.trim().length < 6}
-              >
-                Submit Code
-              </Button>
-            </form>
-          </details>
-        </div>
-
         {/* Actions */}
         <div className="space-y-3 pt-2">
-          <Button
-            variant="emerald"
-            size="md"
-            className="w-full font-bold"
-            isLoading={isCheckingStatus}
-            leftIcon={<CheckCircle2 className="w-4 h-4" />}
-            onClick={handleCheckStatus}
-          >
-            I've Confirmed My Email
-          </Button>
-
           <Button
             variant="outline"
             size="md"

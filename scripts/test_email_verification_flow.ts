@@ -193,7 +193,7 @@ async function runEmailVerificationSuite() {
     assert(resolveRole(demoEmployerUser, demoEmployerProfile) === 'employer', 'Demo employer role is employer');
   }
 
-  console.log('\nTest Group 5: 6-Digit Verification Code (OTP) & Email Normalization');
+  console.log('\nTest Group 5: Email Normalization & Resend Verification Contract');
   {
     // Test email normalization logic
     const inputVariants = [
@@ -208,97 +208,6 @@ async function runEmailVerificationSuite() {
       assert(!normalized.startsWith(' ') && !normalized.endsWith(' '), `Normalized email has no leading/trailing whitespace: ${normalized}`);
     }
 
-    // Token sanitizer logic
-    const rawTokens = [' 123456 ', '123-456', '12 34 56', '12345678', 'abc123456xyz'];
-    const cleanToken1 = ' 123456 '.replace(/\D/g, '').trim();
-    assert(cleanToken1 === '123456' && cleanToken1.length === 6, 'Sanitizes whitespace around 6-digit token');
-
-    const cleanToken2 = '123-456'.replace(/\D/g, '').trim();
-    assert(cleanToken2 === '123456' && cleanToken2.length === 6, 'Sanitizes hyphens in 6-digit token');
-
-    const cleanTokenShort = '1234'.replace(/\D/g, '').trim();
-    assert(cleanTokenShort.length < 6, 'Detects incomplete tokens under 6 digits');
-
-    // Simulate Supabase verifyOtp payload contract with fallback
-    const simulateVerifyOtpWithFallback = (params: { email: string; token: string; type: string }) => {
-      // Must receive trimmed lowercase email and 6-digit token
-      if (params.email !== params.email.toLowerCase() || params.email.includes(' ')) {
-        return { error: { message: 'Token has expired or is invalid.' }, data: { user: null } };
-      }
-      // If code was issued under type 'signup' (standard flow)
-      if (params.type === 'signup' && params.token === '123456') {
-        return {
-          data: {
-            user: {
-              id: 'usr-verified-001',
-              email: params.email,
-              email_confirmed_at: new Date().toISOString(),
-              user_metadata: { role: 'candidate', full_name: 'Verified Candidate' },
-            },
-          },
-          error: null,
-        };
-      }
-      // If template was configured with type 'email' (fallback flow)
-      if (params.type === 'email' && params.token === '654321') {
-        return {
-          data: {
-            user: {
-              id: 'usr-verified-002',
-              email: params.email,
-              email_confirmed_at: new Date().toISOString(),
-              user_metadata: { role: 'candidate', full_name: 'Verified Candidate Email OTP' },
-            },
-          },
-          error: null,
-        };
-      }
-      return { error: { message: 'Token has expired or is invalid.' }, data: { user: null } };
-    };
-
-    // Client helper matching VerifyEmailPage handleVerifyOtp logic
-    const clientVerifyOtp = (email: string, rawToken: string) => {
-      const normalizedEmail = email.trim().toLowerCase();
-      const cleanToken = rawToken.replace(/\D/g, '').trim();
-
-      // Step 1: try signup
-      let res = simulateVerifyOtpWithFallback({ email: normalizedEmail, token: cleanToken, type: 'signup' });
-      // Step 2: fallback to email if expired or invalid
-      if (res.error && (res.error.message.includes('expired') || res.error.message.includes('invalid'))) {
-        const fallback = simulateVerifyOtpWithFallback({ email: normalizedEmail, token: cleanToken, type: 'email' });
-        if (!fallback.error && fallback.data.user) {
-          res = fallback;
-        }
-      }
-      return res;
-    };
-
-    // 1. Success case with valid code and un-normalized input (signup type)
-    const unnormalizedEmail = '  Candidate.Success@Domain.COM  ';
-    const validCode = '123456';
-    const successRes = clientVerifyOtp(unnormalizedEmail, validCode);
-    assert(!successRes.error && successRes.data.user !== null, 'Valid 6-digit code succeeds with normalized email and type="signup"');
-    assert(successRes.data.user?.email === 'candidate.success@domain.com', 'Authenticated user matches normalized email');
-
-    // 2. Success case with type="email" template fallback
-    const emailTypeFallbackRes = clientVerifyOtp(unnormalizedEmail, '654321');
-    assert(!emailTypeFallbackRes.error && emailTypeFallbackRes.data.user !== null, 'Valid 6-digit code succeeds via fallback to type="email"');
-
-    // 3. Failure case with invalid/expired code
-    const invalidRes = clientVerifyOtp('candidate.success@domain.com', '999999');
-    assert(Boolean(invalidRes.error) && invalidRes.error?.message === 'Token has expired or is invalid.', 'Invalid code returns actionable error message');
-
-    // 4. Failure case when unnormalized email casing causes mismatch if not normalized
-    const unnormalizedBypass = simulateVerifyOtpWithFallback({
-      email: 'Candidate.Success@Domain.COM',
-      token: '123456',
-      type: 'signup',
-    });
-    assert(Boolean(unnormalizedBypass.error), 'Un-normalized casing fails validation without client normalization');
-  }
-
-  console.log('\nTest Group 6: Resend Verification Parameters Contract');
-  {
     const simulateResend = (params: { type: string; email: string; options: { emailRedirectTo: string } }) => {
       assert(params.type === 'signup', 'Resend uses type="signup"');
       assert(params.email === params.email.toLowerCase(), 'Resend uses lowercase email');
@@ -311,7 +220,179 @@ async function runEmailVerificationSuite() {
       email: '  Applicant@Company.com  '.trim().toLowerCase(),
       options: { emailRedirectTo: 'https://knowtohire.vercel.app/auth/callback' },
     });
-    assert(resendRes.error === null, 'Resend succeeds with normalized parameters');
+    assert(resendRes.error === null, 'Resend succeeds with normalized parameters and emailRedirectTo');
+  }
+
+  console.log('\nTest Group 6: Email-Link Callback Verification & Route Redirection');
+  {
+    // Simulate Supabase token_hash / code verification from email link
+    const simulateLinkCallback = (urlParams: { token_hash?: string; code?: string; type?: string; userRole?: string }) => {
+      // Must have either token_hash (standard Supabase email link) or code (PKCE)
+      if (!urlParams.token_hash && !urlParams.code) {
+        return { error: new Error('No verification token or authorization code found.') };
+      }
+
+      if (urlParams.token_hash === 'expired_or_invalid_token') {
+        return { error: new Error('The confirmation link has expired or is invalid.') };
+      }
+
+      // Valid link confirmation establishes confirmed user
+      const verifiedUser: AuthUser = {
+        id: 'usr-confirmed-link-101',
+        email: 'employer.lead@hirecorp.com',
+        email_confirmed_at: new Date().toISOString(),
+        user_metadata: { role: urlParams.userRole || 'employer', full_name: 'Lead Employer' },
+      } as any;
+
+      const profile: Profile = {
+        id: 'usr-confirmed-link-101',
+        email: 'employer.lead@hirecorp.com',
+        full_name: 'Lead Employer',
+        role: (urlParams.userRole as any) || 'employer',
+        status: 'pending_onboarding',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const effectiveStatus = resolveEffectiveStatus(verifiedUser, profile);
+      const targetRole = resolveRole(verifiedUser, profile) || 'candidate';
+
+      let destination = '/onboarding/candidate';
+      if (effectiveStatus === 'pending_onboarding') {
+        destination =
+          targetRole === 'employer'
+            ? '/onboarding/employer'
+            : targetRole === 'creator'
+            ? '/creator'
+            : '/onboarding/candidate';
+      } else if (effectiveStatus === 'active') {
+        destination =
+          targetRole === 'employer'
+            ? '/employer'
+            : targetRole === 'creator'
+            ? '/creator'
+            : targetRole === 'admin'
+            ? '/admin'
+            : '/candidate';
+      }
+
+      return { error: null, user: verifiedUser, destination };
+    };
+
+    // 1. Successful verification link for Employer
+    const employerLinkResult = simulateLinkCallback({
+      token_hash: 'valid_email_confirmation_hash_emp',
+      type: 'signup',
+      userRole: 'employer',
+    });
+    assert(employerLinkResult.error === null, 'Email confirmation link verifies successfully');
+    assert(employerLinkResult.destination === '/onboarding/employer', 'Employer redirects to /onboarding/employer after link verification');
+
+    // 2. Successful verification link for Candidate
+    const candidateLinkResult = simulateLinkCallback({
+      token_hash: 'valid_email_confirmation_hash_cand',
+      type: 'signup',
+      userRole: 'candidate',
+    });
+    assert(candidateLinkResult.destination === '/onboarding/candidate', 'Candidate redirects to /onboarding/candidate after link verification');
+
+    // 3. Successful verification link for Creator
+    const creatorLinkResult = simulateLinkCallback({
+      token_hash: 'valid_email_confirmation_hash_creator',
+      type: 'signup',
+      userRole: 'creator',
+    });
+    assert(creatorLinkResult.destination === '/creator', 'Creator redirects to /creator after link verification');
+
+    // 4. Invalid or expired confirmation link error handling
+    const invalidLinkResult = simulateLinkCallback({
+      token_hash: 'expired_or_invalid_token',
+      type: 'signup',
+    });
+    assert(Boolean(invalidLinkResult.error), 'Expired or invalid link returns error');
+    assert(invalidLinkResult.error?.message === 'The confirmation link has expired or is invalid.', 'Clear error returned on expired/invalid link');
+  }
+
+  console.log('\nTest Group 7: Protected Route Regression - Unverified Users Blocked');
+  {
+    // Simulate ProtectedRoute navigation decision logic
+    const testProtectedRouteAccess = (userState: {
+      isAuthenticated: boolean;
+      status: string | null;
+      role: string | null;
+      currentPath: string;
+    }): { allowed: boolean; redirectTarget: string | null } => {
+      if (!userState.isAuthenticated) {
+        return { allowed: false, redirectTarget: '/login' };
+      }
+      if (userState.role === null) {
+        return { allowed: false, redirectTarget: null }; // Loading/resolving
+      }
+      if (userState.status === 'unverified') {
+        if (!userState.currentPath.startsWith('/verify-email')) {
+          return { allowed: false, redirectTarget: '/verify-email' };
+        }
+        return { allowed: true, redirectTarget: null };
+      }
+      if (userState.status === 'pending_onboarding') {
+        const targetOnboarding = userState.role === 'employer' ? '/onboarding/employer' : '/onboarding/candidate';
+        if (!userState.currentPath.startsWith('/onboarding') || userState.currentPath === '/onboarding') {
+          return { allowed: false, redirectTarget: targetOnboarding };
+        }
+        return { allowed: true, redirectTarget: null };
+      }
+      return { allowed: true, redirectTarget: null };
+    };
+
+    // Unverified user attempting to access employer onboarding directly
+    const accessOnboardingEmployer = testProtectedRouteAccess({
+      isAuthenticated: true,
+      status: 'unverified',
+      role: 'employer',
+      currentPath: '/onboarding/employer',
+    });
+    assert(!accessOnboardingEmployer.allowed && accessOnboardingEmployer.redirectTarget === '/verify-email',
+      'Unverified employer is strictly blocked from /onboarding/employer and redirected to /verify-email');
+
+    // Unverified user attempting to access candidate onboarding directly
+    const accessOnboardingCandidate = testProtectedRouteAccess({
+      isAuthenticated: true,
+      status: 'unverified',
+      role: 'candidate',
+      currentPath: '/onboarding/candidate',
+    });
+    assert(!accessOnboardingCandidate.allowed && accessOnboardingCandidate.redirectTarget === '/verify-email',
+      'Unverified candidate is strictly blocked from /onboarding/candidate and redirected to /verify-email');
+
+    // Unverified user attempting to access candidate dashboard
+    const accessCandidateDashboard = testProtectedRouteAccess({
+      isAuthenticated: true,
+      status: 'unverified',
+      role: 'candidate',
+      currentPath: '/candidate',
+    });
+    assert(!accessCandidateDashboard.allowed && accessCandidateDashboard.redirectTarget === '/verify-email',
+      'Unverified user is strictly blocked from /candidate portal and redirected to /verify-email');
+
+    // Unverified user attempting to access employer dashboard
+    const accessEmployerDashboard = testProtectedRouteAccess({
+      isAuthenticated: true,
+      status: 'unverified',
+      role: 'employer',
+      currentPath: '/employer',
+    });
+    assert(!accessEmployerDashboard.allowed && accessEmployerDashboard.redirectTarget === '/verify-email',
+      'Unverified user is strictly blocked from /employer portal and redirected to /verify-email');
+
+    // Verified user pending onboarding is permitted to enter their target onboarding
+    const verifiedPendingEmployer = testProtectedRouteAccess({
+      isAuthenticated: true,
+      status: 'pending_onboarding',
+      role: 'employer',
+      currentPath: '/onboarding/employer',
+    });
+    assert(verifiedPendingEmployer.allowed && verifiedPendingEmployer.redirectTarget === null,
+      'Verified employer pending onboarding is allowed to access /onboarding/employer');
   }
 
   console.log('\n======================================================');
