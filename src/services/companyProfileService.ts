@@ -117,6 +117,10 @@ export const companyProfileService = {
           const merged: ExtendedCompanyProfile = {
             ...dbComp,
             ...(localOverride || {}),
+            // Database is strictly authoritative for identity, timestamps, and governance verification status
+            id: dbComp.id,
+            verification_status: dbComp.verification_status || 'unverified',
+            created_at: dbComp.created_at,
             name: localOverride?.name || dbComp.name,
             industry: localOverride?.industry !== undefined ? localOverride.industry : dbComp.industry,
             headquarters_location: localOverride?.headquarters_location !== undefined ? localOverride.headquarters_location : dbComp.headquarters_location,
@@ -272,6 +276,10 @@ export const companyProfileService = {
             data: {
               ...data,
               ...(local || {}),
+              // Database is strictly authoritative for identity, timestamps, and governance verification status
+              id: data.id,
+              verification_status: data.verification_status || 'unverified',
+              created_at: data.created_at,
             },
             error: null,
           };

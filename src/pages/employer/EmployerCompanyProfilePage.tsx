@@ -71,7 +71,31 @@ export const EmployerCompanyProfilePage: React.FC = () => {
   useEffect(() => {
     loadTaxonomy();
     loadCompany();
-  }, [loadTaxonomy, loadCompany]);
+
+    const handleSync = (evt?: any) => {
+      // If event contains updated verification status for our company, update state immediately
+      if (evt?.detail?.verification_status && company?.id && evt.detail.companyId === company.id) {
+        setCompany((prev) => (prev ? { ...prev, verification_status: evt.detail.verification_status } : null));
+      }
+      loadCompany();
+    };
+
+    window.addEventListener('kth_company_profile_updated', handleSync);
+    window.addEventListener('kth_employers_changed', handleSync);
+    window.addEventListener('kth_companies_changed', handleSync);
+
+    const handleFocus = () => {
+      loadCompany();
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('kth_company_profile_updated', handleSync);
+      window.removeEventListener('kth_employers_changed', handleSync);
+      window.removeEventListener('kth_companies_changed', handleSync);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadTaxonomy, loadCompany, company?.id]);
 
   const handleStartEdit = () => {
     if (company) {

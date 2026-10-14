@@ -1047,7 +1047,11 @@ export const adminService = {
 
       if (profile || companyProfile) {
         const compId = companyProfile?.id || null;
-        const resolvedVerification = (compId && companyOverrides[compId]) || companyProfile?.verification_status || 'unverified';
+        const resolvedVerification =
+          (isSupabaseConfigured() && companyProfile?.verification_status) ||
+          (compId && companyOverrides[compId]) ||
+          companyProfile?.verification_status ||
+          'unverified';
 
         const record: AdminEmployerDetailRecord = {
           id: employerId,
@@ -1236,14 +1240,16 @@ export const adminService = {
         ];
       }
 
-      // Apply any session verification overrides
-      const overrides = getDemoCompanyOverrides();
-      companies = companies.map((c) => {
-        if (overrides[c.id]) {
-          return { ...c, verification_status: overrides[c.id] };
-        }
-        return c;
-      });
+      // Apply any session verification overrides strictly when running in demo mode
+      if (useDemo) {
+        const overrides = getDemoCompanyOverrides();
+        companies = companies.map((c) => {
+          if (overrides[c.id]) {
+            return { ...c, verification_status: overrides[c.id] };
+          }
+          return c;
+        });
+      }
 
       // Filter out companies whose employer accounts have been deleted
       const deletedUsers = getDemoDeletedUsers();
@@ -1264,7 +1270,33 @@ export const adminService = {
     status: 'verified' | 'rejected' | 'pending_review'
   ): Promise<ServiceResult<boolean>> {
     try {
+      const { isSupabaseConfigured } = await import('@/lib/supabase');
+      if (isSupabaseConfigured()) {
+        const { error } = await supabase
+          .from('company_profiles')
+          .update({ verification_status: status })
+          .eq('id', companyId);
+
+        if (error) {
+          return { data: null, error: normalizeServiceError(error) };
+        }
+      }
+
       saveDemoCompanyOverride(companyId, status);
+
+      // Synchronize in-memory/localStorage cached company profile if present
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const raw = window.localStorage.getItem(`kth_company_profile_${companyId}`);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            parsed.verification_status = status;
+            window.localStorage.setItem(`kth_company_profile_${companyId}`, JSON.stringify(parsed));
+          }
+        } catch {
+          // ignore
+        }
+      }
 
       // Dispatch cross-portal event synchronization
       if (typeof window !== 'undefined') {
@@ -1283,18 +1315,6 @@ export const adminService = {
             detail: { companyId, status },
           })
         );
-      }
-
-      const { isSupabaseConfigured } = await import('@/lib/supabase');
-      if (isSupabaseConfigured()) {
-        const { error } = await supabase
-          .from('company_profiles')
-          .update({ verification_status: status })
-          .eq('id', companyId);
-
-        if (error) {
-          return { data: null, error: normalizeServiceError(error) };
-        }
       }
 
       return { data: true, error: null };

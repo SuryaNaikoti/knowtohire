@@ -178,9 +178,15 @@ async function runTestSuite() {
   assert(adminEmployersPageCode.includes("window.addEventListener('kth_company_profile_updated', handleEmployersChanged);"), 'AdminEmployersPage subscribes to kth_company_profile_updated');
 
   const compProfilePageCode = fs.readFileSync(path.join(srcRoot, 'pages/employer/EmployerCompanyProfilePage.tsx'), 'utf-8');
+  assert(compProfilePageCode.includes("window.addEventListener('kth_company_profile_updated', handleSync);"), 'EmployerCompanyProfilePage subscribes to kth_company_profile_updated');
+  assert(compProfilePageCode.includes("window.addEventListener('kth_employers_changed', handleSync);"), 'EmployerCompanyProfilePage subscribes to kth_employers_changed');
   assert(compProfilePageCode.includes("company.verification_status === 'verified'"), 'EmployerCompanyProfilePage renders verified badge accurately');
   assert(compProfilePageCode.includes("company.verification_status === 'pending_review'"), 'EmployerCompanyProfilePage renders pending_review badge accurately');
   assert(compProfilePageCode.includes("company.verification_status === 'rejected'"), 'EmployerCompanyProfilePage renders rejected badge accurately');
+
+  // Verify companyProfileService enforces database authoritative verification status over stale local overrides
+  const compProfileServiceCode = fs.readFileSync(path.join(srcRoot, 'services/companyProfileService.ts'), 'utf-8');
+  assert(compProfileServiceCode.includes("verification_status: dbComp.verification_status || 'unverified'"), 'companyProfileService enforces dbComp.verification_status over stale localOverride');
 
   // ============================================================================
   // 6. JOB PUBLISHING GOVERNANCE & BADGE INTEGRITY
