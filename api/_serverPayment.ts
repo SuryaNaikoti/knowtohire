@@ -337,9 +337,14 @@ export function assertServerPaymentConfig(): {
  * Never exported to client or logs.
  */
 export function getServerSupabaseClient() {
-  const url = process.env.VITE_SUPABASE_URL || 'https://roqbodprqmnwxdjsskgb.supabase.co';
+  const isVercelPreview = process.env.VERCEL_ENV === 'preview';
+  const url = process.env.VITE_SUPABASE_URL || (!isVercelPreview ? 'https://roqbodprqmnwxdjsskgb.supabase.co' : '');
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const anonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcWJvZHBycW1ud3hkanNza2diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NDA1NTksImV4cCI6MjA5ODMxNjU1OX0.ZiJQHCM0bDuLoitFdMmT7s1G50Tw-HjQyl7xylpT2Nc';
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY || (!isVercelPreview ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcWJvZHBycW1ud3hkanNza2diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NDA1NTksImV4cCI6MjA5ODMxNjU1OX0.ZiJQHCM0bDuLoitFdMmT7s1G50Tw-HjQyl7xylpT2Nc' : '');
+
+  if (!url || (!serviceKey && !anonKey)) {
+    throw new Error('[ServerPaymentSecurity] Supabase URL or keys missing. In preview environments, fallback to production is strictly forbidden.');
+  }
 
   return createClient(url, serviceKey || anonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
