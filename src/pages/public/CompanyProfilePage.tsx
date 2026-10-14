@@ -322,8 +322,16 @@ export const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({
                 </div>
                 <div className="flex justify-between items-center py-1">
                   <span className="text-kth-slate-500">Verification:</span>
-                  <span className="font-bold text-emerald-700 capitalize text-right">
-                    {company.verification_status || 'Verified'}
+                  <span className={`font-bold capitalize text-right ${
+                    company.verification_status === 'verified'
+                      ? 'text-emerald-700'
+                      : company.verification_status === 'pending_review'
+                      ? 'text-amber-700'
+                      : company.verification_status === 'rejected'
+                      ? 'text-rose-700'
+                      : 'text-kth-slate-600'
+                  }`}>
+                    {(company.verification_status || 'unverified').replace('_', ' ')}
                   </span>
                 </div>
               </div>

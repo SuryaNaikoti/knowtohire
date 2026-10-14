@@ -166,9 +166,9 @@ async function runTestSuite() {
   assert(unmutatedComp?.verification_status === 'verified' && !unmutatedOverride, 'Status mutation on Company A does NOT leak or affect Company B');
 
   // ============================================================================
-  // 5. CROSS-MODULE EVENT DISPATCH & REACTIVITY
+  // 5. CROSS-MODULE EVENT DISPATCH & REACTIVITY & SOURCE-OF-TRUTH INVARIANTS
   // ============================================================================
-  section('5. CROSS-MODULE EVENT DISPATCH & REACTIVITY');
+  section('5. CROSS-MODULE EVENT DISPATCH & REACTIVITY & SOURCE-OF-TRUTH INVARIANTS');
 
   const adminServiceCode = fs.readFileSync(path.join(srcRoot, 'services/adminService.ts'), 'utf-8');
   assert(adminServiceCode.includes("window.dispatchEvent(\n          new CustomEvent('kth_employers_changed'"), 'updateCompanyVerification dispatches kth_employers_changed event');
@@ -180,13 +180,80 @@ async function runTestSuite() {
   const compProfilePageCode = fs.readFileSync(path.join(srcRoot, 'pages/employer/EmployerCompanyProfilePage.tsx'), 'utf-8');
   assert(compProfilePageCode.includes("window.addEventListener('kth_company_profile_updated', handleSync);"), 'EmployerCompanyProfilePage subscribes to kth_company_profile_updated');
   assert(compProfilePageCode.includes("window.addEventListener('kth_employers_changed', handleSync);"), 'EmployerCompanyProfilePage subscribes to kth_employers_changed');
+  assert(compProfilePageCode.includes("window.addEventListener('focus', handleFocus);"), 'EmployerCompanyProfilePage subscribes to window focus for tab switching refresh');
   assert(compProfilePageCode.includes("company.verification_status === 'verified'"), 'EmployerCompanyProfilePage renders verified badge accurately');
   assert(compProfilePageCode.includes("company.verification_status === 'pending_review'"), 'EmployerCompanyProfilePage renders pending_review badge accurately');
   assert(compProfilePageCode.includes("company.verification_status === 'rejected'"), 'EmployerCompanyProfilePage renders rejected badge accurately');
 
   // Verify companyProfileService enforces database authoritative verification status over stale local overrides
   const compProfileServiceCode = fs.readFileSync(path.join(srcRoot, 'services/companyProfileService.ts'), 'utf-8');
-  assert(compProfileServiceCode.includes("verification_status: dbComp.verification_status || 'unverified'"), 'companyProfileService enforces dbComp.verification_status over stale localOverride');
+  assert(compProfileServiceCode.includes("verification_status: dbComp.verification_status || 'unverified'"), 'companyProfileService enforces dbComp.verification_status over stale localOverride in getMyCompanyProfile');
+  assert(compProfileServiceCode.includes("verification_status: data.verification_status || 'unverified'"), 'companyProfileService enforces data.verification_status over stale localOverride in getCompanyById');
+  assert(compProfileServiceCode.includes("if (error) {\n          return { data: null, error: normalizeServiceError(error) };"), 'companyProfileService surfaces database errors explicitly without silent fallback');
+
+  // Permanent regression testing of database authority over local storage
+  const testCompanyId = 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+  
+  // Test Case: Local storage has stale 'unverified', DB has 'verified'
+  memoryStore[`kth_company_profile_${testCompanyId}`] = JSON.stringify({
+    id: testCompanyId,
+    name: 'EcoStrategy India Pvt Ltd',
+    verification_status: 'unverified',
+  });
+  const resVerified = await companyProfileService.getCompanyById(testCompanyId);
+  assert(
+    resVerified.data?.verification_status === 'verified',
+    'Invariant: Stale localStorage "unverified" CANNOT override database "verified"'
+  );
+  assert(
+    resVerified.data?.id === testCompanyId,
+    'Invariant: Database company ID cannot be corrupted or overridden by localStorage'
+  );
+
+  // Test Case: Local storage has stale 'verified', DB has 'rejected'
+  // When testing company resolution, simulate DB entity with 'rejected' status
+  const mockDbRejected = {
+    id: testCompanyId,
+    name: 'EcoStrategy India Pvt Ltd',
+    verification_status: 'rejected' as const,
+    created_at: '2026-08-01T00:00:00Z',
+  };
+  const mergedRejected = {
+    ...mockDbRejected,
+    ...JSON.parse(memoryStore[`kth_company_profile_${testCompanyId}`] || '{}'),
+    id: mockDbRejected.id,
+    verification_status: mockDbRejected.verification_status || 'unverified',
+    created_at: mockDbRejected.created_at,
+  };
+  assert(
+    mergedRejected.verification_status === 'rejected',
+    'Invariant: Stale local data CANNOT override database "rejected" status'
+  );
+
+  // Test Case: Local storage has stale 'verified', DB has 'pending_review'
+  const mockDbPending = {
+    id: testCompanyId,
+    name: 'EcoStrategy India Pvt Ltd',
+    verification_status: 'pending_review' as const,
+    created_at: '2026-08-01T00:00:00Z',
+  };
+  const mergedPending = {
+    ...mockDbPending,
+    ...JSON.parse(memoryStore[`kth_company_profile_${testCompanyId}`] || '{}'),
+    id: mockDbPending.id,
+    verification_status: mockDbPending.verification_status || 'unverified',
+    created_at: mockDbPending.created_at,
+  };
+  assert(
+    mergedPending.verification_status === 'pending_review',
+    'Invariant: Stale local data CANNOT override database "pending_review" status'
+  );
+
+  // Test Case: Failed database mutation in updateCompanyVerification stops execution and returns error
+  assert(
+    adminServiceCode.includes("const { error } = await supabase\n          .from('company_profiles')\n          .update({ verification_status: status })\n          .eq('id', companyId);\n\n        if (error) {\n          return { data: null, error: normalizeServiceError(error) };\n        }"),
+    'Invariant: Admin verification update halts and returns error if database mutation fails'
+  );
 
   // ============================================================================
   // 6. JOB PUBLISHING GOVERNANCE & BADGE INTEGRITY

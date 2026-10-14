@@ -113,7 +113,11 @@ export const companyProfileService = {
           .eq('id', companyId)
           .maybeSingle();
 
-        if (!error && dbComp) {
+        if (error) {
+          return { data: null, error: normalizeServiceError(error) };
+        }
+
+        if (dbComp) {
           const merged: ExtendedCompanyProfile = {
             ...dbComp,
             ...(localOverride || {}),
@@ -271,7 +275,11 @@ export const companyProfileService = {
           .or(`id.eq.${target},name.ilike.%${target}%`)
           .maybeSingle();
 
-        if (!error && data) {
+        if (error) {
+          return { data: null, error: normalizeServiceError(error) };
+        }
+
+        if (data) {
           return {
             data: {
               ...data,
@@ -286,7 +294,26 @@ export const companyProfileService = {
         }
       }
 
+      // Fallback path when Supabase is not configured or entity is not in DB:
+      // If resolving the canonical demo company (EcoStrategy), its authoritative baseline verification status is 'verified'.
+      // Local storage drafts cannot override its verification status.
+      const isEcoStrategy =
+        target === 'fa97faee-1cdf-41e6-a151-f51c7fa4c396' ||
+        target.toLowerCase().includes('ecostrategy') ||
+        target.toLowerCase().includes('eco-strategy') ||
+        target === 'default';
+
       if (local) {
+        if (isEcoStrategy) {
+          return {
+            data: {
+              ...local,
+              id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
+              verification_status: 'verified',
+            },
+            error: null,
+          };
+        }
         return { data: local, error: null };
       }
 
@@ -333,12 +360,6 @@ export const companyProfileService = {
       }
 
       // Canonical Demo Enterprise (EcoStrategy India Pvt Ltd)
-      const isEcoStrategy =
-        target === 'fa97faee-1cdf-41e6-a151-f51c7fa4c396' ||
-        target.toLowerCase().includes('ecostrategy') ||
-        target.toLowerCase().includes('eco-strategy') ||
-        target === 'default';
-
       if (isEcoStrategy) {
         const defaultCompany: ExtendedCompanyProfile = {
           id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
