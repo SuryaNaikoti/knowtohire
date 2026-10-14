@@ -163,8 +163,9 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
         setPageAlert({
           type: 'success',
           title: 'Verification Link Dispatched',
-          message: `A fresh verification link has been sent to ${normalizedTargetEmail}. Please check your inbox and spam folder.`,
+          message: `A fresh verification link and code have been sent to ${normalizedTargetEmail}. Note: Any previously received codes have been invalidated. Please use only the newest code.`,
         });
+        setOtpCode('');
         setCooldown(60);
         setIsEditingEmail(false);
       }
@@ -208,28 +209,46 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
     setPageAlert(null);
 
     try {
-      // The signup email code dispatched by Supabase Auth uses type: 'signup'
-      const { data, error } = await supabase.auth.verifyOtp({
+      // Step 1: Attempt verification with type 'signup' (dispatched on registration & signup resend)
+      let verifyResult = await supabase.auth.verifyOtp({
         email: normalizedTargetEmail,
         token: cleanToken,
         type: 'signup',
       });
 
-      if (error) {
-        const errorMsg = error.message || 'Invalid or expired confirmation code. Please request a new one.';
+      // Step 2: Fallback to type 'email' if project is configured with email OTP template
+      if (
+        verifyResult.error &&
+        (verifyResult.error.message.toLowerCase().includes('expired') ||
+          verifyResult.error.message.toLowerCase().includes('invalid'))
+      ) {
+        const fallbackResult = await supabase.auth.verifyOtp({
+          email: normalizedTargetEmail,
+          token: cleanToken,
+          type: 'email',
+        });
+        if (!fallbackResult.error && fallbackResult.data.user) {
+          verifyResult = fallbackResult;
+        }
+      }
+
+      if (verifyResult.error) {
+        const errorMsg =
+          verifyResult.error.message ||
+          'Verification failed: The confirmation code is invalid or has expired.';
         setPageAlert({
           type: 'error',
           title: 'Verification Failed',
-          message: errorMsg,
+          message: `${errorMsg} If you recently requested a new email or clicked "Resend", only the latest code is valid. Earlier codes are automatically invalidated.`,
         });
-      } else if (data.user) {
+      } else if (verifyResult.data.user) {
         setPageAlert({
           type: 'success',
           title: 'Email Confirmed!',
           message: 'Your email address has been successfully confirmed. Directing to onboarding...',
         });
         const updatedProfile = await refreshProfile();
-        const targetRole = resolveRole(data.user, updatedProfile, role) || 'candidate';
+        const targetRole = resolveRole(verifyResult.data.user, updatedProfile, role) || 'candidate';
         const onboardingPath =
           targetRole === 'employer'
             ? '/onboarding/employer'

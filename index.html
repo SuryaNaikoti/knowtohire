@@ -6,6 +6,12 @@
   <title>KnowToHire — Sustainability &amp; Career Intelligence Platform</title>
   <meta name="description" content="KnowToHire connects top talent with high-impact careers in sustainability, ESG compliance, CleanTech, carbon accounting, and regulatory compliance.">
   <link rel="canonical" href="https://knowtohire-mu.vercel.app/">
+  <script>
+    // Enforce authoritative production hostname
+    if (window.location.hostname === 'knowtohire.vercel.app') {
+      window.location.replace('https://knowtohire-mu.vercel.app' + window.location.pathname + window.location.search + window.location.hash);
+    }
+  </script>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 
   <!-- Open Graph / Facebook -->

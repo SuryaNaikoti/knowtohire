@@ -219,16 +219,14 @@ async function runEmailVerificationSuite() {
     const cleanTokenShort = '1234'.replace(/\D/g, '').trim();
     assert(cleanTokenShort.length < 6, 'Detects incomplete tokens under 6 digits');
 
-    // Simulate Supabase verifyOtp payload contract
-    const simulateVerifyOtp = (params: { email: string; token: string; type: string }) => {
-      // Must receive trimmed lowercase email, 6-digit token, and type 'signup'
-      if (params.type !== 'signup') {
-        return { error: { message: 'Invalid verification type for signup code' }, data: { user: null } };
-      }
+    // Simulate Supabase verifyOtp payload contract with fallback
+    const simulateVerifyOtpWithFallback = (params: { email: string; token: string; type: string }) => {
+      // Must receive trimmed lowercase email and 6-digit token
       if (params.email !== params.email.toLowerCase() || params.email.includes(' ')) {
         return { error: { message: 'Token has expired or is invalid.' }, data: { user: null } };
       }
-      if (params.token === '123456') {
+      // If code was issued under type 'signup' (standard flow)
+      if (params.type === 'signup' && params.token === '123456') {
         return {
           data: {
             user: {
@@ -241,35 +239,62 @@ async function runEmailVerificationSuite() {
           error: null,
         };
       }
+      // If template was configured with type 'email' (fallback flow)
+      if (params.type === 'email' && params.token === '654321') {
+        return {
+          data: {
+            user: {
+              id: 'usr-verified-002',
+              email: params.email,
+              email_confirmed_at: new Date().toISOString(),
+              user_metadata: { role: 'candidate', full_name: 'Verified Candidate Email OTP' },
+            },
+          },
+          error: null,
+        };
+      }
       return { error: { message: 'Token has expired or is invalid.' }, data: { user: null } };
     };
 
-    // 1. Success case with valid code and un-normalized input
+    // Client helper matching VerifyEmailPage handleVerifyOtp logic
+    const clientVerifyOtp = (email: string, rawToken: string) => {
+      const normalizedEmail = email.trim().toLowerCase();
+      const cleanToken = rawToken.replace(/\D/g, '').trim();
+
+      // Step 1: try signup
+      let res = simulateVerifyOtpWithFallback({ email: normalizedEmail, token: cleanToken, type: 'signup' });
+      // Step 2: fallback to email if expired or invalid
+      if (res.error && (res.error.message.includes('expired') || res.error.message.includes('invalid'))) {
+        const fallback = simulateVerifyOtpWithFallback({ email: normalizedEmail, token: cleanToken, type: 'email' });
+        if (!fallback.error && fallback.data.user) {
+          res = fallback;
+        }
+      }
+      return res;
+    };
+
+    // 1. Success case with valid code and un-normalized input (signup type)
     const unnormalizedEmail = '  Candidate.Success@Domain.COM  ';
     const validCode = '123456';
-    const successRes = simulateVerifyOtp({
-      email: unnormalizedEmail.trim().toLowerCase(),
-      token: validCode.replace(/\D/g, '').trim(),
-      type: 'signup',
-    });
+    const successRes = clientVerifyOtp(unnormalizedEmail, validCode);
     assert(!successRes.error && successRes.data.user !== null, 'Valid 6-digit code succeeds with normalized email and type="signup"');
     assert(successRes.data.user?.email === 'candidate.success@domain.com', 'Authenticated user matches normalized email');
 
-    // 2. Failure case with invalid/expired code
-    const invalidRes = simulateVerifyOtp({
-      email: 'candidate.success@domain.com',
-      token: '999999',
-      type: 'signup',
-    });
+    // 2. Success case with type="email" template fallback
+    const emailTypeFallbackRes = clientVerifyOtp(unnormalizedEmail, '654321');
+    assert(!emailTypeFallbackRes.error && emailTypeFallbackRes.data.user !== null, 'Valid 6-digit code succeeds via fallback to type="email"');
+
+    // 3. Failure case with invalid/expired code
+    const invalidRes = clientVerifyOtp('candidate.success@domain.com', '999999');
     assert(Boolean(invalidRes.error) && invalidRes.error?.message === 'Token has expired or is invalid.', 'Invalid code returns actionable error message');
 
-    // 3. Failure case when unnormalized email casing causes mismatch
-    const badCasingRes = simulateVerifyOtp({
+    // 4. Failure case when unnormalized email casing causes mismatch if not normalized
+    const unnormalizedBypass = simulateVerifyOtpWithFallback({
       email: 'Candidate.Success@Domain.COM',
       token: '123456',
       type: 'signup',
     });
-    assert(Boolean(badCasingRes.error), 'Un-normalized casing fails validation');
+    assert(Boolean(unnormalizedBypass.error), 'Un-normalized casing fails validation without client normalization');
   }
 
   console.log('\nTest Group 6: Resend Verification Parameters Contract');
