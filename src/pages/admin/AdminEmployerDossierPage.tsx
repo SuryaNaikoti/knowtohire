@@ -160,7 +160,7 @@ export const AdminEmployerDossierPage: React.FC<AdminEmployerDossierPageProps> =
                         Registered: {new Date(company.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                       <span className="flex items-center gap-1 font-mono text-cyan-300">
-                        CIN: {company.registration_number || 'U74999KA2021PTC148900'}
+                        CIN: {company.registration_number || 'Under Verification'}
                       </span>
                     </div>
                   </div>
@@ -229,7 +229,7 @@ export const AdminEmployerDossierPage: React.FC<AdminEmployerDossierPageProps> =
                         Corporate ID (CIN)
                       </span>
                       <p className="text-xs font-mono font-bold text-kth-slate-900">
-                        {company.registration_number || 'U74999KA2021PTC148900'}
+                        {company.registration_number || 'Under Verification'}
                       </p>
                     </div>
 

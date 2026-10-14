@@ -54,7 +54,7 @@ export const companyProfileService = {
   /**
    * Resolve company profile for the currently authenticated employer.
    */
-  async getMyCompanyProfile(): Promise<ServiceResult<ExtendedCompanyProfile>> {
+  async getMyCompanyProfile(): Promise<ServiceResult<ExtendedCompanyProfile | null>> {
     try {
       let companyId: string | null = null;
 
@@ -89,8 +89,18 @@ export const companyProfileService = {
         }
       }
 
-      if (!companyId) {
+      // If user is real authenticated employer but has no employer_profile/company yet
+      if (!companyId && authData?.user) {
+        return { data: null, error: null };
+      }
+
+      // Only fall back to EcoStrategy when in offline demo mode without real auth
+      if (!companyId && !isSupabaseConfigured()) {
         companyId = 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+      }
+
+      if (!companyId) {
+        return { data: null, error: null };
       }
 
       // Check local storage overrides first

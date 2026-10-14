@@ -29,7 +29,8 @@ export const subscriptionService = {
     }
 
     if (!targetCompanyId) {
-      targetCompanyId = 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+      console.warn('[SubscriptionService] No target company ID found for subscription activation.');
+      return false;
     }
 
     // Expiration date (30 days for monthly, 365 days for annual)
@@ -75,10 +76,14 @@ export const subscriptionService = {
     // 2. Persist to Supabase if configured
     if (isSupabaseConfigured()) {
       try {
-        await supabase
+        const { error } = await supabase
           .from('company_profiles')
           .update(subDetails)
           .eq('id', targetCompanyId);
+
+        if (error) {
+          console.warn('[SubscriptionService] Supabase company subscription update warning:', error.message);
+        }
       } catch (err) {
         console.warn('[SubscriptionService] Supabase company subscription update warning:', err);
       }
@@ -88,7 +93,9 @@ export const subscriptionService = {
   },
 
   /**
-   * Check company subscription status
+   * Check company subscription status.
+   * Supabase is the authoritative source of truth when configured.
+   * Does NOT show ACTIVE solely from localStorage if server-side status is inactive.
    */
   async getSubscriptionStatus(companyId?: string): Promise<{
     isActive: boolean;
@@ -99,38 +106,53 @@ export const subscriptionService = {
     let targetCompanyId = companyId;
     if (!targetCompanyId) {
       const myComp = await companyProfileService.getMyCompanyProfile();
-      targetCompanyId = myComp.data?.id || 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+      targetCompanyId = myComp.data?.id;
+    }
+
+    if (!targetCompanyId) {
+      return {
+        isActive: false,
+        tier: 'free',
+        billingCycle: 'monthly',
+      };
     }
 
     let compData: any = null;
-    if (typeof window !== 'undefined' && window.localStorage) {
-      try {
-        const raw = window.localStorage.getItem(`kth_company_profile_${targetCompanyId}`);
-        if (raw) compData = JSON.parse(raw);
-      } catch {
-        // ignore
-      }
-    } else {
-      compData = memoryCompanyProfiles[targetCompanyId] || null;
-    }
 
-    if (!compData && isSupabaseConfigured()) {
+    // 1. Query Supabase authoritatively first if configured
+    if (isSupabaseConfigured()) {
       try {
         const { data } = await supabase
           .from('company_profiles')
           .select('subscription_tier, subscription_status, subscription_billing_cycle, subscription_expires_at')
           .eq('id', targetCompanyId)
           .maybeSingle();
-        if (data) compData = data;
+        if (data) {
+          compData = data;
+        }
       } catch {
         // ignore
+      }
+    }
+
+    // 2. In unconfigured/offline demo mode, fall back to memory or localStorage
+    if (!compData && !isSupabaseConfigured()) {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const raw = window.localStorage.getItem(`kth_company_profile_${targetCompanyId}`);
+          if (raw) compData = JSON.parse(raw);
+        } catch {
+          // ignore
+        }
+      } else {
+        compData = memoryCompanyProfiles[targetCompanyId] || null;
       }
     }
 
     const isActive = compData?.subscription_status === 'active';
     return {
       isActive,
-      tier: compData?.subscription_tier || 'starter',
+      tier: compData?.subscription_tier || (isActive ? 'starter' : 'free'),
       billingCycle: compData?.subscription_billing_cycle || 'monthly',
       expiresAt: compData?.subscription_expires_at,
     };

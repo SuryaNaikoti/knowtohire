@@ -279,7 +279,7 @@ export const AdminEmployerInspectModal: React.FC<AdminEmployerInspectModalProps>
               </div>
               <div className="p-3 bg-kth-slate-50 rounded-lg border border-kth-slate-100">
                 <span className="text-[10px] uppercase font-bold text-kth-slate-400 block">Corporate ID (CIN)</span>
-                <span className="font-mono font-bold text-kth-slate-900 mt-0.5 block">{employer.registration_number || 'U74999KA2021PTC148900'}</span>
+                <span className="font-mono font-bold text-kth-slate-900 mt-0.5 block">{employer.registration_number || 'Under Verification'}</span>
               </div>
             </div>
           </div>

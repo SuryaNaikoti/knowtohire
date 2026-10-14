@@ -41,12 +41,16 @@ export const AdminEmployersPage: React.FC<AdminEmployersPageProps> = ({ onNaviga
   useEffect(() => {
     fetchCompanies();
 
-    const handleCompChange = () => {
+    const handleEmployersChanged = () => {
       fetchCompanies();
     };
-    window.addEventListener('kth_companies_changed', handleCompChange);
+    window.addEventListener('kth_companies_changed', handleEmployersChanged);
+    window.addEventListener('kth_employers_changed', handleEmployersChanged);
+    window.addEventListener('kth_company_profile_updated', handleEmployersChanged);
     return () => {
-      window.removeEventListener('kth_companies_changed', handleCompChange);
+      window.removeEventListener('kth_companies_changed', handleEmployersChanged);
+      window.removeEventListener('kth_employers_changed', handleEmployersChanged);
+      window.removeEventListener('kth_company_profile_updated', handleEmployersChanged);
     };
   }, []);
 
@@ -318,7 +322,7 @@ export const AdminEmployersPage: React.FC<AdminEmployersPageProps> = ({ onNaviga
                           <span>{c.headquarters_location || 'India'}</span>
                         </td>
                         <td className="p-4 text-kth-slate-500 font-mono text-[11px]">
-                          {c.registration_number || 'U74999KA2021PTC148900'}
+                          {c.registration_number || 'Under Verification'}
                         </td>
                         <td className="p-4">
                           <Badge

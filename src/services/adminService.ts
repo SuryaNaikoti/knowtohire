@@ -1019,8 +1019,12 @@ export const adminService = {
       if (isSupabaseConfigured()) {
         const { data: p } = await supabase.from('profiles').select('*').eq('id', employerId).maybeSingle();
         profile = p;
-        const { data: cp } = await supabase.from('company_profiles').select('*').eq('user_id', employerId).maybeSingle();
-        companyProfile = cp;
+        // Search employer_profiles to link employer to company_profiles
+        const { data: ep } = await supabase.from('employer_profiles').select('company_id').eq('profile_id', employerId).maybeSingle();
+        if (ep?.company_id) {
+          const { data: cp } = await supabase.from('company_profiles').select('*').eq('id', ep.company_id).maybeSingle();
+          companyProfile = cp;
+        }
       }
 
       // Check session status overrides
@@ -1042,31 +1046,31 @@ export const adminService = {
       }
 
       if (profile || companyProfile) {
-        const compId = companyProfile?.id || 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
-        const resolvedVerification = companyOverrides[compId] || companyProfile?.verification_status || 'verified';
+        const compId = companyProfile?.id || null;
+        const resolvedVerification = (compId && companyOverrides[compId]) || companyProfile?.verification_status || 'unverified';
 
         const record: AdminEmployerDetailRecord = {
           id: employerId,
-          full_name: profile?.full_name || 'Vikram Malhotra (Talent Lead)',
-          email: profile?.email || 'employer@knowtohire.com',
-          phone: profile?.phone || '+91 99887 75643',
+          full_name: profile?.full_name || 'Employer Account',
+          email: profile?.email || '',
+          phone: profile?.phone,
           avatar_url: profile?.avatar_url,
           role: 'employer',
           status: resolvedStatus,
-          company_id: compId,
-          company_name: companyProfile?.name || 'EcoStrategy India Pvt Ltd',
-          legal_name: companyProfile?.legal_name || 'EcoStrategy India Private Limited',
-          industry: companyProfile?.industry || 'Environmental & ESG Advisory',
-          headquarters_location: companyProfile?.headquarters_location || 'Bengaluru, Karnataka',
-          registration_number: companyProfile?.registration_number || 'U74999KA2021PTC148900',
-          company_size: companyProfile?.company_size || '51-200 employees',
-          website_url: companyProfile?.website_url || 'https://ecostrategy.co.in',
-          description: companyProfile?.description || 'Leading South Asian sustainability advisory firm specializing in SEBI BRSR Core assurance and decarbonization roadmaps.',
-          contact_email: companyProfile?.contact_email || profile?.email || 'corporate-compliance@ecostrategy.co.in',
+          company_id: compId || undefined,
+          company_name: companyProfile?.name || 'Unlinked Enterprise',
+          legal_name: companyProfile?.legal_name || companyProfile?.name,
+          industry: companyProfile?.industry,
+          headquarters_location: companyProfile?.headquarters_location,
+          registration_number: companyProfile?.registration_number,
+          company_size: companyProfile?.company_size,
+          website_url: companyProfile?.website_url,
+          description: companyProfile?.description,
+          contact_email: companyProfile?.contact_email || profile?.email,
           logo_url: companyProfile?.logo_url,
           verification_status: resolvedVerification,
-          active_jobs_count: 4,
-          total_applicants_count: 18,
+          active_jobs_count: 0,
+          total_applicants_count: 0,
           created_at: profile?.created_at || new Date().toISOString(),
           updated_at: companyProfile?.updated_at || new Date().toISOString(),
         };
@@ -1074,49 +1078,53 @@ export const adminService = {
         return { data: record, error: null };
       }
 
-      // Fallback mock employer records
-      const matchedMock = {
-        name: 'Vikram Malhotra (Talent Lead)',
-        email: 'employer@knowtohire.com',
-        phone: '+91 99887 75643',
-        company: 'EcoStrategy India Pvt Ltd',
-        legal: 'EcoStrategy India Private Limited',
-        industry: 'Environmental & ESG Advisory',
-        location: 'Bengaluru, Karnataka',
-        cin: 'U74999KA2021PTC148900',
-        size: '51-200 employees',
-        web: 'https://ecostrategy.co.in',
-        desc: 'Leading South Asian sustainability advisory firm specializing in SEBI BRSR Core assurance, industrial decarbonization roadmaps, and lifecycle assessments.',
-        status: 'verified' as const,
-      };
+      // Fallback mock employer records only for demo employer account when not in live DB
+      if (employerId === '00000000-0000-0000-0000-000000000002' || !isSupabaseConfigured()) {
+        const matchedMock = {
+          name: 'Vikram Malhotra (Talent Lead)',
+          email: 'employer@knowtohire.com',
+          phone: '+91 99887 75643',
+          company: 'EcoStrategy India Pvt Ltd',
+          legal: 'EcoStrategy India Private Limited',
+          industry: 'Environmental & ESG Advisory',
+          location: 'Bengaluru, Karnataka',
+          cin: 'U74999KA2021PTC148900',
+          size: '51-200 employees',
+          web: 'https://ecostrategy.co.in',
+          desc: 'Leading South Asian sustainability advisory firm specializing in SEBI BRSR Core assurance, industrial decarbonization roadmaps, and lifecycle assessments.',
+          status: 'verified' as const,
+        };
 
-      const compId = 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
-      const resolvedVerification = companyOverrides[compId] || matchedMock.status;
+        const compId = 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+        const resolvedVerification = companyOverrides[compId] || matchedMock.status;
 
-      const fallbackRecord: AdminEmployerDetailRecord = {
-        id: employerId || '00000000-0000-0000-0000-000000000002',
-        full_name: matchedMock.name,
-        email: matchedMock.email,
-        phone: matchedMock.phone,
-        role: 'employer',
-        status: resolvedStatus,
-        company_id: compId,
-        company_name: matchedMock.company,
-        legal_name: matchedMock.legal,
-        industry: matchedMock.industry,
-        headquarters_location: matchedMock.location,
-        registration_number: matchedMock.cin,
-        company_size: matchedMock.size,
-        website_url: matchedMock.web,
-        description: matchedMock.desc,
-        contact_email: matchedMock.email,
-        verification_status: resolvedVerification,
-        active_jobs_count: 4,
-        total_applicants_count: 18,
-        created_at: new Date().toISOString(),
-      };
+        const fallbackRecord: AdminEmployerDetailRecord = {
+          id: employerId || '00000000-0000-0000-0000-000000000002',
+          full_name: matchedMock.name,
+          email: matchedMock.email,
+          phone: matchedMock.phone,
+          role: 'employer',
+          status: resolvedStatus,
+          company_id: compId,
+          company_name: matchedMock.company,
+          legal_name: matchedMock.legal,
+          industry: matchedMock.industry,
+          headquarters_location: matchedMock.location,
+          registration_number: matchedMock.cin,
+          company_size: matchedMock.size,
+          website_url: matchedMock.web,
+          description: matchedMock.desc,
+          contact_email: matchedMock.email,
+          verification_status: resolvedVerification,
+          active_jobs_count: 4,
+          total_applicants_count: 18,
+          created_at: new Date().toISOString(),
+        };
 
-      return { data: fallbackRecord, error: null };
+        return { data: fallbackRecord, error: null };
+      }
+
+      return { data: null, error: { message: 'Employer not found', code: 'NOT_FOUND', status: 404 } };
     } catch (err) {
       return { data: null, error: normalizeServiceError(err) };
     }
@@ -1124,37 +1132,50 @@ export const adminService = {
 
   /**
    * Fetch companies for employer verification management.
+   * Supabase is the authoritative source of truth.
+   * Only in explicit offline/unconfigured demo mode (or when demoMode is explicitly requested) are synthetic demo companies returned.
    */
-  async getCompanies(): Promise<ServiceResult<AdminCompanyRecord[]>> {
+  async getCompanies(options?: { demoMode?: boolean }): Promise<ServiceResult<AdminCompanyRecord[]>> {
     try {
       const { isSupabaseConfigured } = await import('@/lib/supabase');
       let data: any[] | null = null;
+      let dbError: any = null;
+      const useDemo = options?.demoMode ?? !isSupabaseConfigured();
 
-      if (isSupabaseConfigured()) {
+      if (!useDemo && isSupabaseConfigured()) {
         const res = await supabase
           .from('company_profiles')
           .select('*')
           .order('created_at', { ascending: false });
         data = res.data;
+        dbError = res.error;
       }
 
-      let companies: AdminCompanyRecord[] = (data || []).map((c) => ({
-        id: c.id,
-        name: c.name,
-        legal_name: c.legal_name || c.name,
-        industry: c.industry || 'Environmental & ESG Advisory',
-        headquarters_location: c.headquarters_location || 'India',
-        registration_number: c.registration_number || 'U74999KA2021PTC148900',
-        company_size: c.company_size || '51-200 employees',
-        website_url: c.website_url || 'https://ecostrategy.co.in',
-        description: c.description || 'Enterprise specializing in statutory environmental compliance and carbon accounting.',
-        contact_email: c.contact_email || 'corporate-compliance@ecostrategy.co.in',
-        logo_url: c.logo_url,
-        verification_status: c.verification_status || 'verified',
-        created_at: c.created_at,
-      }));
+      if (dbError) {
+        return { data: null, error: normalizeServiceError(dbError) };
+      }
 
-      if (companies.length === 0) {
+      let companies: AdminCompanyRecord[] = [];
+
+      if (!useDemo && isSupabaseConfigured()) {
+        // Authoritative database records: map exact DB fields without arbitrary defaults
+        companies = (data || []).map((c) => ({
+          id: c.id,
+          name: c.name,
+          legal_name: c.legal_name || c.name,
+          industry: c.industry || undefined,
+          headquarters_location: c.headquarters_location || undefined,
+          registration_number: c.registration_number || undefined,
+          company_size: c.company_size || undefined,
+          website_url: c.website_url || undefined,
+          description: c.description || undefined,
+          contact_email: c.contact_email || undefined,
+          logo_url: c.logo_url || undefined,
+          verification_status: c.verification_status || 'unverified',
+          created_at: c.created_at,
+        }));
+      } else {
+        // Fallback demo companies ONLY when explicitly requested or Supabase is not configured (offline demo mode)
         companies = [
           {
             id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
@@ -1169,6 +1190,48 @@ export const adminService = {
             contact_email: 'corporate-compliance@ecostrategy.co.in',
             verification_status: 'verified',
             created_at: '2026-08-01T00:00:00Z',
+          },
+          {
+            id: 'c76c28d3-df6a-4581-a03d-05be23dd1c50',
+            name: 'SustainEdge Consulting',
+            legal_name: 'SustainEdge Solutions & Advisory LLP',
+            industry: 'Sustainability & Carbon Strategy',
+            headquarters_location: 'Mumbai, Maharashtra',
+            registration_number: 'AAO-4921-MH',
+            company_size: '11-50 employees',
+            website_url: 'https://sustainedge.io',
+            description: 'Strategic carbon consulting practice aiding mid-market industrial firms with EU CBAM compliance, GHG Protocol Scope 1-3 audits, and CDP reporting.',
+            contact_email: 'compliance@sustainedge.io',
+            verification_status: 'pending_review',
+            created_at: '2026-08-05T00:00:00Z',
+          },
+          {
+            id: 'bfcfe635-a4d4-40bf-a2e9-cffeb4b4553a',
+            name: 'Patent Nexus',
+            legal_name: 'Patent Nexus Intellectual Property Services Pvt Ltd',
+            industry: 'Patent & CleanTech IPR Law',
+            headquarters_location: 'New Delhi',
+            registration_number: 'U74140DL2019PTC356789',
+            company_size: '201-500 employees',
+            website_url: 'https://patentnexus.in',
+            description: 'Premier patent landscaping, prior art search, and technology transfer law firm focused exclusively on clean technologies and green chemistry innovations.',
+            contact_email: 'admin@patentnexus.in',
+            verification_status: 'verified',
+            created_at: '2026-08-10T00:00:00Z',
+          },
+          {
+            id: 'e977582f-4c34-4d4b-9b7c-90b4b999c7e6',
+            name: 'Niche Synthesis Technologies',
+            legal_name: 'Niche Synthesis Technologies India Private Limited',
+            industry: 'Technology & Enterprise Solutions',
+            headquarters_location: 'Hyderabad, Telangana',
+            registration_number: 'U72200TG2023PTC178912',
+            company_size: '1-10 employees',
+            website_url: 'https://nichesynthesis.tech',
+            description: 'Early-stage synthetic chemistry and computational bio-simulation software startup seeking corporate employer verification.',
+            contact_email: 'founders@nichesynthesis.tech',
+            verification_status: 'rejected',
+            created_at: '2026-08-12T00:00:00Z',
           },
         ];
       }
@@ -1194,6 +1257,7 @@ export const adminService = {
 
   /**
    * Verify or reject a company profile.
+   * Modifies verification_status independently from subscription status.
    */
   async updateCompanyVerification(
     companyId: string,
@@ -1212,6 +1276,11 @@ export const adminService = {
         window.dispatchEvent(
           new CustomEvent('kth_company_profile_updated', {
             detail: { companyId, verification_status: status },
+          })
+        );
+        window.dispatchEvent(
+          new CustomEvent('kth_companies_changed', {
+            detail: { companyId, status },
           })
         );
       }
