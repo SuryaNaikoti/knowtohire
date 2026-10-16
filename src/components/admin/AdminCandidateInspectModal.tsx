@@ -288,7 +288,7 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
                   {candidate.status === 'suspended' ? (
                     <>
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      Restore Account
+                      Reactivate Account
                     </>
                   ) : (
                     <>
