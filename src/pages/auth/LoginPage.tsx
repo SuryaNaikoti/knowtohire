@@ -76,25 +76,47 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    const { error } = await login(email.trim(), password);
+    const res = await login(email.trim(), password);
 
-    if (error) {
+    if (res.error) {
       setFormError(
-        error.message.includes('Invalid login credentials') || error.message.includes('invalid_grant')
+        res.error.message.includes('Invalid login credentials') || res.error.message.includes('invalid_grant')
           ? 'Invalid email address or password. Please try again.'
-          : error.message
+          : res.error.message
       );
     } else {
-      const cleanEmail = email.trim().toLowerCase();
-      if (cleanEmail === 'creator@knowtohire.com' || cleanEmail === 'demo.creator@knowtohire.com') {
-        navigate('/creator');
-      } else if (cleanEmail === 'admin@knowtohire.com' || cleanEmail === 'demo.admin@knowtohire.com') {
-        navigate('/admin');
-      } else if (cleanEmail === 'employer@knowtohire.com' || cleanEmail === 'demo.employer@knowtohire.com') {
-        navigate('/employer');
-      } else {
-        navigate('/candidate');
+      // Authoritative navigation based on resolved role and status
+      if (res.status === 'suspended') {
+        setFormError('Your account has been suspended due to governance or compliance review. Please contact support@knowtohire.com.');
+        return;
       }
+
+      if (res.status === 'unverified') {
+        navigate('/verify-email');
+        return;
+      }
+
+      if (res.status === 'pending_onboarding') {
+        const onboardingPath =
+          res.role === 'employer'
+            ? '/onboarding/employer'
+            : res.role === 'creator'
+            ? '/creator'
+            : '/onboarding/candidate';
+        navigate(onboardingPath);
+        return;
+      }
+
+      // Active status destination
+      const targetPath =
+        res.role === 'admin'
+          ? '/admin'
+          : res.role === 'employer'
+          ? '/employer'
+          : res.role === 'creator'
+          ? '/creator'
+          : '/candidate';
+      navigate(targetPath);
     }
   };
 

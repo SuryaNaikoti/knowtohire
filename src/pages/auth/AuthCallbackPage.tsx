@@ -157,7 +157,10 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
             ? (window.sessionStorage.getItem('kth_oauth_intended_role') as 'candidate' | 'employer' | 'creator' | null)
             : null;
 
+        // Security check: If user already has an authoritative profile in database,
+        // profile.role is authoritative. Never overwrite or adopt storedRole if an existing profile exists!
         const targetRole =
+          profile?.role ||
           resolveRole(activeUser, profile) ||
           storedRole ||
           'candidate';
@@ -206,6 +209,8 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
 
         // 5. If suspended, block immediately and show dedicated suspended screen (do not redirect to onboarding or login)
         if (effectiveStatus === 'suspended') {
+          // Immediately revoke local auth state
+          await supabase.auth.signOut();
           if (isMounted) {
             setIsSuspended(true);
           }

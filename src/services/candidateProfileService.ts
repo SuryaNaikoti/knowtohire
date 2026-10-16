@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import {
   CandidateFullProfile,
   CandidateExperienceItem,
@@ -239,6 +239,13 @@ export const candidateProfileService = {
         };
       }
 
+      if (userProfile.role !== 'candidate') {
+        return {
+          data: null,
+          error: { message: 'Access denied: Profile does not belong to a candidate account.', code: 'FORBIDDEN', status: 403 },
+        };
+      }
+
       // 2. Fetch public.candidate_profiles
       const { data: candProfile, error: candError } = await supabase
         .from('candidate_profiles')
@@ -406,6 +413,34 @@ export const candidateProfileService = {
 
       const userId = authData.user.id;
 
+      // Verify user's profile role and status
+      const { data: userProfile, error: profileCheckError } = await supabase
+        .from('profiles')
+        .select('role, status')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (profileCheckError || !userProfile) {
+        return {
+          data: null,
+          error: { message: 'Profile record not found.', code: 'NOT_FOUND', status: 404 },
+        };
+      }
+
+      if (userProfile.role !== 'candidate') {
+        return {
+          data: null,
+          error: { message: 'Access denied: Profile does not belong to a candidate account.', code: 'FORBIDDEN', status: 403 },
+        };
+      }
+
+      if (userProfile.status === 'suspended') {
+        return {
+          data: null,
+          error: { message: 'Account is suspended. Mutations are denied.', code: 'FORBIDDEN', status: 403 },
+        };
+      }
+
       // Handle account deactivation / status override persistence
       if (typeof window !== 'undefined' && window.localStorage) {
         if (input.isActive !== undefined) {
@@ -512,6 +547,29 @@ export const candidateProfileService = {
    */
   async deactivateMyAccount(): Promise<ServiceResult<boolean>> {
     try {
+      // 1. If online Supabase session is active, call authoritative serverless deactivation endpoint
+      if (isSupabaseConfigured()) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        if (token) {
+          try {
+            const response = await fetch('/api/account-deactivate', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+            });
+            if (response.ok) {
+              return { data: true, error: null };
+            }
+          } catch (apiErr) {
+            console.warn('[candidateProfileService] /api/account-deactivate network call fallback:', apiErr);
+          }
+        }
+      }
+
+      // 2. Fallback / direct update
       const res = await this.updateMyCandidateProfile({
         isActive: false,
         isDiscoverable: false,

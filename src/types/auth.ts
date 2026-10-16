@@ -17,7 +17,7 @@ export interface AuthState {
 }
 
 export interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<{ error: Error | null }>;
+  login: (email: string, password: string) => Promise<{ error: Error | null; role?: UserRole | null; status?: AccountStatus | null }>;
   loginWithGoogle: (role?: 'candidate' | 'employer' | 'creator') => Promise<{ error: Error | null }>;
   register: (
     email: string,

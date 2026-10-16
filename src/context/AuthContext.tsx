@@ -129,7 +129,7 @@ export const resolveEffectiveStatus = (
 ): AccountStatus | null => {
   if (!user) return null;
 
-  // 1. If profile is suspended, preserve suspended state authoritatively (including demo accounts)
+  // 1. If profile is suspended, preserve suspended state authoritatively
   if (profile && (profile.status as string) === 'suspended') {
     return 'suspended';
   }
@@ -163,6 +163,10 @@ export const resolveEffectiveStatus = (
 
 /**
  * Authoritatively resolves user role.
+ * Security Contract:
+ * 1. For any existing profile in public.profiles, profile.role is STRICTLY authoritative.
+ * 2. Client-supplied user_metadata or request payloads CANNOT override an existing database role.
+ * 3. user_metadata.role or fallbackRole is ONLY used when no database profile exists yet (new account initial setup).
  */
 export const resolveRole = (
   user: AuthUser | null,
@@ -176,35 +180,36 @@ export const resolveRole = (
     }
   }
 
+  // 1. Authoritative check: If a database profile exists with a valid role, IT ALWAYS WINS.
+  // Never allow user_metadata or client-selected role to override an existing profile's role!
+  if (
+    profile?.role === 'employer' ||
+    profile?.role === 'candidate' ||
+    profile?.role === 'admin' ||
+    profile?.role === 'creator'
+  ) {
+    return profile.role;
+  }
+
   const metaRole = user?.user_metadata?.role || (user as any)?.raw_user_meta_data?.role;
   const appRole = user?.app_metadata?.role || (user as any)?.raw_app_meta_data?.role;
 
-  // 1. If profile is active (onboarding completed), profile.role is authoritative
-  if (profile?.status === 'active' && (profile.role === 'employer' || profile.role === 'candidate' || profile.role === 'admin' || profile.role === 'creator')) {
-    return profile.role;
-  }
-
-  // 2. User metadata role
-  if (metaRole === 'employer' || metaRole === 'candidate' || metaRole === 'admin' || metaRole === 'creator') {
-    return metaRole;
-  }
-
-  // 3. Profile role
-  if (profile?.role === 'employer' || profile?.role === 'candidate' || profile?.role === 'admin' || profile?.role === 'creator') {
-    return profile.role;
-  }
-
-  // 4. App metadata
+  // 2. App metadata (secure server-assigned claim)
   if (appRole === 'employer' || appRole === 'candidate' || appRole === 'admin' || appRole === 'creator') {
     return appRole;
   }
 
-  // 5. Explicit fallback role
+  // 3. User metadata role (only used during initial provisioning when profile does not exist)
+  if (metaRole === 'employer' || metaRole === 'candidate' || metaRole === 'admin' || metaRole === 'creator') {
+    return metaRole;
+  }
+
+  // 4. Explicit fallback role
   if (fallbackRole) {
     return fallbackRole;
   }
 
-  // 6. Inspect localStorage demo session as graceful fallback
+  // 5. Inspect localStorage demo session as graceful fallback
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
       const stored = window.localStorage.getItem(DEMO_STORAGE_KEY);
@@ -501,7 +506,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [fetchProfile, state.user?.id]);
 
   // Actions
-  const login = async (email: string, password: string): Promise<{ error: Error | null }> => {
+  const login = async (
+    email: string,
+    password: string
+  ): Promise<{ error: Error | null; role?: UserRole | null; status?: AccountStatus | null }> => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
     const cleanEmail = email.trim().toLowerCase();
     const cleanPass = password.trim();
@@ -565,19 +573,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           error: null,
         });
 
-        return { error: null };
+        return { error: null, role: demoData.role, status: effectiveStatus || 'active' };
       }
 
       setState((prev) => ({ ...prev, isLoading: false, error: 'Supabase credentials are not configured.' }));
       return { error: new Error('Supabase credentials are not configured in environment.') };
     }
 
-    // 2. Standard Supabase Auth fallback
-    if (!isSupabaseConfigured()) {
-      setState((prev) => ({ ...prev, isLoading: false, error: 'Supabase credentials are not configured.' }));
-      return { error: new Error('Supabase credentials are not configured in environment.') };
-    }
-
+    // 2. Standard Supabase Auth
     const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password: cleanPass });
     if (error) {
       setState((prev) => ({ ...prev, isLoading: false, error: error.message }));
@@ -589,6 +592,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const effectiveStatus = resolveEffectiveStatus(data.user, profile);
       const resolvedRole = resolveRole(data.user, profile);
 
+      // If account is suspended, immediately sign out and reject authentication
+      if (effectiveStatus === 'suspended') {
+        await supabase.auth.signOut();
+        const suspendedMsg = 'Your account has been suspended due to governance or compliance review. Please contact support@knowtohire.com for assistance.';
+        setState((prev) => ({
+          ...prev,
+          user: null,
+          profile: null,
+          role: null,
+          status: 'suspended',
+          isAuthenticated: false,
+          isLoading: false,
+          isInitialized: true,
+          error: suspendedMsg,
+        }));
+        return {
+          error: new Error(suspendedMsg),
+          role: resolvedRole,
+          status: 'suspended',
+        };
+      }
+
       setState({
         user: data.user,
         profile,
@@ -599,6 +624,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isInitialized: true,
         error: null,
       });
+
+      return { error: null, role: resolvedRole, status: effectiveStatus };
     }
 
     return { error: null };
@@ -658,7 +685,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (data?.user) {
       const createdUserId = data.user.id;
-      // If this account was previously deleted, unblock it so the user can start completely afresh
+
+      // 1. Check if an authoritative profile already exists for this user in Supabase
+      const existingProfile = await fetchProfile(createdUserId);
+
+      // If user already exists in the system with an existing role, reject conflicting registration
+      if (existingProfile && existingProfile.role && existingProfile.role !== metadata.role) {
+        const existingRoleLabel = existingProfile.role.charAt(0).toUpperCase() + existingProfile.role.slice(1);
+        const conflictMsg = `An account with this email address already exists as a ${existingRoleLabel}. Please sign in to your ${existingRoleLabel} portal or contact support to request a role change.`;
+        setState((prev) => ({ ...prev, isLoading: false, error: conflictMsg }));
+        return { error: new Error(conflictMsg) };
+      }
+
+      // If user is suspended in database, reject registration attempt
+      if (existingProfile && existingProfile.status === 'suspended') {
+        const suspendedMsg = 'This account has been suspended. Please contact support@knowtohire.com for assistance.';
+        setState((prev) => ({ ...prev, isLoading: false, error: suspendedMsg }));
+        return { error: new Error(suspendedMsg) };
+      }
+
+      // If this account was previously deleted from demo list, unblock it so the user can start afresh
       if (typeof window !== 'undefined' && window.localStorage) {
         try {
           const deletedRaw = window.localStorage.getItem('kth_admin_deleted_users');
@@ -673,38 +719,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const isEmailConfirmed = Boolean(data.user.email_confirmed_at || (data.user as any).confirmed_at);
-      const initialStatus = isEmailConfirmed ? 'pending_onboarding' : 'unverified';
+      const initialStatus = existingProfile?.status || (isEmailConfirmed ? 'pending_onboarding' : 'unverified');
 
       // Persist registered email in sessionStorage for verify-email screen resilience
       if (typeof window !== 'undefined' && window.sessionStorage) {
         window.sessionStorage.setItem('kth_pending_verification_email', data.user.email || email.trim());
       }
 
-      let profile: Profile | null = null;
-      try {
-        const { data: upserted } = await supabase
-          .from('profiles')
-          .upsert({
-            id: data.user.id,
-            email: data.user.email || email.trim(),
-            full_name: metadata.full_name,
-            role: metadata.role,
-            status: initialStatus,
-          }, { onConflict: 'id' })
-          .select('*')
-          .single();
+      let profile: Profile | null = existingProfile;
 
-        if (upserted) {
-          profile = upserted as Profile;
-        }
+      // Only upsert profile if one does not already exist
+      if (!profile) {
+        try {
+          const { data: upserted } = await supabase
+            .from('profiles')
+            .upsert({
+              id: data.user.id,
+              email: data.user.email || email.trim(),
+              full_name: metadata.full_name,
+              role: metadata.role,
+              status: initialStatus,
+            }, { onConflict: 'id' })
+            .select('*')
+            .single();
 
-        if (metadata.role === 'candidate') {
-          await supabase
-            .from('candidate_profiles')
-            .upsert({ profile_id: data.user.id }, { onConflict: 'profile_id' });
+          if (upserted) {
+            profile = upserted as Profile;
+          }
+
+          if (metadata.role === 'candidate') {
+            await supabase
+              .from('candidate_profiles')
+              .upsert({ profile_id: data.user.id }, { onConflict: 'profile_id' });
+          }
+        } catch (syncErr) {
+          console.warn('[AuthContext] Profile sync catch:', syncErr);
         }
-      } catch (syncErr) {
-        console.warn('[AuthContext] Profile sync catch:', syncErr);
       }
 
       if (!profile) {
@@ -729,7 +779,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const resolvedRole = resolveRole(data.user, profile, metadata.role);
 
       // Note: If email confirmation is enabled in Supabase Auth, data.session may be null until confirmed.
-      // We set state accordingly so that unconfirmed user is strictly marked as unverified and not authenticated with full permissions
       setState({
         user: data.user,
         profile,

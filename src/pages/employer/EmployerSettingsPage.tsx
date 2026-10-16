@@ -185,7 +185,26 @@ export const EmployerSettingsPage: React.FC<EmployerSettingsPageProps> = ({ onNa
       setIsDeactivating(true);
       const userId = user?.id || '00000000-0000-0000-0000-000000000002';
 
-      // 1. Record suspended status override in localStorage
+      // 1. Authoritatively suspend via serverless endpoint if online Supabase session
+      if (isSupabaseConfigured()) {
+        try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const token = sessionData?.session?.access_token;
+          if (token) {
+            await fetch('/api/account-deactivate', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+            });
+          }
+        } catch (apiErr) {
+          console.warn('[EmployerSettingsPage] Server deactivation fallback:', apiErr);
+        }
+      }
+
+      // 2. Record suspended status override in localStorage for demo fallback
       if (typeof window !== 'undefined' && window.localStorage) {
         try {
           const raw = window.localStorage.getItem('kth_admin_user_status_overrides');
@@ -206,7 +225,7 @@ export const EmployerSettingsPage: React.FC<EmployerSettingsPageProps> = ({ onNa
         }
       }
 
-      // 2. Sign out and redirect to login
+      // 3. Sign out and redirect to login
       await logout();
       navigate('/login');
     } catch (err) {
