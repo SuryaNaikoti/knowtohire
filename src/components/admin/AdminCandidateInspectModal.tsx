@@ -97,6 +97,9 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+    } else if (resolvedResumeUrl.includes('token=')) {
+      // Already an authorized signed URL from serverless endpoint
+      window.open(resolvedResumeUrl, '_blank');
     } else {
       const authUrl = await resumeService.getAuthorizedResumeUrl(
         resolvedResumeUrl,

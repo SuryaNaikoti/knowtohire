@@ -485,67 +485,94 @@ export const adminService = {
    */
   async getUsers(search?: string, roleFilter?: string): Promise<ServiceResult<AdminUserRecord[]>> {
     try {
-      let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      const { isSupabaseConfigured } = await import('@/lib/supabase');
 
-      if (search && search.trim()) {
-        const term = search.trim();
-        query = query.or(`full_name.ilike.%${term}%,email.ilike.%${term}%`);
-      }
+      if (isSupabaseConfigured()) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
 
-      if (roleFilter && roleFilter !== 'all') {
-        query = query.eq('role', roleFilter);
-      }
+        if (!token) {
+          return {
+            data: null,
+            error: {
+              message: 'Authentication required. Missing administrator session token.',
+              code: 'UNAUTHORIZED',
+              status: 401,
+            },
+          };
+        }
 
-      const { data, error } = await query;
-
-      if (error) {
-        return { data: null, error: normalizeServiceError(error) };
-      }
-
-      let users: AdminUserRecord[] = (data || []).map((u) => ({
-        id: u.id,
-        email: u.email,
-        full_name: u.full_name || 'Anonymous User',
-        role: u.role || 'candidate',
-        status: u.status || 'active',
-        phone: u.phone,
-        created_at: u.created_at,
-      }));
-
-      // If database returned 0 users (e.g. unauthenticated demo admin session), provide the official 3 demo accounts
-      if (users.length === 0) {
-        users = [
-          {
-            id: '00000000-0000-0000-0000-000000000001',
-            email: 'candidate@knowtohire.com',
-            full_name: 'Surya Naikoti',
-            role: 'candidate',
-            status: 'active',
-            phone: '+91 98765 43210',
-            created_at: new Date().toISOString(),
+        const response = await fetch('/api/admin-get-users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
           },
-          {
-            id: '00000000-0000-0000-0000-000000000002',
-            email: 'employer@knowtohire.com',
-            full_name: 'Vikram Malhotra (Talent Lead)',
-            role: 'employer',
-            status: 'active',
-            phone: '+91 99887 75643',
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: '00000000-0000-0000-0000-000000000003',
-            email: 'admin@knowtohire.com',
-            full_name: 'KnowToHire Platform Administrator',
-            role: 'admin',
-            status: 'active',
-            phone: '+91 80 4920 1800',
-            created_at: new Date().toISOString(),
-          },
-        ];
+          body: JSON.stringify({
+            search: search || '',
+            roleFilter: roleFilter || 'all',
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          return {
+            data: null,
+            error: {
+              message: result.error || 'Failed to query user accounts.',
+              code: result.code || 'QUERY_FAILED',
+              status: response.status,
+            },
+          };
+        }
+
+        const users: AdminUserRecord[] = (result.users || []).map((u: any) => ({
+          id: u.id,
+          email: u.email,
+          full_name: u.full_name || 'Anonymous User',
+          role: u.role || 'candidate',
+          status: u.status || 'active',
+          phone: u.phone,
+          created_at: u.created_at,
+        }));
+
+        // In configured production mode, return authoritative database results directly without demo substitution
+        return { data: users, error: null };
       }
 
-      // Merge locally created admin users
+      // Offline Demo Mode: strictly executed ONLY when Supabase is genuinely unconfigured
+      let users: AdminUserRecord[] = [
+        {
+          id: '00000000-0000-0000-0000-000000000001',
+          email: 'candidate@knowtohire.com',
+          full_name: 'Surya Naikoti',
+          role: 'candidate',
+          status: 'active',
+          phone: '+91 98765 43210',
+          created_at: '2026-08-01T00:00:00Z',
+        },
+        {
+          id: '00000000-0000-0000-0000-000000000002',
+          email: 'employer@knowtohire.com',
+          full_name: 'Vikram Malhotra (Talent Lead)',
+          role: 'employer',
+          status: 'active',
+          phone: '+91 99887 75643',
+          created_at: '2026-08-01T00:00:00Z',
+        },
+        {
+          id: '00000000-0000-0000-0000-000000000003',
+          email: 'admin@knowtohire.com',
+          full_name: 'KnowToHire Platform Administrator',
+          role: 'admin',
+          status: 'active',
+          phone: '+91 80 4920 1800',
+          created_at: '2026-08-01T00:00:00Z',
+        },
+      ];
+
+      // Merge locally created admin users in demo mode
       const createdUsers = getDemoCreatedUsers();
       if (createdUsers.length > 0) {
         const existingIds = new Set(users.map((u) => u.id));
@@ -897,6 +924,28 @@ export const adminService = {
       let candProfile: any = null;
 
       if (isSupabaseConfigured()) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+
+        if (token) {
+          const response = await fetch('/api/admin-get-candidate-details', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ candidateId }),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.candidate) {
+              return { data: result.candidate, error: null };
+            }
+          }
+        }
+
+        // Fallback to client query if serverless endpoint is unreachable or session token unavailable
         const { data: p } = await supabase.from('profiles').select('*').eq('id', candidateId).maybeSingle();
         profile = p;
         const { data: cp } = await supabase.from('candidate_profiles').select('*').eq('profile_id', candidateId).maybeSingle();

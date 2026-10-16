@@ -22,6 +22,7 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) =>
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [queryError, setQueryError] = useState<string | null>(null);
 
   // Permanent Removal Dialog State
   const [userToDelete, setUserToDelete] = useState<AdminUserRecord | null>(null);
@@ -40,8 +41,12 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) =>
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
+    setQueryError(null);
     const res = await adminService.getUsers(searchTerm, roleFilter);
-    if (res.data) {
+    if (res.error) {
+      setQueryError(res.error.message || 'Failed to query user accounts.');
+      setUsers([]);
+    } else if (res.data) {
       setUsers(res.data);
     }
     setIsLoading(false);
@@ -222,6 +227,24 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) =>
             <div className="py-20 flex flex-col items-center justify-center">
               <Loader2 className="w-8 h-8 text-kth-primary-600 animate-spin mb-3" />
               <p className="text-xs text-kth-slate-500">Querying user accounts...</p>
+            </div>
+          ) : queryError ? (
+            <div className="p-8 text-center space-y-3">
+              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-rose-50 text-rose-600 mb-1">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <p className="text-sm font-semibold text-rose-900">{queryError}</p>
+              <p className="text-xs text-kth-slate-500 max-w-md mx-auto">
+                Unable to load live user directory data. Please ensure you are authenticated with an active administrator account.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchUsers}
+                className="text-xs mt-2"
+              >
+                Retry Query
+              </Button>
             </div>
           ) : users.length === 0 ? (
             <div className="p-12 text-center text-kth-slate-500 text-xs">

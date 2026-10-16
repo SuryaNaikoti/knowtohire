@@ -327,38 +327,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let isMounted = true;
 
     const initializeAuth = async () => {
-      // 1. Check local demo auth session
-      try {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          const storedDemo = window.localStorage.getItem(DEMO_STORAGE_KEY);
-          if (storedDemo) {
-            const parsedDemo = JSON.parse(storedDemo);
-            if (parsedDemo && parsedDemo.role && parsedDemo.id) {
-              const demoUser = createDemoAuthUser(parsedDemo);
-              const demoProfile = createDemoProfile(parsedDemo);
+      // 1. Check local demo auth session ONLY when Supabase is genuinely unconfigured
+      if (!isSupabaseConfigured()) {
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            const storedDemo = window.localStorage.getItem(DEMO_STORAGE_KEY);
+            if (storedDemo) {
+              const parsedDemo = JSON.parse(storedDemo);
+              if (parsedDemo && parsedDemo.role && parsedDemo.id) {
+                const demoUser = createDemoAuthUser(parsedDemo);
+                const demoProfile = createDemoProfile(parsedDemo);
 
-              if (isMounted) {
-                const effectiveStatus = resolveEffectiveStatus(demoUser, demoProfile);
-                setState({
-                  user: demoUser,
-                  profile: demoProfile,
-                  role: parsedDemo.role,
-                  status: effectiveStatus || 'active',
-                  isAuthenticated: true,
-                  isLoading: false,
-                  isInitialized: true,
-                  error: null,
-                });
-                return;
+                if (isMounted) {
+                  const effectiveStatus = resolveEffectiveStatus(demoUser, demoProfile);
+                  setState({
+                    user: demoUser,
+                    profile: demoProfile,
+                    role: parsedDemo.role,
+                    status: effectiveStatus || 'active',
+                    isAuthenticated: true,
+                    isLoading: false,
+                    isInitialized: true,
+                    error: null,
+                  });
+                  return;
+                }
               }
             }
           }
+        } catch (e) {
+          console.warn('[AuthContext] Demo session parsing error:', e);
         }
-      } catch (e) {
-        console.warn('[AuthContext] Demo session parsing error:', e);
-      }
 
-      if (!isSupabaseConfigured()) {
         if (isMounted) {
           setState((prev) => ({
             ...prev,
@@ -506,66 +506,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cleanEmail = email.trim().toLowerCase();
     const cleanPass = password.trim();
 
-    // 1. Check Demo Accounts for instant, guaranteed login
     const isCandidateDemo = cleanEmail === 'candidate@knowtohire.com' || cleanEmail === 'demo.candidate@knowtohire.com';
     const isEmployerDemo = cleanEmail === 'employer@knowtohire.com' || cleanEmail === 'demo.employer@knowtohire.com' || cleanEmail === 'cilove3743@hutdot.com';
     const isAdminDemo = cleanEmail === 'admin@knowtohire.com' || cleanEmail === 'demo.admin@knowtohire.com' || cleanEmail === 'cand_1786972983967@hutdot.com';
     const isCreatorDemo = cleanEmail === 'creator@knowtohire.com' || cleanEmail === 'demo.creator@knowtohire.com';
 
-    if (isCandidateDemo || isEmployerDemo || isAdminDemo || isCreatorDemo) {
-      const demoData = isCandidateDemo
-        ? DEMO_CREDENTIALS.candidate
-        : isEmployerDemo
-        ? DEMO_CREDENTIALS.employer
-        : isAdminDemo
-        ? DEMO_CREDENTIALS.admin
-        : DEMO_CREDENTIALS.creator;
+    // 1. When Supabase is genuinely unconfigured, use Demo Accounts for offline fallback
+    if (!isSupabaseConfigured()) {
+      if (isCandidateDemo || isEmployerDemo || isAdminDemo || isCreatorDemo) {
+        const demoData = isCandidateDemo
+          ? DEMO_CREDENTIALS.candidate
+          : isEmployerDemo
+          ? DEMO_CREDENTIALS.employer
+          : isAdminDemo
+          ? DEMO_CREDENTIALS.admin
+          : DEMO_CREDENTIALS.creator;
 
-      // Check if this demo user has been permanently deleted/suspended by Admin
-      if (typeof window !== 'undefined' && window.localStorage) {
-        try {
-          const deletedRaw = window.localStorage.getItem('kth_admin_deleted_users');
-          if (deletedRaw) {
-            const deletedList = JSON.parse(deletedRaw);
-            const isBlocked =
-              deletedList.includes(demoData.id) ||
-              (isCandidateDemo && deletedList.includes('demo-candidate-001')) ||
-              (isEmployerDemo && (deletedList.includes('demo-employer-002') || deletedList.includes('fa97faee-1cdf-41e6-a151-f51c7fa4c396')));
-            if (isBlocked) {
-              setState((prev) => ({
-                ...prev,
-                isLoading: false,
-                error: 'This account has been suspended and permanently erased from the platform. Please sign up to create a new account.',
-              }));
-              return { error: new Error('Account does not exist. Please sign up to create an account.') };
+        // Check if this demo user has been permanently deleted/suspended by Admin
+        if (typeof window !== 'undefined' && window.localStorage) {
+          try {
+            const deletedRaw = window.localStorage.getItem('kth_admin_deleted_users');
+            if (deletedRaw) {
+              const deletedList = JSON.parse(deletedRaw);
+              const isBlocked =
+                deletedList.includes(demoData.id) ||
+                (isCandidateDemo && deletedList.includes('demo-candidate-001')) ||
+                (isEmployerDemo && (deletedList.includes('demo-employer-002') || deletedList.includes('fa97faee-1cdf-41e6-a151-f51c7fa4c396')));
+              if (isBlocked) {
+                setState((prev) => ({
+                  ...prev,
+                  isLoading: false,
+                  error: 'This account has been suspended and permanently erased from the platform. Please sign up to create a new account.',
+                }));
+                return { error: new Error('Account does not exist. Please sign up to create an account.') };
+              }
             }
+          } catch {
+            // ignore
           }
-        } catch {
-          // ignore
         }
+
+        const demoUser = createDemoAuthUser(demoData);
+        const demoProfile = createDemoProfile(demoData);
+        const effectiveStatus = resolveEffectiveStatus(demoUser, demoProfile);
+
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(demoData));
+        }
+
+        setState({
+          user: demoUser,
+          profile: demoProfile,
+          role: demoData.role,
+          status: effectiveStatus || 'active',
+          isAuthenticated: true,
+          isLoading: false,
+          isInitialized: true,
+          error: null,
+        });
+
+        return { error: null };
       }
 
-      // Allow any standard password entered by user for demo accounts
-      const demoUser = createDemoAuthUser(demoData);
-      const demoProfile = createDemoProfile(demoData);
-      const effectiveStatus = resolveEffectiveStatus(demoUser, demoProfile);
-
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(demoData));
-      }
-
-      setState({
-        user: demoUser,
-        profile: demoProfile,
-        role: demoData.role,
-        status: effectiveStatus || 'active',
-        isAuthenticated: true,
-        isLoading: false,
-        isInitialized: true,
-        error: null,
-      });
-
-      return { error: null };
+      setState((prev) => ({ ...prev, isLoading: false, error: 'Supabase credentials are not configured.' }));
+      return { error: new Error('Supabase credentials are not configured in environment.') };
     }
 
     // 2. Standard Supabase Auth fallback
