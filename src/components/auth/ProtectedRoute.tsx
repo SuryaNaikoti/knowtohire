@@ -41,7 +41,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       return;
     }
 
-    // 2. Unverified Email -> redirect to /verify-email
+    // 2. Suspended Account -> halt navigation immediately and render suspended blocking state
+    if (status === 'suspended') {
+      return;
+    }
+
+    // 3. Unverified Email -> redirect to /verify-email
     if (status === 'unverified') {
       if (!currentPath.startsWith('/verify-email')) {
         navigate('/verify-email');

@@ -20,6 +20,7 @@ import {
   Download,
   ShieldCheck,
   ShieldAlert,
+  AlertCircle,
   Loader2,
   Sparkles,
 } from 'lucide-react';
@@ -42,12 +43,14 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen && candidateId) {
       setIsLoading(true);
       setActionSuccess(null);
+      setActionError(null);
       setIsResumeModalOpen(false);
       adminService.getCandidateDetails(candidateId).then((res) => {
         if (res.data) {
@@ -111,6 +114,8 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
   const handleVerifyAccount = async () => {
     if (!candidate || isUpdatingStatus) return;
     setIsUpdatingStatus(true);
+    setActionSuccess(null);
+    setActionError(null);
     const res = await adminService.verifyCandidateAccount(candidate.id);
     setIsUpdatingStatus(false);
     if (res.data) {
@@ -118,6 +123,9 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
       setActionSuccess('Candidate account successfully verified and activated.');
       if (onStatusChanged) onStatusChanged(candidate.id, 'active');
       setTimeout(() => setActionSuccess(null), 3000);
+    } else if (res.error) {
+      setActionError(res.error.message || 'Failed to verify candidate account.');
+      setTimeout(() => setActionError(null), 5000);
     }
   };
 
@@ -128,6 +136,8 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
     const nextStatus: 'active' | 'suspended' = isCurrentlySuspended ? 'active' : 'suspended';
 
     setIsUpdatingStatus(true);
+    setActionSuccess(null);
+    setActionError(null);
     const res = await adminService.updateUserStatus(candidate.id, nextStatus);
     setIsUpdatingStatus(false);
     
@@ -142,6 +152,9 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
         onStatusChanged(candidate.id, nextStatus);
       }
       setTimeout(() => setActionSuccess(null), 3000);
+    } else if (res.error) {
+      setActionError(res.error.message || 'Failed to update candidate account status.');
+      setTimeout(() => setActionError(null), 5000);
     }
   };
 
@@ -177,6 +190,14 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
             <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold px-4 py-3 rounded-xl flex items-center gap-2 animate-in fade-in">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>{actionSuccess}</span>
+            </div>
+          )}
+
+          {/* Action Error Alert */}
+          {actionError && (
+            <div className="bg-red-50 border border-red-200 text-red-800 text-xs font-semibold px-4 py-3 rounded-xl flex items-center gap-2 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <span>{actionError}</span>
             </div>
           )}
 

@@ -834,16 +834,16 @@ export const adminService = {
         }
       }
 
-      saveDemoUserStatusOverride(userId, status);
-
-      const { error } = await supabase.from('profiles').update({ status }).eq('id', userId);
-      if (error) {
-        // In demo mode without active DB session, local status override is authoritative
-        const { isSupabaseConfigured } = await import('@/lib/supabase');
-        if (isSupabaseConfigured()) {
+      const { isSupabaseConfigured } = await import('@/lib/supabase');
+      if (isSupabaseConfigured()) {
+        const { error } = await supabase.from('profiles').update({ status }).eq('id', userId);
+        if (error) {
           return { data: null, error: normalizeServiceError(error) };
         }
       }
+
+      // Persist local demo override after confirmed DB success or when Supabase is unconfigured
+      saveDemoUserStatusOverride(userId, status);
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('kth_users_changed'));

@@ -1,6 +1,9 @@
 import React, { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Alert } from '@/components/ui/Alert';
+import { Button } from '@/components/ui/Button';
+import { LogOut } from 'lucide-react';
 
 export interface GuestRouteProps {
   children: React.ReactNode;
@@ -11,7 +14,7 @@ export const GuestRoute: React.FC<GuestRouteProps> = ({
   children,
   onNavigate,
 }) => {
-  const { isAuthenticated, isLoading, isInitialized, role, status } = useAuth();
+  const { isAuthenticated, isLoading, isInitialized, role, status, logout } = useAuth();
 
   const navigate = (path: string) => {
     if (onNavigate) {
@@ -23,8 +26,13 @@ export const GuestRoute: React.FC<GuestRouteProps> = ({
   };
 
   useEffect(() => {
-    // Only execute guest redirect when authenticated and role is genuinely resolved
+    // Only execute guest redirect when authenticated, role resolved, and account is not suspended
     if (isInitialized && !isLoading && isAuthenticated && role !== null) {
+      if (status === 'suspended') {
+        // Suspended users stay on the dedicated suspension notification screen
+        return;
+      }
+
       const redirectParam = new URLSearchParams(window.location.search).get('redirect');
       let destination = '/';
 
@@ -67,6 +75,24 @@ export const GuestRoute: React.FC<GuestRouteProps> = ({
           <Skeleton className="h-5 w-32 mx-auto" />
           <Skeleton className="h-3.5 w-48 mx-auto" />
           <p className="text-xs text-kth-slate-400 font-medium">Resolving your account...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Suspended Account State: Show dedicated suspension notice with Sign Out action
+  if (isAuthenticated && status === 'suspended') {
+    return (
+      <div className="min-h-screen bg-kth-slate-50 flex items-center justify-center p-6 font-sans">
+        <div className="w-full max-w-lg bg-white p-8 rounded-xl border border-red-200 shadow-md space-y-6">
+          <Alert variant="error" title="Account Access Suspended">
+            Your KnowToHire account has been suspended due to governance or compliance review. Please contact support@knowtohire.com for assistance.
+          </Alert>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" size="sm" onClick={() => logout()} leftIcon={<LogOut className="w-4 h-4" />}>
+              Sign Out
+            </Button>
+          </div>
         </div>
       </div>
     );

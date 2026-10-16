@@ -3,15 +3,16 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useAuth, resolveRole, resolveEffectiveStatus } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
-import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle, LogOut } from 'lucide-react';
 
 export interface AuthCallbackPageProps {
   onNavigate?: (path: string) => void;
 }
 
 export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }) => {
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, logout } = useAuth();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSuspended, setIsSuspended] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string>('Verifying authentication credentials...');
 
   const navigate = (path: string) => {
@@ -135,9 +136,22 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
           return;
         }
 
+        // Fetch authoritative profile record
         let profile = await refreshProfile();
 
-        // If new Google user with no profile record in DB yet, create initial record
+        if (!profile && isSupabaseConfigured()) {
+          // Double check database directly to ensure we don't overwrite an existing profile
+          const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', activeUser.id)
+            .maybeSingle();
+
+          if (existingProfile) {
+            profile = existingProfile;
+          }
+        }
+
         const storedRole =
           typeof window !== 'undefined' && window.sessionStorage
             ? (window.sessionStorage.getItem('kth_oauth_intended_role') as 'candidate' | 'employer' | 'creator' | null)
@@ -148,13 +162,14 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
           storedRole ||
           'candidate';
 
-        if (!profile) {
+        // Only create a new profile if the user genuinely does not have one in Supabase
+        if (!profile && isSupabaseConfigured()) {
           try {
             const rawMeta = activeUser.user_metadata || {};
             const fullName = rawMeta.full_name || rawMeta.name || activeUser.email?.split('@')[0] || 'User';
             const avatarUrl = rawMeta.avatar_url || rawMeta.picture || null;
 
-            await supabase.from('profiles').upsert(
+            await supabase.from('profiles').insert([
               {
                 id: activeUser.id,
                 email: activeUser.email,
@@ -165,8 +180,7 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
               },
-              { onConflict: 'id' }
-            );
+            ]);
 
             profile = await refreshProfile();
           } catch (createErr) {
@@ -174,14 +188,31 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
           }
         }
 
-        const effectiveStatus = resolveEffectiveStatus(activeUser, profile) || 'pending_onboarding';
+        // Authoritative effective status check
+        const effectiveStatus = resolveEffectiveStatus(activeUser, profile);
+
+        // Fail-safe: if status could not be resolved or profile is missing/unusable, fail closed
+        if (!effectiveStatus) {
+          if (isMounted) {
+            setErrorMessage('Unable to verify account access status. Please try signing in again or contact support.');
+          }
+          return;
+        }
 
         // 4. Clean up session storage
         if (typeof window !== 'undefined' && window.sessionStorage) {
           window.sessionStorage.removeItem('kth_oauth_intended_role');
         }
 
-        // 5. Determine target destination
+        // 5. If suspended, block immediately and show dedicated suspended screen (do not redirect to onboarding or login)
+        if (effectiveStatus === 'suspended') {
+          if (isMounted) {
+            setIsSuspended(true);
+          }
+          return;
+        }
+
+        // 6. Determine target destination for allowed accounts
         let targetPath = '/onboarding/candidate';
         if (effectiveStatus === 'pending_onboarding') {
           targetPath =
@@ -199,13 +230,11 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
               : targetRole === 'creator'
               ? '/creator'
               : '/candidate';
-        } else if (effectiveStatus === 'suspended') {
-          targetPath = '/login';
         } else if (effectiveStatus === 'unverified') {
           targetPath = '/verify-email';
         }
 
-        // 6. Navigate cleanly without leaving OAuth hash in browser URL
+        // 7. Navigate cleanly without leaving OAuth hash in browser URL
         if (typeof window !== 'undefined') {
           window.location.replace(targetPath);
         } else {
@@ -238,7 +267,36 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
           </span>
         </div>
 
-        {errorMessage ? (
+        {isSuspended ? (
+          <div className="space-y-4">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+
+            <h2 className="font-display font-bold text-lg text-kth-slate-900">
+              Account Suspended
+            </h2>
+
+            <Alert variant="error" title="Account Access Disabled">
+              Your KnowToHire account has been suspended due to governance or compliance review. Please contact support@knowtohire.com for assistance or to request a review.
+            </Alert>
+
+            <div className="pt-2">
+              <Button
+                variant="outline"
+                size="md"
+                className="w-full"
+                leftIcon={<LogOut className="w-4 h-4" />}
+                onClick={async () => {
+                  await logout();
+                  navigate('/login');
+                }}
+              >
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        ) : errorMessage ? (
           <div className="space-y-4">
             <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
               <AlertCircle className="w-6 h-6" />

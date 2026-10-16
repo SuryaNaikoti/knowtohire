@@ -14,6 +14,7 @@ import {
   XCircle,
   ExternalLink,
   ShieldAlert,
+  AlertCircle,
   Loader2,
 } from 'lucide-react';
 
@@ -37,11 +38,13 @@ export const AdminEmployerInspectModal: React.FC<AdminEmployerInspectModalProps>
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && employerId) {
       setIsLoading(true);
       setActionSuccess(null);
+      setActionError(null);
       adminService.getEmployerDetails(employerId).then((res) => {
         if (res.data) {
           setEmployer(res.data);
@@ -57,6 +60,8 @@ export const AdminEmployerInspectModal: React.FC<AdminEmployerInspectModalProps>
   const handleUpdateVerification = async (newStatus: 'verified' | 'rejected') => {
     if (!employer || !employer.company_id || isUpdatingStatus) return;
     setIsUpdatingStatus(true);
+    setActionSuccess(null);
+    setActionError(null);
     const res = await adminService.updateCompanyVerification(employer.company_id, newStatus);
     setIsUpdatingStatus(false);
     if (res.data) {
@@ -67,6 +72,9 @@ export const AdminEmployerInspectModal: React.FC<AdminEmployerInspectModalProps>
           : 'Employer enterprise verification marked as Rejected.'
       );
       setTimeout(() => setActionSuccess(null), 3000);
+    } else if (res.error) {
+      setActionError(res.error.message || 'Failed to update enterprise verification status.');
+      setTimeout(() => setActionError(null), 5000);
     }
   };
 
@@ -77,6 +85,8 @@ export const AdminEmployerInspectModal: React.FC<AdminEmployerInspectModalProps>
     const nextStatus: 'active' | 'suspended' = isCurrentlySuspended ? 'active' : 'suspended';
 
     setIsUpdatingStatus(true);
+    setActionSuccess(null);
+    setActionError(null);
     const res = await adminService.updateUserStatus(employer.id, nextStatus);
     setIsUpdatingStatus(false);
 
@@ -91,6 +101,9 @@ export const AdminEmployerInspectModal: React.FC<AdminEmployerInspectModalProps>
         onStatusChanged(employer.id, nextStatus);
       }
       setTimeout(() => setActionSuccess(null), 3000);
+    } else if (res.error) {
+      setActionError(res.error.message || 'Failed to update employer account status.');
+      setTimeout(() => setActionError(null), 5000);
     }
   };
 
@@ -117,6 +130,14 @@ export const AdminEmployerInspectModal: React.FC<AdminEmployerInspectModalProps>
             <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold px-4 py-3 rounded-xl flex items-center gap-2 animate-in fade-in">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>{actionSuccess}</span>
+            </div>
+          )}
+
+          {/* Action Error Alert */}
+          {actionError && (
+            <div className="bg-red-50 border border-red-200 text-red-800 text-xs font-semibold px-4 py-3 rounded-xl flex items-center gap-2 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <span>{actionError}</span>
             </div>
           )}
 
