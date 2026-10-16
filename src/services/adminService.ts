@@ -836,9 +836,41 @@ export const adminService = {
 
       const { isSupabaseConfigured } = await import('@/lib/supabase');
       if (isSupabaseConfigured()) {
-        const { error } = await supabase.from('profiles').update({ status }).eq('id', userId);
-        if (error) {
-          return { data: null, error: normalizeServiceError(error) };
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+
+        if (!token) {
+          return {
+            data: null,
+            error: {
+              message: 'Authentication required. Missing administrator session token.',
+              code: 'UNAUTHORIZED',
+            },
+          };
+        }
+
+        const response = await fetch('/api/admin-update-user-status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            targetUserId: userId,
+            status,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          return {
+            data: null,
+            error: {
+              message: result.error || 'Failed to update user status.',
+              code: result.code || 'UPDATE_FAILED',
+            },
+          };
         }
       }
 

@@ -99,7 +99,7 @@ async function runSecuritySuite() {
   // ============================================================================
   section('4. SUSPENSION SEMANTICS & STATUS PROPAGATION');
 
-  assert(adminServiceCode.includes("supabase.from('profiles').update({ status }).eq('id', userId)"), 'updateUserStatus modifies status column on public.profiles');
+  assert(adminServiceCode.includes("fetch('/api/admin-update-user-status'"), 'updateUserStatus delegates to privileged serverless endpoint /api/admin-update-user-status');
   assert(adminServiceCode.includes('kth_admin_user_status_overrides'), 'Demo mode persists status overrides in kth_admin_user_status_overrides');
   assert(adminServiceCode.includes("window.dispatchEvent(new CustomEvent('kth_users_changed'))"), 'Status change broadcasts kth_users_changed event');
 
@@ -183,7 +183,8 @@ async function runSecuritySuite() {
   // Error safety: Verify actionError is captured and prevents false optimistic updates
   assert(candModalCode.includes('actionError') && candModalCode.includes('setActionError'), 'Candidate modal handles and displays actionError on status update failure');
   assert(empModalCode.includes('actionError') && empModalCode.includes('setActionError'), 'Employer modal handles and displays actionError on status update failure');
-  assert(adminServiceCode.includes('if (isSupabaseConfigured())') && adminServiceCode.includes('return { data: null, error: normalizeServiceError(error) };'), 'adminService fails closed without saving local overrides when Supabase update fails');
+  assert(adminServiceCode.includes('if (!token)') && adminServiceCode.includes("code: 'UNAUTHORIZED'"), 'adminService fails closed when session token is missing');
+  assert(adminServiceCode.includes('if (!response.ok)') && adminServiceCode.includes('return { data: null, error:'), 'adminService fails closed without saving local overrides when status endpoint responds with non-2xx');
 
   // ============================================================================
   // 11. SUSPENDED USER GOOGLE OAUTH ROUTING & ACCESS GATE
@@ -241,6 +242,26 @@ async function runSecuritySuite() {
   // GuestRoute loop immunity
   assert(guestRouteCode.includes("status === 'suspended'") && guestRouteCode.includes('return;'), 'GuestRoute halts redirection for suspended users and avoids loop');
   assert(guestRouteCode.includes('Account Access Suspended') && guestRouteCode.includes('support@knowtohire.com'), 'GuestRoute displays Account Suspended screen with verified support email');
+
+  // ============================================================================
+  // 12. SERVERLESS ADMIN STATUS ENDPOINT SECURITY CONTRACT
+  // ============================================================================
+  section('12. SERVERLESS ADMIN STATUS ENDPOINT SECURITY CONTRACT');
+
+  const endpointPath = path.resolve(__dirname, '..', 'api', 'admin-update-user-status.ts');
+  assert(fs.existsSync(endpointPath), 'api/admin-update-user-status.ts endpoint file exists');
+
+  const endpointCode = fs.readFileSync(endpointPath, 'utf-8');
+  assert(endpointCode.includes("req.method !== 'POST'"), 'Endpoint restricts invocation exclusively to POST requests');
+  assert(endpointCode.includes('supabase.auth.getUser(token)'), 'Endpoint authenticates caller via Supabase Auth token');
+  assert(endpointCode.includes("callerProfile?.role !== 'admin' || callerProfile?.status !== 'active'"), 'Endpoint authoritatively verifies caller is active admin in public.profiles');
+  assert(endpointCode.includes("status !== 'active' && status !== 'suspended'"), 'Endpoint strictly accepts only "active" or "suspended" status transitions');
+  assert(endpointCode.includes("callerId === targetUserId && status === 'suspended'"), 'Endpoint blocks self-suspension by authenticated admin');
+  assert(endpointCode.includes("00000000-0000-0000-0000-000000000003") && endpointCode.includes("status === 'suspended'"), 'Endpoint blocks suspension of master platform administrator UUID');
+  assert(endpointCode.includes("targetProfile.email === 'admin@knowtohire.com'"), 'Endpoint blocks suspension of master platform administrator email');
+  assert(endpointCode.includes("getServerSupabaseClient()"), 'Endpoint utilizes server-side service role client to update database');
+  assert(endpointCode.includes(".update({") && endpointCode.includes("status,") && !endpointCode.includes("role:"), 'Endpoint updates only status and updated_at, preventing role or profile corruption');
+  assert(!endpointCode.includes(".delete()"), 'Endpoint never performs deletion operations');
 
 
   // ============================================================================
