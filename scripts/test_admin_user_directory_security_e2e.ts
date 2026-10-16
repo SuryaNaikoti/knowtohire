@@ -139,7 +139,7 @@ async function runSecuritySuite() {
   // ============================================================================
   section('7. ROLE ESCALATION & TAMPER RESISTANCE');
 
-  assert(authContextCode.includes("profile?.status === 'active' && (profile.role === 'employer' || profile.role === 'candidate' || profile.role === 'admin')"), 'resolveRole prioritizes database profile.role over client metadata for active users');
+  assert(authContextCode.includes("profile?.status === 'active' && (profile.role === 'employer' || profile.role === 'candidate' || profile.role === 'admin' || profile.role === 'creator')"), 'resolveRole prioritizes database profile.role over client metadata for active users');
 
   // ============================================================================
   // 8. DEMO VS PRODUCTION SECURITY SEPARATION
@@ -147,6 +147,8 @@ async function runSecuritySuite() {
   section('8. DEMO VS PRODUCTION SECURITY SEPARATION');
 
   assert(adminServiceCode.includes("const { isSupabaseConfigured } = await import('@/lib/supabase');"), 'adminService checks isSupabaseConfigured() before falling back to demo overrides');
+  assert(adminServiceCode.includes("if (!token) {") && adminServiceCode.includes("code: 'UNAUTHORIZED'"), 'deleteUserPermanently returns UNAUTHORIZED when Supabase is configured but token is missing');
+  assert(adminServiceCode.includes("Local demo mode cleanup") && adminServiceCode.includes("saveDemoDeletedUser(userId)"), 'deleteUserPermanently isolates demo cleanup strictly to unconfigured environments');
   assert(authContextCode.includes("if (!isSupabaseConfigured())"), 'AuthContext isolates unconfigured demo environment from production database');
 
   // ============================================================================

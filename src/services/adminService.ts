@@ -719,6 +719,10 @@ export const adminService = {
    * Permanently erase/delete a user from the entire platform database.
    * If the user wants to join again, they must sign up afresh from scratch.
    */
+  /**
+   * Permanently erase/delete a user from the entire platform database.
+   * If the user wants to join again, they must sign up afresh from scratch.
+   */
   async deleteUserPermanently(userId: string): Promise<ServiceResult<boolean>> {
     try {
       // Superuser safety protection
@@ -729,10 +733,60 @@ export const adminService = {
         };
       }
 
-      // 1. Mark as permanently deleted in local demo overrides
+      const { isSupabaseConfigured } = await import('@/lib/supabase');
+
+      // If real Supabase backend is configured, call server-side deletion API endpoint
+      if (isSupabaseConfigured()) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+
+        if (!token) {
+          return {
+            data: null,
+            error: {
+              message: 'Authentication required. Missing administrator session token.',
+              code: 'UNAUTHORIZED',
+            },
+          };
+        }
+
+        const response = await fetch('/api/admin-delete-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ targetUserId: userId }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          return {
+            data: null,
+            error: {
+              message: result.error || 'Failed to permanently delete user.',
+              code: result.code || 'DELETE_FAILED',
+            },
+          };
+        }
+
+        if (result.storageIncomplete && result.warnings && result.warnings.length > 0) {
+          // Log for visibility
+          console.warn('[adminService] User deleted with partial storage warnings:', result.warnings);
+        }
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('kth_users_changed'));
+          window.dispatchEvent(new CustomEvent('kth_profile_updated'));
+        }
+
+        return { data: true, error: null };
+      }
+
+      // Local demo mode cleanup (strictly executed ONLY when Supabase is genuinely unconfigured)
       saveDemoDeletedUser(userId);
 
-      // Clean any associated local storage keys
       if (typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.removeItem(`kth_demo_cand_profile_${userId}`);
         window.localStorage.removeItem(`kth_demo_profile_custom_${userId}`);
@@ -740,7 +794,6 @@ export const adminService = {
         window.localStorage.removeItem(`kth_candidate_saved_jobs_${userId}`);
         window.localStorage.removeItem(`kth_notifications_${userId}`);
 
-        // If the current logged-in demo user is this deleted user, clear their session so they are logged out
         const currentSessionRaw = window.localStorage.getItem('kth_demo_auth_session');
         if (currentSessionRaw) {
           try {
@@ -751,22 +804,6 @@ export const adminService = {
           } catch {
             // ignore
           }
-        }
-      }
-
-      // 2. Cascade delete from Supabase database tables if configured
-      const { isSupabaseConfigured } = await import('@/lib/supabase');
-      if (isSupabaseConfigured()) {
-        try {
-          await supabase.from('job_applications').delete().eq('candidate_id', userId);
-          await supabase.from('candidate_profiles').delete().eq('profile_id', userId);
-          await supabase.from('company_profiles').delete().eq('user_id', userId);
-          await supabase.from('saved_jobs').delete().eq('user_id', userId);
-          await supabase.from('saved_candidates').delete().eq('candidate_id', userId);
-          await supabase.from('notifications').delete().eq('user_id', userId);
-          await supabase.from('profiles').delete().eq('id', userId);
-        } catch (dbErr) {
-          console.warn('[AdminService] Supabase cascading delete error:', dbErr);
         }
       }
 

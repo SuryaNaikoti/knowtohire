@@ -8,17 +8,27 @@ import { Select } from '@/components/ui/Select';
 import { AdminCandidateInspectModal } from '@/components/admin/AdminCandidateInspectModal';
 import { AdminEmployerInspectModal } from '@/components/admin/AdminEmployerInspectModal';
 import { adminService, AdminUserRecord } from '@/services/adminService';
-import { Search, Loader2, Eye, ShieldCheck, UserPlus } from 'lucide-react';
+import { Dialog } from '@/components/ui/Dialog';
+import { useAuth } from '@/context/AuthContext';
+import { Search, Loader2, Eye, ShieldCheck, UserPlus, AlertTriangle, Trash2 } from 'lucide-react';
 
 export interface AdminUsersPageProps {
   onNavigate?: (path: string) => void;
 }
 
 export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) => {
+  const { user: currentAdminUser } = useAuth();
   const [users, setUsers] = useState<AdminUserRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+
+  // Permanent Removal Dialog State
+  const [userToDelete, setUserToDelete] = useState<AdminUserRecord | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Candidate Inspection Modal State
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
@@ -81,10 +91,46 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) =>
     }
   }, []);
 
-  const handleDeleteUserPermanently = async (user: AdminUserRecord) => {
-    const res = await adminService.deleteUserPermanently(user.id);
-    if (res.data) {
-      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+  const promptDeleteUser = (user: AdminUserRecord) => {
+    // Prevent self-deletion
+    if (currentAdminUser?.id === user.id) {
+      alert('Administrators cannot delete their own active account.');
+      return;
+    }
+
+    // Superuser safety protection
+    if (user.id === '00000000-0000-0000-0000-000000000003' || user.id === 'demo-admin-003') {
+      alert('Master Platform Administrator cannot be removed.');
+      return;
+    }
+
+    setUserToDelete(user);
+    setDeleteConfirmationText('');
+    setDeleteError(null);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteUserPermanently = async () => {
+    if (!userToDelete) return;
+
+    if (deleteConfirmationText.trim().toUpperCase() !== 'PERMANENTLY REMOVE') {
+      setDeleteError('Please type "PERMANENTLY REMOVE" exactly to confirm.');
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    const res = await adminService.deleteUserPermanently(userToDelete.id);
+
+    setIsDeleting(false);
+
+    if (res.error) {
+      setDeleteError(res.error.message || 'Failed to remove user account.');
+    } else {
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
+      setIsDeleteModalOpen(false);
+      setUserToDelete(null);
     }
   };
 
@@ -263,13 +309,10 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) =>
                           variant="destructive"
                           size="sm"
                           className="flex-1 min-h-[36px] font-semibold text-xs"
-                          onClick={() => {
-                            if (window.confirm(`Permanently erase user account "${u.full_name}"? All associated data will be removed.`)) {
-                              handleDeleteUserPermanently(u);
-                            }
-                          }}
+                          onClick={() => promptDeleteUser(u)}
+                          leftIcon={<Trash2 className="w-3.5 h-3.5" />}
                         >
-                          Suspend Account
+                          Permanently Remove Account
                         </Button>
                       )}
                     </div>
@@ -394,13 +437,12 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) =>
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (window.confirm(`Permanently erase user account "${u.full_name}"? All associated data will be removed.`)) {
-                                    handleDeleteUserPermanently(u);
-                                  }
+                                  promptDeleteUser(u);
                                 }}
                                 className="font-semibold text-xs"
+                                leftIcon={<Trash2 className="w-3.5 h-3.5" />}
                               >
-                                Suspend Account
+                                Permanently Remove
                               </Button>
                             )}
                           </div>
@@ -414,6 +456,96 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) =>
           )}
         </Card>
       </div>
+
+      {/* Permanent Account Removal Explicit Confirmation Dialog */}
+      <Dialog
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          if (!isDeleting) {
+            setIsDeleteModalOpen(false);
+            setUserToDelete(null);
+          }
+        }}
+        title="Permanently Remove Account"
+        maxWidth="md"
+      >
+        <div className="space-y-4 p-1">
+          <div className="flex items-start gap-3 p-3.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800">
+            <AlertTriangle className="w-5 h-5 shrink-0 text-rose-600 mt-0.5" />
+            <div className="text-xs space-y-1">
+              <p className="font-bold">This administrative action is completely irreversible.</p>
+              <p className="text-rose-700">
+                The account's Auth identity, login access, resumes, profiles, preferences, and permissions will be permanently erased.
+                If this user registers again later, they will start as a completely fresh account and must re-complete onboarding.
+              </p>
+            </div>
+          </div>
+
+          {userToDelete && (
+            <div className="bg-kth-slate-50 border border-kth-slate-200 rounded-lg p-3 text-xs space-y-1.5 font-mono">
+              <div className="flex justify-between">
+                <span className="text-kth-slate-500">Target User:</span>
+                <span className="font-bold text-kth-slate-900">{userToDelete.full_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-kth-slate-500">Email Address:</span>
+                <span className="text-kth-slate-800">{userToDelete.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-kth-slate-500">Role:</span>
+                <span className="uppercase font-bold text-kth-slate-700">{userToDelete.role}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-kth-slate-500">User ID:</span>
+                <span className="text-kth-slate-600 truncate max-w-[240px]">{userToDelete.id}</span>
+              </div>
+            </div>
+          )}
+
+          {deleteError && (
+            <div className="p-3 bg-red-100 border border-red-300 rounded-lg text-xs font-semibold text-red-800">
+              {deleteError}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-kth-slate-700">
+              To confirm irreversible removal, type <span className="font-mono font-bold text-rose-600">PERMANENTLY REMOVE</span> below:
+            </label>
+            <Input
+              value={deleteConfirmationText}
+              onChange={(e) => setDeleteConfirmationText(e.target.value)}
+              placeholder="PERMANENTLY REMOVE"
+              className="font-mono text-xs"
+              autoFocus
+              disabled={isDeleting}
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-kth-slate-200">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isDeleting}
+              onClick={() => {
+                setIsDeleteModalOpen(false);
+                setUserToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={isDeleting || deleteConfirmationText.trim().toUpperCase() !== 'PERMANENTLY REMOVE'}
+              onClick={confirmDeleteUserPermanently}
+              leftIcon={isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            >
+              {isDeleting ? 'Purging Account...' : 'Permanently Remove Account'}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
 
       {/* Candidate Profile Detailed Inspection & Verification Modal */}
       <AdminCandidateInspectModal

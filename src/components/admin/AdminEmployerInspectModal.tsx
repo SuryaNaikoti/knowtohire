@@ -30,7 +30,7 @@ export const AdminEmployerInspectModal: React.FC<AdminEmployerInspectModalProps>
   employerId,
   isOpen,
   onClose,
-  onUserDeleted,
+  onStatusChanged,
   onNavigate,
 }) => {
   const [employer, setEmployer] = useState<AdminEmployerDetailRecord | null>(null);
@@ -73,24 +73,24 @@ export const AdminEmployerInspectModal: React.FC<AdminEmployerInspectModalProps>
   const handleToggleSuspend = async () => {
     if (!employer || isUpdatingStatus) return;
 
-    // Prompt confirmation for permanent erasure
-    const confirmed = window.confirm(
-      `Are you sure you want to suspend and permanently erase employer "${employer.full_name}" and enterprise records from the platform? All profiles, postings, and credentials will be deleted, and they will need to sign up again from scratch.`
-    );
-    if (!confirmed) return;
+    const isCurrentlySuspended = employer.status === 'suspended';
+    const nextStatus: 'active' | 'suspended' = isCurrentlySuspended ? 'active' : 'suspended';
 
     setIsUpdatingStatus(true);
-    const res = await adminService.deleteUserPermanently(employer.id);
+    const res = await adminService.updateUserStatus(employer.id, nextStatus);
     setIsUpdatingStatus(false);
 
     if (res.data) {
-      setActionSuccess('Employer account and enterprise records have been permanently erased.');
-      if (onUserDeleted) {
-        onUserDeleted(employer.id);
+      setEmployer((prev) => (prev ? { ...prev, status: nextStatus } : null));
+      setActionSuccess(
+        isCurrentlySuspended
+          ? 'Employer account successfully restored to active status.'
+          : 'Employer account suspended. Portal access has been temporarily restricted.'
+      );
+      if (onStatusChanged) {
+        onStatusChanged(employer.id, nextStatus);
       }
-      setTimeout(() => {
-        onClose();
-      }, 1200);
+      setTimeout(() => setActionSuccess(null), 3000);
     }
   };
 
@@ -206,14 +206,23 @@ export const AdminEmployerInspectModal: React.FC<AdminEmployerInspectModalProps>
                 )}
 
                 <Button
-                  variant="destructive"
+                  variant={employer.status === 'suspended' ? 'secondary' : 'destructive'}
                   size="sm"
                   onClick={handleToggleSuspend}
                   disabled={isUpdatingStatus}
                   className="font-bold text-xs"
                 >
-                  <ShieldAlert className="w-3.5 h-3.5 mr-1" />
-                  Suspend Account
+                  {employer.status === 'suspended' ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                      Restore Account
+                    </>
+                  ) : (
+                    <>
+                      <ShieldAlert className="w-3.5 h-3.5 mr-1" />
+                      Suspend Account
+                    </>
+                  )}
                 </Button>
               </div>
 

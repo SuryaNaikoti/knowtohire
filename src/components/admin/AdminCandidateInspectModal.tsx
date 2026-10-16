@@ -37,7 +37,6 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
   isOpen,
   onClose,
   onStatusChanged,
-  onUserDeleted,
 }) => {
   const [candidate, setCandidate] = useState<AdminCandidateDetailRecord | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -125,24 +124,24 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
   const handleToggleSuspend = async () => {
     if (!candidate || isUpdatingStatus) return;
     
-    // Prompt confirmation for permanent erasure
-    const confirmed = window.confirm(
-      `Are you sure you want to suspend and permanently erase "${candidate.full_name}" from the entire database? All profiles, records, and credentials will be removed, and they will need to sign up again from scratch.`
-    );
-    if (!confirmed) return;
+    const isCurrentlySuspended = candidate.status === 'suspended';
+    const nextStatus: 'active' | 'suspended' = isCurrentlySuspended ? 'active' : 'suspended';
 
     setIsUpdatingStatus(true);
-    const res = await adminService.deleteUserPermanently(candidate.id);
+    const res = await adminService.updateUserStatus(candidate.id, nextStatus);
     setIsUpdatingStatus(false);
     
     if (res.data) {
-      setActionSuccess('Candidate account and data have been permanently erased from the platform.');
-      if (onUserDeleted) {
-        onUserDeleted(candidate.id);
+      setCandidate((prev) => (prev ? { ...prev, status: nextStatus, is_active: nextStatus === 'active' } : null));
+      setActionSuccess(
+        isCurrentlySuspended
+          ? 'Candidate account successfully restored to active status.'
+          : 'Candidate account suspended. Access has been temporarily restricted.'
+      );
+      if (onStatusChanged) {
+        onStatusChanged(candidate.id, nextStatus);
       }
-      setTimeout(() => {
-        onClose();
-      }, 1200);
+      setTimeout(() => setActionSuccess(null), 3000);
     }
   };
 
@@ -259,21 +258,21 @@ export const AdminCandidateInspectModal: React.FC<AdminCandidateInspectModalProp
                 )}
 
                 <Button
-                  variant={candidate.status === 'active' ? 'destructive' : 'secondary'}
+                  variant={candidate.status === 'suspended' ? 'secondary' : 'destructive'}
                   size="sm"
                   onClick={handleToggleSuspend}
                   disabled={isUpdatingStatus}
                   className="font-bold text-xs"
                 >
-                  {candidate.status === 'active' ? (
+                  {candidate.status === 'suspended' ? (
                     <>
-                      <ShieldAlert className="w-3.5 h-3.5 mr-1" />
-                      Suspend Account
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                      Restore Account
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      Reactivate Account
+                      <ShieldAlert className="w-3.5 h-3.5 mr-1" />
+                      Suspend Account
                     </>
                   )}
                 </Button>
