@@ -264,172 +264,19 @@ export const jobService = {
       }
 
       // 11. Pagination Range
-      const { data, error } = await query.range(from, to);
+      const { data, count, error } = await query.range(from, to);
 
-      let dbJobs: Job[] = (!error && data) ? ((data as any[]) || []).map(normalizeJobEntity) : [];
-
-      let publishedLocal = getLocalCreatedJobs().filter(j => j.status === 'published');
-      if (filters.keyword && filters.keyword.trim()) {
-        const kw = filters.keyword.trim().toLowerCase();
-        publishedLocal = publishedLocal.filter(
-          (j) =>
-            j.title.toLowerCase().includes(kw) ||
-            j.department.toLowerCase().includes(kw) ||
-            j.description.toLowerCase().includes(kw) ||
-            (j.company?.name || '').toLowerCase().includes(kw)
-        );
-      }
-      if (filters.location && filters.location.trim()) {
-        const loc = filters.location.trim().toLowerCase();
-        publishedLocal = publishedLocal.filter((j) => j.location.toLowerCase().includes(loc));
-      }
-      if (filters.category && filters.category.trim() && filters.category !== 'all') {
-        const cat = filters.category.trim().toLowerCase();
-        publishedLocal = publishedLocal.filter((j) => (j.category || '').toLowerCase().includes(cat));
+      if (error) {
+        return { data: null, error: normalizeServiceError(error) };
       }
 
-      // Load and convert active canonical MOCK_JOBS
-      const { MOCK_JOBS } = await import('@/data/mockData');
-      const localCreated = getLocalCreatedJobs();
-      const activeMocks: Job[] = MOCK_JOBS.filter(mj => {
-        const override = localCreated.find(lj => lj.id === mj.id);
-        return override ? override.status === 'published' : true;
-      }).map(mj => ({
-        id: mj.id,
-        company_id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-        created_by: '00000000-0000-0000-0000-000000000002',
-        title: mj.title,
-        department: mj.department,
-        category: mj.department || 'Sustainability & ESG',
-        description: mj.description,
-        responsibilities: mj.responsibilities,
-        requirements: mj.requirements,
-        skills: mj.skills,
-        benefits: mj.benefits,
-        employment_type: (mj.employmentType?.toLowerCase().replace('-', '_') || 'full_time') as any,
-        work_mode: mj.isRemote ? 'remote' : (mj.employmentType === 'Hybrid' ? 'hybrid' : 'on_site'),
-        experience_level: 'mid_level',
-        location: mj.location,
-        is_remote: mj.isRemote,
-        min_salary_inr: mj.minSalaryINR,
-        max_salary_inr: mj.maxSalaryINR,
-        salary_currency: 'INR',
-        status: 'published',
-        is_verified: true,
-        published_at: (() => {
-          if (!mj.postedDate) return new Date(Date.now() - 30 * 86400000).toISOString();
-          const pd = mj.postedDate.toLowerCase();
-          if (pd === 'today' || pd === 'just now') return new Date(Date.now() - 3600000).toISOString();
-          if (pd === 'yesterday' || pd === '1 day ago') return new Date(Date.now() - 86400000).toISOString();
-          const daysMatch = pd.match(/(\d+)\s*d/);
-          if (daysMatch) return new Date(Date.now() - parseInt(daysMatch[1], 10) * 86400000).toISOString();
-          const weeksMatch = pd.match(/(\d+)\s*w/);
-          if (weeksMatch) return new Date(Date.now() - parseInt(weeksMatch[1], 10) * 7 * 86400000).toISOString();
-          return new Date(Date.now() - 14 * 86400000).toISOString();
-        })(),
-        created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
-        updated_at: new Date(Date.now() - 30 * 86400000).toISOString(),
-        company: {
-          id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-          name: mj.company,
-          industry: mj.department || 'Enterprise Solutions',
-          headquarters_location: mj.location,
-          verification_status: 'verified',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      }));
-
-      let filteredMocks = activeMocks;
-      if (filters.keyword && filters.keyword.trim()) {
-        const kw = filters.keyword.trim().toLowerCase();
-        filteredMocks = filteredMocks.filter(
-          (j) =>
-            j.title.toLowerCase().includes(kw) ||
-            j.department.toLowerCase().includes(kw) ||
-            j.description.toLowerCase().includes(kw) ||
-            (j.company?.name || '').toLowerCase().includes(kw) ||
-            (j.skills || []).some(s => s.toLowerCase().includes(kw))
-        );
-      }
-      if (filters.location && filters.location.trim()) {
-        const loc = filters.location.trim().toLowerCase();
-        filteredMocks = filteredMocks.filter((j) => j.location.toLowerCase().includes(loc));
-      }
-      if (filters.category && filters.category.trim() && filters.category !== 'all') {
-        const cat = filters.category.trim().toLowerCase();
-        filteredMocks = filteredMocks.filter((j) => (j.category || j.department || '').toLowerCase().includes(cat));
-      }
-      if (filters.work_mode) {
-        filteredMocks = filteredMocks.filter((j) => j.work_mode === filters.work_mode);
-      }
-      if (filters.employment_type) {
-        filteredMocks = filteredMocks.filter((j) => j.employment_type === filters.employment_type);
-      }
-      if (filters.min_salary) {
-        filteredMocks = filteredMocks.filter((j) => (j.max_salary_inr || 0) >= filters.min_salary!);
-      }
-      if (filters.max_salary) {
-        filteredMocks = filteredMocks.filter((j) => (j.min_salary_inr || 0) <= filters.max_salary!);
-      }
-
-      // Blend local jobs, database jobs, and canonical jobs (without duplicates)
-      const existingIds = new Set<string>();
-      const combined: Job[] = [];
-
-      for (const j of publishedLocal) {
-        if (!existingIds.has(j.id)) {
-          existingIds.add(j.id);
-          combined.push(j);
-        }
-      }
-
-      for (const j of dbJobs) {
-        if (!existingIds.has(j.id)) {
-          existingIds.add(j.id);
-          combined.push(j);
-        }
-      }
-
-      for (const j of filteredMocks) {
-        if (!existingIds.has(j.id)) {
-          existingIds.add(j.id);
-          combined.push(j);
-        }
-      }
-
-      // Apply in-memory sort on combined list
-      switch (filters.sort_by) {
-        case 'salary_high':
-          combined.sort((a, b) => (b.max_salary_inr || 0) - (a.max_salary_inr || 0));
-          break;
-        case 'salary_low':
-          combined.sort((a, b) => (a.min_salary_inr || 0) - (b.min_salary_inr || 0));
-          break;
-        case 'deadline':
-          combined.sort((a, b) => {
-            if (!a.application_deadline) return 1;
-            if (!b.application_deadline) return -1;
-            return new Date(a.application_deadline).getTime() - new Date(b.application_deadline).getTime();
-          });
-          break;
-        case 'latest':
-        default:
-          combined.sort((a, b) => {
-            const timeA = new Date(a.published_at || a.created_at || 0).getTime();
-            const timeB = new Date(b.published_at || b.created_at || 0).getTime();
-            return timeB - timeA;
-          });
-          break;
-      }
-
-      const totalCount = combined.length;
+      const dbJobs: Job[] = (data || []).map(normalizeJobEntity);
+      const totalCount = count !== null && count !== undefined ? count : dbJobs.length;
       const totalPages = Math.ceil(totalCount / pageSize);
-      const paginatedData = combined.slice(from, from + pageSize);
 
       return {
         data: {
-          data: paginatedData,
+          data: dbJobs,
           count: totalCount,
           page,
           pageSize,
@@ -454,61 +301,12 @@ export const jobService = {
         .eq('status', 'published')
         .maybeSingle();
 
-      if (data) {
-        return { data: normalizeJobEntity(data), error: null };
-      }
-
-      // Check local created jobs (must be published)
-      const localJobs = getLocalCreatedJobs();
-      const localJob = localJobs.find((j) => j.id === jobId && j.status === 'published');
-      if (localJob) {
-        return { data: normalizeJobEntity(localJob), error: null };
-      }
-
-      // Check canonical MOCK_JOBS if not overridden locally
-      const { MOCK_JOBS } = await import('@/data/mockData');
-      const mockJob = MOCK_JOBS.find((mj) => mj.id === jobId);
-      if (mockJob) {
-        const mockEntity: Job = {
-          id: mockJob.id,
-          company_id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-          created_by: '00000000-0000-0000-0000-000000000002',
-          title: mockJob.title,
-          department: mockJob.department,
-          category: mockJob.department || 'Sustainability & ESG',
-          description: mockJob.description,
-          responsibilities: mockJob.responsibilities,
-          requirements: mockJob.requirements,
-          skills: mockJob.skills,
-          benefits: mockJob.benefits,
-          employment_type: (mockJob.employmentType?.toLowerCase().replace('-', '_') || 'full_time') as any,
-          work_mode: mockJob.isRemote ? 'remote' : (mockJob.employmentType === 'Hybrid' ? 'hybrid' : 'on_site'),
-          experience_level: 'mid_level',
-          location: mockJob.location,
-          is_remote: mockJob.isRemote,
-          min_salary_inr: mockJob.minSalaryINR,
-          max_salary_inr: mockJob.maxSalaryINR,
-          salary_currency: 'INR',
-          status: 'published',
-          is_verified: true,
-          published_at: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          company: {
-            id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-            name: mockJob.company,
-            industry: mockJob.department || 'Enterprise Solutions',
-            headquarters_location: mockJob.location,
-            verification_status: 'verified',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        };
-        return { data: normalizeJobEntity(mockEntity), error: null };
-      }
-
       if (error) {
         return { data: null, error: normalizeServiceError(error) };
+      }
+
+      if (data) {
+        return { data: normalizeJobEntity(data), error: null };
       }
 
       return {
