@@ -753,7 +753,7 @@ export const adminService = {
   async deleteUserPermanently(userId: string): Promise<ServiceResult<boolean>> {
     try {
       // Superuser safety protection
-      if (userId === '00000000-0000-0000-0000-000000000003' || userId === 'demo-admin-003') {
+      if (userId === 'b3b30f73-46dc-43ec-8f5e-6784a8002452' || userId === '00000000-0000-0000-0000-000000000003' || userId === 'demo-admin-003') {
         return {
           data: null,
           error: { message: 'Master Platform Administrator cannot be deleted or suspended.', code: 'FORBIDDEN' },
@@ -852,7 +852,7 @@ export const adminService = {
   async updateUserStatus(userId: string, status: 'active' | 'suspended'): Promise<ServiceResult<boolean>> {
     try {
       // Superuser safety protection
-      if (userId === '00000000-0000-0000-0000-000000000003' || userId === 'demo-admin-003') {
+      if (userId === 'b3b30f73-46dc-43ec-8f5e-6784a8002452' || userId === '00000000-0000-0000-0000-000000000003' || userId === 'demo-admin-003') {
         if (status === 'suspended') {
           return {
             data: null,
@@ -1541,53 +1541,7 @@ export const adminService = {
           moderated_by: j.moderated_by,
         }));
       } else {
-        const { MOCK_JOBS } = await import('@/data/mockData');
-        baseJobs = MOCK_JOBS.map((mj, idx) => ({
-          id: mj.id,
-          company_id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-          created_by: '00000000-0000-0000-0000-000000000002',
-          title: mj.title,
-          slug: mj.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-          department: mj.department || 'Technology',
-          category: mj.department || 'Technology',
-          description: mj.description || '',
-          responsibilities: mj.responsibilities || [],
-          requirements: mj.requirements || [],
-          skills: mj.skills || [],
-          benefits: mj.benefits || [],
-          employment_type: (mj.employmentType || 'full_time').toLowerCase().replace('-', '_'),
-          work_mode: mj.isRemote ? 'remote' : 'hybrid',
-          experience_level: 'mid_level',
-          location: mj.location,
-          is_remote: mj.isRemote,
-          min_salary_inr: mj.minSalaryINR,
-          max_salary_inr: mj.maxSalaryINR,
-          salary_currency: 'INR',
-          status: 'published',
-          is_verified: true,
-          published_at: new Date(Date.now() - 86400000 * (idx + 1)).toISOString(),
-          created_at: new Date(Date.now() - 86400000 * (idx + 2)).toISOString(),
-          updated_at: new Date(Date.now() - 86400000 * (idx + 1)).toISOString(),
-
-          company_name: mj.company,
-          company_industry: idx % 2 === 0 ? 'Cloud & Enterprise Systems' : 'Environmental & ESG Advisory',
-          company_location: mj.location,
-          company_verification_status: 'verified',
-          company_website: 'https://' + mj.company.toLowerCase().replace(/[^a-z0-9]/g, '') + '.com',
-          company_description: `${mj.company} is a premier enterprise organization operating across technology, climate intelligence, and ESG excellence in India.`,
-
-          poster_name: idx % 2 === 0 ? 'Vikram Malhotra (Talent Lead)' : 'Ananya Deshmukh (EcoStrategy HR)',
-          poster_email: idx % 2 === 0 ? 'employer@knowtohire.com' : 'hr@ecostrategy.co.in',
-          poster_role: 'employer',
-          poster_phone: '+91 99887 75643',
-
-          applications_count: 3 + (idx % 5),
-          moderation_status: 'approved',
-          moderation_notes: null,
-          moderation_flags: [],
-          moderated_at: new Date(Date.now() - 86400000 * (idx + 1)).toISOString(),
-          moderated_by: 'Platform Administrator',
-        }));
+        baseJobs = [];
       }
 
       // Merge local created/updated jobs for Admin visibility via jobService

@@ -187,48 +187,7 @@ export const applicationService = {
         }
       }
 
-      // Check canonical MOCK_JOBS
-      if (!targetJob) {
-        const { MOCK_JOBS } = await import('@/data/mockData');
-        const mockMatch = MOCK_JOBS.find((mj) => mj.id === input.job_id);
-        if (mockMatch) {
-          targetJob = {
-            id: mockMatch.id,
-            company_id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-            created_by: '00000000-0000-0000-0000-000000000002',
-            title: mockMatch.title,
-            department: mockMatch.department,
-            category: mockMatch.department || 'Sustainability & ESG',
-            description: mockMatch.description,
-            responsibilities: mockMatch.responsibilities,
-            requirements: mockMatch.requirements,
-            skills: mockMatch.skills,
-            benefits: mockMatch.benefits,
-            employment_type: (mockMatch.employmentType || 'full_time') as any,
-            work_mode: mockMatch.isRemote ? 'remote' : 'on_site',
-            experience_level: 'mid_level',
-            location: mockMatch.location,
-            is_remote: mockMatch.isRemote,
-            min_salary_inr: mockMatch.minSalaryINR,
-            max_salary_inr: mockMatch.maxSalaryINR,
-            salary_currency: 'INR',
-            status: 'published',
-            is_verified: true,
-            published_at: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            company: {
-              id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-              name: mockMatch.company,
-              industry: 'Sustainability & Enterprise Solutions',
-              headquarters_location: mockMatch.location,
-              verification_status: 'verified',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          };
-        }
-      }
+
 
       if (!targetJob) {
         targetJob = {

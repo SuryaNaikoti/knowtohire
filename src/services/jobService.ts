@@ -296,6 +296,14 @@ export const jobService = {
    */
   async getPublishedJobById(jobId: string): Promise<ServiceResult<Job>> {
     try {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId);
+      if (!isUuid) {
+        return {
+          data: null,
+          error: { message: 'Job opening not found.', code: 'NOT_FOUND', status: 404 },
+        };
+      }
+
       const { data, error } = await supabase
         .from('jobs')
         .select('*, company:company_profiles(*)')
@@ -513,47 +521,6 @@ export const jobService = {
         return { data: normalizeJobEntity(localJob), error: null };
       }
 
-      const { MOCK_JOBS } = await import('@/data/mockData');
-      const mockJob = MOCK_JOBS.find((mj) => mj.id === jobId);
-      if (mockJob) {
-        const mockEntity: Job = {
-          id: mockJob.id,
-          company_id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-          created_by: '00000000-0000-0000-0000-000000000002',
-          title: mockJob.title,
-          department: mockJob.department,
-          category: mockJob.department || 'Sustainability & ESG',
-          description: mockJob.description,
-          responsibilities: mockJob.responsibilities,
-          requirements: mockJob.requirements,
-          skills: mockJob.skills,
-          benefits: mockJob.benefits,
-          employment_type: (mockJob.employmentType?.toLowerCase().replace('-', '_') || 'full_time') as any,
-          work_mode: mockJob.isRemote ? 'remote' : (mockJob.employmentType === 'Hybrid' ? 'hybrid' : 'on_site'),
-          experience_level: 'mid_level',
-          location: mockJob.location,
-          is_remote: mockJob.isRemote,
-          min_salary_inr: mockJob.minSalaryINR,
-          max_salary_inr: mockJob.maxSalaryINR,
-          salary_currency: 'INR',
-          status: 'published',
-          is_verified: true,
-          published_at: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          company: {
-            id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-            name: mockJob.company,
-            industry: mockJob.department || 'Enterprise Solutions',
-            headquarters_location: mockJob.location,
-            verification_status: 'verified',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        };
-        return { data: normalizeJobEntity(mockEntity), error: null };
-      }
-
       if (error) {
         return { data: null, error: normalizeServiceError(error) };
       }
@@ -761,50 +728,6 @@ export const jobService = {
           saveLocalCreatedJob(updatedEntity);
           notifyJobsChanged();
           return { data: normalizeJobEntity(updatedEntity), error: null };
-        }
-
-        // Check if it's a seed MOCK_JOBS job
-        const { MOCK_JOBS } = await import('@/data/mockData');
-        const mockMatch = MOCK_JOBS.find((mj) => mj.id === jobId);
-        if (mockMatch) {
-          const newLocalJob: Job = {
-            id: mockMatch.id,
-            company_id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-            created_by: '00000000-0000-0000-0000-000000000002',
-            title: mockMatch.title,
-            department: mockMatch.department,
-            category: mockMatch.department || 'Technology',
-            description: mockMatch.description,
-            responsibilities: mockMatch.responsibilities,
-            requirements: mockMatch.requirements,
-            skills: mockMatch.skills,
-            benefits: mockMatch.benefits,
-            employment_type: (mockMatch.employmentType || 'full_time') as any,
-            work_mode: mockMatch.isRemote ? 'remote' : 'on_site',
-            experience_level: 'mid_level',
-            location: mockMatch.location,
-            is_remote: mockMatch.isRemote,
-            min_salary_inr: mockMatch.minSalaryINR,
-            max_salary_inr: mockMatch.maxSalaryINR,
-            salary_currency: 'INR',
-            status: (updates.status as any) || 'published',
-            is_verified: true,
-            published_at: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            company: {
-              id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-              name: mockMatch.company,
-              industry: 'Technology & Enterprise',
-              headquarters_location: mockMatch.location,
-              verification_status: 'verified',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          };
-          saveLocalCreatedJob(newLocalJob);
-          notifyJobsChanged();
-          return { data: normalizeJobEntity(newLocalJob), error: null };
         }
 
         return { data: null, error: normalizeServiceError(error) };

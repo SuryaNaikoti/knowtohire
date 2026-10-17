@@ -104,7 +104,7 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onNavigate }) =>
     }
 
     // Superuser safety protection
-    if (user.id === '00000000-0000-0000-0000-000000000003' || user.id === 'demo-admin-003') {
+    if (user.id === 'b3b30f73-46dc-43ec-8f5e-6784a8002452' || user.email === 'supportk2h@gmail.com') {
       alert('Master Platform Administrator cannot be removed.');
       return;
     }

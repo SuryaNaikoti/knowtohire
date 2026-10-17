@@ -120,25 +120,7 @@ export const savedJobService = {
           }
         }
 
-        if (!jobDetails) {
-          const { MOCK_JOBS } = await import('@/data/mockData');
-          const mockMatch = MOCK_JOBS.find((mj) => mj.id === jobId);
-          if (mockMatch) {
-            jobDetails = {
-              id: mockMatch.id,
-              company_id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-              title: mockMatch.title,
-              department: mockMatch.department,
-              location: mockMatch.location,
-              is_remote: mockMatch.isRemote,
-              employment_type: mockMatch.employmentType || 'full_time',
-              min_salary_inr: mockMatch.minSalaryINR,
-              max_salary_inr: mockMatch.maxSalaryINR,
-              status: 'published',
-              company: { name: mockMatch.company },
-            };
-          }
-        }
+
 
         const localSaved: SavedJob = {
           id: `saved-${jobId}-${Date.now()}`,
@@ -169,9 +151,7 @@ export const savedJobService = {
           .eq('id', jobId)
           .maybeSingle();
 
-        if (jobData) {
-          jobDetails = jobData;
-        } else if (typeof window !== 'undefined' && window.localStorage) {
+        if (!jobData && typeof window !== 'undefined' && window.localStorage) {
           try {
             const raw = window.localStorage.getItem('kth_local_created_jobs');
             if (raw) {
@@ -180,26 +160,6 @@ export const savedJobService = {
             }
           } catch {
             // ignore
-          }
-        }
-
-        if (!jobDetails) {
-          const { MOCK_JOBS } = await import('@/data/mockData');
-          const mockMatch = MOCK_JOBS.find((mj) => mj.id === jobId);
-          if (mockMatch) {
-            jobDetails = {
-              id: mockMatch.id,
-              company_id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-              title: mockMatch.title,
-              department: mockMatch.department,
-              location: mockMatch.location,
-              is_remote: mockMatch.isRemote,
-              employment_type: mockMatch.employmentType || 'full_time',
-              min_salary_inr: mockMatch.minSalaryINR,
-              max_salary_inr: mockMatch.maxSalaryINR,
-              status: 'published',
-              company: { name: mockMatch.company },
-            };
           }
         }
 
@@ -309,27 +269,7 @@ export const savedJobService = {
             }
           }
 
-          const { MOCK_JOBS } = await import('@/data/mockData');
-          for (const id of missingLocalIds) {
-            if (!allMatchedJobs.some((j) => j.id === id)) {
-              const mockMatch = MOCK_JOBS.find((mj) => mj.id === id);
-              if (mockMatch) {
-                allMatchedJobs.push({
-                  id: mockMatch.id,
-                  company_id: 'fa97faee-1cdf-41e6-a151-f51c7fa4c396',
-                  title: mockMatch.title,
-                  department: mockMatch.department,
-                  location: mockMatch.location,
-                  is_remote: mockMatch.isRemote,
-                  employment_type: mockMatch.employmentType || 'full_time',
-                  min_salary_inr: mockMatch.minSalaryINR,
-                  max_salary_inr: mockMatch.maxSalaryINR,
-                  status: 'published',
-                  company: { name: mockMatch.company },
-                });
-              }
-            }
-          }
+
 
           for (const id of missingLocalIds) {
             const matchedJob = allMatchedJobs.find((j) => j.id === id);
