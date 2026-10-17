@@ -4,8 +4,8 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
-import { useAuth, DEMO_CREDENTIALS } from '@/context/AuthContext';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, GraduationCap, Building2, ShieldCheck } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 export interface LoginPageProps {
   onNavigate?: (path: string) => void;
@@ -25,22 +25,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     } else {
       window.history.pushState({}, '', path);
       window.dispatchEvent(new Event('popstate'));
-    }
-  };
-
-  const handleQuickDemoLogin = async (type: 'candidate' | 'employer' | 'admin' | 'creator') => {
-    const creds = DEMO_CREDENTIALS[type];
-    setEmail(creds.email);
-    setPassword(creds.password);
-    setFormError(null);
-    clearError();
-
-    const { error } = await login(creds.email, creds.password);
-    if (error) {
-      setFormError(error.message);
-    } else {
-      const targetPath = type === 'admin' ? '/admin' : type === 'employer' ? '/employer' : type === 'creator' ? '/creator' : '/candidate';
-      navigate(targetPath);
     }
   };
 
@@ -132,77 +116,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
             {formError || authError}
           </Alert>
         )}
-
-        {/* Demo Credentials Quick Switcher Banner */}
-        <div className="bg-gradient-to-br from-kth-slate-50 to-kth-primary-50/40 border border-kth-slate-200/90 rounded-2xl p-4 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-kth-slate-900">
-              <Sparkles className="w-3.5 h-3.5 text-kth-primary-600" />
-              <span>Instant Demo Accounts</span>
-            </div>
-            <span className="text-[10px] font-mono font-bold bg-white px-2 py-0.5 rounded border border-kth-slate-200 text-kth-slate-600">
-              Pass: Password123!
-            </span>
-          </div>
-
-          <p className="text-[11px] text-kth-slate-600 leading-relaxed">
-            Click any button below to immediately sign in to that portal:
-          </p>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <button
-              type="button"
-              disabled={isLoading}
-              onClick={() => handleQuickDemoLogin('candidate')}
-              className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white hover:bg-kth-primary-50/80 border border-kth-slate-200 hover:border-kth-primary-300 text-kth-slate-800 transition-all text-center group shadow-xs active:scale-95"
-            >
-              <div className="w-7 h-7 rounded-lg bg-kth-primary-50 text-kth-primary-600 flex items-center justify-center mb-1 group-hover:bg-kth-primary-600 group-hover:text-white transition-colors">
-                <GraduationCap className="w-4 h-4" />
-              </div>
-              <span className="text-[11px] font-bold">Candidate</span>
-              <span className="text-[9px] text-kth-slate-400 font-mono">candidate@...</span>
-            </button>
-
-            <button
-              type="button"
-              disabled={isLoading}
-              onClick={() => handleQuickDemoLogin('employer')}
-              className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white hover:bg-emerald-50/80 border border-kth-slate-200 hover:border-emerald-300 text-kth-slate-800 transition-all text-center group shadow-xs active:scale-95"
-            >
-              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                <Building2 className="w-4 h-4" />
-              </div>
-              <span className="text-[11px] font-bold">Employer</span>
-              <span className="text-[9px] text-kth-slate-400 font-mono">employer@...</span>
-            </button>
-
-            <button
-              type="button"
-              disabled={isLoading}
-              onClick={() => handleQuickDemoLogin('creator')}
-              className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white hover:bg-amber-50/80 border border-kth-slate-200 hover:border-amber-300 text-kth-slate-800 transition-all text-center group shadow-xs active:scale-95"
-            >
-              <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-1 group-hover:bg-amber-600 group-hover:text-white transition-colors">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <span className="text-[11px] font-bold">Creator</span>
-              <span className="text-[9px] text-kth-slate-400 font-mono">creator@...</span>
-            </button>
-
-            <button
-              type="button"
-              disabled={isLoading}
-              onClick={() => handleQuickDemoLogin('admin')}
-              className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white hover:bg-indigo-50/80 border border-kth-slate-200 hover:border-indigo-300 text-kth-slate-800 transition-all text-center group shadow-xs active:scale-95"
-            >
-              <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-1 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <span className="text-[11px] font-bold">Admin</span>
-              <span className="text-[9px] text-kth-slate-400 font-mono">admin@...</span>
-            </button>
-          </div>
-        </div>
 
         {/* Premium Google OAuth Action */}
         <GoogleAuthButton

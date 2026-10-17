@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
 import { jobService, applicationService, Job, JobApplication } from '@/services';
-import { useAuth, DEMO_CREDENTIALS } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { formatINR } from '@/design-system/tokens';
 import {
   ArrowLeft,
@@ -27,7 +27,7 @@ interface CandidateApplyPageProps {
 }
 
 export const CandidateApplyPage: React.FC<CandidateApplyPageProps> = ({ jobId: propJobId, onNavigate }) => {
-  const { user, profile, isAuthenticated, login } = useAuth();
+  const { user, profile, isAuthenticated } = useAuth();
 
   const resolvedJobId =
     propJobId ||
@@ -291,17 +291,6 @@ export const CandidateApplyPage: React.FC<CandidateApplyPageProps> = ({ jobId: p
                         }}
                       >
                         Sign In
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="primary"
-                        size="sm"
-                        className="text-xs font-bold py-1 px-3 bg-amber-600 hover:bg-amber-700 text-white"
-                        onClick={async () => {
-                          await login(DEMO_CREDENTIALS.candidate.email, DEMO_CREDENTIALS.candidate.password);
-                        }}
-                      >
-                        Quick Candidate Demo
                       </Button>
                     </div>
                   </div>
