@@ -138,6 +138,8 @@ export interface Job {
   salary_currency: string;
   status: JobStatus;
   is_verified: boolean;
+  is_active?: boolean;
+  approval_status?: 'approved' | 'rejected' | 'pending';
   application_deadline?: string | null;
   published_at?: string | null;
   created_at: string;

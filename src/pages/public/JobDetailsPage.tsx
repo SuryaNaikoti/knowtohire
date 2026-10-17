@@ -144,7 +144,7 @@ export const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ jobId: propJobId
     ? `${formatINR(job.min_salary_inr)} - ${formatINR(job.max_salary_inr, true)}`
     : 'Salary not disclosed';
 
-  const companyName = job.company?.name || (job as any).company_name || 'EcoStrategy India';
+  const companyName = job.company?.name || (job as any).company_name || job.department || 'Verified Employer';
   const responsibilities = Array.isArray(job.responsibilities) ? job.responsibilities : [];
   const requirements = Array.isArray(job.requirements) ? job.requirements : [];
   const skills = Array.isArray(job.skills) ? job.skills : [];

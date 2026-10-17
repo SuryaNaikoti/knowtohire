@@ -194,7 +194,9 @@ export const jobService = {
       let query = supabase
         .from('jobs')
         .select('*, company:company_profiles(*)', { count: 'exact' })
-        .eq('status', 'published');
+        .eq('status', 'published')
+        .eq('is_active', true)
+        .eq('approval_status', 'approved');
 
       // 1. Keyword search across title, department, description
       if (filters.keyword && filters.keyword.trim()) {
@@ -299,6 +301,8 @@ export const jobService = {
         .select('*, company:company_profiles(*)')
         .eq('id', jobId)
         .eq('status', 'published')
+        .eq('is_active', true)
+        .eq('approval_status', 'approved')
         .maybeSingle();
 
       if (error) {

@@ -592,7 +592,7 @@ export const CandidateApplicationDetailsPage: React.FC<CandidateApplicationDetai
                   </span>
                 </h2>
                 <p className="text-[11px] sm:text-xs text-slate-300 max-w-md mx-auto leading-relaxed break-words px-1">
-                  Your candidacy for <span className="font-semibold text-white">{job?.title}</span> at <span className="font-semibold text-emerald-300">{job?.company?.name || 'EcoStrategy India Pvt Ltd'}</span> has successfully concluded with an offer confirmation.
+                  Your candidacy for <span className="font-semibold text-white">{job?.title}</span> at <span className="font-semibold text-emerald-300">{job?.company?.name || job?.department || 'Verified Employer'}</span> has successfully concluded with an offer confirmation.
                 </p>
               </div>
 

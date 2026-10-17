@@ -516,7 +516,7 @@ export const JobsPage: React.FC = () => {
                 key={job.id}
                 id={job.id}
                 title={job.title}
-                company={job.company?.name || (job as any).company_name || 'EcoStrategy India'}
+                company={job.company?.name || (job as any).company_name || job.department || 'Verified Employer'}
                 companyLogo={job.company?.logo_url || undefined}
                 location={job.location}
                 isRemote={job.is_remote}
