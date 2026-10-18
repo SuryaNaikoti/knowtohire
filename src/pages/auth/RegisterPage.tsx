@@ -428,7 +428,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
             disabled={isLoading}
             rightIcon={<ArrowRight className="w-4 h-4" />}
           >
-            Create account
+            Create {selectedRole === 'employer' ? 'Employer' : selectedRole === 'creator' ? 'Creator' : 'Candidate'} Account
           </Button>
 
           {/* Navigation back to Sign In */}

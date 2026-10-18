@@ -35,6 +35,12 @@ export const PricingPage: React.FC = () => {
       return;
     }
 
+    if (role === 'employer' && status === 'pending_onboarding') {
+      alert('Please complete your company onboarding before subscribing to an employer plan.');
+      window.location.href = '/onboarding/employer';
+      return;
+    }
+
     const name = tier === 'starter' ? 'Employer Starter' : 'Enterprise Hiring';
     setSelectedPlan({ tier, name, amountINR, billingCycle });
     setCheckoutStep('cart');
