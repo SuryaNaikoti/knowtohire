@@ -64,29 +64,47 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onNaviga
 
   return (
     <AuthLayout
-      title="Reset your password"
-      subtitle="Enter your account email to receive password recovery instructions."
-      badgeText="Password Recovery"
+      brandTitle="Get back to what matters"
+      brandSubtitle="Reset your password to continue accessing your KnowToHire account."
+      brandFeatures={[
+        {
+          title: "Secure Access",
+          description: "Your data stays protected",
+        },
+        {
+          title: "Quick Recovery",
+          description: "Get back in minutes",
+        },
+        {
+          title: "Same Opportunities",
+          description: "Continue your journey",
+        },
+      ]}
     >
       {isSent ? (
         <div className="space-y-6 text-center">
           <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-100 shadow-xs">
             <CheckCircle2 className="w-7 h-7" />
           </div>
-          
-          <Alert variant="success" title="Recovery Instructions Sent">
-            If an account exists for <strong className="font-mono">{email}</strong>, password reset instructions have been dispatched.
-          </Alert>
 
-          <p className="text-xs text-kth-slate-600 leading-relaxed">
-            Please check your inbox (and spam folder). The reset link will expire after 1 hour.
-          </p>
+          <div className="space-y-1">
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+              Check your email
+            </h2>
+            <p className="text-xs text-slate-500">
+              We've dispatched recovery instructions to <strong className="font-mono text-slate-700">{email}</strong>.
+            </p>
+          </div>
+
+          <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-100 text-[11px] text-slate-600 leading-relaxed text-left">
+            The reset link is valid for 1 hour. Make sure to check your spam or junk folder if you don't receive it shortly.
+          </div>
 
           <div className="pt-2">
             <Button
               variant="outline"
               size="md"
-              className="w-full"
+              className="w-full font-semibold"
               onClick={() => navigate('/login')}
               leftIcon={<ArrowLeft className="w-4 h-4" />}
             >
@@ -95,50 +113,71 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onNaviga
           </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-5 text-left" noValidate>
-          {errorMessage && (
-            <Alert variant="error" title="Password Reset Request Failed">
-              {errorMessage}
-            </Alert>
-          )}
-
-          <Input
-            label="Account Email Address"
-            type="email"
-            placeholder="name@company.com"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              if (errorMessage) setErrorMessage(null);
-            }}
-            leftIcon={<Mail className="w-4 h-4" />}
-            autoComplete="email"
-            required
-          />
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="md"
-            className="w-full font-bold shadow-xs mt-2"
-            isLoading={isLoading}
-            disabled={isLoading}
-            rightIcon={<ArrowRight className="w-4 h-4" />}
-          >
-            Send Password Reset Link
-          </Button>
-
-          <div className="pt-4 border-t border-kth-slate-100 text-center text-xs text-kth-slate-600">
-            <button
-              type="button"
-              onClick={() => navigate('/login')}
-              className="font-semibold text-kth-slate-600 hover:text-kth-slate-900 inline-flex items-center gap-1.5 transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Sign In</span>
-            </button>
+        <div className="space-y-5 text-left">
+          {/* Header */}
+          <div className="space-y-1">
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+              Reset your password
+            </h2>
+            <p className="text-xs text-slate-500">
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
           </div>
-        </form>
+
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            {errorMessage && (
+              <Alert variant="error" title="Password Reset Request Failed">
+                {errorMessage}
+              </Alert>
+            )}
+
+            <Input
+              label="Email address"
+              type="email"
+              placeholder="name@example.com"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (errorMessage) setErrorMessage(null);
+              }}
+              leftIcon={<Mail className="w-4 h-4 text-slate-400" />}
+              autoComplete="email"
+              required
+            />
+
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              className="w-full font-bold shadow-xs mt-2 bg-[#5145F5] hover:bg-[#4338CA] text-white cursor-pointer"
+              isLoading={isLoading}
+              disabled={isLoading}
+              rightIcon={<ArrowRight className="w-4 h-4" />}
+            >
+              Send reset link
+            </Button>
+
+            {/* Security Notice Box (Mockup 3 & 7) */}
+            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] leading-relaxed">
+              <div className="w-4 h-4 rounded-full border border-slate-300 flex items-center justify-center shrink-0 mt-0.5 text-slate-500 font-bold text-[10px]">
+                i
+              </div>
+              <div>
+                You'll receive an email with a secure link to create a new password. The link will expire for security reasons.
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 text-center text-xs">
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="font-bold text-[#5145F5] hover:text-[#4338CA] hover:underline cursor-pointer"
+              >
+                Back to sign in
+              </button>
+            </div>
+          </form>
+        </div>
       )}
     </AuthLayout>
   );

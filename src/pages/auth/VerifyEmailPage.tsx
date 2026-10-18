@@ -183,20 +183,38 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
 
   return (
     <AuthLayout
-      title="Verify your email"
-      subtitle="Click the confirmation link sent to your registered inbox to activate your account."
-      badgeText="Email Verification Required"
+      brandTitle="Verify Your Email"
+      brandSubtitle="Confirm your email address to activate your account and start your journey on KnowToHire."
+      brandFeatures={[
+        {
+          title: "Account Security",
+          description: "Protecting your profile and personal data",
+        },
+        {
+          title: "Instant Verification",
+          description: "One click to complete your onboarding",
+        },
+      ]}
     >
       <div className="space-y-6 text-center">
         {/* Verification Icon Presentation */}
-        <div className="w-16 h-16 rounded-full bg-kth-primary-50 text-kth-primary-600 flex items-center justify-center mx-auto border border-kth-primary-100 shadow-xs">
-          <MailCheck className="w-8 h-8" />
+        <div className="w-14 h-14 rounded-full bg-blue-50 text-[#5145F5] flex items-center justify-center mx-auto border border-blue-100 shadow-xs">
+          <MailCheck className="w-7 h-7" />
+        </div>
+
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Verify your email
+          </h2>
+          <p className="text-xs text-slate-500">
+            Click the confirmation link sent to your registered inbox to activate your account.
+          </p>
         </div>
 
         {/* Informational Email Box or Editable Email Input */}
         {isEditingEmail ? (
-          <div className="bg-kth-slate-50 p-4 rounded-xl border border-kth-slate-200 text-left space-y-2">
-            <label className="text-xs font-semibold text-kth-slate-800 block">
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left space-y-2">
+            <label className="text-xs font-semibold text-slate-800 block">
               Registered Email Address
             </label>
             <Input
@@ -206,41 +224,41 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
               placeholder="e.g. name@company.com"
               error={!isTargetEmailValid && emailInput ? 'Please enter a valid email format' : undefined}
             />
-            <p className="text-[11px] text-kth-slate-500">
+            <p className="text-[11px] text-slate-500">
               Ensure this matches the email address you used to register.
             </p>
           </div>
         ) : (
-          <div className="bg-kth-slate-50 p-4 rounded-xl border border-kth-slate-200 space-y-1">
-            <span className="text-[11px] font-bold text-kth-slate-500 uppercase tracking-wider block">
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
               Target Email Address
             </span>
-            <strong className="font-mono text-sm text-kth-slate-900 break-all block">
+            <strong className="font-mono text-sm text-slate-900 break-all block">
               {activeTargetEmail}
             </strong>
             <button
               type="button"
               onClick={() => setIsEditingEmail(true)}
-              className="text-xs text-kth-primary-600 hover:text-kth-primary-700 font-semibold underline pt-1 block mx-auto cursor-pointer"
+              className="text-xs text-[#5145F5] hover:text-[#4338CA] font-semibold underline pt-1 block mx-auto cursor-pointer"
             >
               Change email address
             </button>
           </div>
         )}
 
-        <div className="text-xs text-kth-slate-600 leading-relaxed max-w-sm mx-auto space-y-2 bg-blue-50/60 p-3.5 rounded-xl border border-blue-100 text-left">
+        <div className="text-xs text-slate-600 leading-relaxed max-w-sm mx-auto space-y-2 bg-blue-50/60 p-3.5 rounded-xl border border-blue-100 text-left">
           <div className="flex items-start gap-2.5">
-            <Mail className="w-4 h-4 text-kth-primary-600 shrink-0 mt-0.5" />
+            <Mail className="w-4 h-4 text-[#5145F5] shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <p className="font-semibold text-kth-slate-800">
+              <p className="font-semibold text-slate-800">
                 Check your inbox for "Confirm your email address"
               </p>
-              <p className="text-kth-slate-600 text-[11px] leading-relaxed">
+              <p className="text-slate-600 text-[11px] leading-relaxed">
                 Clicking the confirmation link inside the email will automatically verify your account and take you directly to your onboarding setup.
               </p>
             </div>
           </div>
-          <p className="text-kth-slate-500 text-[11px] pt-1 border-t border-blue-100/70">
+          <p className="text-slate-500 text-[11px] pt-1 border-t border-blue-100/70">
             Links are valid for 24 hours. Check your spam or promotions folder if the email doesn't appear within a few minutes.
           </p>
         </div>
@@ -257,7 +275,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
           <Button
             variant="outline"
             size="md"
-            className="w-full"
+            className="w-full font-semibold"
             isLoading={isResending}
             disabled={cooldown > 0 || isResending}
             onClick={handleResend}
@@ -269,7 +287,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
           <Button
             variant="ghost"
             size="sm"
-            className="w-full"
+            className="w-full text-slate-600 hover:text-slate-900 cursor-pointer"
             onClick={handleBackToSignIn}
             leftIcon={<ArrowLeft className="w-4 h-4" />}
           >

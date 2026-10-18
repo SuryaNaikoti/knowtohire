@@ -41,15 +41,6 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onNavigate
     checkRecoverySession();
   }, []);
 
-  const evalPasswordStrength = (pwd: string) => {
-    let score = 0;
-    if (pwd.length >= 8) score++;
-    if (/[A-Z]/.test(pwd)) score++;
-    if (/[a-z]/.test(pwd)) score++;
-    if (/[0-9]/.test(pwd)) score++;
-    return score;
-  };
-
   const validateForm = (): boolean => {
     setErrorMessage(null);
 
@@ -101,9 +92,18 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onNavigate
 
   return (
     <AuthLayout
-      title="Create new password"
-      subtitle="Choose a secure password for your KnowToHire account."
-      badgeText="Password Update"
+      brandTitle="Secure Your Account"
+      brandSubtitle="Set a new strong password to restore complete access to your KnowToHire account."
+      brandFeatures={[
+        {
+          title: "Account Security",
+          description: "Encrypted password storage & protection",
+        },
+        {
+          title: "Instant Access",
+          description: "Resume your applications and ATS tools",
+        },
+      ]}
     >
       {!isSessionValid ? (
         <div className="space-y-6 text-center">
@@ -114,7 +114,7 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onNavigate
             <Button
               variant="primary"
               size="md"
-              className="w-full"
+              className="w-full bg-[#5145F5] hover:bg-[#4338CA] text-white"
               onClick={() => navigate('/forgot-password')}
             >
               Request New Reset Link
@@ -127,19 +127,20 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onNavigate
             <CheckCircle2 className="w-7 h-7" />
           </div>
 
-          <Alert variant="success" title="Password Updated">
-            Your password has been successfully updated.
-          </Alert>
-
-          <p className="text-xs text-kth-slate-600">
-            You can now sign in with your new password credentials.
-          </p>
+          <div className="space-y-1">
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+              Password updated
+            </h2>
+            <p className="text-xs text-slate-500">
+              Your password has been successfully updated. You can now sign in with your new credentials.
+            </p>
+          </div>
 
           <div className="pt-2">
             <Button
               variant="primary"
-              size="lg"
-              className="w-full shadow-md"
+              size="md"
+              className="w-full bg-[#5145F5] hover:bg-[#4338CA] text-white shadow-xs font-bold"
               onClick={() => navigate('/login')}
               rightIcon={<ArrowRight className="w-4 h-4" />}
             >
@@ -148,83 +149,106 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onNavigate
           </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-5 text-left" noValidate>
-          {errorMessage && (
-            <Alert variant="error" title="Update Failed">
-              {errorMessage}
-            </Alert>
-          )}
+        <div className="space-y-5 text-left">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+              Create new password
+            </h2>
+            <p className="text-xs text-slate-500">
+              Choose a secure password for your KnowToHire account.
+            </p>
+          </div>
 
-          {/* New Password */}
-          <div>
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            {errorMessage && (
+              <Alert variant="error" title="Update Failed">
+                {errorMessage}
+              </Alert>
+            )}
+
+            {/* New Password */}
+            <div>
+              <Input
+                label="New password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Min. 8 characters"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errorMessage) setErrorMessage(null);
+                }}
+                leftIcon={<Lock className="w-4 h-4 text-slate-400" />}
+                rightIcon={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    className="text-slate-400 hover:text-slate-600 focus:outline-none p-1 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                }
+                autoComplete="new-password"
+                required
+              />
+
+              {/* Requirements box */}
+              <div className="mt-2 text-[11px] text-slate-500 space-y-1 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                <div className="font-semibold text-slate-700">Password requirements:</div>
+                <div className="grid grid-cols-2 gap-1 pt-0.5">
+                  <div className={`flex items-center gap-1.5 ${password.length >= 8 ? 'text-emerald-600 font-medium' : 'text-slate-500'}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${password.length >= 8 ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                    <span>8+ characters</span>
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${/[A-Z]/.test(password) ? 'text-emerald-600 font-medium' : 'text-slate-500'}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${/[A-Z]/.test(password) ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                    <span>1 uppercase</span>
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${/[a-z]/.test(password) ? 'text-emerald-600 font-medium' : 'text-slate-500'}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${/[a-z]/.test(password) ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                    <span>1 lowercase</span>
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${/[0-9]/.test(password) ? 'text-emerald-600 font-medium' : 'text-slate-500'}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${/[0-9]/.test(password) ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                    <span>1 number</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Confirm New Password */}
             <Input
-              label="New Password"
+              label="Confirm new password"
               type={showPassword ? 'text' : 'password'}
-              placeholder="Min. 8 characters"
-              value={password}
+              placeholder="Re-enter new password"
+              value={confirmPassword}
               onChange={(e) => {
-                setPassword(e.target.value);
+                setConfirmPassword(e.target.value);
                 if (errorMessage) setErrorMessage(null);
               }}
-              leftIcon={<Lock className="w-4 h-4" />}
+              leftIcon={<Lock className="w-4 h-4 text-slate-400" />}
               rightIcon={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="text-kth-slate-400 hover:text-kth-slate-600 focus:outline-none p-1"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+                confirmPassword && confirmPassword === password ? (
+                  <Check className="w-4 h-4 text-emerald-600" />
+                ) : undefined
               }
               autoComplete="new-password"
               required
             />
 
-            {/* Strength Bar */}
-            {password && (
-              <div className="mt-2 space-y-1">
-                <div className="h-1.5 w-full bg-kth-slate-100 rounded-full overflow-hidden flex gap-1">
-                  <div className={`h-full transition-all duration-300 ${evalPasswordStrength(password) >= 1 ? 'bg-red-500' : 'bg-transparent'} flex-1`} />
-                  <div className={`h-full transition-all duration-300 ${evalPasswordStrength(password) >= 3 ? 'bg-amber-500' : 'bg-transparent'} flex-1`} />
-                  <div className={`h-full transition-all duration-300 ${evalPasswordStrength(password) >= 4 ? 'bg-emerald-500' : 'bg-transparent'} flex-1`} />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Confirm New Password */}
-          <Input
-            label="Confirm New Password"
-            type={showPassword ? 'text' : 'password'}
-            placeholder="Re-enter new password"
-            value={confirmPassword}
-            onChange={(e) => {
-              setConfirmPassword(e.target.value);
-              if (errorMessage) setErrorMessage(null);
-            }}
-            leftIcon={<Lock className="w-4 h-4" />}
-            rightIcon={
-              confirmPassword && confirmPassword === password ? (
-                <Check className="w-4 h-4 text-emerald-600" />
-              ) : undefined
-            }
-            autoComplete="new-password"
-            required
-          />
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="md"
-            className="w-full font-bold shadow-xs mt-2"
-            isLoading={isLoading}
-            disabled={isLoading}
-            rightIcon={<ArrowRight className="w-4 h-4" />}
-          >
-            Update Password & Continue
-          </Button>
-        </form>
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              className="w-full font-bold shadow-xs mt-2 bg-[#5145F5] hover:bg-[#4338CA] text-white cursor-pointer"
+              isLoading={isLoading}
+              disabled={isLoading}
+              rightIcon={<ArrowRight className="w-4 h-4" />}
+            >
+              Update Password & Continue
+            </Button>
+          </form>
+        </div>
       )}
     </AuthLayout>
   );
