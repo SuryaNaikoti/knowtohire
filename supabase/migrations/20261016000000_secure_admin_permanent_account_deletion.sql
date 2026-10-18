@@ -117,6 +117,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, auth, pg_temp
 AS $$
+#variable_conflict use_variable
 DECLARE
   v_caller UUID;
   v_caller_role TEXT;
@@ -282,7 +283,7 @@ BEGIN
     NOW(),
     NOW()
   )
-  ON CONFLICT (target_user_id) DO UPDATE SET
+  ON CONFLICT ON CONSTRAINT admin_deletion_jobs_pkey DO UPDATE SET
     retry_count = public.admin_deletion_jobs.retry_count + 1,
     status = 'db_purged',
     updated_at = NOW();
