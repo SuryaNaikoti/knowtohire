@@ -115,8 +115,10 @@ export default async function handler(req: any, res: any) {
 
           validatedCompanyId = ep.company_id;
         } catch (dbErr: any) {
+          console.error('[CreateOrder] Exception checking employer company profile:', dbErr);
           return res.status(500).json({
             error: dbErr?.message || 'Failed to verify employer company profile.',
+            stage: 'employer_company_lookup',
           });
         }
       }
@@ -174,8 +176,10 @@ export default async function handler(req: any, res: any) {
     });
 
     if (!durableResult.success) {
+      console.error('[CreateOrder] Durable order persistence failed:', durableResult.error);
       return res.status(500).json({
         error: durableResult.error || 'Failed to persist order in payment ledger.',
+        stage: 'durable_persistence',
       });
     }
 
@@ -190,8 +194,19 @@ export default async function handler(req: any, res: any) {
       amount_inr: authoritativeAmountINR,
     });
   } catch (error: any) {
+    const errorDetails = error?.error?.description || error?.message || 'Failed to create Razorpay order';
+    const errorCode = error?.error?.code || error?.code || 'ORDER_CREATION_FAILED';
+    console.error('[CreateOrder] Exception during order creation:', {
+      message: error?.message,
+      description: error?.error?.description,
+      code: errorCode,
+      status: error?.statusCode,
+      stack: error?.stack,
+    });
     return res.status(500).json({
-      error: error?.error?.description || error?.message || 'Failed to create Razorpay order',
+      error: errorDetails,
+      code: errorCode,
+      stage: 'razorpay_order_api',
     });
   }
 }
