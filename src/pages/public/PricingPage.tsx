@@ -131,7 +131,7 @@ export const PricingPage: React.FC = () => {
               ? "Publish study resources and document templates to earn guaranteed 70% commission."
               : isCandidateUser
               ? "KnowToHire candidate memberships are 100% free forever for verified job applications and career study guides."
-              : "Choose the right subscription plan for enterprise talent acquisition and verified recruitment in India."
+              : "Choose the right cloud software subscription plan for automated job management, candidate tracking (ATS), and recruitment workflows."
           }
           align="center"
         />

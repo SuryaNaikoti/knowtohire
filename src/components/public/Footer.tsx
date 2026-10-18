@@ -14,10 +14,10 @@ export const Footer: React.FC = () => {
               <span className="font-display font-extrabold text-xl text-white">KnowToHire</span>
             </div>
             <p className="text-kth-slate-400 text-xs leading-relaxed max-w-sm mb-3 sm:mb-4">
-              The unified career ecosystem connecting talent with verified job opportunities, study resources, and professional document templates in India.
+              Cloud-based Careers, Knowledge & Research software platform (SaaS) connecting professionals, employers, and creators with self-serve recruitment tools, specialized domain resources, and research templates in India.
             </p>
             <div className="font-display font-bold text-[11px] sm:text-xs text-kth-accent-cyan uppercase tracking-wider">
-              Know More. Hire Better. Grow Faster.
+              Careers, Knowledge & Research SaaS Platform
             </div>
           </div>
 

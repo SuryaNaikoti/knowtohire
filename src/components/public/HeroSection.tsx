@@ -37,7 +37,7 @@ export const HeroSection: React.FC = () => {
         <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/[0.07] border border-white/10 backdrop-blur-md mb-4 sm:mb-5 shadow-xs">
           <span className="w-1.5 h-1.5 rounded-full bg-kth-accent-emerald pulse-dot-ring" />
           <span className="text-[11px] sm:text-xs font-medium text-kth-slate-300 tracking-wide">
-            Career Intelligence & Verified Sustainability
+            Careers, Knowledge & Research Software (SaaS)
           </span>
         </div>
 
@@ -48,7 +48,7 @@ export const HeroSection: React.FC = () => {
 
         {/* Supporting Subtitle */}
         <p className="text-xs sm:text-base md:text-lg text-kth-slate-300 max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed font-normal text-pretty px-2">
-          The unified career ecosystem connecting candidates with top job opportunities, verified study material, and professional document templates in India.
+          The unified cloud ecosystem integrating talent discovery, specialized career knowledge, research documentation, and automated ATS recruitment software in India.
         </p>
 
         {/* Dual Discovery Tabs Header */}
