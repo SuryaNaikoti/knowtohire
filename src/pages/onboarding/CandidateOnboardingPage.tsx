@@ -61,6 +61,10 @@ export const CandidateOnboardingPage: React.FC<CandidateOnboardingPageProps> = (
       navigate(status === 'active' ? '/employer' : '/onboarding/employer');
       return;
     }
+    if (role === 'creator') {
+      navigate('/creator');
+      return;
+    }
     if (status === 'active') {
       navigate('/candidate');
     }

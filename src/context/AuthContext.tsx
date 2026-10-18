@@ -759,8 +759,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       let profile: Profile | null = existingProfile;
 
-      // Only upsert profile if one does not already exist
-      if (!profile) {
+      // Ensure profile exists and has the requested role from registration metadata
+      if (!profile || profile.role !== metadata.role) {
         try {
           const { data: upserted } = await supabase
             .from('profiles')
