@@ -418,7 +418,7 @@ export const applicationService = {
       if (!error && data) {
         notifyApplicationsChanged();
 
-        // Dispatch employer notification for new applicant
+        // Dispatch employer notification for new applicant (local cache + serverless dispatch)
         const candidateName = (snapshot as any)?.full_name || sessionName;
         notificationService.createNotification({
           company_id: targetJob.company_id,
@@ -430,6 +430,29 @@ export const applicationService = {
           message: `${candidateName} applied for "${targetJob.title}".`,
           link: '/employer/pipeline',
         }).catch(() => {});
+
+        // Trusted server-side dispatch to notify employer user(s) in DB
+        (async () => {
+          try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
+            if (token) {
+              await fetch('/api/notifications-dispatch', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  event: 'application_submitted',
+                  application_id: data.id,
+                }),
+              });
+            }
+          } catch {
+            // graceful fallback
+          }
+        })();
 
         return { data: data as JobApplication, error: null };
       }
@@ -891,6 +914,30 @@ export const applicationService = {
             message: `${candidateName} was moved to ${stage.toUpperCase()} for "${jobTitle}".`,
             link: '/employer/pipeline',
           }).catch(() => {});
+
+          // Serverless dispatch: notify candidate authoritatively
+          (async () => {
+            try {
+              const { data: sessionData } = await supabase.auth.getSession();
+              const token = sessionData?.session?.access_token;
+              if (token) {
+                await fetch('/api/notifications-dispatch', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({
+                    event: 'application_stage_changed',
+                    application_id: (data as any).id,
+                    stage,
+                  }),
+                });
+              }
+            } catch {
+              // graceful fallback
+            }
+          })();
         }
       }
 

@@ -15,10 +15,14 @@ export interface AppNotification {
   job_id?: string | null;
   interview_id?: string | null;
   type: 'application' | 'interview' | 'offer' | 'system' | 'message';
+  category?: string;
   title: string;
   message: string;
   is_read: boolean;
+  read_at?: string | null;
   link?: string;
+  action_url?: string | null;
+  metadata?: Record<string, unknown>;
   created_at: string;
 }
 
@@ -30,9 +34,12 @@ export interface CreateNotificationInput {
   job_id?: string;
   interview_id?: string;
   type: 'application' | 'interview' | 'offer' | 'system' | 'message';
+  category?: string;
   title: string;
   message: string;
   link?: string;
+  action_url?: string;
+  metadata?: Record<string, unknown>;
 }
 
 const NOTIFICATIONS_CHANGED_EVENT = 'kth_notifications_changed';
@@ -43,36 +50,31 @@ function notifyNotificationsChanged() {
   }
 }
 
-function getStoredNotifications(companyId?: string): AppNotification[] {
-  if (typeof window === 'undefined' || !window.localStorage) return [];
-  try {
-    const key = companyId ? `kth_notifications_${companyId}` : 'kth_demo_notifications';
-    const raw = window.localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+interface NotificationScope {
+  role: 'candidate' | 'employer' | 'creator' | 'admin';
+  storageKey: string;
+  userId?: string | null;
+  companyId?: string | null;
 }
 
-function saveStoredNotifications(notifications: AppNotification[], companyId?: string) {
-  if (typeof window === 'undefined' || !window.localStorage) return;
-  try {
-    const key = companyId ? `kth_notifications_${companyId}` : 'kth_demo_notifications';
-    window.localStorage.setItem(key, JSON.stringify(notifications));
-    notifyNotificationsChanged();
-  } catch {
-    // ignore
-  }
-}
-
-async function getAuthenticatedCompanyId(): Promise<string | null> {
+async function getNotificationScope(): Promise<NotificationScope> {
+  // 1. Check demo auth session first
   if (typeof window !== 'undefined' && window.localStorage) {
     const storedDemo = window.localStorage.getItem('kth_demo_auth_session');
     if (storedDemo) {
       try {
         const parsed = JSON.parse(storedDemo);
-        if (parsed?.role === 'employer' || parsed?.role === 'admin') {
-          return parsed.company_id || 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+        const role = parsed?.role || 'candidate';
+        const userId = parsed?.id || null;
+        if (role === 'employer') {
+          const compId = parsed?.company_id || 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+          return { role: 'employer', storageKey: `kth_notifications_${compId}`, userId, companyId: compId };
+        } else if (role === 'creator') {
+          return { role: 'creator', storageKey: userId ? `kth_notifications_creator_${userId}` : 'kth_notifications_creator', userId };
+        } else if (role === 'admin') {
+          return { role: 'admin', storageKey: 'kth_notifications_admin', userId };
+        } else {
+          return { role: 'candidate', storageKey: userId ? `kth_notifications_cand_${userId}` : 'kth_demo_notifications', userId };
         }
       } catch {
         // ignore
@@ -80,32 +82,72 @@ async function getAuthenticatedCompanyId(): Promise<string | null> {
     }
   }
 
+  // 2. Check Supabase authenticated user
   try {
     const { data: userData } = await supabase.auth.getUser();
     if (userData?.user) {
-      const { data: empProfile } = await supabase
-        .from('employer_profiles')
-        .select('company_id')
-        .eq('profile_id', userData.user.id)
+      const uid = userData.user.id;
+      // Check profile role
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', uid)
         .maybeSingle();
 
-      if (empProfile?.company_id) return empProfile.company_id;
+      const userRole = profile?.role || 'candidate';
+
+      if (userRole === 'employer') {
+        const { data: empProfile } = await supabase
+          .from('employer_profiles')
+          .select('company_id')
+          .eq('profile_id', uid)
+          .maybeSingle();
+
+        const compId = empProfile?.company_id || 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+        return { role: 'employer', storageKey: `kth_notifications_${compId}`, userId: uid, companyId: compId };
+      } else if (userRole === 'creator') {
+        return { role: 'creator', storageKey: `kth_notifications_creator_${uid}`, userId: uid };
+      } else if (userRole === 'admin') {
+        return { role: 'admin', storageKey: 'kth_notifications_admin', userId: uid };
+      } else {
+        return { role: 'candidate', storageKey: `kth_notifications_cand_${uid}`, userId: uid };
+      }
     }
   } catch {
     // ignore
   }
 
-  return 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
+  return { role: 'candidate', storageKey: 'kth_demo_notifications' };
+}
+
+function getStoredNotifications(storageKey: string): AppNotification[] {
+  if (typeof window === 'undefined' || !window.localStorage) return [];
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredNotifications(notifications: AppNotification[], storageKey: string) {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    window.localStorage.setItem(storageKey, JSON.stringify(notifications));
+    notifyNotificationsChanged();
+  } catch {
+    // ignore
+  }
 }
 
 export const notificationService = {
   /**
-   * Fetch all notifications for the authenticated user/company.
+   * Fetch all notifications for the authenticated user/company across any role.
    */
   async getMyNotifications(): Promise<ServiceResult<AppNotification[]>> {
     try {
-      const companyId = await getAuthenticatedCompanyId();
-      const localNotifs = getStoredNotifications(companyId || undefined);
+      const scope = await getNotificationScope();
+      const localNotifs = getStoredNotifications(scope.storageKey);
 
       if (isSupabaseConfigured()) {
         const { data: userData } = await supabase.auth.getUser();
@@ -120,16 +162,20 @@ export const notificationService = {
             const dbNotifs: AppNotification[] = data.map((n) => ({
               id: n.id,
               user_id: n.user_id,
-              company_id: n.company_id || companyId,
+              company_id: n.company_id || scope.companyId,
               candidate_id: n.candidate_id,
               application_id: n.application_id,
               job_id: n.job_id,
               interview_id: n.interview_id,
               type: n.type || 'system',
+              category: n.category || 'system',
               title: n.title || 'Notification',
               message: n.message || '',
               is_read: Boolean(n.is_read),
-              link: n.link || undefined,
+              read_at: n.read_at || null,
+              link: n.action_url || n.link || undefined,
+              action_url: n.action_url || n.link || null,
+              metadata: n.metadata || {},
               created_at: n.created_at,
             }));
 
@@ -171,17 +217,22 @@ export const notificationService = {
    */
   async markAsRead(id: string): Promise<ServiceResult<boolean>> {
     try {
-      const companyId = await getAuthenticatedCompanyId();
-      const localNotifs = getStoredNotifications(companyId || undefined);
+      const scope = await getNotificationScope();
+      const localNotifs = getStoredNotifications(scope.storageKey);
       const targetIdx = localNotifs.findIndex((n) => n.id === id);
 
+      const nowIso = new Date().toISOString();
       if (targetIdx !== -1) {
         localNotifs[targetIdx].is_read = true;
-        saveStoredNotifications(localNotifs, companyId || undefined);
+        localNotifs[targetIdx].read_at = nowIso;
+        saveStoredNotifications(localNotifs, scope.storageKey);
       }
 
       if (isSupabaseConfigured()) {
-        await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+        await supabase
+          .from('notifications')
+          .update({ is_read: true, read_at: nowIso })
+          .eq('id', id);
       }
 
       notifyNotificationsChanged();
@@ -196,11 +247,11 @@ export const notificationService = {
    */
   async markAllAsRead(): Promise<ServiceResult<boolean>> {
     try {
-      const companyId = await getAuthenticatedCompanyId();
-      const localNotifs = getStoredNotifications(companyId || undefined);
+      const scope = await getNotificationScope();
+      const localNotifs = getStoredNotifications(scope.storageKey);
 
       const updated = localNotifs.map((n) => ({ ...n, is_read: true }));
-      saveStoredNotifications(updated, companyId || undefined);
+      saveStoredNotifications(updated, scope.storageKey);
 
       if (isSupabaseConfigured()) {
         const { data: userData } = await supabase.auth.getUser();
@@ -217,14 +268,32 @@ export const notificationService = {
   },
 
   /**
-   * Create and trigger a notification for an employer or candidate.
+   * Create and trigger a notification for any role (employer, candidate, creator, admin).
    */
   async createNotification(input: CreateNotificationInput): Promise<ServiceResult<AppNotification>> {
     try {
-      const companyId = input.company_id || (await getAuthenticatedCompanyId()) || 'fa97faee-1cdf-41e6-a151-f51c7fa4c396';
-      const userId = input.user_id || '00000000-0000-0000-0000-000000000002';
+      let targetStorageKey = 'kth_demo_notifications';
+      let userId = input.user_id;
 
-      const existingNotifs = getStoredNotifications(companyId);
+      if (input.company_id) {
+        targetStorageKey = `kth_notifications_${input.company_id}`;
+        if (!userId) userId = '00000000-0000-0000-0000-000000000002';
+      } else if (input.candidate_id) {
+        targetStorageKey = `kth_notifications_cand_${input.candidate_id}`;
+        if (!userId) userId = input.candidate_id;
+      } else if (input.user_id) {
+        targetStorageKey = `kth_notifications_user_${input.user_id}`;
+      } else {
+        const scope = await getNotificationScope();
+        targetStorageKey = scope.storageKey;
+        if (!userId) userId = scope.userId || '00000000-0000-0000-0000-000000000001';
+      }
+
+      if (!userId) {
+        userId = '00000000-0000-0000-0000-000000000001';
+      }
+
+      const existingNotifs = getStoredNotifications(targetStorageKey);
 
       // Duplicate prevention: avoid inserting same notification for same application/interview event within 10s
       const isDuplicate = existingNotifs.some(
@@ -242,31 +311,47 @@ export const notificationService = {
       const newNotif: AppNotification = {
         id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         user_id: userId,
-        company_id: companyId,
+        company_id: input.company_id || null,
         candidate_id: input.candidate_id || null,
         application_id: input.application_id || null,
         job_id: input.job_id || null,
         interview_id: input.interview_id || null,
         type: input.type,
+        category: input.category || 'system',
         title: input.title.trim(),
         message: input.message.trim(),
         is_read: false,
-        link: input.link,
+        read_at: null,
+        link: input.action_url || input.link,
+        action_url: input.action_url || input.link || null,
+        metadata: input.metadata || {},
         created_at: new Date().toISOString(),
       };
 
       existingNotifs.unshift(newNotif);
-      saveStoredNotifications(existingNotifs, companyId);
+      saveStoredNotifications(existingNotifs, targetStorageKey);
 
-      if (isSupabaseConfigured()) {
-        await supabase.from('notifications').insert({
-          user_id: userId,
-          title: newNotif.title,
-          message: newNotif.message,
-          type: newNotif.type,
-          is_read: false,
-          created_at: newNotif.created_at,
-        });
+      if (isSupabaseConfigured() && userId && userId !== '00000000-0000-0000-0000-000000000002') {
+        try {
+          const { data: authData } = await supabase.auth.getUser();
+          // Owner-only check: only insert if authenticated user matches target recipient
+          if (authData?.user && authData.user.id === userId) {
+            await supabase.from('notifications').insert({
+              user_id: userId,
+              title: newNotif.title,
+              message: newNotif.message,
+              type: newNotif.type,
+              category: newNotif.category,
+              action_url: newNotif.action_url,
+              metadata: newNotif.metadata,
+              is_read: false,
+              read_at: null,
+              created_at: newNotif.created_at,
+            });
+          }
+        } catch {
+          // ignore DB insert errors
+        }
       }
 
       notifyNotificationsChanged();

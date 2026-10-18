@@ -466,6 +466,29 @@ export const interviewService = {
           link: '/employer/interviews',
         }).catch(() => {});
 
+        // Serverless dispatch: notify candidate authoritatively
+        (async () => {
+          try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
+            if (token) {
+              await fetch('/api/notifications-dispatch', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  event: 'interview_scheduled',
+                  interview_id: data.id,
+                }),
+              });
+            }
+          } catch {
+            // graceful fallback
+          }
+        })();
+
         return { data: data as Interview, error: null };
       }
 
@@ -560,6 +583,30 @@ export const interviewService = {
             : `Interview with ${candName} was cancelled.`,
           link: input.status === 'completed' ? '/employer/pipeline' : '/employer/interviews',
         }).catch(() => {});
+
+        // Serverless dispatch: notify candidate authoritatively
+        (async () => {
+          try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
+            if (token) {
+              await fetch('/api/notifications-dispatch', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  event: 'interview_status_changed',
+                  interview_id: (data as any).id,
+                  status: input.status,
+                }),
+              });
+            }
+          } catch {
+            // graceful fallback
+          }
+        })();
       }
 
       return { data: data as Interview, error: null };
