@@ -41,6 +41,7 @@ const AboutPage = lazy(() => import('@/pages/public/AboutPage').then(m => ({ def
 const ContactPage = lazy(() => import('@/pages/public/ContactPage').then(m => ({ default: m.ContactPage })));
 const PrivacyPage = lazy(() => import('@/pages/public/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => import('@/pages/public/TermsPage').then(m => ({ default: m.TermsPage })));
+const RefundPage = lazy(() => import('@/pages/public/RefundPage').then(m => ({ default: m.RefundPage })));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 // Lazy-loaded Candidate Pages
@@ -511,6 +512,7 @@ export function App() {
     if (path === '/contact') return <ContactPage />;
     if (path === '/privacy') return <PrivacyPage />;
     if (path === '/terms') return <TermsPage />;
+    if (path === '/refund') return <RefundPage />;
 
     return <NotFoundPage />;
   };

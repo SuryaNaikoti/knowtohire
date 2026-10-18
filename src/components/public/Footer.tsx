@@ -50,8 +50,9 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2 sm:space-y-2.5 text-xs text-kth-slate-300 grid grid-cols-2 sm:grid-cols-1">
               <li><a href="/about" className="hover:text-white transition-colors py-0.5 inline-block">About Us</a></li>
               <li><a href="/contact" className="hover:text-white transition-colors py-0.5 inline-block">Contact</a></li>
-              <li><a href="/privacy" className="hover:text-white transition-colors py-0.5 inline-block">Privacy</a></li>
-              <li><a href="/terms" className="hover:text-white transition-colors py-0.5 inline-block">Terms</a></li>
+              <li><a href="/privacy" className="hover:text-white transition-colors py-0.5 inline-block">Privacy Policy</a></li>
+              <li><a href="/terms" className="hover:text-white transition-colors py-0.5 inline-block">Terms & Conditions</a></li>
+              <li><a href="/refund" className="hover:text-white transition-colors py-0.5 inline-block">Refund Policy</a></li>
             </ul>
           </div>
         </div>
@@ -62,6 +63,7 @@ export const Footer: React.FC = () => {
           <div className="flex gap-4 sm:gap-6">
             <a href="/privacy" className="hover:text-kth-slate-300 py-1">Privacy</a>
             <a href="/terms" className="hover:text-kth-slate-300 py-1">Terms</a>
+            <a href="/refund" className="hover:text-kth-slate-300 py-1">Refunds</a>
             <a href="/contact" className="hover:text-kth-slate-300 py-1">Support</a>
           </div>
         </div>

@@ -12,18 +12,31 @@ export const TermsPage: React.FC = () => {
           </div>
 
           <div>
-            <h3 className="font-display font-bold text-lg text-kth-slate-900 mb-2">1. Acceptance of Terms</h3>
-            <p>By accessing or using KnowToHire, candidates, employers, and visitors agree to abide by these terms of service and platform community standards.</p>
+            <h3 className="font-display font-bold text-lg text-kth-slate-900 mb-2">1. Nature of Platform & Acceptance of Terms</h3>
+            <p>
+              KnowToHire is an educational technology and software-as-a-service (SaaS) recruitment-tech platform. We provide candidate ATS workflow tools, skill assessments, and career digital assets. KnowToHire is NOT a manpower placement agency or consultancy and does not guarantee job placements or charge commission for hiring. By using our website and services, you agree to these Terms.
+            </p>
           </div>
 
           <div>
-            <h3 className="font-display font-bold text-lg text-kth-slate-900 mb-2">2. Employer Job Posting Rules</h3>
-            <p>All job postings must represent genuine employment opportunities in India and comply with equal opportunity standards.</p>
+            <h3 className="font-display font-bold text-lg text-kth-slate-900 mb-2">2. SaaS Software Subscriptions & Job Posting Rules</h3>
+            <p>
+              Employers utilize our SaaS application to manage their applicants and post legitimate employment listings. All listings must represent genuine business opportunities in India.
+            </p>
           </div>
 
           <div>
             <h3 className="font-display font-bold text-lg text-kth-slate-900 mb-2">3. Template & Knowledge Resource Licenses</h3>
-            <p>Purchased or downloaded document templates are licensed for individual or corporate internal use only and may not be resold.</p>
+            <p>
+              Purchased or downloaded document templates and study guides are licensed for individual or corporate internal use only and may not be redistributed or resold.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-display font-bold text-lg text-kth-slate-900 mb-2">4. Payments, Cancellations & Refunds</h3>
+            <p>
+              All online payments, subscription renewals, and refund requests are governed by our official <a href="/refund" className="text-kth-primary-600 font-semibold underline">Cancellation & Refund Policy</a> in accordance with Indian banking and payment gateway guidelines.
+            </p>
           </div>
         </Card>
       </div>
