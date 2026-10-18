@@ -7,10 +7,12 @@ import { Select } from '@/components/ui/Select';
 import { Alert } from '@/components/ui/Alert';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { jobService, Job, JobStatus } from '@/services';
+import { useSubscription } from '@/hooks/useSubscription';
 import { navigateTo } from '@/utils/navigation';
-import { Plus, Search, RefreshCw, Briefcase } from 'lucide-react';
+import { Plus, Search, RefreshCw, Briefcase, Sparkles } from 'lucide-react';
 
 export const EmployerJobsPage: React.FC = () => {
+  const { isActive } = useSubscription();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -162,6 +164,36 @@ export const EmployerJobsPage: React.FC = () => {
               </Button>
             </div>
           </Alert>
+        )}
+
+        {/* Free Tier Info Banner */}
+        {!isActive && (
+          <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-200 rounded-xl p-4 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-xs text-slate-900">Free Employer Plan</span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold font-mono">
+                    {jobs.filter((j) => j.status === 'published').length} of 2 free published jobs
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  You have access to 2 free job posts with standard applicant collection. Upgrade to Starter or Enterprise to unlock interactive ATS Kanban, candidate comparisons, and unlimited requisitions.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 bg-white border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-xs font-bold"
+              onClick={() => handleNavigate('/pricing')}
+            >
+              Upgrade Plan
+            </Button>
+          </div>
         )}
 
         {/* Header Action Bar */}

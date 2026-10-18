@@ -20,7 +20,7 @@ export interface PlanLimits {
 
 export const PLAN_LIMITS: Record<SubscriptionTier, PlanLimits> = {
   free: {
-    maxActiveJobs: 0,
+    maxActiveJobs: 2,
     unlimitedJobs: false,
     atsKanban: false,
     analytics: false,
@@ -106,26 +106,35 @@ export const subscriptionEntitlementService = {
     currentTier: SubscriptionTier;
   }> {
     const status = await this.getSubscriptionStatus(companyId);
+    const limits = PLAN_LIMITS[status.tier];
 
+    // Gated features that require an active paid subscription
     if (!status.isActive) {
+      if (feature === 'post_job') {
+        // Free tier allows up to 2 active jobs
+        return {
+          allowed: true,
+          currentTier: 'free',
+          requiredTier: 'free',
+        };
+      }
+
       return {
         allowed: false,
         reason: status.isExpired
           ? 'Your subscription has expired. Please renew your plan to continue accessing this feature.'
-          : 'An active employer subscription is required to access this feature.',
+          : 'An active employer subscription is required to access advanced recruitment features.',
         requiredTier: 'starter',
         currentTier: status.tier,
       };
     }
-
-    const limits = PLAN_LIMITS[status.tier];
 
     switch (feature) {
       case 'post_job':
         return {
           allowed: limits.maxActiveJobs > 0,
           currentTier: status.tier,
-          requiredTier: 'starter',
+          requiredTier: 'free',
         };
 
       case 'ats_pipeline':
@@ -172,6 +181,7 @@ export const subscriptionEntitlementService = {
 
   /**
    * Verify if the employer can publish an additional active job.
+   * Free tier (no subscription): 2 free active jobs with minimal features.
    * Starter plan: max 5 active published jobs.
    * Enterprise plan: unlimited.
    */
@@ -183,27 +193,15 @@ export const subscriptionEntitlementService = {
     tier: SubscriptionTier;
   }> {
     const status = await this.getSubscriptionStatus(companyId);
-
-    if (!status.isActive) {
-      return {
-        canPost: false,
-        activeCount: 0,
-        maxAllowed: 0,
-        reason: status.isExpired
-          ? 'Your subscription has expired. Please renew your plan to post jobs.'
-          : 'An active subscription is required to post jobs. Please choose a plan.',
-        tier: 'free',
-      };
-    }
-
-    const limits = PLAN_LIMITS[status.tier];
+    const effectiveTier: SubscriptionTier = status.isActive ? status.tier : 'free';
+    const limits = PLAN_LIMITS[effectiveTier];
 
     if (limits.unlimitedJobs) {
       return {
         canPost: true,
         activeCount: 0,
         maxAllowed: Infinity,
-        tier: status.tier,
+        tier: effectiveTier,
       };
     }
 
@@ -230,15 +228,39 @@ export const subscriptionEntitlementService = {
       activeCount = 0;
     }
 
+    // Also check local created jobs if activeCount is 0 or to ensure local mode accuracy
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const raw = window.localStorage.getItem('kth_local_created_jobs');
+        if (raw) {
+          const localJobs = JSON.parse(raw);
+          if (Array.isArray(localJobs)) {
+            const localPublished = localJobs.filter(
+              (j: any) =>
+                j.status === 'published' &&
+                (!companyId || !j.company_id || j.company_id === companyId)
+            );
+            activeCount = Math.max(activeCount, localPublished.length);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     const canPost = activeCount < limits.maxActiveJobs;
+    const isFree = effectiveTier === 'free';
+
     return {
       canPost,
       activeCount,
       maxAllowed: limits.maxActiveJobs,
       reason: canPost
         ? undefined
+        : isFree
+        ? `You have reached your limit of ${limits.maxActiveJobs} free job posts. Upgrade to Employer Starter to post up to 5 jobs with ATS pipeline, candidate comparison, and analytics.`
         : `You have reached the maximum of ${limits.maxActiveJobs} active job postings for the Starter plan. Upgrade to Enterprise for unlimited job postings.`,
-      tier: status.tier,
+      tier: effectiveTier,
     };
   },
 };

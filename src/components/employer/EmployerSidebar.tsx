@@ -27,7 +27,6 @@ import {
   Settings,
   Plus,
   Sparkles,
-  Lock,
 } from 'lucide-react';
 
 export interface EmployerSidebarProps {
@@ -262,7 +261,7 @@ export const EmployerSidebar: React.FC<EmployerSidebarProps> = ({
               ) : isActive ? (
                 <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
               ) : (
-                <Lock className="w-3.5 h-3.5 text-rose-600" />
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
               )}
               {isActive
                 ? tier === 'enterprise'
@@ -270,14 +269,14 @@ export const EmployerSidebar: React.FC<EmployerSidebarProps> = ({
                   : 'Employer Starter'
                 : isExpired
                 ? 'Subscription Expired'
-                : 'No Active Plan'}
+                : 'Free Tier (2 Jobs)'}
             </span>
             <span
               className={cn(
                 "text-[9px] uppercase font-mono px-1.5 py-0.5 rounded font-bold",
                 isActive
                   ? "bg-white text-indigo-700 shadow-2xs border border-indigo-100"
-                  : "bg-rose-600 text-white"
+                  : "bg-emerald-600 text-white"
               )}
             >
               {isActive ? 'Active' : 'Upgrade'}
@@ -288,7 +287,7 @@ export const EmployerSidebar: React.FC<EmployerSidebarProps> = ({
               ? tier === 'enterprise'
                 ? 'Unlimited jobs & dedicated manager'
                 : 'Up to 5 active jobs · Click to upgrade'
-              : 'Subscribe to post jobs & unlock ATS'}
+              : '2 free jobs included · Upgrade for ATS & Analytics'}
           </p>
         </div>
       </div>

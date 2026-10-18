@@ -363,12 +363,21 @@ export function App() {
       else if (path === '/employer/notifications') pageComponent = <EmployerNotificationsPage onNavigate={navigateTo} />;
       else if (path === '/employer/settings') pageComponent = <EmployerSettingsPage />;
 
-      const isCompanyManagementRoute =
+      const isFreeAllowedRoute =
+        path === '/employer' ||
+        path === '/employer/' ||
+        path === '/employer/jobs' ||
+        path === '/employer/jobs/new' ||
+        path === '/employer/jobs/create' ||
+        path === '/employer/jobs/preview' ||
+        (path.startsWith('/employer/jobs/') && path.endsWith('/edit')) ||
+        (path.startsWith('/employer/jobs/') && path.endsWith('/applicants')) ||
+        path.startsWith('/employer/jobs/') ||
         path === '/employer/company-profile' ||
         path === '/employer/notifications' ||
         path === '/employer/settings';
 
-      const content = isCompanyManagementRoute ? (
+      const content = isFreeAllowedRoute ? (
         pageComponent
       ) : (
         <SubscriptionGuard onNavigate={navigateTo}>

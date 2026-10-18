@@ -695,6 +695,18 @@ export const jobService = {
       }
 
       if (input.status === 'published') {
+        const authCtx = await getEmployerAuthContext();
+        const limitCheck = await subscriptionEntitlementService.canPostJob(authCtx?.companyId);
+        if (!limitCheck.canPost) {
+          return {
+            data: null,
+            error: {
+              message: limitCheck.reason || 'Job posting limit reached. Please upgrade to post or publish additional jobs.',
+              code: 'SUBSCRIPTION_LIMIT_EXCEEDED',
+              status: 403,
+            },
+          };
+        }
         updates.published_at = new Date().toISOString();
       }
 

@@ -194,7 +194,7 @@ export const PricingPage: React.FC = () => {
 
         {/* Pricing Cards Grid (Hidden for Creator) */}
         {!isCreatorUser && (
-          <div className={`grid grid-cols-1 ${isCandidateUser ? 'max-w-md mx-auto' : isEmployerUser ? 'md:grid-cols-2 max-w-4xl mx-auto' : 'md:grid-cols-3'} gap-8`}>
+          <div className={`grid grid-cols-1 ${isCandidateUser ? 'max-w-md mx-auto' : isEmployerUser ? 'md:grid-cols-3 max-w-6xl mx-auto' : 'md:grid-cols-3'} gap-8`}>
             {/* Candidate Free (Only for Public or Candidates) */}
             {(!isAuthenticated || isCandidateUser) && (
               <Card className="p-8 flex flex-col justify-between">
@@ -219,6 +219,43 @@ export const PricingPage: React.FC = () => {
                 </div>
                 <Button variant="secondary" className="w-full" onClick={() => (window.location.href = isCandidateUser ? '/candidate' : '/register?role=candidate')}>
                   {isCandidateUser ? 'Go to Candidate Portal' : 'Create Free Account'}
+                </Button>
+              </Card>
+            )}
+
+            {/* Employer Free Tier (Shown for Employers) */}
+            {isEmployerUser && (
+              <Card className="p-8 flex flex-col justify-between border border-kth-slate-200">
+                <div>
+                  <Badge variant="slate" className="mb-3">
+                    Free Employer Tier
+                  </Badge>
+                  <h3 className="font-display text-xl font-bold text-kth-slate-900 mb-1">Free Tier</h3>
+                  <p className="text-xs text-kth-slate-500 mb-6">Test the platform or hire for small teams with minimal features.</p>
+                  <div className="font-mono text-3xl font-extrabold text-kth-slate-900 mb-6">
+                    ₹0
+                    <span className="text-xs font-normal text-kth-slate-500"> / forever</span>
+                  </div>
+                  <ul className="space-y-3 text-xs text-kth-slate-700 mb-8">
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-600 shrink-0" /> Up to 2 Free Active Job Posts
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-600 shrink-0" /> Standard candidate application collection
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-600 shrink-0" /> Company profile & verified job links
+                    </li>
+                    <li className="flex items-center gap-2 text-kth-slate-400">
+                      <span className="w-4 h-4 flex items-center justify-center shrink-0 font-bold">✕</span> No advanced ATS Kanban pipeline
+                    </li>
+                    <li className="flex items-center gap-2 text-kth-slate-400">
+                      <span className="w-4 h-4 flex items-center justify-center shrink-0 font-bold">✕</span> No deep match analytics
+                    </li>
+                  </ul>
+                </div>
+                <Button variant="secondary" className="w-full" onClick={() => (window.location.href = '/employer/jobs/new')}>
+                  Post Free Job (Up to 2)
                 </Button>
               </Card>
             )}

@@ -7,6 +7,7 @@ import { SearchableCombobox } from '@/components/ui/SearchableCombobox';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { jobService, taxonomyService, JobCreateInput, WorkMode, EmploymentType, ExperienceLevel, CareerCategory, CityItem } from '@/services';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Eye, Save, Send, AlertCircle, ArrowLeft, Sparkles } from 'lucide-react';
 
 export interface EmployerCreateJobPageProps {
@@ -57,6 +58,24 @@ export const EmployerCreateJobPage: React.FC<EmployerCreateJobPageProps> = ({ on
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { isActive } = useSubscription();
+  const [postingLimit, setPostingLimit] = useState<{ canPost: boolean; activeCount: number; maxAllowed: number; reason?: string } | null>(null);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const { subscriptionEntitlementService } = await import('@/services/subscriptionEntitlementService');
+        const check = await subscriptionEntitlementService.canPostJob();
+        if (isMounted) setPostingLimit(check);
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Auto-save form draft to sessionStorage so user never loses their entered data
   React.useEffect(() => {
@@ -258,6 +277,36 @@ export const EmployerCreateJobPage: React.FC<EmployerCreateJobPageProps> = ({ on
             <span>Back to Job Openings</span>
           </button>
         </div>
+
+        {/* Entitlement Status Banner */}
+        {!isActive && (
+          <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-200 rounded-xl p-4 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-xs text-slate-900">Free Employer Tier</span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold font-mono">
+                    {postingLimit ? `${postingLimit.activeCount} of ${postingLimit.maxAllowed} free jobs used` : '2 Free Jobs Included'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  You can post up to 2 active jobs without any subscription. Looking for Kanban ATS, candidate comparisons, or AI ranking?
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 bg-white border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-xs font-bold"
+              onClick={() => handleNavigate('/pricing')}
+            >
+              View Paid Plans
+            </Button>
+          </div>
+        )}
 
         {errorMessage && (
           <Alert variant="error" title="Validation Error">
