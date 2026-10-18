@@ -53,7 +53,7 @@ export const EmployerOnboardingPage: React.FC<EmployerOnboardingPageProps> = ({
       return;
     }
     if (role === 'creator') {
-      navigate('/creator');
+      navigate(status === 'active' ? '/creator' : '/onboarding/creator');
       return;
     }
     if (status === 'active') {

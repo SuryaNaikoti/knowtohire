@@ -23,6 +23,7 @@ const AuthCallbackPage = lazy(() => import('@/pages/auth/AuthCallbackPage').then
 // Lazy-loaded Onboarding Pages
 const CandidateOnboardingPage = lazy(() => import('@/pages/onboarding/CandidateOnboardingPage').then(m => ({ default: m.CandidateOnboardingPage })));
 const EmployerOnboardingPage = lazy(() => import('@/pages/onboarding/EmployerOnboardingPage').then(m => ({ default: m.EmployerOnboardingPage })));
+const CreatorOnboardingPage = lazy(() => import('@/pages/onboarding/CreatorOnboardingPage').then(m => ({ default: m.CreatorOnboardingPage })));
 
 // Lazy-loaded Public Pages
 const JobsPage = lazy(() => import('@/pages/public/JobsPage').then(m => ({ default: m.JobsPage })));
@@ -287,7 +288,7 @@ export function App() {
           {role === 'employer' ? (
             <EmployerOnboardingPage onNavigate={navigateTo} />
           ) : role === 'creator' ? (
-            <CreatorDashboardPage onNavigate={navigateTo} />
+            <CreatorOnboardingPage onNavigate={navigateTo} />
           ) : (
             <CandidateOnboardingPage onNavigate={navigateTo} />
           )}
@@ -310,6 +311,16 @@ export function App() {
         <ProtectedRoute currentPath={currentPath} onNavigate={navigateTo}>
           <RoleGuard allowedRoles={['employer']} onNavigate={navigateTo}>
             <EmployerOnboardingPage onNavigate={navigateTo} />
+          </RoleGuard>
+        </ProtectedRoute>
+      );
+    }
+
+    if (path === '/onboarding/creator' || path.startsWith('/onboarding/creator/')) {
+      return (
+        <ProtectedRoute currentPath={currentPath} onNavigate={navigateTo}>
+          <RoleGuard allowedRoles={['creator']} onNavigate={navigateTo}>
+            <CreatorOnboardingPage onNavigate={navigateTo} />
           </RoleGuard>
         </ProtectedRoute>
       );

@@ -6,7 +6,7 @@ import { CheckCircle2, ArrowRight } from 'lucide-react';
 export interface OnboardingCompleteProps {
   title: string;
   subtitle: string;
-  role: 'candidate' | 'employer';
+  role: 'candidate' | 'employer' | 'creator';
   portalPath: string;
   onNavigateToPortal: () => void;
   metrics?: { label: string; value: string }[];
@@ -66,7 +66,11 @@ export const OnboardingComplete: React.FC<OnboardingCompleteProps> = ({
           onClick={onNavigateToPortal}
           rightIcon={<ArrowRight className="w-4 h-4" />}
         >
-          {role === 'candidate' ? 'Go to Candidate Dashboard' : 'Open Employer ATS Portal'}
+          {role === 'creator'
+            ? 'Open Creator Studio'
+            : role === 'candidate'
+            ? 'Go to Candidate Dashboard'
+            : 'Open Employer ATS Portal'}
         </Button>
 
         <p className="text-[11px] text-kth-slate-400">

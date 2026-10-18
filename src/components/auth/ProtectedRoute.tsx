@@ -56,23 +56,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
     // 3. Pending Onboarding -> redirect to role-specific onboarding wizard
     if (status === 'pending_onboarding') {
-      if (role === 'creator') {
-        // Creators proceed directly to Creator Studio / Terms workspace
-        if (currentPath.startsWith('/onboarding')) {
-          navigate('/creator');
-        }
-        return;
-      }
+      const targetOnboarding =
+        role === 'employer'
+          ? '/onboarding/employer'
+          : role === 'creator'
+          ? '/onboarding/creator'
+          : '/onboarding/candidate';
 
-      const targetOnboarding = role === 'employer' ? '/onboarding/employer' : '/onboarding/candidate';
-      const wrongOnboarding = role === 'employer' ? '/onboarding/candidate' : '/onboarding/employer';
+      const isAtCorrectOnboarding = currentPath.startsWith(targetOnboarding);
 
-      if (
-        !currentPath.startsWith('/onboarding') ||
-        currentPath.startsWith(wrongOnboarding) ||
-        currentPath === '/onboarding' ||
-        currentPath === '/onboarding/'
-      ) {
+      if (!isAtCorrectOnboarding) {
         console.log('[AUTH TRACE 02]', {
           resolvedRole: role,
           resolvedStatus: status,

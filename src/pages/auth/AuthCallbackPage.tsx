@@ -224,7 +224,7 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
             targetRole === 'employer'
               ? '/onboarding/employer'
               : targetRole === 'creator'
-              ? '/creator'
+              ? '/onboarding/creator'
               : '/onboarding/candidate';
         } else if (effectiveStatus === 'active') {
           targetPath =
