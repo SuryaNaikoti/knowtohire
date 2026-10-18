@@ -134,7 +134,7 @@ export const resolveEffectiveStatus = (
     return 'suspended';
   }
 
-  // Demo user overrides default active
+  // Demo user overrides: respect profile status if provided, fallback to active
   if (
     user.id?.startsWith('demo-') ||
     user.id === DEMO_CREDENTIALS.candidate.id ||
@@ -142,7 +142,7 @@ export const resolveEffectiveStatus = (
     user.id === DEMO_CREDENTIALS.admin.id ||
     user.id === DEMO_CREDENTIALS.creator.id
   ) {
-    return 'active';
+    return profile?.status || 'active';
   }
 
   const isEmailConfirmed = Boolean(user.email_confirmed_at || (user as any).confirmed_at);
@@ -413,16 +413,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
           }
         } else if (isMounted) {
-          setState({
-            user: null,
-            profile: null,
-            role: null,
-            status: null,
-            isAuthenticated: false,
-            isLoading: false,
-            isInitialized: true,
-            error: null,
-          });
+          // If no active Supabase session is present, check if local demo session is active
+          let demoFallbackHandled = false;
+          if (typeof window !== 'undefined' && window.localStorage) {
+            try {
+              const storedDemo = window.localStorage.getItem(DEMO_STORAGE_KEY);
+              if (storedDemo) {
+                const parsedDemo = JSON.parse(storedDemo);
+                if (parsedDemo && parsedDemo.role && parsedDemo.id) {
+                  const demoUser = createDemoAuthUser(parsedDemo);
+                  const demoProfile = createDemoProfile({ ...parsedDemo, status: parsedDemo.status || 'active' });
+                  const effectiveStatus = resolveEffectiveStatus(demoUser, demoProfile);
+                  setState({
+                    user: demoUser,
+                    profile: demoProfile,
+                    role: parsedDemo.role,
+                    status: parsedDemo.status || effectiveStatus || 'active',
+                    isAuthenticated: true,
+                    isLoading: false,
+                    isInitialized: true,
+                    error: null,
+                  });
+                  demoFallbackHandled = true;
+                }
+              }
+            } catch {
+              // ignore
+            }
+          }
+
+          if (!demoFallbackHandled) {
+            setState({
+              user: null,
+              profile: null,
+              role: null,
+              status: null,
+              isAuthenticated: false,
+              isLoading: false,
+              isInitialized: true,
+              error: null,
+            });
+          }
         }
       } catch (err) {
         console.error('[AuthContext] Initialization failure:', err);

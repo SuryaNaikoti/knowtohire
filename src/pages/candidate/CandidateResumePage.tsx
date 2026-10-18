@@ -47,55 +47,80 @@ export const CandidateResumePage: React.FC<CandidateResumePageProps> = ({ onNavi
   const [atsScore, setAtsScore] = useState<number>(87);
   const [atsRecommendations, setAtsRecommendations] = useState<ATSOptimizationRecommendation[]>([]);
 
+  // ─── Ref Guards ────────────────────────────────────────────────────────────
+  const inFlightRef = useRef(false);
+  const isMountedRef = useRef(true);
+
   // ─── Load Candidate Profile & Active Resume ────────────────────────────────
   const loadResumeData = useCallback(async () => {
-    setIsLoading(true);
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+
+    // Only switch to full loading state if we do not already have profile data
+    setIsLoading(prev => (!profile ? true : prev));
     setLoadError(null);
 
-    const res = await candidateProfileService.getMyCandidateProfile();
+    try {
+      const res = await candidateProfileService.getMyCandidateProfile();
 
-    if (res.error) {
-      setLoadError(res.error.message);
-      setProfile(null);
-    } else if (res.data) {
-      setProfile(res.data);
-      
-      const effectiveUserId = user?.id || res.data.id || '00000000-0000-0000-0000-000000000001';
-      const stored = resumeService.getStoredDemoResume(effectiveUserId) || (user?.id ? resumeService.getStoredDemoResume(user.id) : null);
-      
-      if (stored?.atsRecommendations && stored.atsRecommendations.length > 0) {
-        setAtsScore(stored.atsScore ?? 87);
-        setAtsRecommendations(stored.atsRecommendations);
-      } else if (res.data.resumeUrl) {
-        // Generate dynamic ATS analysis from the active document metadata/name if missing
-        try {
-          const pseudoFileName = stored?.fileName || `${res.data.fullName || 'Candidate'} - CV.pdf`;
-          const dummyBlob = new Blob(['%PDF-1.4 ' + (res.data.bio || '') + ' ' + (res.data.skills || []).join(' ')], { type: 'application/pdf' });
-          const dummyFile = new File([dummyBlob], pseudoFileName, { type: 'application/pdf' });
-          const analysis = await performATSAnalysis(dummyFile);
-          
-          setAtsScore(analysis.overallAtsScore);
-          setAtsRecommendations(analysis.recommendations);
-          
-          resumeService.saveStoredDemoResume(effectiveUserId, {
-            url: res.data.resumeUrl,
-            fileName: pseudoFileName,
-            uploadedAt: res.data.updatedAt,
-            atsScore: analysis.overallAtsScore,
-            atsAnalysis: analysis,
-            atsRecommendations: analysis.recommendations,
-          });
-        } catch (err) {
-          console.warn('[CandidateResumePage] Auto-audit warning:', err);
+      if (!isMountedRef.current) return;
+
+      if (res.error) {
+        setLoadError(res.error.message);
+        setProfile(null);
+      } else if (res.data) {
+        setProfile(res.data);
+        
+        const effectiveUserId = user?.id || res.data.id || '00000000-0000-0000-0000-000000000001';
+        const stored = resumeService.getStoredDemoResume(effectiveUserId) || (user?.id ? resumeService.getStoredDemoResume(user.id) : null);
+        
+        if (stored?.atsRecommendations && stored.atsRecommendations.length > 0) {
+          setAtsScore(stored.atsScore ?? 87);
+          setAtsRecommendations(stored.atsRecommendations);
+        } else if (res.data.resumeUrl) {
+          // Generate dynamic ATS analysis from the active document metadata/name if missing
+          try {
+            const pseudoFileName = stored?.fileName || `${res.data.fullName || 'Candidate'} - CV.pdf`;
+            const dummyBlob = new Blob(['%PDF-1.4 ' + (res.data.bio || '') + ' ' + (res.data.skills || []).join(' ')], { type: 'application/pdf' });
+            const dummyFile = new File([dummyBlob], pseudoFileName, { type: 'application/pdf' });
+            const analysis = await performATSAnalysis(dummyFile);
+            
+            if (isMountedRef.current) {
+              setAtsScore(analysis.overallAtsScore);
+              setAtsRecommendations(analysis.recommendations);
+            }
+            
+            resumeService.saveStoredDemoResume(effectiveUserId, {
+              url: res.data.resumeUrl,
+              fileName: pseudoFileName,
+              uploadedAt: res.data.updatedAt,
+              atsScore: analysis.overallAtsScore,
+              atsAnalysis: analysis,
+              atsRecommendations: analysis.recommendations,
+            });
+          } catch (err) {
+            console.warn('[CandidateResumePage] Auto-audit warning:', err);
+          }
         }
       }
+    } catch (err) {
+      if (isMountedRef.current) {
+        setLoadError((err as Error)?.message || 'Failed to retrieve resume data.');
+      }
+    } finally {
+      inFlightRef.current = false;
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
-
-    setIsLoading(false);
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
+    isMountedRef.current = true;
     loadResumeData();
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [loadResumeData]);
 
   // ─── Trigger File Selection ────────────────────────────────────────────────
@@ -323,7 +348,7 @@ export const CandidateResumePage: React.FC<CandidateResumePageProps> = ({ onNavi
         )}
 
         {/* ─── Loading Skeleton / Main Content ─────────────────────────────────── */}
-        {isLoading ? (
+        {!profile && isLoading ? (
           <div className="space-y-6">
             <Card className="p-6">
               <div className="animate-pulse space-y-4">

@@ -30,7 +30,11 @@ export const CandidateResumePreviewPage: React.FC<CandidateResumePreviewPageProp
   const [signedResumeUrl, setSignedResumeUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     candidateProfileService.getMyCandidateProfile().then(async (res) => {
+      if (!isMounted) return;
+
       if (res.data) {
         setProfile(res.data);
         const effectiveUserId = user?.id || res.data.id || '00000000-0000-0000-0000-000000000001';
@@ -52,14 +56,20 @@ export const CandidateResumePreviewPage: React.FC<CandidateResumePreviewPageProp
         const rawUrl = res.data.resumeUrl || stored?.url;
         if (rawUrl) {
           const authUrl = await resumeService.getAuthorizedResumeUrl(rawUrl, effectiveUserId, 600);
-          if (authUrl) {
+          if (authUrl && isMounted) {
             setSignedResumeUrl(authUrl);
           }
         }
       }
-      setIsLoading(false);
+      if (isMounted) {
+        setIsLoading(false);
+      }
     });
-  }, [user]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
 
   const handleBack = () => {
     if (onNavigate) {
