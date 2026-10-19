@@ -21,8 +21,8 @@ import {
 } from 'lucide-react';
 
 import { Drawer } from '@/components/ui/Drawer';
-import { notificationService } from '@/services';
 import { useNotificationRealtime } from '@/hooks/useNotificationRealtime';
+import { NotificationDropdown } from '@/components/navigation/NotificationDropdown';
 
 export interface AdminShellProps {
   title?: string;
@@ -40,28 +40,6 @@ export const AdminShell: React.FC<AdminShellProps> = ({
   useNotificationRealtime();
   const { logout, profile, user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [unreadNotifCount, setUnreadNotifCount] = useState<number>(0);
-
-  React.useEffect(() => {
-    const fetchUnread = async () => {
-      try {
-        const count = await notificationService.getUnreadCount();
-        setUnreadNotifCount(count);
-      } catch {
-        // ignore
-      }
-    };
-    fetchUnread();
-
-    const handleSync = () => {
-      fetchUnread();
-    };
-
-    window.addEventListener('kth_notifications_changed', handleSync);
-    return () => {
-      window.removeEventListener('kth_notifications_changed', handleSync);
-    };
-  }, []);
 
   const navItems = [
     { path: '/admin', label: 'Admin Dashboard', icon: LayoutDashboard },
@@ -186,26 +164,8 @@ export const AdminShell: React.FC<AdminShellProps> = ({
               <h1 className="font-display font-extrabold text-base sm:text-lg text-kth-slate-900 truncate">{title}</h1>
             </div>
             <div className="flex items-center gap-3">
-              {/* Notifications Icon with Dynamic Unread Indicator */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (onNavigate) {
-                    onNavigate('/admin/settings');
-                  } else {
-                    window.history.pushState({}, '', '/admin/settings');
-                    window.dispatchEvent(new Event('popstate'));
-                  }
-                }}
-                className="relative p-2 rounded-md text-kth-slate-600 hover:bg-kth-slate-100 transition-colors cursor-pointer"
-                title={`${unreadNotifCount} unread administrative notifications`}
-                aria-label="Admin notifications"
-              >
-                <Bell className="w-5 h-5" />
-                {unreadNotifCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white" />
-                )}
-              </button>
+              {/* Notifications Dropdown Flyout with Workflow Navigation */}
+              <NotificationDropdown role="admin" onNavigate={onNavigate} />
 
               <a
                 href="/"

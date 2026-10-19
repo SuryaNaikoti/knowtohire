@@ -11,13 +11,12 @@ import {
   Sparkles,
   ExternalLink,
   Search,
-  Bell,
 } from 'lucide-react';
 import { Drawer } from '@/components/ui/Drawer';
 import { UserMenuDropdown } from '@/components/navigation/UserMenuDropdown';
 import { CommandPalette } from '@/components/ui/CommandPalette';
-import { notificationService } from '@/services';
 import { useNotificationRealtime } from '@/hooks/useNotificationRealtime';
+import { NotificationDropdown } from '@/components/navigation/NotificationDropdown';
 
 export interface CreatorShellProps {
   title?: string;
@@ -36,28 +35,6 @@ export const CreatorShell: React.FC<CreatorShellProps> = ({
   const { logout, profile, user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isCommandOpen, setIsCommandOpen] = useState(false);
-  const [unreadNotifCount, setUnreadNotifCount] = useState<number>(0);
-
-  React.useEffect(() => {
-    const fetchUnread = async () => {
-      try {
-        const count = await notificationService.getUnreadCount();
-        setUnreadNotifCount(count);
-      } catch {
-        // ignore
-      }
-    };
-    fetchUnread();
-
-    const handleSync = () => {
-      fetchUnread();
-    };
-
-    window.addEventListener('kth_notifications_changed', handleSync);
-    return () => {
-      window.removeEventListener('kth_notifications_changed', handleSync);
-    };
-  }, []);
 
   const navItems = [
     { path: '/creator', label: 'Dashboard & Earnings', icon: LayoutDashboard },
@@ -207,19 +184,8 @@ export const CreatorShell: React.FC<CreatorShellProps> = ({
                 <span>Monetization Active</span>
               </button>
 
-              {/* Notifications Icon with Dynamic Unread Indicator */}
-              <button
-                type="button"
-                onClick={() => handleNavClick('/creator')}
-                className="relative p-2 rounded-md text-kth-slate-600 hover:bg-kth-slate-100 transition-colors cursor-pointer"
-                title={`${unreadNotifCount} unread notifications`}
-                aria-label="Creator notifications"
-              >
-                <Bell className="w-5 h-5" />
-                {unreadNotifCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-kth-primary-600 ring-2 ring-white" />
-                )}
-              </button>
+              {/* Notifications Dropdown Flyout */}
+              <NotificationDropdown role="creator" onNavigate={onNavigate} />
 
               {/* User Menu Dropdown */}
               <UserMenuDropdown
