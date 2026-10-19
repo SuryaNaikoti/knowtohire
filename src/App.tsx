@@ -388,7 +388,12 @@ export function App() {
         path.startsWith('/employer/jobs/') ||
         path === '/employer/company-profile' ||
         path === '/employer/notifications' ||
-        path === '/employer/settings';
+        path === '/employer/settings' ||
+        path === '/employer/knowledge' ||
+        path === '/employer/templates' ||
+        path === '/employer/pipeline' ||
+        path === '/employer/interviews' ||
+        path.startsWith('/employer/applications/');
 
       const content = isFreeAllowedRoute ? (
         pageComponent

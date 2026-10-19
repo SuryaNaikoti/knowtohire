@@ -63,14 +63,17 @@ export const EmployerNotificationsPage: React.FC<EmployerNotificationsPageProps>
       await handleMarkSingleRead(notif.id);
     }
 
-    let targetRoute = notif.link;
+    let targetRoute = notif.action_url || notif.link;
+    if (targetRoute === '/resources' || targetRoute === '/knowledge') {
+      targetRoute = '/employer/knowledge';
+    }
     if (!targetRoute) {
       if (notif.type === 'interview' || notif.interview_id) {
         targetRoute = '/employer/interviews';
       } else if (notif.type === 'application' || notif.application_id) {
         targetRoute = notif.application_id ? `/employer/applications/${notif.application_id}` : '/employer/pipeline';
       } else {
-        targetRoute = '/employer';
+        targetRoute = '/employer/notifications';
       }
     }
 

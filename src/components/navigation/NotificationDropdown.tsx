@@ -116,6 +116,12 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     // Resolve target workflow route based on role and notification metadata
     let targetRoute = notif.action_url || notif.link;
 
+    if (role === 'employer' && (targetRoute === '/resources' || targetRoute === '/knowledge')) {
+      targetRoute = '/employer/knowledge';
+    } else if (role === 'candidate' && targetRoute === '/resources') {
+      targetRoute = '/knowledge';
+    }
+
     if (!targetRoute) {
       if (role === 'admin') {
         if (notif.category === 'announcement' || notif.type === 'system') {
