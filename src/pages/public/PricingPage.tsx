@@ -102,7 +102,7 @@ export const PricingPage: React.FC = () => {
         window.location.href = '/employer';
       }
     } else if (effectiveRole === 'creator') {
-      window.location.href = '/creator';
+      window.location.href = effectiveStatus === 'pending_onboarding' ? '/onboarding/creator' : '/creator';
     } else {
       window.location.href = effectiveStatus === 'pending_onboarding' ? '/onboarding/candidate' : '/candidate';
     }

@@ -39,7 +39,7 @@ export const GuestRoute: React.FC<GuestRouteProps> = ({
       if (status === 'unverified') {
         destination = '/verify-email';
       } else if (status === 'pending_onboarding') {
-        destination = role === 'employer' ? '/onboarding/employer' : role === 'creator' ? '/creator' : '/onboarding/candidate';
+        destination = role === 'employer' ? '/onboarding/employer' : role === 'creator' ? '/onboarding/creator' : '/onboarding/candidate';
       } else if (status === 'active') {
         if (redirectParam && (
           (role === 'candidate' && (redirectParam.startsWith('/candidate') || redirectParam.startsWith('/jobs') || redirectParam.startsWith('/knowledge') || redirectParam.startsWith('/templates'))) ||

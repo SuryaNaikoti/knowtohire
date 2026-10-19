@@ -34,7 +34,9 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
     if (userRole === 'employer') {
       return status === 'pending_onboarding' ? '/onboarding/employer' : '/employer';
     }
-    if (userRole === 'creator') return '/creator';
+    if (userRole === 'creator') {
+      return status === 'pending_onboarding' ? '/onboarding/creator' : '/creator';
+    }
     if (userRole === 'admin') return '/admin';
     return '/';
   };

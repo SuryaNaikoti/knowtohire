@@ -45,7 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         role === 'employer'
           ? '/onboarding/employer'
           : role === 'creator'
-          ? '/creator'
+          ? '/onboarding/creator'
           : '/onboarding/candidate';
       handleNav(onboardingPath);
       return;

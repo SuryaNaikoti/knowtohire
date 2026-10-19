@@ -69,7 +69,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onNavigate }) 
           role === 'employer'
             ? '/onboarding/employer'
             : role === 'creator'
-            ? '/creator'
+            ? '/onboarding/creator'
             : '/onboarding/candidate';
         navigate(onboardingPath);
       } else if (status === 'active') {

@@ -85,7 +85,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
           res.role === 'employer'
             ? '/onboarding/employer'
             : res.role === 'creator'
-            ? '/creator'
+            ? '/onboarding/creator'
             : '/onboarding/candidate';
         navigate(onboardingPath);
         return;

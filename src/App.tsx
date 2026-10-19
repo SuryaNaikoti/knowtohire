@@ -573,7 +573,7 @@ export function App() {
                   role === 'employer'
                     ? '/onboarding/employer'
                     : role === 'creator'
-                    ? '/creator'
+                    ? '/onboarding/creator'
                     : '/onboarding/candidate'
                 );
               } else {

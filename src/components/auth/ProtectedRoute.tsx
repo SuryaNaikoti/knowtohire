@@ -102,7 +102,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       return;
     }
     if (role === 'creator' && (currentPath.startsWith('/employer') || currentPath.startsWith('/candidate'))) {
-      navigate('/creator');
+      const target = status === 'active' ? '/creator' : '/onboarding/creator';
+      navigate(target);
       return;
     }
   }, [isInitialized, isLoading, isAuthenticated, status, role, currentPath]);
