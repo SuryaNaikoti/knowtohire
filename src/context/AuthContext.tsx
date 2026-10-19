@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { AuthState, AuthContextType, AuthUser, AccountStatus, UserRole } from '@/types/auth';
 import { Profile } from '@/types/database';
@@ -237,8 +237,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     error: null,
   });
 
+  // In-memory profile cache and in-flight request deduplication for ultra-fast sign-in and route transitions
+  const profileCache = useRef<Map<string, { profile: Profile | null; timestamp: number }>>(new Map());
+  const inFlightProfileReqs = useRef<Map<string, Promise<Profile | null>>>(new Map());
+
   // Helper to fetch user profile from public.profiles
-  const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+  const fetchProfile = useCallback(async (userId: string, force = false): Promise<Profile | null> => {
     if (
       userId === DEMO_CREDENTIALS.candidate.id ||
       userId === DEMO_CREDENTIALS.employer.id ||
@@ -255,22 +259,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isSupabaseConfigured()) {
       return null;
     }
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
 
-      if (error) {
-        console.warn('[AuthContext] Failed to fetch user profile:', error.message);
-        return null;
+    // Return cached profile if within 60s TTL and not forced
+    if (!force) {
+      const cached = profileCache.current.get(userId);
+      if (cached && Date.now() - cached.timestamp < 60_000) {
+        return cached.profile;
       }
-      return data as Profile | null;
-    } catch (err) {
-      console.error('[AuthContext] Unexpected error fetching profile:', err);
-      return null;
     }
+
+    // Deduplicate concurrent in-flight requests for the same userId
+    if (inFlightProfileReqs.current.has(userId)) {
+      return inFlightProfileReqs.current.get(userId)!;
+    }
+
+    const fetchPromise = (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (error) {
+          console.warn('[AuthContext] Failed to fetch user profile:', error.message);
+          return null;
+        }
+        const profile = data as Profile | null;
+        profileCache.current.set(userId, { profile, timestamp: Date.now() });
+        return profile;
+      } catch (err) {
+        console.error('[AuthContext] Unexpected error fetching profile:', err);
+        return null;
+      } finally {
+        inFlightProfileReqs.current.delete(userId);
+      }
+    })();
+
+    inFlightProfileReqs.current.set(userId, fetchPromise);
+    return fetchPromise;
   }, []);
 
   // Refresh profile & user session state action
@@ -826,6 +853,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async (): Promise<void> => {
+    profileCache.current.clear();
+    inFlightProfileReqs.current.clear();
+
     if (typeof window !== 'undefined') {
       if (window.localStorage) {
         window.localStorage.removeItem(DEMO_STORAGE_KEY);

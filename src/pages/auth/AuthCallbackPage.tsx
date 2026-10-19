@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useAuth, resolveRole, resolveEffectiveStatus } from '@/context/AuthContext';
+import { AuthUser } from '@/types/auth';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { ArrowLeft, AlertCircle, LogOut } from 'lucide-react';
@@ -92,65 +93,46 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
           setStatusMessage('Retrieving active session & user profile...');
         }
 
-        // 3. Fetch session from Supabase
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
+        // 3. Fetch session or active user from Supabase with timeout
+        const timeoutPromise = new Promise<null>((_, reject) =>
+          setTimeout(() => reject(new Error('Session retrieval timeout')), 4000)
+        );
 
-        if (sessionError) {
-          if (isMounted) {
-            setErrorMessage(sessionError.message);
+        let activeUser: AuthUser | null = null;
+        try {
+          const sessionResult = await Promise.race([
+            supabase.auth.getSession(),
+            timeoutPromise,
+          ]);
+
+          if (sessionResult && 'data' in sessionResult && sessionResult.data?.session?.user) {
+            activeUser = sessionResult.data.session.user;
+          } else {
+            const userResult = await Promise.race([
+              supabase.auth.getUser(),
+              timeoutPromise,
+            ]);
+            if (userResult && 'data' in userResult && userResult.data?.user) {
+              activeUser = userResult.data.user;
+            }
           }
-          return;
+        } catch (fetchErr) {
+          console.warn('[AuthCallbackPage] Fast user resolution fallback:', fetchErr);
         }
 
-        if (!session?.user) {
-          // If no immediate session, check if onAuthStateChange detects it shortly or redirect to login
-          const {
-            data: { user: currentUser },
-          } = await supabase.auth.getUser();
-
-          if (!currentUser) {
-            if (isMounted) {
-              setErrorMessage('No authenticated user session found from verification or sign-in.');
-            }
-            return;
+        if (!activeUser) {
+          if (isMounted) {
+            setErrorMessage('No authenticated user session found from verification or sign-in. Please try signing in again.');
           }
+          return;
         }
 
         if (isMounted) {
           setStatusMessage('Finalizing account permissions and workspace routing...');
         }
 
-        // 3. Resolve user and ensure profile row exists
-        const {
-          data: { user: freshUser },
-        } = await supabase.auth.getUser();
-
-        const activeUser = freshUser || session?.user || null;
-        if (!activeUser) {
-          if (isMounted) {
-            setErrorMessage('No active user session detected.');
-          }
-          return;
-        }
-
-        // Fetch authoritative profile record
+        // Fetch authoritative profile record (leveraging cached fetchProfile in AuthContext)
         let profile = await refreshProfile();
-
-        if (!profile && isSupabaseConfigured()) {
-          // Double check database directly to ensure we don't overwrite an existing profile
-          const { data: existingProfile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', activeUser.id)
-            .maybeSingle();
-
-          if (existingProfile) {
-            profile = existingProfile;
-          }
-        }
 
         const storedRole =
           typeof window !== 'undefined' && window.sessionStorage
@@ -240,11 +222,9 @@ export const AuthCallbackPage: React.FC<AuthCallbackPageProps> = ({ onNavigate }
         }
 
         // 7. Navigate cleanly without leaving OAuth hash in browser URL
-        if (typeof window !== 'undefined') {
-          window.location.replace(targetPath);
-        } else {
-          navigate(targetPath);
-        }
+        // Clear hash/query from URL first to avoid re-triggering auth flow
+        window.history.replaceState({}, '', targetPath);
+        navigate(targetPath);
       } catch (err: any) {
         if (isMounted) {
           setErrorMessage(err?.message || 'An unexpected error occurred during Google sign-in.');
