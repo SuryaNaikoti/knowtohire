@@ -21,7 +21,6 @@ import {
   Laptop,
   Check,
   RefreshCw,
-  AlertTriangle,
   Flame,
   Wrench,
   PartyPopper,
@@ -93,7 +92,6 @@ export const AdminNotificationsBroadcastPage: React.FC<AdminNotificationsBroadca
 
   const [loading, setLoading] = useState(false);
   const [resultMessage, setResultMessage] = useState<{ type: 'success' | 'error'; text: string; count?: number } | null>(null);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Audience counts (estimated or live)
   const [audienceCounts, setAudienceCounts] = useState<{
@@ -218,7 +216,6 @@ export const AdminNotificationsBroadcastPage: React.FC<AdminNotificationsBroadca
       if (!token) {
         setResultMessage({ type: 'error', text: 'Administrative authentication token missing. Please re-login.' });
         setLoading(false);
-        setShowConfirmModal(false);
         return;
       }
 
@@ -254,7 +251,6 @@ export const AdminNotificationsBroadcastPage: React.FC<AdminNotificationsBroadca
         setTitle('');
         setMessage('');
         setActionUrl('');
-        setShowConfirmModal(false);
 
         // Notify local app so admin's own bell updates if included
         if (typeof window !== 'undefined') {
@@ -268,7 +264,6 @@ export const AdminNotificationsBroadcastPage: React.FC<AdminNotificationsBroadca
       });
     } finally {
       setLoading(false);
-      setShowConfirmModal(false);
     }
   };
 
@@ -586,21 +581,30 @@ export const AdminNotificationsBroadcastPage: React.FC<AdminNotificationsBroadca
               </div>
             </div>
 
-            {/* Action Bar */}
+            {/* Action Bar - Direct 1-Click Send without popup */}
             <div className="pt-4 border-t border-kth-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-xs text-kth-slate-500 order-2 sm:order-1 text-center sm:text-left">
                 <ShieldCheck className="w-4 h-4 text-kth-emerald-600 shrink-0" />
-                <span>Encrypted delivery via Supabase Service-Role</span>
+                <span>Immediate 1-Click Broadcast via Supabase Realtime</span>
               </div>
 
               <button
                 type="button"
                 disabled={loading || !title.trim() || !message.trim()}
-                onClick={() => setShowConfirmModal(true)}
+                onClick={handleBroadcast}
                 className="w-full sm:w-auto py-3 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md shadow-emerald-600/30 order-1 sm:order-2 cursor-pointer transition-all"
               >
-                <Send className="w-4 h-4" />
-                <span>Send Broadcast ({activeAudienceObj.label})</span>
+                {loading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Broadcasting Now...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>Send Broadcast ({activeAudienceObj.label})</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -763,88 +767,6 @@ export const AdminNotificationsBroadcastPage: React.FC<AdminNotificationsBroadca
             </div>
           </div>
         </div>
-
-        {/* Confirmation Modal */}
-        {showConfirmModal && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-            <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-kth-slate-200 space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center shrink-0">
-                  <AlertTriangle className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm sm:text-base text-kth-slate-900">
-                    Authorize Live Platform Broadcast?
-                  </h3>
-                  <p className="text-xs text-kth-slate-500 mt-0.5">
-                    This notification will be transmitted immediately to all matching accounts via Supabase Realtime channels.
-                  </p>
-                </div>
-              </div>
-
-              {/* Target & Content Summary */}
-              <div className="p-3.5 bg-kth-slate-50 rounded-xl border border-kth-slate-200/80 space-y-2 text-xs">
-                <div className="flex items-center justify-between pb-1.5 border-b border-kth-slate-200/60">
-                  <span className="text-kth-slate-500">Audience Segment:</span>
-                  <span className="font-bold text-kth-slate-900 bg-white px-2 py-0.5 rounded border border-kth-slate-200">
-                    {activeAudienceObj.label} ({activeAudienceObj.badge})
-                  </span>
-                </div>
-                <div className="flex items-center justify-between pb-1.5 border-b border-kth-slate-200/60">
-                  <span className="text-kth-slate-500">Classification:</span>
-                  <span className="font-bold capitalize text-kth-slate-900">
-                    {category}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-kth-slate-500 block mb-0.5">Title:</span>
-                  <div className="font-semibold text-kth-slate-800 text-xs sm:text-sm">{title}</div>
-                </div>
-                <div>
-                  <span className="text-kth-slate-500 block mb-0.5">Message:</span>
-                  <div className="text-kth-slate-600 line-clamp-3 leading-relaxed bg-white p-2 rounded border border-kth-slate-200">
-                    {message}
-                  </div>
-                </div>
-                {actionUrl.trim() && (
-                  <div>
-                    <span className="text-kth-slate-500 block mb-0.5">Destination Link:</span>
-                    <span className="font-mono text-emerald-700 break-all">{actionUrl.trim()}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 pt-2">
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => setShowConfirmModal(false)}
-                  className="px-4 py-2 rounded-xl border border-kth-slate-200 text-xs font-semibold text-kth-slate-700 hover:bg-kth-slate-100 transition-colors cursor-pointer"
-                >
-                  Cancel & Edit
-                </button>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={handleBroadcast}
-                  className="px-4 py-2 rounded-xl bg-kth-emerald-700 hover:bg-kth-emerald-800 text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all cursor-pointer"
-                >
-                  {loading ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      Broadcasting...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-3.5 h-3.5" />
-                      Confirm & Send Now
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </AdminShell>
   );
