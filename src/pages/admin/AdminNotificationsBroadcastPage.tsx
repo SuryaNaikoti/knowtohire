@@ -213,46 +213,116 @@ export const AdminNotificationsBroadcastPage: React.FC<AdminNotificationsBroadca
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
 
-      if (!token) {
-        setResultMessage({ type: 'error', text: 'Administrative authentication token missing. Please re-login.' });
+      // Check if user is logged in via demo admin session
+      let isDemoAdmin = false;
+      if (!token && typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const stored = window.localStorage.getItem('kth_demo_auth_session');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed?.role === 'admin') {
+              isDemoAdmin = true;
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      if (!token && !isDemoAdmin) {
+        setResultMessage({
+          type: 'error',
+          text: 'Administrative authentication token missing. Please sign in with an Admin account.',
+        });
         setLoading(false);
         return;
       }
 
-      const response = await fetch('/api/admin-broadcast-notification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+      // If we have a real Supabase access token, call the secure serverless broadcast endpoint
+      if (token) {
+        const response = await fetch('/api/admin-broadcast-notification', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            title: title.trim(),
+            message: message.trim(),
+            target_audience: targetAudience,
+            action_url: actionUrl.trim() || undefined,
+            category,
+          }),
+        });
+
+        const resJson = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          setResultMessage({
+            type: 'error',
+            text: resJson.error || 'Failed to broadcast notification.',
+          });
+        } else {
+          const count = resJson.count || 0;
+          setResultMessage({
+            type: 'success',
+            text: resJson.message || `Broadcast delivered to ${count} active account(s) in real-time.`,
+            count,
+          });
+          setTitle('');
+          setMessage('');
+          setActionUrl('');
+
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('kth_notifications_changed'));
+          }
+        }
+      } else {
+        // Fallback for Local/Demo Admin Session: Deliver directly into local stores and trigger live realtime event
+        const newNotif = {
+          id: `broadcast-${Date.now()}`,
           title: title.trim(),
           message: message.trim(),
-          target_audience: targetAudience,
-          action_url: actionUrl.trim() || undefined,
+          type: 'system' as const,
           category,
-        }),
-      });
+          action_url: actionUrl.trim() || undefined,
+          is_read: false,
+          created_at: new Date().toISOString(),
+        };
 
-      const resJson = await response.json().catch(() => ({}));
+        if (typeof window !== 'undefined' && window.localStorage) {
+          // Store in relevant roles
+          const keysToDeliver: string[] = [];
+          if (targetAudience === 'all') {
+            keysToDeliver.push('kth_demo_notifications', 'kth_notifications_admin', 'kth_notifications_creator');
+          } else if (targetAudience === 'candidates') {
+            keysToDeliver.push('kth_demo_notifications');
+          } else if (targetAudience === 'employers') {
+            keysToDeliver.push('kth_notifications_fa97faee-1cdf-41e6-a151-f51c7fa4c396');
+          } else if (targetAudience === 'creators') {
+            keysToDeliver.push('kth_notifications_creator');
+          }
 
-      if (!response.ok) {
-        setResultMessage({
-          type: 'error',
-          text: resJson.error || 'Failed to broadcast notification.',
-        });
-      } else {
-        const count = resJson.count || 0;
+          keysToDeliver.forEach((key) => {
+            try {
+              const raw = window.localStorage.getItem(key);
+              const items = raw ? JSON.parse(raw) : [];
+              items.unshift(newNotif);
+              window.localStorage.setItem(key, JSON.stringify(items));
+            } catch {
+              // ignore
+            }
+          });
+        }
+
         setResultMessage({
           type: 'success',
-          text: resJson.message || `Broadcast delivered to ${count} active account(s) in real-time.`,
-          count,
+          text: `Demo announcement delivered to ${activeAudienceObj.label} across active sessions.`,
         });
         setTitle('');
         setMessage('');
         setActionUrl('');
 
-        // Notify local app so admin's own bell updates if included
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('kth_notifications_changed'));
         }
