@@ -66,6 +66,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
   const navItems = [
     { path: '/admin', label: 'Admin Dashboard', icon: LayoutDashboard },
     { path: '/admin/users', label: 'User Directory', icon: Users },
+    { path: '/admin/notifications', label: 'Broadcast Announcements', icon: Bell },
     { path: '/admin/employers', label: 'Employer Verification', icon: Building2 },
     { path: '/admin/jobs', label: 'Job Moderation', icon: Briefcase },
     { path: '/admin/external-jobs', label: 'External Jobs', icon: ExternalLink },
@@ -74,7 +75,6 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     { path: '/admin/resources', label: 'Knowledge Hub CMS', icon: BookOpen },
     { path: '/admin/templates', label: 'Templates Marketplace', icon: HelpCircle },
     { path: '/admin/requests', label: 'Content Requests', icon: ShieldAlert },
-    { path: '/admin/notifications', label: 'Broadcast Announcements', icon: Bell },
     { path: '/admin/blog', label: 'Editorial Blog CMS', icon: Newspaper },
     { path: '/admin/taxonomy', label: 'Master Taxonomy', icon: Layers },
     { path: '/admin/settings', label: 'Admin Settings', icon: Settings },
@@ -137,7 +137,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
 
       <div className="flex-1 flex overflow-hidden">
         {/* Desktop Admin Sidebar */}
-        <aside className="w-64 bg-white border-r border-kth-slate-200 hidden lg:flex flex-col p-4 shrink-0 justify-between">
+        <aside className="w-64 bg-white border-r border-kth-slate-200 hidden lg:flex flex-col p-4 shrink-0 justify-between overflow-y-auto max-h-[calc(100vh-33px)]">
           <div>
             <div className="flex items-center gap-2.5 px-3 py-3 mb-6 border-b border-kth-slate-100">
               <div className="w-8 h-8 rounded-lg bg-kth-slate-900 flex items-center justify-center text-amber-400 text-sm font-extrabold shadow-sm">
