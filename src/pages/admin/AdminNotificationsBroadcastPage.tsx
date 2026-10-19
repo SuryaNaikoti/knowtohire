@@ -597,10 +597,10 @@ export const AdminNotificationsBroadcastPage: React.FC<AdminNotificationsBroadca
                 type="button"
                 disabled={loading || !title.trim() || !message.trim()}
                 onClick={() => setShowConfirmModal(true)}
-                className="w-full sm:w-auto py-3 px-6 rounded-xl bg-kth-emerald-700 hover:bg-kth-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm order-1 sm:order-2 active:scale-[0.98] transition-all cursor-pointer"
+                className="w-full sm:w-auto py-3 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md shadow-emerald-600/30 order-1 sm:order-2 cursor-pointer transition-all"
               >
                 <Send className="w-4 h-4" />
-                <span>Review & Broadcast ({activeAudienceObj.label})</span>
+                <span>Send Broadcast ({activeAudienceObj.label})</span>
               </button>
             </div>
           </div>
