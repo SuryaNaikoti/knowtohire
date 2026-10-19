@@ -10,6 +10,7 @@ import {
 } from '@/services/creatorService';
 import { knowledgeService, KnowledgeResource } from '@/services/knowledgeService';
 import { templateService, MarketplaceTemplate } from '@/services/templateService';
+import { formatDisplayFileName } from '@/services/contentStorageService';
 import {
   ArrowLeft,
   BookOpen,
@@ -326,10 +327,13 @@ export const AdminContentReviewDetailPage: React.FC<AdminContentReviewDetailPage
                   : '—'}
               </div>
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="text-[10px] uppercase font-bold text-kth-slate-400">Deliverable Asset</div>
-              <div className="font-semibold text-kth-slate-800 mt-0.5 truncate">
-                {content.file_name || 'Attached asset file'}
+              <div
+                className="font-semibold text-kth-slate-800 mt-0.5 truncate"
+                title={content.file_name || undefined}
+              >
+                {formatDisplayFileName(content.file_name, 28)}
               </div>
             </div>
             <div>

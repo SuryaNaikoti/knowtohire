@@ -496,7 +496,7 @@ export const CandidateResumePage: React.FC<CandidateResumePageProps> = ({ onNavi
                   <h3 className="font-display font-bold text-base text-kth-slate-900">Document Preview</h3>
                   <p className="text-xs text-kth-slate-500 break-words">
                     {hasResume && isPDF
-                      ? 'Live preview of your verified PDF resume stored in Supabase.'
+                      ? 'Live preview of your verified PDF resume attached to your profile.'
                       : hasResume && !isPDF
                       ? 'Upload a PDF resume to enable document preview.'
                       : 'Upload your PDF resume to preview it here.'}

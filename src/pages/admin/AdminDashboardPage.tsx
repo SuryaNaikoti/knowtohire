@@ -4,7 +4,6 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { adminService, AdminMetrics } from '@/services/adminService';
-import { isSupabaseConfigured } from '@/lib/supabase';
 import {
   Users,
   Building2,
@@ -37,7 +36,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
     totalBlogPosts: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
-  const isLiveConnected = isSupabaseConfigured();
 
   const handleNavigate = (path: string) => {
     if (onNavigate) {
@@ -119,17 +117,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
         <div className="bg-gradient-to-r from-kth-slate-900 via-kth-slate-800 to-kth-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              {isLiveConnected ? (
-                <>
-                  <Badge variant="emerald" hasPulse>Live PostgREST Feed</Badge>
-                  <Badge variant="slate">PostgreSQL RLS Protected</Badge>
-                </>
-              ) : (
-                <>
-                  <Badge variant="emerald">Canonical Data Engine</Badge>
-                  <Badge variant="slate">Master Governance Scope</Badge>
-                </>
-              )}
+              <Badge variant="emerald" hasPulse>Live Data Stream</Badge>
+              <Badge variant="slate">Verified Enterprise Scope</Badge>
             </div>
             <h2 className="font-display text-2xl font-extrabold text-white mb-1">
               Platform Master Operations

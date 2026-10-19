@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader';
 import { CandidateOnboardingData } from '@/types/onboarding';
-import { uploadResume, validatePDFResumeFile } from '@/services/resumeService';
+import { uploadResume, validatePDFResumeFile, extractResumeFileName } from '@/services/resumeService';
+import { formatDisplayFileName } from '@/services/contentStorageService';
 import { useAuth } from '@/context/AuthContext';
 import { UploadCloud, FileText, CheckCircle2, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -109,16 +110,19 @@ export const Step9Resume: React.FC<Step9ResumeProps> = ({
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-bold text-kth-slate-900 truncate">
-                      {data.resumeFileName}
+                    <p
+                      className="text-sm font-bold text-kth-slate-900 truncate"
+                      title={data.resumeFileName || extractResumeFileName(data.resumeUrl)}
+                    >
+                      {formatDisplayFileName(data.resumeFileName || extractResumeFileName(data.resumeUrl), 32)}
                     </p>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
                       <CheckCircle2 className="w-3 h-3" />
                       Uploaded
                     </span>
                   </div>
-                  <p className="text-xs text-kth-slate-500 mt-0.5">
-                    {formatBytes(data.resumeFileSize)} • PDF Document • Ready for ATS parsing & employer review
+                  <p className="text-xs text-kth-slate-500 mt-0.5 truncate">
+                    {formatBytes(data.resumeFileSize)} • PDF Document • Verified Profile Attachment
                   </p>
                 </div>
               </div>

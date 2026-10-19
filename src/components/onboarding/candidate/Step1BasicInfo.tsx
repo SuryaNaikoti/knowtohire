@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { OnboardingStepHeader } from '@/components/onboarding/OnboardingStepHeader';
 import { CandidateOnboardingData } from '@/types/onboarding';
-import { uploadResume, validatePDFResumeFile } from '@/services/resumeService';
+import { uploadResume, validatePDFResumeFile, extractResumeFileName } from '@/services/resumeService';
+import { formatDisplayFileName } from '@/services/contentStorageService';
 import { parseResumeDocument } from '@/services/resumeParserService';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -206,8 +207,11 @@ export const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               <FileText className="w-5 h-5" />
             </div>
             <div className="truncate">
-              <p className="text-xs font-bold text-kth-slate-900 truncate">
-                {data.resumeFileName}
+              <p
+                className="text-xs font-bold text-kth-slate-900 truncate"
+                title={data.resumeFileName || extractResumeFileName(data.resumeUrl)}
+              >
+                {formatDisplayFileName(data.resumeFileName || extractResumeFileName(data.resumeUrl), 28)}
               </p>
               <p className="text-[11px] text-emerald-600 flex items-center gap-1 mt-0.5">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Resume attached & fields autofilled

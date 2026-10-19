@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { knowledgeService, KnowledgeResource, ResourceStatus } from '@/services/knowledgeService';
 import { formatINR } from '@/design-system/tokens';
 import { creatorService } from '@/services/creatorService';
+import { formatDisplayFileName } from '@/services/contentStorageService';
 import { Plus, Trash2, Loader2, Edit, FileText, Search, BookOpen, CheckCircle2, ShoppingBag, IndianRupee } from 'lucide-react';
 
 export interface AdminResourcesPageProps {
@@ -236,9 +237,14 @@ export const AdminResourcesPage: React.FC<AdminResourcesPageProps> = ({ onNaviga
                         <div className="font-bold text-kth-slate-900 text-sm">{r.title}</div>
                         <div className="text-kth-slate-500 text-xs line-clamp-1 mt-0.5">{r.description}</div>
                         {r.file_url && (
-                          <div className="flex items-center gap-1 text-[11px] text-kth-primary-600 font-mono mt-1">
+                          <div className="flex items-center gap-1 text-[11px] text-kth-primary-600 font-mono mt-1 min-w-0">
                             <FileText className="w-3 h-3 shrink-0" />
-                            <span className="truncate">{r.file_name || 'Attached File'}</span>
+                            <span
+                              className="truncate"
+                              title={r.file_name || undefined}
+                            >
+                              {formatDisplayFileName(r.file_name, 28)}
+                            </span>
                           </div>
                         )}
                       </td>

@@ -5,6 +5,7 @@ import {
   validateContentFile,
   detectFileFormat,
   formatBytes,
+  formatDisplayFileName,
   ALLOWED_EXTENSIONS,
   MAX_CONTENT_FILE_SIZE_BYTES,
 } from '@/services/contentStorageService';
@@ -167,7 +168,12 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
                 {currentFormat}
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-bold text-kth-slate-900 truncate">{currentFileName}</p>
+                <p
+                  className="text-xs font-bold text-kth-slate-900 truncate"
+                  title={currentFileName || undefined}
+                >
+                  {formatDisplayFileName(currentFileName, 32)}
+                </p>
                 <div className="flex items-center gap-2 text-[11px] text-kth-slate-500 font-mono mt-0.5">
                   <span className="font-semibold">{currentFormat}</span>
                   {currentFileSize && <span>• {currentFileSize}</span>}

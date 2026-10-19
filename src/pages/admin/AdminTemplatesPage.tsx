@@ -23,6 +23,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { formatINR } from '@/design-system/tokens';
+import { formatDisplayFileName } from '@/services/contentStorageService';
 import { creatorService } from '@/services/creatorService';
 
 export interface AdminTemplatesPageProps {
@@ -283,10 +284,15 @@ export const AdminTemplatesPage: React.FC<AdminTemplatesPageProps> = ({ onNaviga
                         <div className="font-bold text-kth-slate-900 text-sm">{t.title}</div>
                         <div className="text-kth-slate-500 text-xs line-clamp-1 mt-0.5">{t.description}</div>
                         {t.file_url && (
-                          <div className="flex items-center gap-1 text-[11px] text-kth-primary-600 font-mono mt-1">
+                          <div className="flex items-center gap-1 text-[11px] text-kth-primary-600 font-mono mt-1 min-w-0">
                             <FileText className="w-3 h-3 shrink-0" />
-                            <span className="truncate">{t.file_name || 'Uploaded Template Document'}</span>
-                            {t.file_size && <span className="text-kth-slate-400">({t.file_size})</span>}
+                            <span
+                              className="truncate"
+                              title={t.file_name || undefined}
+                            >
+                              {formatDisplayFileName(t.file_name, 28)}
+                            </span>
+                            {t.file_size && <span className="text-kth-slate-400 shrink-0">({t.file_size})</span>}
                           </div>
                         )}
                       </td>

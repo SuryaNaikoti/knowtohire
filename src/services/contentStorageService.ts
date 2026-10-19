@@ -84,6 +84,32 @@ export function detectFileFormat(fileName: string, mimeType?: string): string {
   return 'FILE';
 }
 
+export function formatDisplayFileName(fileName?: string | null, maxLength = 28): string {
+  if (!fileName || typeof fileName !== 'string' || !fileName.trim()) {
+    return 'Document Attached';
+  }
+
+  const cleanName = fileName.trim();
+  if (cleanName.length <= maxLength) {
+    return cleanName;
+  }
+
+  const extIndex = cleanName.lastIndexOf('.');
+  const hasExt = extIndex > 0 && extIndex < cleanName.length - 1;
+  const ext = hasExt ? cleanName.slice(extIndex) : '';
+  const base = hasExt ? cleanName.slice(0, extIndex) : cleanName;
+
+  const charsToShow = maxLength - ext.length - 3; // 3 for '...'
+  if (charsToShow <= 4) {
+    return cleanName.slice(0, Math.max(1, maxLength - 3)) + '...';
+  }
+
+  const frontChars = Math.ceil(charsToShow / 2);
+  const backChars = Math.floor(charsToShow / 2);
+
+  return `${base.slice(0, frontChars)}...${base.slice(-backChars)}${ext}`;
+}
+
 /**
  * Client-side validation for deliverable, knowledge resource, or template files
  */
