@@ -17,9 +17,12 @@ import {
   Menu,
   ExternalLink,
   Sparkles,
+  Bell,
 } from 'lucide-react';
 
 import { Drawer } from '@/components/ui/Drawer';
+import { useNotificationRealtime } from '@/hooks/useNotificationRealtime';
+import { NotificationDropdown } from '@/components/navigation/NotificationDropdown';
 
 export interface AdminShellProps {
   title?: string;
@@ -34,12 +37,14 @@ export const AdminShell: React.FC<AdminShellProps> = ({
   onNavigate,
   children,
 }) => {
+  useNotificationRealtime();
   const { logout, profile, user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
     { path: '/admin', label: 'Admin Dashboard', icon: LayoutDashboard },
     { path: '/admin/users', label: 'User Directory', icon: Users },
+    { path: '/admin/notifications', label: 'Broadcast Announcements', icon: Bell },
     { path: '/admin/employers', label: 'Employer Verification', icon: Building2 },
     { path: '/admin/jobs', label: 'Job Moderation', icon: Briefcase },
     { path: '/admin/external-jobs', label: 'External Jobs', icon: ExternalLink },
@@ -71,7 +76,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
   };
 
   const renderNavLinks = () => (
-    <nav className="space-y-1">
+    <nav className="space-y-0.5">
       {navItems.map((item) => {
         const Icon = item.icon;
         const isActive = currentPath === item.path;
@@ -81,14 +86,14 @@ export const AdminShell: React.FC<AdminShellProps> = ({
             href={item.path}
             onClick={(e) => handleLinkClick(e, item.path)}
             className={cn(
-              'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors no-underline',
+              'flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors no-underline',
               isActive
                 ? 'bg-kth-slate-900 text-white font-bold'
                 : 'text-kth-slate-600 hover:bg-kth-slate-100 hover:text-kth-slate-900'
             )}
           >
-            <Icon className={cn('w-4 h-4', isActive ? 'text-amber-400' : 'text-kth-slate-400')} />
-            <span>{item.label}</span>
+            <Icon className={cn('w-4 h-4 shrink-0', isActive ? 'text-amber-400' : 'text-kth-slate-400')} />
+            <span className="truncate">{item.label}</span>
           </a>
         );
       })}
@@ -109,34 +114,38 @@ export const AdminShell: React.FC<AdminShellProps> = ({
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Desktop Admin Sidebar */}
-        <aside className="w-64 bg-white border-r border-kth-slate-200 hidden lg:flex flex-col p-4 shrink-0 justify-between">
-          <div>
-            <div className="flex items-center gap-2.5 px-3 py-3 mb-6 border-b border-kth-slate-100">
-              <div className="w-8 h-8 rounded-lg bg-kth-slate-900 flex items-center justify-center text-amber-400 text-sm font-extrabold shadow-sm">
+        {/* Desktop Admin Sidebar - Expanded, Full-Height & Scrollbar-Free */}
+        <aside className="w-72 bg-white border-r border-kth-slate-200 hidden lg:flex flex-col py-4 px-3.5 shrink-0 justify-between overflow-y-auto scrollbar-none no-scrollbar">
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex items-center gap-3 px-3 py-2.5 mb-3 rounded-xl bg-kth-slate-50 border border-kth-slate-100">
+              <div className="w-9 h-9 rounded-xl bg-kth-slate-900 flex items-center justify-center text-amber-400 text-sm font-extrabold shadow-xs shrink-0">
                 A
               </div>
-              <div className="flex flex-col">
-                <span className="font-display font-extrabold text-sm text-kth-slate-900">Admin Portal</span>
-                <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">Superuser Access</span>
+              <div className="flex flex-col min-w-0">
+                <span className="font-display font-extrabold text-sm text-kth-slate-900 leading-tight truncate">Admin Portal</span>
+                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Superuser Access</span>
               </div>
             </div>
 
-            {renderNavLinks()}
+            <div className="flex-1 overflow-y-auto scrollbar-none no-scrollbar">
+              {renderNavLinks()}
+            </div>
           </div>
 
-          <div className="pt-4 border-t border-kth-slate-200 space-y-2">
+          <div className="pt-3 mt-2 border-t border-kth-slate-100 space-y-1 shrink-0">
             <a
               href="/"
-              className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-kth-slate-600 hover:text-kth-slate-900 rounded-lg hover:bg-kth-slate-100 no-underline"
+              className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-kth-slate-600 hover:text-kth-slate-900 rounded-lg hover:bg-kth-slate-100 transition-colors no-underline"
             >
-              Public Homepage
+              <ExternalLink className="w-3.5 h-3.5 text-kth-slate-400" />
+              <span>Public Homepage</span>
             </a>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
             >
-              <LogOut className="w-4 h-4" /> Sign Out
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Sign Out</span>
             </button>
           </div>
         </aside>
@@ -154,12 +163,17 @@ export const AdminShell: React.FC<AdminShellProps> = ({
               </button>
               <h1 className="font-display font-extrabold text-base sm:text-lg text-kth-slate-900 truncate">{title}</h1>
             </div>
-            <a
-              href="/"
-              className="text-xs font-medium text-kth-slate-500 hover:text-kth-slate-900 hidden sm:inline-block no-underline"
-            >
-              Exit to Site
-            </a>
+            <div className="flex items-center gap-3">
+              {/* Notifications Dropdown Flyout with Workflow Navigation */}
+              <NotificationDropdown role="admin" onNavigate={onNavigate} />
+
+              <a
+                href="/"
+                className="text-xs font-medium text-kth-slate-500 hover:text-kth-slate-900 hidden sm:inline-block no-underline"
+              >
+                Exit to Site
+              </a>
+            </div>
           </header>
 
           <main className="flex-1 p-3 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">{children}</main>

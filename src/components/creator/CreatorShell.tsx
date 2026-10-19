@@ -15,6 +15,8 @@ import {
 import { Drawer } from '@/components/ui/Drawer';
 import { UserMenuDropdown } from '@/components/navigation/UserMenuDropdown';
 import { CommandPalette } from '@/components/ui/CommandPalette';
+import { useNotificationRealtime } from '@/hooks/useNotificationRealtime';
+import { NotificationDropdown } from '@/components/navigation/NotificationDropdown';
 
 export interface CreatorShellProps {
   title?: string;
@@ -29,6 +31,7 @@ export const CreatorShell: React.FC<CreatorShellProps> = ({
   onNavigate,
   children,
 }) => {
+  useNotificationRealtime();
   const { logout, profile, user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isCommandOpen, setIsCommandOpen] = useState(false);
@@ -180,6 +183,9 @@ export const CreatorShell: React.FC<CreatorShellProps> = ({
                 <IndianRupee className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Monetization Active</span>
               </button>
+
+              {/* Notifications Dropdown Flyout */}
+              <NotificationDropdown role="creator" onNavigate={onNavigate} />
 
               {/* User Menu Dropdown */}
               <UserMenuDropdown

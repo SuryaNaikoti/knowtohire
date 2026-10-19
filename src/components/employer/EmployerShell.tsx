@@ -3,6 +3,7 @@ import { EmployerHeader } from './EmployerHeader';
 import { EmployerSidebar } from './EmployerSidebar';
 import { CommandPalette } from '@/components/ui/CommandPalette';
 import { Drawer } from '@/components/ui/Drawer';
+import { useNotificationRealtime } from '@/hooks/useNotificationRealtime';
 
 export interface EmployerShellProps {
   title?: string;
@@ -15,6 +16,7 @@ export const EmployerShell: React.FC<EmployerShellProps> = ({
   currentPath = "/employer",
   children,
 }) => {
+  useNotificationRealtime();
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
-import { savedJobService, applicationService } from '@/services';
+import { savedJobService, applicationService, notificationService } from '@/services';
 import {
   LayoutDashboard,
   User,
@@ -48,7 +48,7 @@ function useSidebarCounts() {
 
       if (!userId) userId = '00000000-0000-0000-0000-000000000001';
 
-      const [appsResult, savedResult, interviewResult, notifResult] = await Promise.all([
+      const [appsResult, savedResult, interviewResult, notifCount] = await Promise.all([
         applicationService.getMyApplications(),
         savedJobService.getMySavedJobs(),
         supabase
@@ -56,11 +56,7 @@ function useSidebarCounts() {
           .select('*', { count: 'exact', head: true })
           .eq('candidate_id', userId)
           .eq('status', 'scheduled'),
-        supabase
-          .from('notifications')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', userId)
-          .eq('is_read', false),
+        notificationService.getUnreadCount(),
       ]);
 
       if (!cancelled) {
@@ -68,7 +64,7 @@ function useSidebarCounts() {
           applications: appsResult.data ? appsResult.data.length : 0,
           savedJobs: savedResult.data ? savedResult.data.length : 0,
           interviews: interviewResult.count ?? 0,
-          notifications: notifResult.count ?? 0,
+          notifications: notifCount,
         });
       }
     };
@@ -80,11 +76,15 @@ function useSidebarCounts() {
     };
     window.addEventListener('kth_saved_jobs_changed', handleSync);
     window.addEventListener('kth_applications_changed', handleSync);
+    window.addEventListener('kth_interviews_changed', handleSync);
+    window.addEventListener('kth_notifications_changed', handleSync);
 
     return () => {
       cancelled = true;
       window.removeEventListener('kth_saved_jobs_changed', handleSync);
       window.removeEventListener('kth_applications_changed', handleSync);
+      window.removeEventListener('kth_interviews_changed', handleSync);
+      window.removeEventListener('kth_notifications_changed', handleSync);
     };
   }, []);
 

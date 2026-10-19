@@ -3,6 +3,7 @@ import { CandidateHeader } from './CandidateHeader';
 import { CandidateSidebar } from './CandidateSidebar';
 import { CommandPalette } from '@/components/ui/CommandPalette';
 import { Drawer } from '@/components/ui/Drawer';
+import { useNotificationRealtime } from '@/hooks/useNotificationRealtime';
 
 export interface CandidateShellProps {
   title?: string;
@@ -15,6 +16,7 @@ export const CandidateShell: React.FC<CandidateShellProps> = ({
   currentPath = "/candidate",
   children,
 }) => {
+  useNotificationRealtime();
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
