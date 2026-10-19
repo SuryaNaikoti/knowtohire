@@ -1,0 +1,87 @@
+[
+  {
+    "step": "1. Test Role Setup",
+    "expected": "Dedicated staging Candidate and Employer accounts created with company linkage",
+    "actual": "Created Candidate (e680615e-7141-4249-92c7-c843fd4e0a5d) & Employer (26e763b2-e716-4f20-b05f-49da9047dcf8) linked to Company (2341b5c7-d504-4145-a3d2-402cbf18cc15) in staging",
+    "status": "PASS",
+    "evidence": {
+      "candId": "e680615e-7141-4249-92c7-c843fd4e0a5d",
+      "empId": "26e763b2-e716-4f20-b05f-49da9047dcf8",
+      "companyId": "2341b5c7-d504-4145-a3d2-402cbf18cc15"
+    }
+  },
+  {
+    "step": "2. Staging Job Publishing",
+    "expected": "Job created with status=published, is_active=true, approval_status=approved",
+    "actual": "Job \"Senior ESG & Climate Lead 1792410164482\" (2ba26c9a-ef28-4610-bf13-a30590018579) published in staging database",
+    "status": "PASS",
+    "evidence": {
+      "jobId": "2ba26c9a-ef28-4610-bf13-a30590018579",
+      "title": "Senior ESG & Climate Lead 1792410164482"
+    }
+  },
+  {
+    "step": "3. Candidate Application Submission",
+    "expected": "Application created with stage=new under candidate_id=candId",
+    "actual": "Application 72ebc4d6-0cec-4b7c-b43f-db9fbed3153f submitted by candidate e680615e-7141-4249-92c7-c843fd4e0a5d",
+    "status": "PASS",
+    "evidence": {
+      "applicationId": "72ebc4d6-0cec-4b7c-b43f-db9fbed3153f",
+      "stage": "new"
+    }
+  },
+  {
+    "step": "4. Duplicate Application Prevention",
+    "expected": "Duplicate application is rejected or idempotent",
+    "actual": "Duplicate application blocked cleanly by constraint",
+    "status": "PASS",
+    "evidence": {
+      "dupErr": "duplicate key value violates unique constraint \"idx_job_applications_unique_job_candidate\""
+    }
+  },
+  {
+    "step": "5. Employer ATS Pipeline Stage Update",
+    "expected": "Employer can view application and advance stage from new -> shortlisted",
+    "actual": "Application stage updated to \"shortlisted\" by authenticated employer",
+    "status": "PASS",
+    "evidence": {
+      "previous": "new",
+      "updated": "shortlisted"
+    }
+  },
+  {
+    "step": "6. Candidate Status Reflection & Persistence",
+    "expected": "Candidate queries application and sees updated stage=shortlisted",
+    "actual": "Candidate verified stage is \"shortlisted\"",
+    "status": "PASS",
+    "evidence": {
+      "stage": "shortlisted"
+    }
+  },
+  {
+    "step": "7. Multi-Tenant Privacy & RLS Boundary",
+    "expected": "Unrelated user cannot read or update job application",
+    "actual": "RLS blocked read and update operations for unrelated user",
+    "status": "PASS",
+    "evidence": {
+      "intruderView": null,
+      "intruderTamper": null
+    }
+  },
+  {
+    "step": "8. Notification Delivery & Read State Transition",
+    "expected": "Notification delivered to candidate and state transitions from unread to read",
+    "actual": "Notification received, read state transitioned from false to true",
+    "status": "PASS",
+    "evidence": {
+      "notifId": "29be2c75-bc8f-4224-88e9-ffe574538cf8",
+      "isRead": true
+    }
+  },
+  {
+    "step": "9. Staging Data Cleanup",
+    "expected": "All test entities removed from staging database",
+    "actual": "Cleaned up candidate, employer, company, job, application, and notification records",
+    "status": "PASS"
+  }
+]

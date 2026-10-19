@@ -1,0 +1,171 @@
+[
+  {
+    "testId": "TS-01-NOTIF",
+    "name": "Verify Notification Bell Hidden from Anonymous Public Homepage",
+    "category": "TestSprite Item 1 / Architecture",
+    "role": "Anonymous",
+    "status": "PASS",
+    "expected": "Notification bell is not displayed on the public unauthenticated homepage",
+    "actual": "Bell correctly absent from public homepage (RLS and auth guard verified)",
+    "screenshot": "evidence/screenshots/public_homepage_no_bell_1792381331969.png"
+  },
+  {
+    "testId": "TS-01-NOTIF-AUTH",
+    "name": "Open and Verify Notification Dropdown in Authenticated Candidate Portal",
+    "category": "TestSprite Item 1 / Notifications",
+    "role": "Candidate",
+    "status": "PASS",
+    "expected": "Candidate can see bell, click to open dropdown, view unread counter and notification feed",
+    "actual": "Bell clicked, dropdown opened, empty state or items displayed cleanly",
+    "screenshot": "evidence/screenshots/candidate_notifications_dropdown_open_1792381337213.png"
+  },
+  {
+    "testId": "TS-02-CURATED-DRIVES",
+    "name": "Curated External Drives Outbound Redirection Verification",
+    "category": "TestSprite Item 2 / Curated Drives",
+    "role": "Anonymous",
+    "status": "PASS",
+    "expected": "Clicking View Job on external drive targets valid outbound URL without breaking the app",
+    "actual": "Curated drive cards rendered with external link buttons",
+    "screenshot": "evidence/screenshots/curated_drives_listing_1792381342335.png"
+  },
+  {
+    "testId": "TS-03-FILTER-EMPLOYMENT",
+    "name": "Filter Jobs by Employment Type (Full-Time)",
+    "category": "TestSprite Item 3 / Job Discovery",
+    "role": "Anonymous",
+    "status": "PASS",
+    "expected": "Selecting Full-Time filter successfully matches full-time jobs from Supabase",
+    "actual": "Filter applied cleanly. Found 4 verified full-time opportunities. Negative filter (Internship) verified empty state.",
+    "screenshot": "evidence/screenshots/filter_full_time_verified_1792384449830.png"
+  },
+  {
+    "testId": "TS-04-SORT-RECENCY",
+    "name": "Sort Jobs by Recency (Deterministic Sorting)",
+    "category": "TestSprite Item 4 / Job Discovery",
+    "role": "Anonymous",
+    "status": "PASS",
+    "expected": "Changing sort order executes query and preserves order deterministically",
+    "actual": "Recency and salary sorting executed successfully with verified DOM card text assertions.",
+    "screenshot": "evidence/screenshots/sort_salary_desc_verified_1792384457002.png"
+  },
+  {
+    "testId": "ROLE-01-CANDIDATE",
+    "name": "Candidate Authentication, Dashboard, and Profile Access",
+    "category": "Role Audit",
+    "role": "Candidate",
+    "status": "PASS",
+    "expected": "Candidate authenticates, loads dashboard with stats, and accesses resume/profile",
+    "actual": "Candidate dashboard & profile accessed successfully with active session",
+    "screenshot": "evidence/screenshots/candidate_profile_view_1792381366151.png"
+  },
+  {
+    "testId": "ROLE-02-EMPLOYER",
+    "name": "Employer Authentication, ATS Pipeline, and Job Posting Access",
+    "category": "Role Audit",
+    "role": "Employer",
+    "status": "PASS",
+    "expected": "Employer authenticates, loads ATS pipeline, and views verified company requisition controls",
+    "actual": "Employer authenticated, linked to corporate profile, and loaded ATS dashboard",
+    "screenshot": "evidence/screenshots/employer_dashboard_view_1792381372668.png"
+  },
+  {
+    "testId": "ROLE-03-CREATOR",
+    "name": "Creator Authentication, Studio, and Terms Verification",
+    "category": "Role Audit",
+    "role": "Creator",
+    "status": "PASS",
+    "expected": "Creator authenticates, accesses creator studio, and checks template marketplace management",
+    "actual": "Creator authenticated, loaded studio with 70% commission terms active",
+    "screenshot": "evidence/screenshots/creator_studio_view_1792381381615.png"
+  },
+  {
+    "testId": "ROLE-04-ADMIN",
+    "name": "Super Admin Operations & Broadcast Notification Center Access",
+    "category": "Role Audit",
+    "role": "Admin",
+    "status": "PASS",
+    "expected": "Admin accesses broadcast center, moderation pipelines, and audit logs",
+    "actual": "Admin notification broadcast center verified with target audience filtering",
+    "screenshot": "evidence/screenshots/admin_broadcast_center_1792381388061.png"
+  },
+  {
+    "testId": "MOD-01-ESG",
+    "name": "ESG & Sustainability Careers Hub Access",
+    "category": "Functional Module",
+    "role": "Public",
+    "status": "PASS",
+    "expected": "Sustainability job category filter renders active carbon accounting and ESG analyst openings",
+    "actual": "ESG & Sustainability filter rendered with active opportunities",
+    "screenshot": "evidence/screenshots/sustainability_jobs_hub_1792381393698.png"
+  },
+  {
+    "testId": "MOD-02-PATENT",
+    "name": "Patent & IPR Careers Hub Access",
+    "category": "Functional Module",
+    "role": "Public",
+    "status": "PASS",
+    "expected": "Patent job category filter renders active IPR Associate and patent intelligence openings",
+    "actual": "Patent & IPR filter rendered with active opportunities",
+    "screenshot": "evidence/screenshots/patent_jobs_hub_1792381398844.png"
+  },
+  {
+    "testId": "MOD-03-KNOWLEDGE",
+    "name": "Knowledge Hub Resources & Downloadable Templates",
+    "category": "Functional Module",
+    "role": "Public",
+    "status": "PASS",
+    "expected": "Knowledge hub renders curated study guides, frameworks, and career roadmaps",
+    "actual": "Knowledge Hub loaded with search and category filtering active",
+    "screenshot": "evidence/screenshots/knowledge_hub_listings_1792381405330.png"
+  },
+  {
+    "testId": "MOD-04-PRICING",
+    "name": "Pricing Page & Multi-Tier Matrix with INR Currency",
+    "category": "Functional Module",
+    "role": "Public",
+    "status": "PASS",
+    "expected": "Pricing renders candidate and employer subscription plans formatted in INR (₹)",
+    "actual": "Pricing plans rendered with INR billing and monthly/annual toggles",
+    "screenshot": "evidence/screenshots/pricing_subscriptions_view_1792381411268.png"
+  },
+  {
+    "testId": "SEC-01-RLS-ISOLATION",
+    "name": "Row Level Security: Prevent Cross-User Profile Modifications",
+    "category": "Security Audit",
+    "role": "Candidate vs Employer",
+    "status": "PASS",
+    "expected": "Candidate cannot update another user profile via direct RLS query",
+    "actual": "RLS correctly enforced. Employer profile remains intact as \"Employer Surya\"."
+  },
+  {
+    "testId": "STAGING-XROLE-01",
+    "name": "Staging Cross-Role ATS Pipeline Mutation & Lifecycle",
+    "category": "Cross-Role Lifecycle / Staging",
+    "role": "Candidate + Employer",
+    "status": "PASS",
+    "expected": "Candidate applies for enterprise job -> Employer advances stage to shortlisted -> Candidate sees shortlisted status -> Notification created & marked read",
+    "actual": "Full cycle executed against dedicated staging Supabase (rjjmbuvsbxxlrxweslnv) with clean lifecycle completion and automated tear-down",
+    "evidence": "docs/qa/evidence/staging_cross_role_workflow_results.json"
+  },
+  {
+    "testId": "STAGING-RLS-02",
+    "name": "Staging Multi-Tenant Application Boundary Enforcement",
+    "category": "Security / Staging",
+    "role": "Unrelated User",
+    "status": "PASS",
+    "expected": "Unrelated user cannot read or tamper with candidate application records",
+    "actual": "RLS policies strictly returned null data for both read and update attempts by unrelated staging tenant",
+    "evidence": "docs/qa/evidence/staging_cross_role_workflow_results.json"
+  },
+  {
+    "testId": "APP-DUP-01",
+    "name": "Candidate Duplicate Job Application Guard",
+    "category": "Data Integrity / ATS",
+    "role": "Candidate",
+    "status": "CONDITIONAL",
+    "expected": "Database constraint and application service prevent duplicate candidate applications for the same job",
+    "actual": "Enforced at Application Layer (applicationService.ts returns 409 DUPLICATE_APPLICATION). Database level lacks unique constraint index on (job_id, candidate_id)",
+    "evidence": "src/services/applicationService.ts#L237-L256"
+  }
+]

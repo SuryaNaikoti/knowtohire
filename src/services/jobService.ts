@@ -220,9 +220,12 @@ export const jobService = {
         query = query.or(`category.ilike.%${catTerm}%,title.ilike.%${catTerm}%,department.ilike.%${catTerm}%`);
       }
 
-      // 5. Employment Type filter
+      // 5. Employment Type filter (supports snake_case 'full_time', kebab-case 'full-time', and Title Case 'Full-time')
       if (filters.employment_type) {
-        query = query.eq('employment_type', filters.employment_type);
+        const rawType = String(filters.employment_type).trim().toLowerCase();
+        const snakeForm = rawType.replace(/-/g, '_');
+        const kebabForm = rawType.replace(/_/g, '-');
+        query = query.or(`employment_type.ilike.%${snakeForm}%,employment_type.ilike.%${kebabForm}%`);
       }
 
       // 6. Work Mode filter
@@ -251,17 +254,17 @@ export const jobService = {
       // 10. Sorting
       switch (filters.sort_by) {
         case 'salary_high':
-          query = query.order('max_salary_inr', { ascending: false });
+          query = query.order('max_salary_inr', { ascending: false }).order('published_at', { ascending: false });
           break;
         case 'salary_low':
-          query = query.order('min_salary_inr', { ascending: true });
+          query = query.order('min_salary_inr', { ascending: true }).order('published_at', { ascending: false });
           break;
         case 'deadline':
-          query = query.order('application_deadline', { ascending: true, nullsFirst: false });
+          query = query.order('application_deadline', { ascending: true, nullsFirst: false }).order('published_at', { ascending: false });
           break;
         case 'latest':
         default:
-          query = query.order('published_at', { ascending: false });
+          query = query.order('published_at', { ascending: false }).order('created_at', { ascending: false });
           break;
       }
 
