@@ -113,6 +113,7 @@ const AdminBlogEditPage = lazy(() => import('@/pages/admin/AdminBlogEditPage').t
 const AdminTaxonomyPage = lazy(() => import('@/pages/admin/AdminTaxonomyPage').then(m => ({ default: m.AdminTaxonomyPage })));
 const AdminTaxonomyNewPage = lazy(() => import('@/pages/admin/AdminTaxonomyNewPage').then(m => ({ default: m.AdminTaxonomyNewPage })));
 const AdminSettingsPage = lazy(() => import('@/pages/admin/AdminSettingsPage').then(m => ({ default: m.AdminSettingsPage })));
+const AdminNotificationsBroadcastPage = lazy(() => import('@/pages/admin/AdminNotificationsBroadcastPage').then(m => ({ default: m.AdminNotificationsBroadcastPage })));
 const AdminCreatorContentPage = lazy(() => import('@/pages/admin/AdminCreatorContentPage').then(m => ({ default: m.AdminCreatorContentPage })));
 const AdminContentReviewDetailPage = lazy(() => import('@/pages/admin/AdminContentReviewDetailPage').then(m => ({ default: m.AdminContentReviewDetailPage })));
 
@@ -235,6 +236,7 @@ export function App() {
       }
       else if (path === '/admin/taxonomy/new') adminComponent = <AdminTaxonomyNewPage onNavigate={navigateTo} />;
       else if (path === '/admin/taxonomy') adminComponent = <AdminTaxonomyPage onNavigate={navigateTo} />;
+      else if (path === '/admin/notifications') adminComponent = <AdminNotificationsBroadcastPage onNavigate={navigateTo} />;
       else if (path === '/admin/settings') adminComponent = <AdminSettingsPage onNavigate={navigateTo} />;
 
       return (

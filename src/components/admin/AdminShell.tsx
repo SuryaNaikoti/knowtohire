@@ -74,6 +74,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     { path: '/admin/resources', label: 'Knowledge Hub CMS', icon: BookOpen },
     { path: '/admin/templates', label: 'Templates Marketplace', icon: HelpCircle },
     { path: '/admin/requests', label: 'Content Requests', icon: ShieldAlert },
+    { path: '/admin/notifications', label: 'Broadcast Announcements', icon: Bell },
     { path: '/admin/blog', label: 'Editorial Blog CMS', icon: Newspaper },
     { path: '/admin/taxonomy', label: 'Master Taxonomy', icon: Layers },
     { path: '/admin/settings', label: 'Admin Settings', icon: Settings },
