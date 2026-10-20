@@ -298,3 +298,5 @@ export async function openRazorpayCheckout(options: RazorpayCheckoutOptions): Pr
     }
   }
 }
+
+export const initiateRazorpayCheckout = openRazorpayCheckout;

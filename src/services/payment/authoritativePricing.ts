@@ -6,7 +6,7 @@
 
 export interface CatalogItem {
   id: string;
-  type: 'template' | 'knowledge_resource' | 'employer_subscription' | 'candidate_subscription' | 'content_request';
+  type: 'template' | 'knowledge_resource' | 'employer_subscription' | 'candidate_subscription' | 'content_request' | 'featured_job';
   title: string;
   priceINR: number;
   isFree?: boolean;
@@ -198,7 +198,33 @@ export const CANONICAL_CATALOG: Record<string, CatalogItem> = {
     title: 'KnowToHire Enterprise Hiring (Annual)',
     priceINR: 47988,
   },
+
+  // --- Featured Job Placements ---
+  'feat_job_7d': {
+    id: 'feat_job_7d',
+    type: 'featured_job',
+    title: 'Featured Job Boost — 7 Days Top Placement',
+    priceINR: 999,
+  },
+  'feat_job_14d': {
+    id: 'feat_job_14d',
+    type: 'featured_job',
+    title: 'Featured Job Boost — 14 Days Priority Spotlight',
+    priceINR: 1799,
+  },
+  'feat_job_30d': {
+    id: 'feat_job_30d',
+    type: 'featured_job',
+    title: 'Featured Job Boost — 30 Days Maximum Visibility',
+    priceINR: 2999,
+  },
 };
+
+export const FEATURED_JOB_TIERS = [
+  { id: 'feat_job_7d', days: 7, label: '7 Days', priceINR: 999, badge: 'Popular', description: 'Top placement in search results and candidate recommendations for 1 week.' },
+  { id: 'feat_job_14d', days: 14, label: '14 Days', priceINR: 1799, badge: 'Best Value', description: 'Priority spotlight badge and 2 weeks elevated ranking across all categories.' },
+  { id: 'feat_job_30d', days: 30, label: '30 Days', priceINR: 2999, badge: 'Maximum Reach', description: 'Continuous front-page pinned status and daily candidate email highlight for 1 month.' },
+] as const;
 
 /**
  * Resolves authoritative price in INR for any catalog item.

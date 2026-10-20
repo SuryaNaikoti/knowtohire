@@ -8,7 +8,11 @@ import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { jobService, taxonomyService, JobCreateInput, WorkMode, EmploymentType, ExperienceLevel, CareerCategory, CityItem } from '@/services';
 import { useSubscription } from '@/hooks/useSubscription';
-import { Eye, Save, Send, AlertCircle, ArrowLeft, Sparkles } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { initiateRazorpayCheckout } from '@/services/payment/razorpayClient';
+import { FEATURED_JOB_TIERS } from '@/services/payment/authoritativePricing';
+import { formatINR } from '@/design-system/tokens';
+import { Eye, Save, Send, AlertCircle, ArrowLeft, Sparkles, Zap, Star, ShieldCheck } from 'lucide-react';
 
 export interface EmployerCreateJobPageProps {
   onNavigate?: (path: string) => void;
@@ -55,7 +59,12 @@ export const EmployerCreateJobPage: React.FC<EmployerCreateJobPageProps> = ({ on
   const [canonicalRoleName, setCanonicalRoleName] = useState<string | null>(null);
   const [canonicalRoleId, setCanonicalRoleId] = useState<string | null>(null);
 
+  // Featured Job Monetization State
+  const [isFeatured, setIsFeatured] = useState<boolean>(Boolean(initialDraft?.isFeatured));
+  const [selectedFeaturedTierId, setSelectedFeaturedTierId] = useState<string>(initialDraft?.selectedFeaturedTierId || 'feat_job_7d');
+
   // UI state
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { isActive } = useSubscription();
@@ -95,6 +104,8 @@ export const EmployerCreateJobPage: React.FC<EmployerCreateJobPageProps> = ({ on
       requirementsText,
       skillsText,
       benefitsText,
+      isFeatured,
+      selectedFeaturedTierId,
     };
     try {
       sessionStorage.setItem(JOB_FORM_DRAFT_KEY, JSON.stringify(draftPayload));
@@ -117,6 +128,8 @@ export const EmployerCreateJobPage: React.FC<EmployerCreateJobPageProps> = ({ on
     requirementsText,
     skillsText,
     benefitsText,
+    isFeatured,
+    selectedFeaturedTierId,
   ]);
 
   React.useEffect(() => {
@@ -217,6 +230,14 @@ export const EmployerCreateJobPage: React.FC<EmployerCreateJobPageProps> = ({ on
       .map((b: string) => b.trim())
       .filter((b: string) => b.length > 0);
 
+    // Calculate featured dates if opted
+    const activeTier = FEATURED_JOB_TIERS.find((t) => t.id === selectedFeaturedTierId) || FEATURED_JOB_TIERS[0];
+    const shouldFeature = isFeatured && status === 'published';
+    const startDate = shouldFeature ? new Date().toISOString() : null;
+    const endDate = shouldFeature
+      ? new Date(Date.now() + activeTier.days * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+
     const payload: JobCreateInput = {
       title: title.trim(),
       department: department.trim() || 'General',
@@ -235,7 +256,66 @@ export const EmployerCreateJobPage: React.FC<EmployerCreateJobPageProps> = ({ on
       skills: skills.length > 0 ? skills : undefined,
       benefits: benefits.length > 0 ? benefits : undefined,
       status,
+      is_featured: shouldFeature,
+      featured_start_date: startDate,
+      featured_end_date: endDate,
+      featured_duration_days: shouldFeature ? activeTier.days : null,
     };
+
+    // If employer opted for Featured Job and is publishing, prompt secure Razorpay Checkout
+    if (shouldFeature) {
+      try {
+        await initiateRazorpayCheckout({
+          amountINR: activeTier.priceINR,
+          name: 'KnowToHire Priority Hiring',
+          description: `${activeTier.label} Featured Job Boost for "${title.trim()}"`,
+          itemId: activeTier.id,
+          itemType: 'featured_job',
+          receipt: `job_feat_${Date.now()}`,
+          userId: user?.id,
+          prefill: {
+            name: user?.user_metadata?.full_name || 'Hiring Manager',
+            email: user?.email || '',
+          },
+          onSuccess: async (_paymentResult: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
+            // Payment verified; now persist the published featured job
+            const { data, error } = await jobService.createJob({
+              ...payload,
+              is_featured: true,
+              featured_start_date: startDate,
+              featured_end_date: endDate,
+              featured_duration_days: activeTier.days,
+            });
+
+            setIsSubmitting(false);
+
+            if (error) {
+              setErrorMessage(error.message);
+            } else if (data) {
+              sessionStorage.removeItem(JOB_FORM_DRAFT_KEY);
+              sessionStorage.removeItem('kth_job_preview_data');
+              if (onNavigate) {
+                onNavigate('/employer/jobs');
+              } else {
+                window.location.href = '/employer/jobs';
+              }
+            }
+          },
+          onDismiss: () => {
+            setIsSubmitting(false);
+          },
+          onError: (err: Error) => {
+            setIsSubmitting(false);
+            setErrorMessage(err.message || 'Payment for featured placement was unsuccessful. The job has not been published.');
+          },
+        });
+        return;
+      } catch (checkoutErr: any) {
+        setIsSubmitting(false);
+        setErrorMessage(checkoutErr?.message || 'Unable to initiate payment for featured job.');
+        return;
+      }
+    }
 
     const { data, error } = await jobService.createJob(payload);
     setIsSubmitting(false);
@@ -506,6 +586,104 @@ export const EmployerCreateJobPage: React.FC<EmployerCreateJobPageProps> = ({ on
             </div>
           </Card>
 
+          {/* Featured Job Promotion & Duration Selection Card */}
+          <Card className="p-5 sm:p-6 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 border-2 border-amber-200/80 rounded-2xl shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Star className="w-5 h-5 fill-current" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-display font-bold text-sm text-kth-slate-900">
+                      Boost with Featured Placement
+                    </h3>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded-full">
+                      <Zap className="w-3 h-3 fill-current text-amber-600" /> 4x Faster Hiring
+                    </span>
+                  </div>
+                  <p className="text-xs text-kth-slate-600 mt-0.5">
+                    Pin your job opening at the top of candidate search results, category pages, and personalized alert digests.
+                  </p>
+                </div>
+              </div>
+
+              {/* Toggle Switch */}
+              <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                <span className="text-xs font-bold text-kth-slate-700">
+                  {isFeatured ? 'Featured Enabled' : 'Standard Listing'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsFeatured(!isFeatured)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500/20 cursor-pointer ${
+                    isFeatured ? 'bg-amber-500' : 'bg-kth-slate-200'
+                  }`}
+                  aria-pressed={isFeatured}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      isFeatured ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* Duration & Pricing Tiers Selection (Only shown when Featured is enabled) */}
+            {isFeatured && (
+              <div className="pt-4 border-t border-amber-200/60 space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-kth-slate-900">Select Featured Duration:</span>
+                  <span className="text-[11px] text-amber-700 font-medium">Billed once via Secure Razorpay Checkout</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {FEATURED_JOB_TIERS.map((tier) => {
+                    const isSelected = selectedFeaturedTierId === tier.id;
+                    return (
+                      <div
+                        key={tier.id}
+                        onClick={() => setSelectedFeaturedTierId(tier.id)}
+                        className={`p-3.5 rounded-xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-amber-50/80 border-amber-500 shadow-xs'
+                            : 'bg-white border-kth-slate-200 hover:border-amber-300 hover:bg-amber-50/20'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-bold text-xs text-kth-slate-900">{tier.label}</span>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              isSelected
+                                ? 'bg-amber-200 text-amber-900'
+                                : 'bg-kth-slate-100 text-kth-slate-600'
+                            }`}
+                          >
+                            {tier.badge}
+                          </span>
+                        </div>
+                        <div className="font-mono font-extrabold text-lg text-kth-slate-900 mb-1">
+                          {formatINR(tier.priceINR)}
+                        </div>
+                        <p className="text-[11px] text-kth-slate-500 leading-tight">
+                          {tier.description}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-100/50 border border-amber-200 text-[11px] text-amber-900">
+                  <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span>
+                    Your featured status activates <strong>instantly</strong> upon publishing and payment verification. Full receipt & invoice available in Billing.
+                  </span>
+                </div>
+              </div>
+            )}
+          </Card>
+
           {/* Action Bar */}
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl border border-kth-slate-200 shadow-xs">
             <Button
@@ -545,9 +723,24 @@ export const EmployerCreateJobPage: React.FC<EmployerCreateJobPageProps> = ({ on
                 type="submit"
                 disabled={isSubmitting}
                 isLoading={isSubmitting}
-                leftIcon={!isSubmitting ? <Send className="w-4 h-4" /> : undefined}
+                leftIcon={
+                  !isSubmitting ? (
+                    isFeatured ? (
+                      <Zap className="w-4 h-4 fill-current text-amber-300" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )
+                  ) : undefined
+                }
+                className={isFeatured ? 'bg-amber-600 hover:bg-amber-700 text-white border-amber-600 shadow-sm' : ''}
               >
-                {isSubmitting ? 'Publishing...' : 'Publish Job Listing'}
+                {isSubmitting
+                  ? 'Processing...'
+                  : isFeatured
+                  ? `Pay & Publish Featured Job (${formatINR(
+                      (FEATURED_JOB_TIERS.find((t) => t.id === selectedFeaturedTierId) || FEATURED_JOB_TIERS[0]).priceINR
+                    )})`
+                  : 'Publish Job Listing'}
               </Button>
             </div>
           </div>

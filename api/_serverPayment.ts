@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
  */
 export interface CatalogItem {
   id: string;
-  type: 'template' | 'knowledge_resource' | 'employer_subscription' | 'candidate_subscription' | 'content_request';
+  type: 'template' | 'knowledge_resource' | 'employer_subscription' | 'candidate_subscription' | 'content_request' | 'featured_job';
   title: string;
   priceINR: number;
   isFree?: boolean;
@@ -197,6 +197,26 @@ export const CANONICAL_CATALOG: Record<string, CatalogItem> = {
     type: 'employer_subscription',
     title: 'KnowToHire Enterprise Hiring (Annual)',
     priceINR: 47988,
+  },
+
+  // --- Featured Job Boost Packages ---
+  'feat_job_7d': {
+    id: 'feat_job_7d',
+    type: 'featured_job',
+    title: 'Featured Job Boost — 7 Days Top Placement',
+    priceINR: 999,
+  },
+  'feat_job_14d': {
+    id: 'feat_job_14d',
+    type: 'featured_job',
+    title: 'Featured Job Boost — 14 Days Priority Spotlight',
+    priceINR: 1799,
+  },
+  'feat_job_30d': {
+    id: 'feat_job_30d',
+    type: 'featured_job',
+    title: 'Featured Job Boost — 30 Days Maximum Visibility',
+    priceINR: 2999,
   },
 };
 
@@ -1044,6 +1064,34 @@ export async function fulfillSuccessfulPayment(params: {
           created_at: new Date(now).toISOString(),
         };
         companySubscriptionEntitlements.set(orderId, entitlementRecord);
+      }
+    }
+  // Persistent Featured Job Activation
+  if (effectiveItemType === 'featured_job') {
+    const durationDays = effectiveItemId === 'feat_job_30d' ? 30 : effectiveItemId === 'feat_job_14d' ? 14 : 7;
+    const startDate = new Date();
+    const endDate = new Date(startDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
+    // If an explicit job_id is associated via receipt/notes/companyId or itemId
+    const targetJobId = existingOrder?.receipt?.startsWith('job_') 
+      ? existingOrder.receipt.replace('job_', '')
+      : (existingOrder as any)?.job_id || null;
+
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY && targetJobId) {
+      try {
+        const supabase = getServerSupabaseClient();
+        await supabase
+          .from('jobs')
+          .update({
+            is_featured: true,
+            featured_start_date: startDate.toISOString(),
+            featured_end_date: endDate.toISOString(),
+            featured_duration_days: durationDays,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', targetJobId);
+      } catch (err: any) {
+        console.error('[ServerPayment] Failed to update featured job status in DB:', err?.message || err);
       }
     }
   }

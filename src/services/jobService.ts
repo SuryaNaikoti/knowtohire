@@ -251,7 +251,9 @@ export const jobService = {
         query = query.lte('min_salary_inr', filters.max_salary);
       }
 
-      // 10. Sorting
+      // 10. Sorting (Always prioritize actively featured listings first)
+      query = query.order('is_featured', { ascending: false, nullsFirst: false });
+
       switch (filters.sort_by) {
         case 'salary_high':
           query = query.order('max_salary_inr', { ascending: false }).order('published_at', { ascending: false });
@@ -613,6 +615,10 @@ export const jobService = {
         country_id: input.country_id || null,
         state_id: input.state_id || null,
         city_id: input.city_id || null,
+        is_featured: Boolean(input.is_featured),
+        featured_start_date: input.featured_start_date || (input.is_featured ? new Date().toISOString() : null),
+        featured_end_date: input.featured_end_date || null,
+        featured_duration_days: input.featured_duration_days || (input.is_featured ? 7 : null),
       };
 
       const { data, error } = await supabase
