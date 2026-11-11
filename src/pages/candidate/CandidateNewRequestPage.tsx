@@ -117,7 +117,9 @@ export const CandidateNewRequestPage: React.FC<CandidateNewRequestPageProps> = (
                 onChange={(e) => setType(e.target.value)}
                 options={[
                   { value: 'Study Material', label: 'Study Material & Handbook' },
-                  { value: 'Document Template', label: 'Document / Resume Template' },
+                  { value: 'Research Document', label: 'Research Document' },
+                  { value: 'White Paper', label: 'White Paper' },
+                  { value: 'Template', label: 'Professional Template' },
                   { value: 'Interview Guide', label: 'Domain Interview Guide' },
                   { value: 'Case Study', label: 'ESG / Technical Case Study' },
                 ]}

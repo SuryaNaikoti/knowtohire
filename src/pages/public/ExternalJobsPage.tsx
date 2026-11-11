@@ -222,7 +222,7 @@ export const ExternalJobsPage: React.FC<ExternalJobsPageProps> = () => {
                   <div className="flex items-center justify-between gap-2 mb-3">
                     {getSectionBadge(job.section)}
                     <span className="text-[10px] text-kth-slate-400 font-mono">
-                      Priority #{job.display_order}
+                      Curated Drive #{job.display_order}
                     </span>
                   </div>
 

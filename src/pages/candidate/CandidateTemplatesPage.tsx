@@ -15,10 +15,10 @@ import {
 
 const TEMPLATE_CATEGORIES = [
   { value: 'all', label: 'All Template Categories' },
-  { value: 'Resume', label: 'ATS Resume & CV Templates' },
-  { value: 'Contract', label: 'Business & Service Contracts' },
-  { value: 'Legal', label: 'Legal & IP Agreements' },
-  { value: 'Compliance', label: 'Compliance & Audit Checklists' },
+  { value: 'Resume', label: 'Resume Templates' },
+  { value: 'Legal', label: 'Legal Templates' },
+  { value: 'Business', label: 'Business Templates' },
+  { value: 'Compliance', label: 'Compliance Templates' },
 ];
 
 export const CandidateTemplatesPage: React.FC = () => {

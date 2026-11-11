@@ -470,7 +470,7 @@ export const CareerGrowthSection: React.FC = () => {
                         onClick={() => handleNavigate('/jobs')}
                         className="font-bold text-xs"
                       >
-                        Explore All 150+ Jobs <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                        Explore All Openings <ArrowRight className="w-3.5 h-3.5 ml-1" />
                       </Button>
                     </div>
                   </div>
@@ -875,7 +875,7 @@ export const CareerGrowthSection: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center divide-y sm:divide-y-0 sm:divide-x divide-kth-slate-200">
             <div className="px-4">
               <div className="text-2xl sm:text-3xl font-extrabold font-display text-kth-slate-900">
-                100%
+                Direct
               </div>
               <div className="text-xs font-semibold text-kth-slate-700 mt-1">
                 Verified Indian Opportunities
@@ -887,7 +887,7 @@ export const CareerGrowthSection: React.FC = () => {
 
             <div className="px-4 pt-4 sm:pt-0">
               <div className="text-2xl sm:text-3xl font-extrabold font-display text-kth-primary-600">
-                50+
+                Curated
               </div>
               <div className="text-xs font-semibold text-kth-slate-700 mt-1">
                 Guides & Blueprints
@@ -911,10 +911,10 @@ export const CareerGrowthSection: React.FC = () => {
 
             <div className="px-4 pt-4 sm:pt-0">
               <div className="text-2xl sm:text-3xl font-extrabold font-display text-emerald-600">
-                40%
+                Efficient
               </div>
               <div className="text-xs font-semibold text-kth-slate-700 mt-1">
-                Faster Time-to-Hire
+                Recruitment Workflow
               </div>
               <div className="text-[11px] text-kth-slate-500 mt-0.5">
                 ATS pipeline & semantic match

@@ -37,8 +37,8 @@ export const Footer: React.FC = () => {
           <div className="col-span-1">
             <h4 className="font-display font-bold text-xs text-kth-slate-400 uppercase tracking-wider mb-3 sm:mb-4">For Employers</h4>
             <ul className="space-y-2 sm:space-y-2.5 text-xs text-kth-slate-300">
-              <li><a href="/pricing" className="hover:text-white transition-colors py-0.5 inline-block">Post a Job</a></li>
-              <li><a href="/pricing" className="hover:text-white transition-colors py-0.5 inline-block">Find Talent</a></li>
+              <li><a href="/post-job" className="hover:text-white transition-colors py-0.5 inline-block">Post a Job</a></li>
+              <li><a href="/post-job" className="hover:text-white transition-colors py-0.5 inline-block">Find Talent</a></li>
               <li><a href="/pricing" className="hover:text-white transition-colors py-0.5 inline-block">ATS Plans</a></li>
               <li><a href="/pricing" className="hover:text-white transition-colors py-0.5 inline-block">Subscribe</a></li>
             </ul>

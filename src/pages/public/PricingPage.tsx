@@ -270,14 +270,15 @@ export const PricingPage: React.FC = () => {
                 </div>
                 <div>
                   <Badge variant="emerald" className="mb-3">
-                    Employer Growth
+                    Employer Starter
                   </Badge>
                   <h3 className="font-display text-xl font-bold text-kth-slate-900 mb-1">Employer Starter</h3>
                   <p className="text-xs text-kth-slate-500 mb-6">For growing companies hiring sustainability & patent talent.</p>
-                  <div className="font-mono text-3xl font-extrabold text-kth-primary-600 mb-6">
+                  <div className="font-mono text-3xl font-extrabold text-kth-primary-600 mb-1">
                     {billingCycle === 'annual' ? '₹1,199' : '₹1,499'}
                     <span className="text-xs font-normal text-kth-slate-500">/mo</span>
                   </div>
+                  <p className="text-[11px] font-medium text-kth-slate-500 mb-6">+ 18% GST applicable at checkout</p>
                   <ul className="space-y-3 text-xs text-kth-slate-700 mb-8">
                     <li className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-emerald-600 shrink-0" /> Post up to 5 Active Job Listings
@@ -312,10 +313,11 @@ export const PricingPage: React.FC = () => {
                   </Badge>
                   <h3 className="font-display text-xl font-bold text-kth-slate-900 mb-1">Enterprise Hiring</h3>
                   <p className="text-xs text-kth-slate-500 mb-6">For large enterprises needing custom talent pipelines.</p>
-                  <div className="font-mono text-3xl font-extrabold text-kth-slate-900 mb-6">
+                  <div className="font-mono text-3xl font-extrabold text-kth-slate-900 mb-1">
                     {billingCycle === 'annual' ? '₹3,999' : '₹4,999'}
                     <span className="text-xs font-normal text-kth-slate-500">/mo</span>
                   </div>
+                  <p className="text-[11px] font-medium text-kth-slate-500 mb-6">+ 18% GST applicable at checkout</p>
                   <ul className="space-y-3 text-xs text-kth-slate-700 mb-8">
                     <li className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-emerald-600 shrink-0" /> Unlimited Job Postings & ATS Pipelines

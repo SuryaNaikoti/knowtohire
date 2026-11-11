@@ -11,10 +11,10 @@ export const CategoryGrid: React.FC = () => {
           badgeText="Career Domains"
           badgeVariant="indigo"
           title="Browse Opportunities by Category"
-          subtitle="Explore specialized roles across sustainability, carbon accounting, ESG compliance, and clean technology."
+          subtitle="Explore specialized roles across General, Environmental, ESG, Sustainability, Patent, IPR, Research, and Consulting."
           action={
             <a href="/careers" className="text-xs font-bold text-kth-primary-600 hover:text-kth-primary-700 flex items-center gap-1">
-              View All Categories <ArrowRight className="w-3.5 h-3.5" />
+              View All 8 Categories <ArrowRight className="w-3.5 h-3.5" />
             </a>
           }
         />

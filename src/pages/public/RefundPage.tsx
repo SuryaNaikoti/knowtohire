@@ -53,7 +53,8 @@ export const RefundPage: React.FC = () => {
             </p>
             <div className="mt-2 p-4 bg-kth-slate-100 rounded-md text-xs space-y-1">
               <p><strong>Email:</strong> support@knowtohire.com</p>
-              <p><strong>Phone:</strong> +91 80 4920 1800</p>
+              <p><strong>Phone:</strong> +91 89195 18016 <span className="text-[10px] text-kth-slate-500 font-medium">(Awaiting client verification)</span></p>
+              <p><strong>Office:</strong> Registered Office, Goa, India <span className="text-[10px] text-kth-slate-500 font-medium">(Pending client corporate confirmation)</span></p>
               <p><strong>Operating Hours:</strong> Monday – Friday, 9:30 AM to 6:30 PM IST</p>
             </div>
           </div>

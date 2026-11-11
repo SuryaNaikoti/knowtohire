@@ -164,9 +164,15 @@ export const BlogPage: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    <span className="inline-flex items-center gap-1 font-bold text-amber-600 group-hover:translate-x-1 transition-transform">
+                    <a
+                      href={`/blog/${featuredPost.slug || featuredPost.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      className="inline-flex items-center gap-1 font-bold text-amber-600 hover:text-amber-700 transition-colors"
+                    >
                       Read Article <ArrowRight className="w-3.5 h-3.5" />
-                    </span>
+                    </a>
                   </div>
                 </div>
 

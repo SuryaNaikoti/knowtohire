@@ -18,12 +18,14 @@ import {
 } from 'lucide-react';
 
 const RESOURCE_CATEGORIES = [
-  { value: 'all', label: 'All Resource Types' },
-  { value: 'Environmental', label: 'Environmental Compliance' },
+  { value: 'all', label: 'All Categories' },
+  { value: 'E-Books', label: 'E-Books & Handbooks' },
+  { value: 'Study Materials', label: 'Study Materials & Guides' },
+  { value: 'Research Documents', label: 'Research Documents' },
+  { value: 'White Papers', label: 'White Papers' },
+  { value: 'Environmental', label: 'Environmental Careers' },
   { value: 'ESG', label: 'ESG & Sustainability' },
   { value: 'Patent', label: 'Patent & IPR' },
-  { value: 'E-Book', label: 'E-Books & Handbooks' },
-  { value: 'Study', label: 'Study Materials & Guides' },
 ];
 
 export const KnowledgePage: React.FC = () => {
@@ -172,7 +174,7 @@ export const KnowledgePage: React.FC = () => {
           <div className="bg-white p-4 rounded-xl border border-kth-slate-200 shadow-2xs">
             <span className="text-[10px] font-bold uppercase tracking-wider text-kth-slate-400 block">Total Publications</span>
             <span className="text-xl font-display font-extrabold text-kth-slate-900 mt-1 block">
-              {resources.length > 0 ? resources.length : 12} Guides
+              {resources.length > 0 ? resources.length : 7} Resources
             </span>
           </div>
           <div className="bg-white p-4 rounded-xl border border-kth-slate-200 shadow-2xs">
@@ -180,19 +182,19 @@ export const KnowledgePage: React.FC = () => {
             <span className="text-xl font-display font-extrabold text-emerald-600 mt-1 block">
               {resources.reduce((acc, r) => acc + (r.downloads_count || 0), 0) > 0
                 ? resources.reduce((acc, r) => acc + (r.downloads_count || 0), 0).toLocaleString()
-                : '1,840+'}
+                : 'Curated'}
             </span>
           </div>
           <div className="bg-white p-4 rounded-xl border border-kth-slate-200 shadow-2xs">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-kth-slate-400 block">Community Rating</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-kth-slate-400 block">Resource Formats</span>
             <span className="text-xl font-display font-extrabold text-amber-600 mt-1 block">
-              4.9 / 5.0 ★
+              PDF / DOCX
             </span>
           </div>
           <div className="bg-white p-4 rounded-xl border border-kth-slate-200 shadow-2xs">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-kth-slate-400 block">Active Specialists</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-kth-slate-400 block">Domain Coverage</span>
             <span className="text-xl font-display font-extrabold text-indigo-600 mt-1 block">
-              28 Certified
+              8 Domains
             </span>
           </div>
         </div>

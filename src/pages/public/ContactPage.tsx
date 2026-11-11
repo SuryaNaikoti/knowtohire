@@ -62,10 +62,10 @@ export const ContactPage: React.FC = () => {
 
           <div className="md:col-span-5 space-y-4">
             <Card className="p-6 space-y-4 text-xs text-kth-slate-700">
-              <h4 className="font-bold text-sm text-kth-slate-900 border-b pb-2">India Office Coordinates</h4>
+              <h4 className="font-bold text-sm text-kth-slate-900 border-b pb-2">Registered Office Coordinates</h4>
               <div className="flex items-start gap-3">
                 <MapPin className="w-4 h-4 text-kth-primary-600 shrink-0 mt-0.5" />
-                <span>KnowToHire India Technology Center, Outer Ring Road, Bengaluru, Karnataka 560103</span>
+                <span>KnowToHire Registered Office, Goa, India <span className="text-[10px] text-kth-slate-500 font-medium">(Pending client corporate confirmation)</span></span>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="w-4 h-4 text-kth-primary-600 shrink-0" />
@@ -73,7 +73,7 @@ export const ContactPage: React.FC = () => {
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="w-4 h-4 text-kth-primary-600 shrink-0" />
-                <span>+91 80 4920 1800</span>
+                <span>+91 89195 18016 <span className="text-[10px] text-kth-slate-500 font-medium">(Awaiting client verification)</span></span>
               </div>
             </Card>
           </div>

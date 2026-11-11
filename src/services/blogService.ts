@@ -218,11 +218,36 @@ function updateDemoBlogPost(id: string, updates: Partial<BlogPost>) {
 }
 
 function mapDatabaseRowToBlogPost(p: Record<string, any>): BlogPost {
+  // Infer sensible domain category and read time if database has generic defaults
+  let cat = p.category;
+  if (!cat || cat === 'Environmental Policy' || cat === 'General') {
+    const t = (p.title || '').toLowerCase();
+    if (t.includes('patent') || t.includes('ipr') || t.includes('inventor')) {
+      cat = 'Patent & IPR';
+    } else if (t.includes('esg') || t.includes('brsr') || t.includes('sustainability reporting')) {
+      cat = 'ESG & BRSR Compliance';
+    } else if (t.includes('environmental') || t.includes('career') || t.includes('ecology')) {
+      cat = 'Environmental Careers';
+    } else if (t.includes('carbon') || t.includes('cleantech') || t.includes('climate')) {
+      cat = 'CleanTech & Energy';
+    } else {
+      cat = 'Environmental & ESG';
+    }
+  }
+
+  // Calculate real reading time based on word count (avg 200 words per minute)
+  const contentText = (p.content || '') + ' ' + (p.excerpt || '');
+  const wordCount = contentText.trim().split(/\s+/).filter(Boolean).length;
+  const calculatedMinutes = Math.max(1, Math.ceil(wordCount / 200));
+  const readTimeStr = p.read_time && !p.read_time.includes('6-8') && !p.read_time.includes('6–8')
+    ? p.read_time
+    : `${calculatedMinutes} min read`;
+
   return {
     id: p.id,
     author_id: p.author_id,
-    author_name: p.author_name || 'KnowToHire Editorial Team',
-    category: p.category || 'Environmental Policy',
+    author_name: p.author_name || 'KnowToHire Editorial Board',
+    category: cat,
     title: p.title || 'Untitled Article',
     slug: p.slug || p.id,
     excerpt: p.excerpt || '',
@@ -231,7 +256,7 @@ function mapDatabaseRowToBlogPost(p: Record<string, any>): BlogPost {
       p.cover_url ||
       p.featured_image ||
       'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&h=400&q=80',
-    read_time: p.read_time || `${p.read_time_minutes || 5} min read`,
+    read_time: readTimeStr,
     is_featured: Boolean(p.is_featured),
     status: (p.status || 'published') as BlogStatus,
     is_active: p.is_active !== undefined ? Boolean(p.is_active) : true,

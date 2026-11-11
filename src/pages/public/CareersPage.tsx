@@ -6,15 +6,11 @@ import {
   Briefcase,
   Leaf,
   ShieldCheck,
-  Sun,
   FileText,
   Award,
   Search,
   TrendingUp,
   ArrowRight,
-  Flame,
-  Zap,
-  DollarSign,
   Scale,
 } from 'lucide-react';
 
@@ -28,6 +24,13 @@ export interface CategoryInfo {
 
 export const ALL_CAREER_CATEGORIES: CategoryInfo[] = [
   {
+    name: 'General Careers',
+    query: 'General',
+    description: 'Corporate strategy, operations management, HR, technology, and organizational leadership positions.',
+    badge: 'Operations',
+    icon: Briefcase,
+  },
+  {
     name: 'Environmental Careers',
     query: 'Environmental',
     description: 'EIA coordinators, air/water quality specialists, pollution control engineers, and SPCB liaison officers.',
@@ -35,81 +38,46 @@ export const ALL_CAREER_CATEGORIES: CategoryInfo[] = [
     icon: Leaf,
   },
   {
-    name: 'ESG & BRSR Careers',
+    name: 'ESG Careers',
     query: 'ESG',
-    description: 'SEBI BRSR Core assurance analysts, CSR reporting strategists, and ESG compliance officers.',
+    description: 'SEBI BRSR Core assurance analysts, CSR reporting strategists, and corporate ESG compliance officers.',
     badge: 'High Demand',
     icon: ShieldCheck,
   },
   {
-    name: 'Sustainability Consulting',
+    name: 'Sustainability Careers',
     query: 'Sustainability',
     description: 'Corporate net-zero consultants, circular economy advisors, and supply chain decarbonization experts.',
-    badge: 'Consulting',
+    badge: 'Net Zero',
     icon: TrendingUp,
   },
   {
-    name: 'Patent & IPR Careers',
+    name: 'Patent Careers',
     query: 'Patent',
-    description: 'CleanTech patent attorneys, prior art search analysts, patent drafting agents, and IP strategists.',
-    badge: 'Legal & Tech',
+    description: 'CleanTech patent attorneys, prior art search analysts, patent drafting agents, and IPO agents.',
+    badge: 'Patent Law',
     icon: FileText,
   },
   {
-    name: 'Renewable Energy',
-    query: 'Renewable',
-    description: 'Solar/Wind project developers, grid integration engineers, battery storage and green hydrogen architects.',
-    badge: 'Clean Energy',
-    icon: Sun,
+    name: 'IPR Careers',
+    query: 'IPR',
+    description: 'Intellectual property managers, technology commercialization officers, and licensing specialists.',
+    badge: 'IP Strategy',
+    icon: Scale,
   },
   {
-    name: 'Climate Tech & Modeling',
-    query: 'Climate',
-    description: 'Climate risk modelers, carbon accounting software leads, and satellite geospatial data analysts.',
-    badge: 'Tech & Data',
-    icon: Zap,
-  },
-  {
-    name: 'Carbon Markets & Decarbonization',
-    query: 'Carbon',
-    description: 'Carbon credit verifiers, Article 6 mechanisms specialists, and offset origination managers.',
-    badge: 'Trading & Verif.',
-    icon: Flame,
-  },
-  {
-    name: 'EHS & Industrial Safety',
-    query: 'EHS',
-    description: 'Environment Health & Safety managers, industrial hygiene auditors, and HAZOP compliance leads.',
-    badge: 'Compliance',
-    icon: Award,
-  },
-  {
-    name: 'Green Finance & CSR',
-    query: 'Finance',
-    description: 'Sustainable finance analysts, green bond portfolio managers, and corporate impact investment leads.',
-    badge: 'Investment',
-    icon: DollarSign,
-  },
-  {
-    name: 'Research & Life Sciences',
+    name: 'Research Careers',
     query: 'Research',
-    description: 'Ecological field biologists, toxicologists, wastewater bio-remediation R&D scientists.',
+    description: 'Environmental scientists, clean energy researchers, policy analysts, and R&D specialists.',
     badge: 'R&D',
     icon: Search,
   },
   {
-    name: 'IPR & Technology Transfer',
-    query: 'IPR',
-    description: 'Academic IP managers, technology commercialization officers, and licensing specialists.',
-    badge: 'Innovation',
-    icon: Scale,
-  },
-  {
-    name: 'General & Strategic Operations',
-    query: 'General',
-    description: 'Operations managers, recruitment specialists, and cross-functional administrative leadership.',
-    badge: 'Operations',
-    icon: Briefcase,
+    name: 'Consulting Careers',
+    query: 'Consulting',
+    description: 'Management consultants, regulatory compliance advisors, technical auditors, and advisory leads.',
+    badge: 'Advisory',
+    icon: Award,
   },
 ];
 
@@ -120,11 +88,11 @@ export const CareersPage: React.FC = () => {
         <SectionHeader
           badgeText="Career Exploration"
           badgeVariant="indigo"
-          title="Specialized Career Domains"
-          subtitle="Explore curated opportunities, verified job openings, and targeted learning resources across 12 green verticals."
+          title="Contracted Career Categories"
+          subtitle="Explore verified opportunities, requisitions, and targeted learning resources across the 8 contracted domains."
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {ALL_CAREER_CATEGORIES.map((cat, idx) => {
             const Icon = cat.icon;
             return (

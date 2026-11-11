@@ -251,27 +251,115 @@ export const jobService = {
         query = query.lte('min_salary_inr', filters.max_salary);
       }
 
-      // 10. Sorting (Always prioritize actively featured listings first)
-      query = query.order('is_featured', { ascending: false, nullsFirst: false });
+      // 10. Sorting (Attempt to sort by is_featured if column exists; fallback gracefully if schema column is missing)
+      const executeJobQuery = async (includeFeaturedOrder: boolean) => {
+        let q = query;
+        if (includeFeaturedOrder) {
+          q = q.order('is_featured', { ascending: false, nullsFirst: false });
+        }
 
-      switch (filters.sort_by) {
-        case 'salary_high':
-          query = query.order('max_salary_inr', { ascending: false }).order('published_at', { ascending: false });
-          break;
-        case 'salary_low':
-          query = query.order('min_salary_inr', { ascending: true }).order('published_at', { ascending: false });
-          break;
-        case 'deadline':
-          query = query.order('application_deadline', { ascending: true, nullsFirst: false }).order('published_at', { ascending: false });
-          break;
-        case 'latest':
-        default:
-          query = query.order('published_at', { ascending: false }).order('created_at', { ascending: false });
-          break;
+        switch (filters.sort_by) {
+          case 'salary_high':
+            q = q.order('max_salary_inr', { ascending: false }).order('published_at', { ascending: false });
+            break;
+          case 'salary_low':
+            q = q.order('min_salary_inr', { ascending: true }).order('published_at', { ascending: false });
+            break;
+          case 'deadline':
+            q = q.order('application_deadline', { ascending: true, nullsFirst: false }).order('published_at', { ascending: false });
+            break;
+          case 'latest':
+          default:
+            q = q.order('published_at', { ascending: false }).order('created_at', { ascending: false });
+            break;
+        }
+
+        return q.range(from, to);
+      };
+
+      // 11. Pagination Range Execution with Auto-Fallback
+      let { data, count, error } = await executeJobQuery(true);
+
+      // Gracefully recover if is_featured column has not yet been migrated in target database
+      if (error && (error.code === '42703' || (error.message && error.message.includes('is_featured')))) {
+        console.warn('[jobService] jobs.is_featured column not found in database schema, falling back to standard recency sort.');
+        let fallbackQuery = supabase
+          .from('jobs')
+          .select(
+            `
+            *,
+            company:company_profiles!jobs_company_id_fkey(
+              id,
+              company_name,
+              logo_url,
+              industry,
+              headquarters_location,
+              verified_status,
+              website
+            )
+          `,
+            { count: 'exact' }
+          )
+          .eq('status', 'published')
+          .is('deleted_at', null);
+
+        if (filters.keyword && filters.keyword.trim()) {
+          const term = `%${filters.keyword.trim()}%`;
+          fallbackQuery = fallbackQuery.or(`title.ilike.${term},department.ilike.${term},description.ilike.${term}`);
+        }
+        if (filters.location && filters.location.trim()) {
+          fallbackQuery = fallbackQuery.ilike('location', `%${filters.location.trim()}%`);
+        }
+        if (filters.state_code && filters.state_code.trim()) {
+          fallbackQuery = fallbackQuery.eq('state_code', filters.state_code.trim().toUpperCase());
+        }
+        if (filters.category && filters.category.trim() && filters.category !== 'all') {
+          const catTerm = filters.category.trim();
+          fallbackQuery = fallbackQuery.or(`category.ilike.%${catTerm}%,title.ilike.%${catTerm}%,department.ilike.%${catTerm}%`);
+        }
+        if (filters.employment_type) {
+          const rawType = String(filters.employment_type).trim().toLowerCase();
+          const snakeForm = rawType.replace(/-/g, '_');
+          const kebabForm = rawType.replace(/_/g, '-');
+          fallbackQuery = fallbackQuery.or(`employment_type.ilike.%${snakeForm}%,employment_type.ilike.%${kebabForm}%`);
+        }
+        if (filters.work_mode) {
+          fallbackQuery = fallbackQuery.eq('work_mode', filters.work_mode);
+        }
+        if (filters.experience_level) {
+          fallbackQuery = fallbackQuery.eq('experience_level', filters.experience_level);
+        }
+        if (filters.is_remote !== undefined) {
+          fallbackQuery = fallbackQuery.eq('is_remote', filters.is_remote);
+        }
+        if (filters.min_salary !== undefined && filters.min_salary > 0) {
+          fallbackQuery = fallbackQuery.gte('max_salary_inr', filters.min_salary);
+        }
+        if (filters.max_salary !== undefined && filters.max_salary > 0) {
+          fallbackQuery = fallbackQuery.lte('min_salary_inr', filters.max_salary);
+        }
+
+        switch (filters.sort_by) {
+          case 'salary_high':
+            fallbackQuery = fallbackQuery.order('max_salary_inr', { ascending: false }).order('published_at', { ascending: false });
+            break;
+          case 'salary_low':
+            fallbackQuery = fallbackQuery.order('min_salary_inr', { ascending: true }).order('published_at', { ascending: false });
+            break;
+          case 'deadline':
+            fallbackQuery = fallbackQuery.order('application_deadline', { ascending: true, nullsFirst: false }).order('published_at', { ascending: false });
+            break;
+          case 'latest':
+          default:
+            fallbackQuery = fallbackQuery.order('published_at', { ascending: false }).order('created_at', { ascending: false });
+            break;
+        }
+
+        const retryResult = await fallbackQuery.range(from, to);
+        data = retryResult.data;
+        count = retryResult.count;
+        error = retryResult.error;
       }
-
-      // 11. Pagination Range
-      const { data, count, error } = await query.range(from, to);
 
       if (error) {
         return { data: null, error: normalizeServiceError(error) };

@@ -30,4 +30,4 @@ Disallow: /api/
 Disallow: /auth/
 
 # Sitemap location
-Sitemap: https://knowtohire-mu.vercel.app/sitemap.xml
+Sitemap: https://www.knowtohire.com/sitemap.xml

@@ -61,12 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       return;
     }
 
-    if (!isAuthenticated) {
-      handleNav('/register?role=employer');
-      return;
-    }
-
-    handleNav('/employer/jobs/new');
+    handleNav('/post-job');
   };
 
   return (

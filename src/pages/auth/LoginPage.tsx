@@ -130,7 +130,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
             Welcome back
           </h2>
           <p className="text-xs text-slate-500">
-            Sign in to continue to your candidate dashboard, employer ATS, or admin portal.
+            Sign in to continue to your candidate dashboard, employer ATS, or professional workspace.
           </p>
         </div>
 

@@ -47,6 +47,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     return genericDomains.includes(domain);
   };
 
+  const [agreeTerms, setAgreeTerms] = useState(false);
+
   const validateForm = (): boolean => {
     setFormError(null);
     clearError();
@@ -78,6 +80,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
 
     if (password !== confirmPassword) {
       setFormError('Passwords do not match. Please re-enter confirm password.');
+      return false;
+    }
+
+    if (!agreeTerms) {
+      setFormError('You must agree to the Terms of Service and Privacy Policy to create an account.');
       return false;
     }
 
@@ -418,6 +425,27 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
             required
           />
 
+          {/* Terms & Privacy Consent Checkbox */}
+          <div className="flex items-start gap-2.5 pt-1">
+            <input
+              type="checkbox"
+              id="agreeTerms"
+              checked={agreeTerms}
+              onChange={(e) => {
+                setAgreeTerms(e.target.checked);
+                if (formError) setFormError(null);
+              }}
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              required
+            />
+            <label htmlFor="agreeTerms" className="text-xs text-slate-600 leading-snug cursor-pointer">
+              I agree to the{' '}
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-indigo-600 hover:underline">Terms of Service</a>
+              {' '}and{' '}
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-indigo-600 hover:underline">Privacy Policy</a>.
+            </label>
+          </div>
+
           {/* Submit Action */}
           <Button
             type="submit"
@@ -425,7 +453,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
             size="md"
             className="w-full font-bold shadow-xs mt-2 bg-[#5145F5] hover:bg-[#4338CA] text-white cursor-pointer"
             isLoading={isLoading}
-            disabled={isLoading}
+            disabled={isLoading || !agreeTerms}
             rightIcon={<ArrowRight className="w-4 h-4" />}
           >
             Create {selectedRole === 'employer' ? 'Employer' : selectedRole === 'creator' ? 'Creator' : 'Candidate'} Account
@@ -441,13 +469,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
             >
               Sign in
             </button>
-          </div>
-
-          <div className="text-[11px] text-center text-slate-400 pt-1">
-            By creating an account, you agree to our{' '}
-            <a href="/privacy" className="underline hover:text-slate-600">Privacy Policy</a>
-            {' '}and{' '}
-            <a href="/terms" className="underline hover:text-slate-600">Terms of Service</a>.
           </div>
         </form>
       </div>

@@ -501,6 +501,40 @@ export function App() {
 
     // Public Routes
     if (path === '/' || path === '') return <HomePage />;
+
+    // Contract Route Aliases & Redirects
+    if (path === '/signup' || path.startsWith('/signup?')) {
+      window.history.replaceState({}, '', path.replace('/signup', '/register'));
+      return (
+        <GuestRoute onNavigate={navigateTo}>
+          <RegisterPage onNavigate={navigateTo} />
+        </GuestRoute>
+      );
+    }
+    if (path === '/dashboard' || path.startsWith('/dashboard?')) {
+      const destination = isAuthenticated
+        ? role === 'employer'
+          ? '/employer'
+          : role === 'admin'
+          ? '/admin'
+          : role === 'creator'
+          ? '/creator'
+          : '/candidate'
+        : '/login?redirect=/dashboard';
+      window.history.replaceState({}, '', destination);
+      window.dispatchEvent(new Event('popstate'));
+      return null;
+    }
+    if (path === '/post-job' || path.startsWith('/post-job?')) {
+      const destination = isAuthenticated
+        ? role === 'employer'
+          ? '/employer/jobs/new'
+          : '/pricing'
+        : '/register?role=employer&redirect=/employer/jobs/new';
+      window.history.replaceState({}, '', destination);
+      window.dispatchEvent(new Event('popstate'));
+      return null;
+    }
     if (path.startsWith('/jobs/') && path.endsWith('/apply')) {
       const jobId = path.replace('/jobs/', '').replace('/apply', '');
       return <CandidateApplyPage jobId={jobId} onNavigate={navigateTo} />;

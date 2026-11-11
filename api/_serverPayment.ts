@@ -230,6 +230,70 @@ export function getAuthoritativeItem(itemId: string, _itemType?: string): Catalo
     if (CANONICAL_CATALOG[key]) return CANONICAL_CATALOG[key];
   }
 
+  // --- Database Seed UUID Aliases for Production Templates ---
+  if (itemId === '018385a9-90c7-4a92-8382-803c89f3034c' || itemId === 'ats-optimised-env-engineer-resume') {
+    return {
+      id: '018385a9-90c7-4a92-8382-803c89f3034c',
+      type: 'template',
+      title: 'ATS-Optimised Environmental Engineer Resume',
+      priceINR: 0,
+      isFree: true,
+      storageBucket: 'templates',
+    };
+  }
+  if (itemId === '3c92ea93-f7f3-4f20-95fb-2412e181f140' || itemId === 'esg-consultant-executive-cv-template') {
+    return {
+      id: '3c92ea93-f7f3-4f20-95fb-2412e181f140',
+      type: 'template',
+      title: 'ESG Consultant Executive CV Template',
+      priceINR: 12,
+      isFree: false,
+      storageBucket: 'templates',
+    };
+  }
+  if (itemId === 'd1186a95-0bde-4662-9dbd-90472e135861' || itemId === 'patent-specification-drafting-template') {
+    return {
+      id: 'd1186a95-0bde-4662-9dbd-90472e135861',
+      type: 'template',
+      title: 'Patent Specification Drafting Template',
+      priceINR: 25,
+      isFree: false,
+      storageBucket: 'templates',
+    };
+  }
+
+  // --- Database Seed UUID Aliases for Knowledge Resources ---
+  if (itemId === '6b4a5dc1-341a-4af8-ba07-9f0c5c3a9df8' || itemId === 'env-compliance-handbook-2026') {
+    return {
+      id: '6b4a5dc1-341a-4af8-ba07-9f0c5c3a9df8',
+      type: 'knowledge_resource',
+      title: 'Environmental Compliance Handbook 2026',
+      priceINR: 0,
+      isFree: true,
+      storageBucket: 'knowledge-hub',
+    };
+  }
+  if (itemId === '2363e519-bcb0-4f6c-bebf-9d885952b5fc' || itemId === 'esg-reporting-brsr-implementation-manual') {
+    return {
+      id: '2363e519-bcb0-4f6c-bebf-9d885952b5fc',
+      type: 'knowledge_resource',
+      title: 'ESG Reporting & BRSR Implementation Manual',
+      priceINR: 0,
+      isFree: true,
+      storageBucket: 'knowledge-hub',
+    };
+  }
+  if (itemId === 'cf96eade-c393-44ee-b2bb-e201bf0ae58a' || itemId === 'patent-filing-prosecution-guide-india') {
+    return {
+      id: 'cf96eade-c393-44ee-b2bb-e201bf0ae58a',
+      type: 'knowledge_resource',
+      title: 'Patent Filing & Prosecution Guide (India)',
+      priceINR: 0,
+      isFree: true,
+      storageBucket: 'knowledge-hub',
+    };
+  }
+
   return null;
 }
 
@@ -1066,6 +1130,8 @@ export async function fulfillSuccessfulPayment(params: {
         companySubscriptionEntitlements.set(orderId, entitlementRecord);
       }
     }
+  }
+
   // Persistent Featured Job Activation
   if (effectiveItemType === 'featured_job') {
     const durationDays = effectiveItemId === 'feat_job_30d' ? 30 : effectiveItemId === 'feat_job_14d' ? 14 : 7;

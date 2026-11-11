@@ -14,10 +14,10 @@ import {
 
 const TEMPLATE_CATEGORIES = [
   { value: 'all', label: 'All Template Categories' },
-  { value: 'Resume', label: 'ATS Resume & CV Templates' },
-  { value: 'Contract', label: 'Business & EIA Contracts' },
-  { value: 'Legal', label: 'Legal & IP Agreements' },
-  { value: 'Compliance', label: 'Compliance & Audit Checklists' },
+  { value: 'Resume', label: 'Resume Templates' },
+  { value: 'Legal', label: 'Legal Templates' },
+  { value: 'Business', label: 'Business Templates' },
+  { value: 'Compliance', label: 'Compliance Templates' },
 ];
 
 export const TemplatesPage: React.FC = () => {
@@ -96,7 +96,7 @@ export const TemplatesPage: React.FC = () => {
           <div className="bg-white p-4 rounded-xl border border-kth-slate-200 shadow-2xs">
             <span className="text-[10px] font-bold uppercase tracking-wider text-kth-slate-400 block">Catalog Kits</span>
             <span className="text-xl font-display font-extrabold text-kth-slate-900 mt-1 block">
-              {templates.length > 0 ? templates.length : 8} Templates
+              {templates.length > 0 ? templates.length : 6} Templates
             </span>
           </div>
           <div className="bg-white p-4 rounded-xl border border-kth-slate-200 shadow-2xs">
@@ -104,19 +104,19 @@ export const TemplatesPage: React.FC = () => {
             <span className="text-xl font-display font-extrabold text-emerald-600 mt-1 block">
               {templates.reduce((acc, t) => acc + (t.downloads_count || 0), 0) > 0
                 ? templates.reduce((acc, t) => acc + (t.downloads_count || 0), 0).toLocaleString()
-                : '3,450+'}
+                : 'Verified'}
             </span>
           </div>
           <div className="bg-white p-4 rounded-xl border border-kth-slate-200 shadow-2xs">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-kth-slate-400 block">ATS Score Match</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-kth-slate-400 block">ATS Resume Format</span>
             <span className="text-xl font-display font-extrabold text-indigo-600 mt-1 block">
-              98% Passed
+              ATS Verified
             </span>
           </div>
           <div className="bg-white p-4 rounded-xl border border-kth-slate-200 shadow-2xs">
             <span className="text-[10px] font-bold uppercase tracking-wider text-kth-slate-400 block">Standard Format</span>
             <span className="text-xl font-display font-extrabold text-amber-600 mt-1 block">
-              DOCX / PDF / XLS
+              DOCX &amp; PDF
             </span>
           </div>
         </div>

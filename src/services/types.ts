@@ -383,9 +383,22 @@ export function normalizeServiceError(err: unknown): ServiceError {
     };
   }
 
-  // 4. Fallback Generic Clean Error
+  // 4. Schema/Column syntax or database operational errors (Sanitize technical details from visitors)
+  if (code.startsWith('42') || code.startsWith('08') || code.startsWith('XX') || message.includes('column') || message.includes('syntax error') || message.includes('PGRST')) {
+    if (typeof console !== 'undefined' && console.error) {
+      console.error('[KnowToHire Database/API Error - Logged Privately]:', err);
+    }
+    return {
+      message: 'Unable to retrieve listings at this moment. Our team has been notified. Please try again shortly.',
+      code: 'DATABASE_SERVICE_UNAVAILABLE',
+      status: 500,
+      details: err,
+    };
+  }
+
+  // 5. Fallback Generic Clean Error
   return {
-    message: message || 'A database request error occurred.',
+    message: message || 'A database request error occurred. Please try again.',
     code: code || 'DATABASE_ERROR',
     status: 500,
     details: err,
